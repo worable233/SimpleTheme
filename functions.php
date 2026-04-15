@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Simple Theme 鐨勪富棰樺紩瀵间笌 WordPress 闆嗘垚銆? *
  * @package SimpleTheme
@@ -197,6 +197,195 @@ function simple_theme_enqueue_assets() {
 		'window.SimpleThemeConfig = ' . wp_json_encode( simple_theme_get_frontend_config() ) . ';',
 		'before'
 	);
+
+	$md_primary   = sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_primary', '#6750a4' ) ) ?: '#6750a4';
+	$md_secondary = sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_secondary', '#625b71' ) ) ?: '#625b71';
+	$md_accent    = sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_accent', '#7d5260' ) ) ?: '#7d5260';
+
+	$md_colors = simple_theme_generate_material_colors( $md_primary, $md_secondary, $md_accent );
+
+	$css = ":root {\n";
+	foreach ( $md_colors as $key => $value ) {
+		$css .= "  {$key}: {$value};\n";
+	}
+	$css .= "}\n";
+
+	wp_add_inline_style( 'simple-theme-style', $css );
+}
+
+function simple_theme_generate_material_colors( $primary, $secondary = null, $tertiary = null ) {
+	$colors = array(
+		'--md-primary'              => $primary,
+		'--md-on-primary'           => '#ffffff',
+		'--md-primary-container'    => simple_theme_lighten_color( $primary, 30 ),
+		'--md-on-primary-container' => simple_theme_darken_color( $primary, 80 ),
+		'--md-secondary'            => $secondary ?: simple_theme_adjust_hue( $primary, 30 ),
+		'--md-on-secondary'         => '#ffffff',
+		'--md-secondary-container'  => simple_theme_lighten_color( $secondary ?: simple_theme_adjust_hue( $primary, 30 ), 30 ),
+		'--md-on-secondary-container' => simple_theme_darken_color( $secondary ?: simple_theme_adjust_hue( $primary, 30 ), 80 ),
+		'--md-tertiary'             => $tertiary ?: simple_theme_adjust_hue( $primary, 60 ),
+		'--md-on-tertiary'          => '#ffffff',
+		'--md-tertiary-container'   => simple_theme_lighten_color( $tertiary ?: simple_theme_adjust_hue( $primary, 60 ), 30 ),
+		'--md-on-tertiary-container' => simple_theme_darken_color( $tertiary ?: simple_theme_adjust_hue( $primary, 60 ), 80 ),
+		'--md-error'                => '#b3261e',
+		'--md-on-error'             => '#ffffff',
+		'--md-error-container'      => '#f9dedc',
+		'--md-on-error-container'   => '#410e0b',
+		'--md-surface'              => '#fffbfe',
+		'--md-on-surface'           => '#1c1b1f',
+		'--md-surface-variant'      => '#e7e0ec',
+		'--md-on-surface-variant'   => '#49454f',
+		'--md-outline'              => '#79747e',
+		'--md-outline-variant'      => '#cac4d0',
+		'--md-shadow'               => '#000000',
+		'--md-surface-tint'         => $primary,
+		'--md-surface-bright'       => '#fffbfe',
+		'--md-surface-container'    => '#f7f2fa',
+		'--md-surface-container-high' => '#f3edf7',
+		'--md-surface-container-highest' => '#ece6f2',
+		'--md-surface-container-low' => '#fdf8fd',
+		'--md-surface-container-lowest' => '#ffffff',
+		'--md-surface-dim'          => '#dcdbe1',
+		'--md-bg-light'             => '#fffbfe',
+		'--md-bg-dark'              => '#1c1b1f',
+		'--md-fg-light'             => '#1c1b1f',
+		'--md-fg-dark'              => '#e7e0ec',
+		'--md-card-light'           => '#fffbfe',
+		'--md-card-dark'            => '#1c1b1f',
+		'--md-border-light'         => '#e7e0ec',
+		'--md-border-dark'          => '#49454f',
+		'--md-accent-light'         => '#e8def8',
+		'--md-accent-dark'          => '#31111d',
+	);
+
+	return $colors;
+}
+
+function simple_theme_lighten_color( $hex, $percent ) {
+	$rgb = hexdec( substr( $hex, 1 ) );
+	$r   = ( $rgb >> 16 ) & 255;
+	$g   = ( $rgb >> 8 ) & 255;
+	$b   = $rgb & 255;
+
+	$r = min( 255, $r + ( 255 - $r ) * $percent / 100 );
+	$g = min( 255, $g + ( 255 - $g ) * $percent / 100 );
+	$b = min( 255, $b + ( 255 - $b ) * $percent / 100 );
+
+	return '#' . str_pad( dechex( $r ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( $g ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( $b ), 2, '0', STR_PAD_LEFT );
+}
+
+function simple_theme_darken_color( $hex, $percent ) {
+	$rgb = hexdec( substr( $hex, 1 ) );
+	$r   = ( $rgb >> 16 ) & 255;
+	$g   = ( $rgb >> 8 ) & 255;
+	$b   = $rgb & 255;
+
+	$r = max( 0, $r * ( 1 - $percent / 100 ) );
+	$g = max( 0, $g * ( 1 - $percent / 100 ) );
+	$b = max( 0, $b * ( 1 - $percent / 100 ) );
+
+	return '#' . str_pad( dechex( $r ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( $g ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( $b ), 2, '0', STR_PAD_LEFT );
+}
+
+function simple_theme_adjust_hue( $hex, $degrees ) {
+	$rgb = hexdec( substr( $hex, 1 ) );
+	$r   = ( $rgb >> 16 ) & 255;
+	$g   = ( $rgb >> 8 ) & 255;
+	$b   = $rgb & 255;
+
+	$rgbArray = array( $r, $g, $b );
+	$hsl      = rgbToHsl( $rgbArray );
+	$hsl[0]   = ( $hsl[0] + $degrees / 360 ) % 1;
+	$rgbNew   = hslToRgb( $hsl );
+
+	return '#' . str_pad( dechex( round( $rgbNew[0] ) ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( round( $rgbNew[1] ) ), 2, '0', STR_PAD_LEFT ) . str_pad( dechex( round( $rgbNew[2] ) ), 2, '0', STR_PAD_LEFT );
+}
+
+function rgbToHsl( $rgb ) {
+	$r = $rgb[0] / 255;
+	$g = $rgb[1] / 255;
+	$b = $rgb[2] / 255;
+
+	$max = max( $r, $g, $b );
+	$min = min( $r, $g, $b );
+	$h   = $max;
+	$s   = $max;
+	$l = ( $max + $min ) / 2;
+
+	if ( $max == $min ) {
+		$h = $s = 0;
+	} else {
+		$d = $max - $min;
+		$s = $l > 0.5 ? $d / ( 2 - $max - $min ) : $d / ( $max + $min );
+		switch ( $max ) {
+			case $r:
+				$h = ( $g - $b ) / $d + ( $g < $b ? 6 : 0 );
+				break;
+			case $g:
+				$h = ( $b - $r ) / $d + 2;
+				break;
+			case $b:
+				$h = ( $r - $g ) / $d + 4;
+				break;
+		}
+		$h /= 6;
+	}
+
+	return array( $h, $s, $l );
+}
+
+function hslToRgb( $hsl ) {
+	$h = $hsl[0];
+	$s = $hsl[1];
+	$l = $hsl[2];
+
+	$r = $l;
+	$g = $l;
+	$b = $l;
+
+	if ( $s !== 0 ) {
+		$q = $l < 0.5 ? $l * ( 1 + $s ) : $l + $s - $l * $s;
+		$p = 2 * $l - $q;
+		$hk = $h + 1 / 3;
+		$ok = $h;
+		$lk = $h - 1 / 3;
+
+		$hk = $hk < 0 ? $hk + 1 : ( $hk > 1 ? $hk - 1 : $hk );
+		$ok = $ok < 0 ? $ok + 1 : ( $ok > 1 ? $ok - 1 : $ok );
+		$lk = $lk < 0 ? $lk + 1 : ( $lk > 1 ? $lk - 1 : $lk );
+
+		if ( $hk < 1 / 6 ) {
+			$r = $p + ( $q - $p ) * 6 * $hk;
+		} elseif ( $hk < 1 / 2 ) {
+			$r = $q;
+		} elseif ( $hk < 2 / 3 ) {
+			$r = $p + ( $q - $p ) * ( 2 / 3 - $hk ) * 6;
+		} else {
+			$r = $p;
+		}
+
+		if ( $ok < 1 / 6 ) {
+			$g = $p + ( $q - $p ) * 6 * $ok;
+		} elseif ( $ok < 1 / 2 ) {
+			$g = $q;
+		} elseif ( $ok < 2 / 3 ) {
+			$g = $p + ( $q - $p ) * ( 2 / 3 - $ok ) * 6;
+		} else {
+			$g = $p;
+		}
+
+		if ( $lk < 1 / 6 ) {
+			$b = $p + ( $q - $p ) * 6 * $lk;
+		} elseif ( $lk < 1 / 2 ) {
+			$b = $q;
+		} elseif ( $lk < 2 / 3 ) {
+			$b = $p + ( $q - $p ) * ( 2 / 3 - $lk ) * 6;
+		} else {
+			$b = $p;
+		}
+	}
+
+	return array( round( $r * 255 ), round( $g * 255 ), round( $b * 255 ) );
 }
 add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_assets' );
 
@@ -443,6 +632,11 @@ function simple_theme_get_site_info() {
 					'showWordCount'     => (bool) get_theme_mod( 'simple_theme_meta_show_word_count', false ),
 				),
 			),
+			'materialDesign' => array(
+				'primary'   => sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_primary', '#6366f1' ) ) ?: '#6366f1',
+				'secondary' => sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_secondary', '#a8a8b3' ) ) ?: '#a8a8b3',
+				'accent'    => sanitize_hex_color( (string) get_theme_mod( 'simple_theme_md_accent', '#f43f5e' ) ) ?: '#f43f5e',
+			),
 			'comments'      => array(
 				'requireNameEmail' => (bool) get_option( 'require_name_email' ),
 				'registrationOnly' => (bool) get_option( 'comment_registration' ),
@@ -604,6 +798,21 @@ function simple_theme_register_customizer_settings( $wp_customize ) {
 	$wp_customize->add_control( 'simple_theme_home_shuoshuo_count', array( 'label' => __( '首页说说数量', 'simple-theme' ), 'section' => 'simple_theme_collections', 'type' => 'number', 'input_attrs' => array( 'min' => 0, 'max' => 12, 'step' => 1 ) ) );
 	$wp_customize->add_setting( 'simple_theme_shuoshuo_page_size', array( 'default' => 12, 'sanitize_callback' => 'absint', 'transport' => 'refresh' ) );
 	$wp_customize->add_control( 'simple_theme_shuoshuo_page_size', array( 'label' => __( '说说页数量', 'simple-theme' ), 'section' => 'simple_theme_collections', 'type' => 'number', 'input_attrs' => array( 'min' => 6, 'max' => 24, 'step' => 1 ) ) );
+
+	$wp_customize->add_section(
+		'simple_theme_material_design',
+		array(
+			'title'       => __( 'Material Design 配色', 'simple-theme' ),
+			'description' => __( '自定义 Material Design 主题色和配色方案。', 'simple-theme' ),
+			'priority'    => 37,
+		)
+	);
+	$wp_customize->add_setting( 'simple_theme_md_primary', array( 'default' => '#6366f1', 'sanitize_callback' => 'sanitize_hex_color', 'transport' => 'refresh' ) );
+	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'simple_theme_md_primary', array( 'label' => __( '主题主色', 'simple-theme' ), 'section' => 'simple_theme_material_design' ) ) );
+	$wp_customize->add_setting( 'simple_theme_md_secondary', array( 'default' => '#a8a8b3', 'sanitize_callback' => 'sanitize_hex_color', 'transport' => 'refresh' ) );
+	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'simple_theme_md_secondary', array( 'label' => __( '次要颜色', 'simple-theme' ), 'section' => 'simple_theme_material_design' ) ) );
+	$wp_customize->add_setting( 'simple_theme_md_accent', array( 'default' => '#f43f5e', 'sanitize_callback' => 'sanitize_hex_color', 'transport' => 'refresh' ) );
+	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'simple_theme_md_accent', array( 'label' => __( '强调色', 'simple-theme' ), 'section' => 'simple_theme_material_design' ) ) );
 }
 add_action( 'customize_register', 'simple_theme_register_customizer_settings' );
 
