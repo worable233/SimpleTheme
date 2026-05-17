@@ -1,14 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getRouterBase } from '@/lib/theme-config'
-import ContentView from '@/views/ContentView.vue'
 import HomeView from '@/views/HomeView.vue'
-import ShuoshuoView from '@/views/ShuoshuoView.vue'
+import ContentView from '@/views/ContentView.vue'
+import GoRedirect from '@/views/GoRedirect.vue'
 
 const router = createRouter({
   history: createWebHistory(getRouterBase()),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    { path: '/shuoshuo', name: 'shuoshuo', component: ShuoshuoView },
+    { path: '/go', name: 'go', component: GoRedirect },
+    { path: '/category/:slug', redirect: (to) => ({ path: '/', query: { category: to.params.slug as string } }) },
     { path: '/:pathMatch(.*)*', name: 'content', component: ContentView },
   ],
   scrollBehavior(_to, _from, savedPosition) {

@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
-import { RouterView } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
-import SiteHeader from '@/components/SiteHeader.vue'
+import LeftSidebar from '@/components/LeftSidebar.vue'
+import SidebarProfile from '@/components/SidebarProfile.vue'
+import TocWidget from '@/components/TocWidget.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { showError } from '@/lib/toast'
 import type { ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
 
-const { siteInfo, primaryMenu, footerMenu, shellError, shellLoading, ensureLoaded } =
-  useSiteShell()
+const { siteInfo, shellError, ensureLoaded, footerMenu } = useSiteShell()
+const route = useRoute()
+const showSubPage = ref(false)
 
 const radiusMap: Record<ThemeRadius, { medium: string; large: string }> = {
   small: { medium: '0.25rem', large: '0.5rem' },
@@ -35,17 +39,13 @@ const shadowMap: Record<ThemeShadow, { small: string; medium: string; large: str
 }
 
 function applyThemeSettings(theme?: ThemeSettings) {
-  if (!theme) {
-    return
-  }
-
+  if (!theme) return
   const root = document.documentElement
   const radius = radiusMap[theme.radius]
   const shadow = shadowMap[theme.shadow]
 
   root.style.setProperty('--primary', theme.primaryColor)
-  root.style.setProperty('--font-sans', theme.bodyFont)
-  root.style.setProperty('--theme-heading-font', theme.headingFont)
+  root.style.setProperty('--font-sans-serif', theme.bodyFont)
   root.style.setProperty('--radius-medium', radius.medium)
   root.style.setProperty('--radius-large', radius.large)
   root.style.setProperty('--shadow-small', shadow.small)
@@ -63,7 +63,6 @@ function applyThemeSettings(theme?: ThemeSettings) {
   root.style.setProperty('--theme-border-dark', theme.borderDark)
   root.style.setProperty('--container-max', `${theme.containerMaxWidth}px`)
   root.style.setProperty('--article-max-width', `${theme.articleMaxWidth}px`)
-  root.style.setProperty('--hero-overlay-opacity', String(theme.heroOverlay))
 }
 
 onMounted(() => {
@@ -77,22 +76,78 @@ watch(
   },
   { immediate: true, deep: true },
 )
+
+watch(
+  () => shellError.value,
+  (err) => {
+    if (err) showError(err)
+  },
+)
+
+// Update favicon from WordPress site icon
+watch(
+  () => siteInfo.value.siteIcon,
+  (icon) => {
+    if (!icon) return
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+    link.href = icon
+  },
+  { immediate: true },
+)
+
+
 </script>
 
 <template>
-  <div class="app-shell">
-    <SiteHeader :site-info="siteInfo" :menu-items="primaryMenu" :loading="shellLoading" />
+  <div class="app-container">
+    <LeftSidebar />
 
-    <main id="main-content" class="app-main">
-      <div class="container">
-        <div v-if="shellError" class="app-banner" role="alert" data-variant="warning">
-          {{ shellError }}
-        </div>
+    <div class="app-main">
+      <div class="app-content">
+        <main id="main-content">
+          <router-view v-slot="{ Component }">
+            <transition name="page" mode="out-in">
+              <component :is="Component" :key="route.path" />
+            </transition>
+          </router-view>
+        </main>
 
-        <RouterView />
+        <aside class="right-sidebar">
+          <div class="aside-slide-wrap">
+            <div class="aside-content" :class="{ active: showSubPage }">
+              <!-- Main page: profile + social -->
+              <div class="aside-page main-page">
+                <SidebarProfile @toggle-sub="showSubPage = !showSubPage" />
+              </div>
+              <!-- Sub page: menu -->
+              <div class="aside-page sub-page">
+              <div class="sub-page__header">
+                <div class="aside-btn-close" @click="showSubPage = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                  返回
+                </div>
+              </div>
+              <div v-if="footerMenu && footerMenu.length > 0" class="sub-page__menu">
+                <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
+                <ul class="sub-page__menu-list">
+                  <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
+                    <router-link :to="item.path || item.url" @click="showSubPage = false">{{ item.title }}</router-link>
+                  </li>
+                </ul>
+              </div>
+              <p v-else class="sub-page__empty">暂无菜单</p>
+            </div>
+          </div>
+          </div>
+          <TocWidget />
+          <SiteFooter :site-info="siteInfo" />
+        </aside>
       </div>
-    </main>
-
-    <SiteFooter :site-info="siteInfo" :menu-items="footerMenu" />
+    </div>
   </div>
 </template>

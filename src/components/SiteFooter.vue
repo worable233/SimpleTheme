@@ -1,46 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { isExternalUrl } from '@/lib/theme-config'
-import type { MenuItem, SiteInfo } from '@/types/wordpress'
+import { useSiteShell } from '@/composables/useSiteShell'
+import type { SiteInfo } from '@/types/wordpress'
+
+const { shellLoading } = useSiteShell()
 
 const props = defineProps<{
   siteInfo: SiteInfo
-  menuItems: MenuItem[]
 }>()
 
-const footerLinks = computed(() => props.siteInfo.footerLinks || [])
+const currentYear = new Date().getFullYear()
+const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'detailed')
 </script>
 
 <template>
-  <footer class="site-footer">
-    <div class="container">
-      <section class="card site-footer__panel">
-        <div class="site-footer__content wp-content" v-html="siteInfo.footerHtml"></div>
-
-        <div v-if="footerLinks.length > 0 || menuItems.length > 0" class="site-footer__actions">
-          <a
-            v-for="link in footerLinks"
-            :key="`${link.label}-${link.url}`"
-            class="button ghost small"
-            :href="link.url"
-            :target="isExternalUrl(link.url) ? '_blank' : undefined"
-            :rel="isExternalUrl(link.url) ? 'noreferrer noopener' : undefined"
-          >
-            {{ link.label }}
-          </a>
-
-          <a
-            v-for="item in menuItems"
-            :key="item.id"
-            class="button ghost small"
-            :href="item.url"
-            :target="item.target || undefined"
-            :rel="item.target ? 'noreferrer noopener' : undefined"
-          >
-            {{ item.title }}
-          </a>
-        </div>
-      </section>
-    </div>
-  </footer>
+  <div class="sidebar-footer">
+    <template v-if="shellLoading">
+      <div style="display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem 0">
+        <div role="status" class="skeleton line" style="width: 60%"></div>
+        <div role="status" class="skeleton line" style="width: 40%"></div>
+      </div>
+    </template>
+    <template v-else>
+      <div v-if="copyrightStyle !== 'none'" class="copyright">
+        <p v-if="copyrightStyle === 'detailed'">Copyright © {{ currentYear }} {{ siteInfo.name }} All Rights Reserved.</p>
+        <p v-else>{{ currentYear }} © {{ siteInfo.name }}.</p>
+        <p>Theme <a class="footer-theme-link" href="https://github.com/worable233/SimpleTheme" target="_blank" rel="noopener noreferrer">SimpleTheme</a>.</p>
+      </div>
+    </template>
+  </div>
 </template>

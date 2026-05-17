@@ -10,6 +10,16 @@
 	<head>
 		<meta charset="<?php bloginfo( 'charset' ); ?>">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script>
+			(function() {
+				var theme = localStorage.getItem('theme');
+				if (theme !== 'light' && theme !== 'dark') {
+					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+				}
+				document.documentElement.setAttribute('data-theme', theme);
+				document.documentElement.style.colorScheme = theme;
+			})();
+		</script>
 		<?php wp_head(); ?>
 	</head>
 	<body <?php body_class( 'simple-theme-shell' ); ?>>

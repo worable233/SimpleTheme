@@ -40,22 +40,5 @@
         }
       ]
     }
-  },
-  "styles": {
-    "color": {
-      "background": "#fcfbf7",
-      "text": "#1f2937"
-    },
-    "elements": {
-      "link": {
-        "color": {
-          "text": "#7b5c45"
-        }
-      }
-    },
-    "typography": {
-      "fontFamily": "var(--wp--preset--font-family--system-sans)",
-      "lineHeight": "1.75"
-    }
   }
 }

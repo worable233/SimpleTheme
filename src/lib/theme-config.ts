@@ -7,17 +7,34 @@ const fallbackConfig: SimpleThemeConfig = {
   homeUrl: `${origin}/`,
   restRoot: `${origin}/wp-json/`,
   themeUrl: `${origin}/wp-content/themes/simple-theme`,
+  illustrationsUrl: `${origin}/illustrations/`,
   routes: {
     resolveUrl: `${origin}/wp-json/simple-theme/v1/resolve-url`,
     menusBase: `${origin}/wp-json/simple-theme/v1/navigation`,
     siteInfo: `${origin}/wp-json/simple-theme/v1/site-info`,
     collection: `${origin}/wp-json/simple-theme/v1/collection`,
+    about: `${origin}/wp-json/simple-theme/v1/about`,
+    links: `${origin}/wp-json/simple-theme/v1/links`,
   },
 }
 
 const injectedConfig = window.SimpleThemeConfig
 
-const themeConfig: SimpleThemeConfig = injectedConfig
+// Normalize a URL's origin to match the current page, avoiding CORS when WordPress
+// is configured with a different hostname (e.g. 127.0.0.1 vs localhost).
+const normalizeOrigin = (url: string): string => {
+  try {
+    const parsed = new URL(url)
+    if (parsed.origin !== window.location.origin) {
+      return url.replace(parsed.origin, window.location.origin)
+    }
+  } catch {
+    // leave as-is
+  }
+  return url
+}
+
+let themeConfig: SimpleThemeConfig = injectedConfig
   ? {
       ...fallbackConfig,
       ...injectedConfig,
@@ -27,6 +44,18 @@ const themeConfig: SimpleThemeConfig = injectedConfig
       },
     }
   : fallbackConfig
+
+// Normalize all URLs to the page's origin so cross-origin CORS is avoided entirely
+if (themeConfig.siteUrl) themeConfig.siteUrl = normalizeOrigin(themeConfig.siteUrl)
+if (themeConfig.homeUrl) themeConfig.homeUrl = normalizeOrigin(themeConfig.homeUrl)
+if (themeConfig.restRoot) themeConfig.restRoot = normalizeOrigin(themeConfig.restRoot)
+if (themeConfig.themeUrl) themeConfig.themeUrl = normalizeOrigin(themeConfig.themeUrl)
+if (themeConfig.illustrationsUrl) themeConfig.illustrationsUrl = normalizeOrigin(themeConfig.illustrationsUrl)
+if (themeConfig.routes) {
+  for (const key of Object.keys(themeConfig.routes) as (keyof typeof themeConfig.routes)[]) {
+    themeConfig.routes[key] = normalizeOrigin(themeConfig.routes[key])
+  }
+}
 
 const siteBaseUrl = new URL(themeConfig.homeUrl)
 

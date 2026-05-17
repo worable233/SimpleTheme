@@ -1,0 +1,526 @@
+/* =========================================================
+   Fumadocs-inspired prose + Prism.js theme
+   Applies to .oat-prose content area
+   ========================================================= */
+
+/* ---------- 1. Prism syntax highlighting CSS variables ---------- */
+:root,
+[data-theme='light'] {
+  --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Consolas', 'Menlo', Monaco, monospace;
+  --prism-text: #24292f;
+  --prism-comment: #6e7781;
+  --prism-punctuation: #24292f;
+  --prism-property: #0550ae;
+  --prism-selector: #8250df;
+  --prism-operator: #0550ae;
+  --prism-keyword: #cf222e;
+  --prism-function: #8250df;
+  --prism-variable: #953800;
+  --prism-string: #0a3069;
+  --prism-number: #0550ae;
+  --prism-boolean: #0550ae;
+  --prism-constant: #0550ae;
+  --prism-tag: #116329;
+  --prism-attr: #0550ae;
+  --prism-attr-value: #0a3069;
+  --prism-regex: #0a3069;
+  --prism-builtin: #8250df;
+  --prism-class: #8250df;
+  --prism-inserted: #116329;
+  --prism-deleted: #cf222e;
+}
+
+[data-theme='dark'] {
+  --prism-text: #e1e4e8;
+  --prism-comment: #8b949e;
+  --prism-punctuation: #e1e4e8;
+  --prism-property: #79c0ff;
+  --prism-selector: #d2a8ff;
+  --prism-operator: #79c0ff;
+  --prism-keyword: #ff7b72;
+  --prism-function: #d2a8ff;
+  --prism-variable: #ffa657;
+  --prism-string: #a5d6ff;
+  --prism-number: #79c0ff;
+  --prism-boolean: #79c0ff;
+  --prism-constant: #79c0ff;
+  --prism-tag: #7ee787;
+  --prism-attr: #79c0ff;
+  --prism-attr-value: #a5d6ff;
+  --prism-regex: #a5d6ff;
+  --prism-builtin: #d2a8ff;
+  --prism-class: #d2a8ff;
+  --prism-inserted: #7ee787;
+  --prism-deleted: #ff7b72;
+}
+
+/* ---------- 2. Prism token color mapping ---------- */
+.oat-prose pre code .token.comment,
+.oat-prose pre code .token.prolog,
+.oat-prose pre code .token.doctype,
+.oat-prose pre code .token.cdata {
+  color: var(--prism-comment);
+  font-style: italic;
+}
+
+.oat-prose pre code .token.keyword,
+.oat-prose pre code .token.selector,
+.oat-prose pre code .token.tag {
+  color: var(--prism-keyword);
+}
+
+.oat-prose pre code .token.string,
+.oat-prose pre code .token.attr-value,
+.oat-prose pre code .token.regex,
+.oat-prose pre code .token.char {
+  color: var(--prism-string);
+}
+
+.oat-prose pre code .token.function,
+.oat-prose pre code .token.class-name {
+  color: var(--prism-function);
+}
+
+.oat-prose pre code .token.number,
+.oat-prose pre code .token.boolean {
+  color: var(--prism-number);
+}
+
+.oat-prose pre code .token.constant,
+.oat-prose pre code .token.symbol {
+  color: var(--prism-constant);
+}
+
+.oat-prose pre code .token.operator,
+.oat-prose pre code .token.entity {
+  color: var(--prism-operator);
+}
+
+.oat-prose pre code .token.punctuation {
+  color: var(--prism-punctuation);
+}
+
+.oat-prose pre code .token.property,
+.oat-prose pre code .token.variable {
+  color: var(--prism-property);
+}
+
+.oat-prose pre code .token.builtin {
+  color: var(--prism-builtin);
+}
+
+.oat-prose pre code .token.attr-name {
+  color: var(--prism-attr);
+}
+
+.oat-prose pre code .token.atrule {
+  color: var(--prism-function);
+}
+
+.oat-prose pre code .token.inserted {
+  color: var(--prism-inserted);
+}
+
+.oat-prose pre code .token.deleted {
+  color: var(--prism-deleted);
+}
+
+.oat-prose pre code .token.important {
+  color: var(--prism-keyword);
+  font-weight: inherit;
+}
+
+.oat-prose pre code .token.bold {
+  font-weight: 700;
+}
+
+.oat-prose pre code .token.italic {
+  font-style: italic;
+}
+
+/* ---------- 3. Code block wrapper (Fumadocs-style) ---------- */
+.code-block-wrapper {
+  position: relative;
+  margin: 2em 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.code-block-wrapper:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  font-size: 0.8125rem;
+  color: var(--secondary);
+  font-family: var(--font-code, ui-monospace, monospace);
+}
+
+.code-block-header figcaption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.code-block-body {
+  overflow-x: auto;
+  position: relative;
+}
+
+.code-block-body pre {
+  font-family: var(--font-code);
+  margin: 0;
+  padding: 1.25em 1.5em;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+.code-block-body pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--prism-text);
+}
+
+/* Copy button — Fumadocs-style: top-right, hidden until hover */
+.code-block-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.code-block-wrapper:hover .code-block-copy,
+.code-block-wrapper .code-block-copy:focus-within {
+  opacity: 1;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.copy-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--border);
+}
+
+.copy-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+@media (hover: none) {
+  .code-block-copy {
+    opacity: 1;
+  }
+}
+
+/* ---------- 4. Heading anchors (Fumadocs-style) ---------- */
+/* .fh marks headings that have been enhanced by useContentEnhancer */
+.fh {
+  scroll-margin-top: 7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Text anchor wrapping heading content */
+.fh > a[data-card] {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fh > a[data-card]:hover {
+  color: inherit;
+  opacity: 1;
+}
+
+/* Copy link button — faint # by default, full opacity on heading hover */
+.heading-anchor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--secondary);
+  flex-shrink: 0;
+  opacity: 0.25;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+/* Fumadocs-style: reveal on heading hover */
+.fh:hover .heading-anchor-btn,
+.heading-anchor-btn:focus-visible {
+  opacity: 1;
+}
+
+.heading-anchor-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+@media (max-width: 800px) {
+  .heading-anchor-btn {
+    opacity: 0.3;
+  }
+}
+
+@media (hover: none) {
+  .heading-anchor-btn {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- 5. Inline code (Fumadocs-style) ---------- */
+.oat-prose code:not(pre code):not(.code-block-body code) {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--foreground);
+}
+
+/* ---------- 6. Blockquote (Fumadocs-style) ---------- */
+.oat-prose blockquote {
+  font-style: italic;
+  font-weight: 500;
+  border-left: 0.25rem solid var(--border);
+  padding: 0.5em 1em;
+  margin: 1.6em 0;
+  background: transparent;
+  color: var(--foreground);
+  border-radius: 0;
+}
+
+.oat-prose blockquote p {
+  margin: 0.75em 0;
+}
+
+.oat-prose blockquote p:first-child {
+  margin-top: 0;
+}
+
+.oat-prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- 7. Table (Fumadocs-style) ---------- */
+.oat-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--card);
+  border-radius: var(--radius-large);
+  border: 1px solid var(--border);
+  margin: 2em 0;
+  font-size: 0.875em;
+  line-height: 1.71429;
+  overflow: hidden;
+}
+
+.oat-prose th {
+  text-align: left;
+  padding: 0.75rem;
+  background: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid transparent;
+}
+
+.oat-prose th:first-child {
+  border-left: none;
+}
+
+.oat-prose td {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid transparent;
+}
+
+.oat-prose td:first-child {
+  border-left: none;
+}
+
+.oat-prose tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- 8. Strong (Fumadocs-style: 500 weight) ---------- */
+.oat-prose strong {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* ---------- 9. Link underline (Fumadocs-style) ---------- */
+.oat-prose a:not([data-card]) {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3.5px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.oat-prose a:not([data-card]):hover {
+  opacity: 0.8;
+}
+
+/* ---------- 10. Fancybox lightbox — theme customization ---------- */
+/* Dark backdrop with subtle blur for depth */
+.fancybox__container {
+  --fancybox-bg: rgba(24, 24, 27, 0.9);
+  --fancybox-color: #e0e0e0;
+  --fancybox-hover-color: #fff;
+}
+
+.fancybox__backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Toolbar — frosted glass buttons */
+.fancybox__toolbar {
+  --f-button-border-radius: 8px;
+  --f-button-bg: rgba(24, 24, 27, 0.45);
+  --f-button-hover-bg: rgba(70, 70, 73, 0.55);
+  --f-button-active-bg: rgba(90, 90, 93, 0.65);
+  --f-button-svg-stroke-width: 2;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  padding: 6px 8px;
+}
+
+.fancybox__toolbar__column.is-left,
+.fancybox__toolbar__column.is-middle,
+.fancybox__toolbar__column.is-right {
+  gap: 4px;
+}
+
+/* Infobar — clean, minimal */
+.fancybox__infobar {
+  font-family: var(--font-sans-serif, system-ui, -apple-system, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 0 12px;
+  line-height: var(--f-button-height, 46px);
+}
+
+/* Nav (prev/next) — frosted glass circles */
+.fancybox__nav {
+  --f-button-width: 44px;
+  --f-button-height: 44px;
+  --f-button-border-radius: 50%;
+  --f-button-bg: rgba(24, 24, 27, 0.4);
+  --f-button-hover-bg: rgba(70, 70, 73, 0.55);
+  --f-button-active-bg: rgba(90, 90, 93, 0.65);
+  --f-button-svg-width: 22px;
+  --f-button-svg-height: 22px;
+  --f-button-svg-stroke-width: 2.5;
+  --f-button-svg-filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.fancybox__nav .f-button {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.fancybox__nav .f-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Thumbnails — rounded to match theme */
+.fancybox__thumbs {
+  --f-thumb-border-radius: 8px;
+  --f-thumb-outline: 2px;
+  --f-thumb-outline-color: rgba(255, 255, 255, 0.5);
+  --f-thumb-gap: 6px;
+  padding: 8px 0;
+}
+
+.f-thumbs__slide__img {
+  border-radius: 8px;
+}
+
+/* Caption — frosted glass bar */
+.fancybox__footer .fancybox__caption {
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  background: rgba(24, 24, 27, 0.4);
+  font-family: var(--font-sans-serif, system-ui, -apple-system, sans-serif);
+  font-size: 13px;
+  color: var(--fancybox-color, #e0e0e0);
+}
+
+/* Close button — always visible, subtle */
+.fancybox__slide.has-close-btn {
+  padding-top: 0;
+}
+
+.f-button.is-close-btn {
+  --f-button-width: 36px;
+  --f-button-height: 36px;
+  --f-button-border-radius: 50%;
+  --f-button-bg: rgba(24, 24, 27, 0.4);
+  --f-button-hover-bg: rgba(70, 70, 73, 0.55);
+  --f-button-svg-stroke-width: 2.5;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  top: 12px;
+  right: 12px;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.f-button.is-close-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}

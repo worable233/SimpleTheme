@@ -3,23 +3,73 @@ export interface SimpleThemeConfig {
   homeUrl: string
   restRoot: string
   themeUrl: string
+  illustrationsUrl: string
   routes: {
     resolveUrl: string
     menusBase: string
     siteInfo: string
     collection: string
+    about: string
+    links: string
   }
+  currentUser?: CurrentUser | null
 }
 
-export type HomePostColumns = '1' | '2' | '4'
+// ----- About Page Types -----
+
+export interface AboutTimelineEntry {
+  period: string
+  title: string
+  subtitle: string
+  image: string
+}
+
+export interface AboutGameEntry {
+  name: string
+  icon: string
+  uid: string
+}
+
+export interface AboutSponsorEntry {
+  name: string
+  amount: string
+}
+
+export interface AboutInfo {
+  avatar: string
+  subtitleLines: string[]
+  identityTags: string[]
+  greeting: string
+  sloganBlock: string
+  skills: string[]
+  timeline: AboutTimelineEntry[]
+  mbtiType: string
+  mbtiLabel: string
+  mbtiImage: string
+  mbtiUrl: string
+  games: AboutGameEntry[]
+  animeTitle: string
+  animeTagline: string
+  musicArtists: string
+  musicUrl: string
+  location: string
+  birthYear: number
+  education: string
+  occupation: string
+  sponsorTotal: string
+  sponsorList: AboutSponsorEntry[]
+  sponsorUrl: string
+  donationWechatQr: string
+  donationAlipayQr: string
+  donationTotal: string
+}
+
 export type ThemeRadius = 'small' | 'medium' | 'large'
 export type ThemeShadow = 'none' | 'small' | 'medium' | 'large'
 
 export interface ThemeSettings {
-  homePostColumns: HomePostColumns
   primaryColor: string
   bodyFont: string
-  headingFont: string
   radius: ThemeRadius
   shadow: ThemeShadow
   backgroundLight: string
@@ -34,7 +84,6 @@ export interface ThemeSettings {
   borderDark: string
   containerMaxWidth: number
   articleMaxWidth: number
-  heroOverlay: number
   cardMeta?: {
     showCategory: boolean
     showPublishDate: boolean
@@ -44,6 +93,7 @@ export interface ThemeSettings {
     showReadingTime: boolean
     showWordCount: boolean
   }
+  copyrightStyle?: string
 }
 
 export interface HeroSettings {
@@ -68,34 +118,59 @@ export interface CommentFormSettings {
   showCookiesOptIn: boolean
 }
 
-export interface FooterLink {
-  label: string
-  url: string
+
+
+export interface SiteStats {
+  postCount: number
+  categoryCount: number
+  tagCount: number
+  shuoshuoCount: number
+  totalWordCount: number
+  commentCount: number
+  registeredDate: string
+  lastActivityDate: string
 }
 
-export interface CollectionSettings {
-  postsTitle: string
-  postsSubtitle: string
-  shuoshuoTitle: string
-  shuoshuoSubtitle: string
-  showShuoshuoSection: boolean
-  homePostCount: number
-  homeShuoshuoCount: number
-  shuoshuoPageSize: number
+export interface SocialLink {
+  label: string
+  url: string
+  icon: string
+  sidebarEnabled?: boolean
+}
+
+export interface CollectionsSettings {
+  postsTitle?: string
+  postsSubtitle?: string
+  shuoshuoTitle?: string
+  shuoshuoSubtitle?: string
+  showShuoshuoSection?: boolean
+  homePostCount?: number
+  homeShuoshuoCount?: number
+  shuoshuoPageSize?: number
+}
+
+export interface CurrentUser {
+  displayName: string
+  email: string
+  url: string
 }
 
 export interface SiteInfo {
   name: string
   description: string
   url: string
-  introTitle?: string
-  introSubtitle?: string
-  footerHtml?: string
-  footerLinks?: FooterLink[]
+  siteIcon?: string
   hero?: HeroSettings
   comments?: CommentFormSettings
   theme?: ThemeSettings
-  collections?: CollectionSettings
+  stats?: SiteStats
+  socialLinks?: SocialLink[]
+  loginUrl?: string
+  currentUser?: CurrentUser
+  icp?: string
+  icpGov?: string
+  endNote?: string
+  collections?: CollectionsSettings
 }
 
 export interface RenderedText {
@@ -104,6 +179,7 @@ export interface RenderedText {
 
 export interface WordPressPost {
   id: number
+  slug?: string
   date: string
   modified?: string
   link: string
@@ -134,6 +210,9 @@ export interface WordPressComment {
   parent: number
   date: string
   authorName: string
+  authorUrl: string
+  status?: string
+  avatar: string
   content: RenderedText
   likes: number
   metaInfo: CommentMetaInfo
@@ -148,6 +227,7 @@ export interface MenuItem {
   target: string
   description: string
   current: boolean
+  icon?: string
   children: MenuItem[]
 }
 
@@ -171,4 +251,29 @@ export interface ResolveResponse {
   permalink?: string
   restUrl?: string
   message?: string
+}
+
+export interface WordPressCategory {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface WordPressLink {
+  id: number
+  name: string
+  url: string
+  description: string
+  image: string
+  target: string
+  rating: number
+  notes: string
+}
+
+export interface WordPressLinkCategory {
+  id: number
+  name: string
+  slug: string
+  description: string
+  links: WordPressLink[]
 }

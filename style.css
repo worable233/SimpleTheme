@@ -1,19 +1,15 @@
 /*
 Theme Name: Simple Theme
+Theme URI: https://github.com/worable/simple-theme
 Author: worable
-Description: 基于 Vue 3、WordPress REST API 与 @knadh/oat 的轻量主题。
-Version: 1.0.0
-Text Domain: simple-theme
+Author URI: https://www.worable.top/
+Description: Vue 3 + OAT UI 驱动的轻量 WordPress 主题
+Requires at least: 6.0
+Tested up to: 6.7
+Requires PHP: 7.3
+Version: 2.0.0
 License: CC BY-NC-ND 4.0
 License URI: https://creativecommons.org/licenses/by-nc-nd/4.0/
+Text Domain: simple-theme
+Tags: one-column, custom-menu, theme-options, blog, responsive, translation-ready
 */
-
-/* Keep only the minimum shell styles here. Most front-end styles are provided by the Vite build output. */
-body.simple-theme-shell {
-  margin: 0;
-  min-height: 100vh;
-}
-
-#app {
-  min-height: 100vh;
-}

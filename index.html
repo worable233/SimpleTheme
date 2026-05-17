@@ -5,9 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Theme</title>
+    <script>
+      (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <script src="/oat.min.js" defer></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
