@@ -8,7 +8,7 @@
 
 - Vue 3 SPA 前端，TypeScript 编写
 - WordPress REST API 数据驱动
-- 自定义主题色（Material Design 3 配色体系）
+- 自定义主题色
 - 明/暗模式切换，localStorage 持久化
 - 响应式布局，移动端滑动侧栏
 - 自定义文章类型「说说」
@@ -69,21 +69,22 @@ npm run dev               # 无需 WordPress，使用 Mock 数据
 ### Vite 开发代理
 
 Vite 开发模式下自动代理 API 请求：
+
 - `/wp-json/*` → WordPress 后端
 - `/wp-content/uploads/*` → WordPress 上传目录
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 前端框架 | Vue 3 + TypeScript + Vue Router |
-| 构建工具 | Vite 6 |
-| CSS 框架 | [OAT UI](https://github.com/knadh/oat.css)（v0.5.x） |
-| HTTP 客户端 | Axios |
-| 后端 | WordPress REST API + 自定义 REST 路由 |
-| 插画 | [unDraw](https://undraw.co/)（SVG，仅打包使用的） |
-| 语法高亮 | Prism.js |
-| 包管理 | npm |
+| 层级        | 技术                                                 |
+| ----------- | ---------------------------------------------------- |
+| 前端框架    | Vue 3 + TypeScript + Vue Router                      |
+| 构建工具    | Vite 6                                               |
+| CSS 框架    | [OAT UI](https://github.com/knadh/oat.css)（v0.5.x） |
+| HTTP 客户端 | Axios                                                |
+| 后端        | WordPress REST API + 自定义 REST 路由                |
+| 插画        | [unDraw](https://undraw.co/)（SVG，仅打包使用的）    |
+| 语法高亮    | Prism.js                                             |
+| 包管理      | npm                                                  |
 
 ## 目录结构
 
