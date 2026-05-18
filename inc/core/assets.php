@@ -1,0 +1,181 @@
+<?php
+/**
+ * Asset Enqueuing (Frontend + Admin)
+ *
+ * @package SimpleTheme
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+// ========== Manifest & Version Helpers ==========
+
+define( 'SIMPLE_THEME_HANDLE', 'simple-theme-bundle' );
+
+function simple_theme_get_manifest() {
+	$manifest_file = get_theme_file_path( 'dist/.vite/manifest.json' );
+	if ( ! file_exists( $manifest_file ) ) {
+		return array();
+	}
+	$contents = file_get_contents( $manifest_file );
+	if ( false === $contents ) {
+		return array();
+	}
+	$decoded = json_decode( $contents, true );
+	return is_array( $decoded ) ? $decoded : array();
+}
+
+function simple_theme_get_asset_version( $relative_path ) {
+	$manifest = simple_theme_get_manifest();
+	foreach ( $manifest as $entry ) {
+		if ( isset( $entry['file'] ) && $entry['file'] === $relative_path ) {
+			return ! empty( $entry['version'] ) ? $entry['version'] : filemtime( get_theme_file_path( $relative_path ) );
+		}
+	}
+	return filemtime( get_theme_file_path( $relative_path ) );
+}
+
+// ========== Frontend Config (injected into page) ==========
+
+function simple_theme_get_frontend_config() {
+	$current_user = null;
+	$user = wp_get_current_user();
+	if ( $user->ID !== 0 ) {
+		$current_user = array(
+			'displayName' => $user->display_name,
+			'email'       => $user->user_email,
+			'url'         => $user->user_url,
+		);
+	}
+
+	$theme_options = get_option( 'simple_theme_options', array() );
+
+	return array(
+		'siteUrl'  => trailingslashit( site_url( '/' ) ),
+		'homeUrl'  => trailingslashit( home_url( '/' ) ),
+		'restRoot' => esc_url_raw( trailingslashit( rest_url() ) ),
+		'themeUrl' => get_theme_file_uri(),
+		'illustrationsUrl' => esc_url_raw( rest_url( 'simple-theme/v1/illustration/' ) ),
+		'routes'   => array(
+			'resolveUrl' => esc_url_raw( rest_url( 'simple-theme/v1/resolve-url' ) ),
+			'menusBase'  => esc_url_raw( rest_url( 'simple-theme/v1/navigation' ) ),
+			'siteInfo'   => esc_url_raw( rest_url( 'simple-theme/v1/site-info' ) ),
+			'collection' => esc_url_raw( rest_url( 'simple-theme/v1/collection' ) ),
+			'about'      => esc_url_raw( rest_url( 'simple-theme/v1/about' ) ),
+			'links'      => esc_url_raw( rest_url( 'simple-theme/v1/links' ) ),
+			'settings'   => esc_url_raw( rest_url( 'simple-theme/v1/settings' ) ),
+		),
+		'currentUser' => $current_user,
+		'restNonce'  => wp_create_nonce( 'wp_rest' ),
+		'features'   => array(
+			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
+		),
+	);
+}
+
+// ========== Frontend Assets ==========
+
+add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_assets' );
+function simple_theme_enqueue_assets() {
+	$manifest = simple_theme_get_manifest();
+
+	wp_enqueue_style(
+		'simple-theme-style',
+		get_stylesheet_uri(),
+		array(),
+		simple_theme_get_asset_version( 'style.css' )
+	);
+
+	if ( empty( $manifest['src/main.ts'] ) || empty( $manifest['src/main.ts']['file'] ) ) {
+		return;
+	}
+
+	$entry      = $manifest['src/main.ts'];
+	$script_uri = get_theme_file_uri( 'dist/' . ltrim( $entry['file'], '/' ) );
+	$script_ver = simple_theme_get_asset_version( 'dist/' . ltrim( $entry['file'], '/' ) );
+
+	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
+		foreach ( $entry['css'] as $index => $css_file ) {
+			$relative_css_path = 'dist/' . ltrim( $css_file, '/' );
+			wp_enqueue_style(
+				"simple-theme-bundle-{$index}",
+				get_theme_file_uri( $relative_css_path ),
+				array( 'simple-theme-style' ),
+				simple_theme_get_asset_version( $relative_css_path )
+			);
+		}
+	}
+
+	wp_enqueue_script(
+		SIMPLE_THEME_HANDLE,
+		$script_uri,
+		array(),
+		$script_ver,
+		true
+	);
+
+	wp_add_inline_script(
+		SIMPLE_THEME_HANDLE,
+		'window.SimpleThemeConfig = ' . wp_json_encode( simple_theme_get_frontend_config() ) . ';',
+		'before'
+	);
+
+	add_filter( 'script_loader_tag', function ( $tag, $handle, $src ) {
+		if ( SIMPLE_THEME_HANDLE === $handle ) {
+			return '<script type="module" src="' . esc_url( $src ) . '"></script>';
+		}
+		return $tag;
+	}, 10, 3 );
+}
+
+// ========== Admin Assets (Vue admin app) ==========
+
+add_action( 'admin_enqueue_scripts', 'simple_theme_enqueue_admin_assets' );
+function simple_theme_enqueue_admin_assets( $hook ) {
+	if ( 'toplevel_page_simple-theme' !== $hook ) {
+		return;
+	}
+
+	$manifest = simple_theme_get_manifest();
+	if ( empty( $manifest['src/admin/main.ts'] ) ) {
+		return;
+	}
+
+	$entry = $manifest['src/admin/main.ts'];
+
+	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
+		foreach ( $entry['css'] as $index => $css_file ) {
+			wp_enqueue_style(
+				'simple-theme-admin-bundle-' . $index,
+				get_theme_file_uri( 'dist/' . ltrim( $css_file, '/' ) ),
+				array(),
+				simple_theme_get_asset_version( 'dist/' . ltrim( $css_file, '/' ) )
+			);
+		}
+	}
+
+	if ( ! empty( $entry['file'] ) ) {
+		$admin_handle = 'simple-theme-admin-bundle';
+		wp_enqueue_script(
+			$admin_handle,
+			get_theme_file_uri( 'dist/' . ltrim( $entry['file'], '/' ) ),
+			array(),
+			simple_theme_get_asset_version( 'dist/' . ltrim( $entry['file'], '/' ) ),
+			true
+		);
+
+		wp_add_inline_script(
+			$admin_handle,
+			'window.SimpleThemeConfig = ' . wp_json_encode( simple_theme_get_frontend_config() ) . ';',
+			'before'
+		);
+
+		add_filter( 'script_loader_tag', function ( $tag, $handle, $src ) use ( $admin_handle ) {
+			if ( $admin_handle === $handle ) {
+				return '<script type="module" src="' . esc_url( $src ) . '"></script>';
+			}
+			return $tag;
+		}, 10, 3 );
+	}
+}

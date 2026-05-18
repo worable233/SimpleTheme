@@ -25,7 +25,7 @@ const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'd
       <div v-if="copyrightStyle !== 'none'" class="copyright">
         <p v-if="copyrightStyle === 'detailed'">Copyright © {{ currentYear }} {{ siteInfo.name }} All Rights Reserved.</p>
         <p v-else>{{ currentYear }} © {{ siteInfo.name }}.</p>
-        <p>Theme <a class="footer-theme-link" href="https://github.com/worable233/SimpleTheme" target="_blank" rel="noopener noreferrer">SimpleTheme</a>.</p>
+        <p v-if="siteInfo.theme?.showCredit !== false">Theme <a class="footer-theme-link" href="https://github.com/worable233/SimpleTheme" target="_blank" rel="noopener noreferrer">SimpleTheme</a>.</p>
       </div>
     </template>
   </div>

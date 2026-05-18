@@ -1,0 +1,74 @@
+/* ==================== Reset / Base ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: rgba(0 0 0 / 0);
+}
+
+html {
+  background-color: var(--background);
+  overflow-y: scroll;
+}
+
+body {
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+li {
+  list-style: none;
+}
+
+.oat-prose li,
+.single-post__body li {
+  list-style: revert;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  vertical-align: middle;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+::selection {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+kbd {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 0.8em;
+  line-height: 1.4;
+  padding: 0.15em 0.4em 0.1em;
+  margin: 0.1em;
+  background-color: var(--muted, rgba(128, 128, 128, 0.1));
+  color: var(--secondary);
+  border-radius: 0.2em;
+  box-shadow: inset 0 -0.15em 0 var(--muted, rgba(128, 128, 128, 0.1));
+  border: none;
+  vertical-align: middle;
+}

@@ -31,7 +31,18 @@ export default defineConfig({
     outDir: 'dist',
     manifest: true,
     rollupOptions: {
-      input: 'src/main.ts',
+      input: {
+        frontend: 'src/main.ts',
+        admin: 'src/admin/main.ts',
+      },
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('@fancyapps/ui')) return 'fancyapps-ui'
+          if (id.includes('prismjs')) return 'prismjs'
+        },
+      },
     },
+    minify: 'esbuild',
+    // esbuild 内置于 Vite，不需要额外依赖
   },
 })

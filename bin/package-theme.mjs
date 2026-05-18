@@ -56,15 +56,18 @@ const excludedNames = new Set([
   'UI-DESIGN-ANALYSIS.md', 'MATERIAL_DESIGN_GUIDE.md',
   '参考主题', '参考iEmo', '参考Sakurairo', 'iEmo-master.zip',
   'vendor',
-  '.vscode', '.idea', '.deepseek', '.learnings', '.atomcode', '.atomcode.md',
-  '_check.php', '_check-zip.mjs', '_check-zip-contents.ps1',
+  '.vscode', '.idea', '.deepseek', '.learnings', '.atomcode', 'includes', '.atomcode.md',
+  '_check.php', '_fix_admin.py', '_fix_loggedin.py', '_count_large.py',
+  '_check-zip.mjs', '_check-zip-contents.ps1',
   'bin/check-zip-contents.ps1',
+  'original_LinksView.vue', 'original_prose.css',
   'Simple-Theme-v1.0.0.zip', 'Simple-Theme-v2.0.0.zip',
+  '_zipcheck',
 ]);
 
 const alwaysExcludeDirs = new Set([
   'node_modules', '.git', '.claude', '.vscode', '.idea',
-  '.deepseek', '.learnings', '.atomcode',
+  '.deepseek', '.learnings', '.atomcode', 'includes',
 ]);
 
 let fileCount = 0;

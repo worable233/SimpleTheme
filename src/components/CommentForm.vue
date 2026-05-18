@@ -1,0 +1,1564 @@
+<script setup lang="ts">
+/**
+ * CommentForm — 评论输入表单（含 contenteditable 编辑器和表情面板）
+ */
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import EmojiPicker from '@/components/EmojiPicker.vue'
+import { renderToHtml } from '@/lib/emoji'
+import { fetchCaptcha } from '@/lib/api-comments'
+import type { CommentFormSettings, CaptchaData, UserData } from '@/types/wordpress'
+
+defineOptions({ name: 'CommentForm' })
+
+const props = defineProps<{
+  formSettings: CommentFormSettings
+  currentUser: UserData | null
+  loading?: boolean
+  submitting?: boolean
+  parentCommentId?: number
+}>()
+
+const emit = defineEmits<{
+  (e: 'submit', payload: {
+    name: string; email: string; url: string; content: string; cookies: boolean
+    captchaSeed?: string; captchaAnswer?: number
+    isPrivate?: boolean; mailNotify?: boolean; useMarkdown?: boolean
+  }): void
+  (e: 'cancel-reply'): void
+}>()
+
+const content = defineModel<string>('content', { default: '' })
+const authorName = defineModel<string>('name', { default: '' })
+const authorEmail = defineModel<string>('email', { default: '' })
+const authorUrl = defineModel<string>('url', { default: '' })
+const cookiesConsent = defineModel<boolean>('cookies', { default: false })
+
+const emojiOpen = ref(false)
+const emojiLeaving = ref(false)
+const emojiTab = ref<'bilibili' | 'tieba' | 'dinosaur' | 'kaomoji'>('bilibili')
+const editorRef = ref<HTMLDivElement | null>(null)
+const emojiPanelRef = ref<HTMLElement | null>(null)
+
+// Mobile bottom-sheet state
+const mobileExpanded = ref(false)
+const isMobile = ref(false)
+
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 600
+  if (!isMobile.value) mobileExpanded.value = false
+}
+
+function expandMobile() {
+  if (isMobile.value) {
+    if (props.currentUser || wizardCompleted.value) {
+      mobileExpanded.value = true
+    } else {
+      openWizard()
+    }
+  }
+}
+
+function collapseMobile() {
+  if (isMobile.value) {
+    mobileExpanded.value = false
+    emojiOpen.value = false
+    editorRef.value?.blur()
+  }
+}
+
+function onDocumentClick(e: MouseEvent) {
+  if (!isMobile.value || !mobileExpanded.value) return
+  const form = document.querySelector('.comments-form')
+  if (form && !form.contains(e.target as Node)) {
+    collapseMobile()
+  }
+}
+
+// ── Wizard modal state ──
+const wizardActive = ref(false)
+const wizardCompleted = ref(false)
+const wizardStep = ref<'name' | 'email' | 'url' | 'options'>('name')
+const wizardDirection = ref<'forward' | 'backward'>('forward')
+const wizardSteps = computed(() => {
+  const steps: { key: 'name' | 'email' | 'url' | 'options'; title: string; desc: string }[] = [
+    { key: 'name', title: '怎么称呼你？', desc: '输入你想显示的名称' },
+  ]
+  if (props.formSettings.showEmailField) {
+    steps.push({ key: 'email', title: '留下联系方式', desc: '输入邮箱或 QQ 号' })
+  }
+  if (props.formSettings.showUrlField) {
+    steps.push({ key: 'url', title: '你的网站', desc: '输入你的网站地址（可选）' })
+  }
+  steps.push({ key: 'options', title: '选项设置', desc: '设置发布选项并提交' })
+  return steps
+})
+const currentStepIndex = computed(() => wizardSteps.value.findIndex(s => s.key === wizardStep.value))
+const totalWizardSteps = computed(() => wizardSteps.value.length)
+const progressPercent = computed(() => {
+  if (totalWizardSteps.value <= 1) return 100
+  return (currentStepIndex.value / (totalWizardSteps.value - 1)) * 100
+})
+const isStepValid = computed(() => {
+  switch (wizardStep.value) {
+    case 'name': return authorName.value.trim().length > 0
+    case 'email': return props.formSettings.requireNameEmail ? authorEmail.value.trim().length > 0 : true
+    case 'url': return true
+    case 'options': return true
+    default: return true
+  }
+})
+
+// New form fields
+const captchaData = ref<CaptchaData | null>(null)
+const captchaAnswer = ref('')
+const isPrivate = ref(false)
+const mailNotify = ref(false)
+const useMarkdown = ref(true)
+
+// ── CAPTCHA ──
+onMounted(async () => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+  document.addEventListener('keydown', onWizardKeydown)
+  document.addEventListener('click', onDocumentClick, true)
+  if (props.formSettings.captchaEnabled) {
+    await loadCaptcha()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkMobile)
+  document.removeEventListener('keydown', onWizardKeydown)
+  document.removeEventListener('click', onDocumentClick, true)
+})
+
+async function loadCaptcha() {
+  try {
+    captchaData.value = await fetchCaptcha()
+  } catch {
+    captchaData.value = { question: '3 + 5 = ?', seed: 'fallback' }
+  }
+}
+
+// ── contenteditable 输入框 ──
+
+function extractPlainText(): string {
+  const el = editorRef.value
+  if (!el) return ''
+  let text = ''
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent
+    } else if (node instanceof HTMLImageElement) {
+      const type = node.dataset.type
+      const name = node.dataset.name
+      if (type === 'bili' && name) text += `{{${name}}}`
+      else if (type === 'tieba' && name) text += `::${name}::`
+      else if (type === 'dinosaur' && name) text += `#${name}#`
+    }
+  }
+  return text
+}
+
+function saveCursorOffset(): number {
+  const el = editorRef.value
+  const sel = window.getSelection()
+  if (!el || !sel || !sel.rangeCount) return 0
+  const range = sel.getRangeAt(0)
+  const container = range.startContainer
+  if (container === el) {
+    return rawOffsetUpToIndex(el, range.startOffset)
+  }
+  let pos = rawOffsetUpToNode(el, container)
+  if (container.nodeType === Node.TEXT_NODE) {
+    pos += range.startOffset
+  }
+  return pos
+}
+
+function rawOffsetUpToIndex(el: HTMLElement, index: number): number {
+  let pos = 0
+  for (let i = 0; i < index; i++) {
+    const node = el.childNodes[i]
+    if (!node) break
+    if (node.nodeType === Node.TEXT_NODE) {
+      pos += node.textContent?.length ?? 0
+    } else if (node instanceof HTMLImageElement) {
+      const type = node.dataset.type
+      const name = node.dataset.name
+      const mlen = name ? name.length + 4 : 0
+      pos += mlen
+    }
+  }
+  return pos
+}
+
+function rawOffsetUpToNode(el: HTMLElement, target: Node): number {
+  let pos = 0
+  for (const node of el.childNodes) {
+    if (node === target) break
+    if (node.nodeType === Node.TEXT_NODE) {
+      pos += node.textContent?.length ?? 0
+    } else if (node instanceof HTMLImageElement) {
+      const type = node.dataset.type
+      const name = node.dataset.name
+      const mlen = name ? name.length + 4 : 0
+      pos += mlen
+    }
+  }
+  return pos
+}
+
+function restoreCursorOffset(target: number) {
+  const el = editorRef.value
+  const sel = window.getSelection()
+  if (!el || !sel) return
+  let pos = 0
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_ALL, null)
+  while (walker.nextNode()) {
+    const n = walker.currentNode
+    if (n.nodeType === Node.TEXT_NODE) {
+      const len = n.textContent?.length ?? 0
+      if (pos + len >= target) {
+        const range = document.createRange()
+        range.setStart(n, Math.min(target - pos, len))
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        return
+      }
+      pos += len
+    } else if (n instanceof HTMLImageElement) {
+      const name = n.dataset.name
+      const mlen = name ? name.length + 4 : 0
+      if (pos + mlen >= target) {
+        const range = document.createRange()
+        range.setStartAfter(n)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        return
+      }
+      pos += mlen
+    }
+  }
+}
+
+function handleEditorInput() {
+  const el = editorRef.value
+  if (!el) return
+  const raw = extractPlainText()
+  content.value = raw
+  const html = renderToHtml(raw)
+  if (el.innerHTML !== html) {
+    const cursor = saveCursorOffset()
+    el.innerHTML = html
+    requestAnimationFrame(() => restoreCursorOffset(cursor))
+  }
+}
+
+function insertEmoji(text: string) {
+  const el = editorRef.value
+  if (!el) {
+    content.value += text
+    return
+  }
+  el.focus()
+  const cursor = saveCursorOffset()
+  const raw = extractPlainText()
+  const before = raw.substring(0, cursor)
+  const after = raw.substring(cursor)
+  const newRaw = before + text + after
+  content.value = newRaw
+  el.innerHTML = renderToHtml(newRaw)
+  const newCursor = cursor + text.length
+  requestAnimationFrame(() => restoreCursorOffset(newCursor))
+}
+
+function toggleEmoji() {
+  emojiOpen.value = !emojiOpen.value
+}
+
+function onEmojiBeforeLeave() {
+  emojiLeaving.value = true
+}
+
+function onEmojiAfterLeave() {
+  emojiLeaving.value = false
+}
+
+// ── Wizard modal functions ──
+
+function openWizard() {
+  wizardDirection.value = 'forward'
+  wizardStep.value = 'name'
+  emojiOpen.value = false
+  wizardActive.value = true
+}
+
+function closeWizard() {
+  wizardActive.value = false
+}
+
+function nextStep() {
+  const idx = currentStepIndex.value
+  if (idx < totalWizardSteps.value - 1) {
+    wizardDirection.value = 'forward'
+    wizardStep.value = wizardSteps.value[idx + 1]!.key
+  }
+}
+
+function prevStep() {
+  const idx = currentStepIndex.value
+  if (idx > 0) {
+    wizardDirection.value = 'backward'
+    wizardStep.value = wizardSteps.value[idx - 1]!.key
+  }
+}
+
+function finishWizard() {
+  wizardCompleted.value = true
+  wizardActive.value = false
+  mobileExpanded.value = true
+}
+
+function onWizardKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && wizardActive.value) {
+    closeWizard()
+  }
+}
+
+function focusWizardInput() {
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>('.wizard-step .comments-form__input')
+    el?.focus()
+  })
+}
+
+watch(wizardStep, () => {
+  focusWizardInput()
+})
+
+function clearForm() {
+  content.value = ''
+  if (editorRef.value) editorRef.value.innerHTML = ''
+  captchaAnswer.value = ''
+  isPrivate.value = false
+  mailNotify.value = false
+  useMarkdown.value = true
+  closeWizard()
+  collapseMobile()
+  if (props.formSettings.captchaEnabled) {
+    void loadCaptcha()
+  }
+}
+
+function handleSubmit() {
+  const payload: {
+    name: string; email: string; url: string; content: string; cookies: boolean
+    captchaSeed?: string; captchaAnswer?: number
+    isPrivate?: boolean; mailNotify?: boolean; useMarkdown?: boolean
+  } = {
+    name: authorName.value,
+    email: authorEmail.value,
+    url: authorUrl.value,
+    content: content.value,
+    cookies: cookiesConsent.value,
+    isPrivate: isPrivate.value,
+    mailNotify: mailNotify.value,
+    useMarkdown: useMarkdown.value,
+  }
+  if (props.formSettings.captchaEnabled && captchaData.value) {
+    payload.captchaSeed = captchaData.value.seed
+    payload.captchaAnswer = parseInt(captchaAnswer.value, 10)
+  }
+  emit('submit', payload)
+}
+
+defineExpose({ clearForm })
+</script>
+
+<template>
+
+  <form
+    class="comments-form"
+    :class="{
+      'comments-form--expanded': mobileExpanded,
+      'comments-form--emoji-open': isMobile && (emojiOpen || emojiLeaving),
+      'comments-form--mobile': isMobile
+    }"
+    @submit.prevent="handleSubmit"
+  >
+    <!-- Reply indicator -->
+    <div v-if="parentCommentId" class="comments-replying">
+      正在回复 <strong>#{{ parentCommentId }}</strong>
+      <button type="button" class="comments-replying__cancel" @click="emit('cancel-reply')">
+        取消
+      </button>
+    </div>
+
+    <!-- Input row: textarea + collapsed actions (inline on mobile) -->
+    <div class="comments-form__input-row">
+      <div
+        ref="editorRef"
+        contenteditable
+        class="comments-form__textarea"
+        :class="{
+          'comments-form__textarea--empty': !content,
+          'comments-form__textarea--collapsed': isMobile && !mobileExpanded
+        }"
+        :data-placeholder="parentCommentId ? '写下回复...' : '写下评论...'"
+        role="textbox"
+        @input="handleEditorInput"
+        @focus="expandMobile"
+        @click="expandMobile"
+      ></div>
+    </div>
+
+    <!-- Expandable section (above emoji panel on mobile) -->
+    <div class="comments-form__expandable" :class="{ 'comments-form__expandable--open': !isMobile || mobileExpanded }">
+      <div class="comments-form__expandable-inner">
+      <div v-if="currentUser" class="comments-form__logged-in">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>已登录为 <strong>{{ currentUser.displayName }}</strong></span>
+      </div>
+      <div v-else-if="!isMobile" class="comments-form__row">
+        <input
+          v-model="authorName"
+          type="text"
+          class="comments-form__input"
+          placeholder="昵称 *"
+          maxlength="40"
+          required
+        />
+        <input
+          v-if="formSettings.showEmailField"
+          v-model="authorEmail"
+          type="text"
+          class="comments-form__input"
+          placeholder="邮箱 * (支持 QQ 号)"
+          maxlength="80"
+          :required="formSettings.requireNameEmail"
+        />
+        <input
+          v-if="formSettings.showUrlField"
+          v-model="authorUrl"
+          type="url"
+          class="comments-form__input"
+          placeholder="网站"
+          maxlength="120"
+        />
+      </div>
+
+      <div class="comments-form__options">
+        <label v-if="formSettings.showPrivateOption !== false" class="comments-form__option" title="评论仅博主和你不见">
+          <input v-model="isPrivate" type="checkbox" />
+          悄悄话
+        </label>
+        <label v-if="parentCommentId" class="comments-form__option" title="有回复时邮件通知你">
+          <input v-model="mailNotify" type="checkbox" />
+          邮件提醒
+        </label>
+        <label v-if="formSettings.showMarkdownOption !== false && !isMobile" class="comments-form__option" title="启用 Markdown 格式">
+          <input v-model="useMarkdown" type="checkbox" />
+          Markdown
+        </label>
+        <label v-if="formSettings.showCookiesOptIn" class="comments-form__option" title="记住信息">
+          <input v-model="cookiesConsent" type="checkbox" />
+          记住信息
+        </label>
+      </div>
+
+      <div v-if="formSettings.captchaEnabled" class="comments-form__captcha">
+        <span class="comments-form__captcha-question">{{ captchaData?.question || '加载中...' }}</span>
+        <input
+          v-model="captchaAnswer"
+          type="number"
+          class="comments-form__input comments-form__captcha-input"
+          placeholder="验证码"
+          required
+        />
+      </div>
+
+      <div class="comments-form__footer">
+        <div class="comments-form__footer-right">
+          <!-- Desktop emoji panel (dropdown above toggle) -->
+          <div v-if="!isMobile && emojiOpen" ref="emojiPanelRef" class="emoji-panel-wrapper emoji-panel-wrapper--dropdown">
+            <EmojiPicker
+              v-model:tab="emojiTab"
+              @select="insertEmoji"
+            />
+          </div>
+          <button type="button" class="emoji-toggle-btn" @click="toggleEmoji" title="表情">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+              <line x1="9" y1="9" x2="9.01" y2="9" />
+              <line x1="15" y1="9" x2="15.01" y2="9" />
+            </svg>
+          </button>
+          <button type="submit" class="comments-form__submit" :disabled="submitting || loading">
+            {{ submitting ? '提交中...' : '发表评论' }}
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Mobile emoji panel (below expandable section) -->
+    <Transition name="emoji-slide" @before-leave="onEmojiBeforeLeave" @after-leave="onEmojiAfterLeave">
+      <div v-if="isMobile && emojiOpen" class="emoji-panel-wrapper emoji-panel-wrapper--inline">
+        <EmojiPicker
+          v-model:tab="emojiTab"
+          @select="insertEmoji"
+        />
+      </div>
+    </Transition>
+  </form>
+
+  <!-- Mobile wizard modal (Teleported) -->
+  <Teleport to="body">
+    <Transition name="wizard">
+      <div v-if="wizardActive" class="wizard-mask" @click="closeWizard">
+        <div class="wizard-modal" @click.stop>
+          <!-- Progress bar -->
+          <div class="wizard-progress-bar">
+            <div class="wizard-progress-bar__fill" :style="{ width: progressPercent + '%' }"></div>
+          </div>
+
+          <!-- Close button -->
+          <button type="button" class="wizard-close" @click="closeWizard" aria-label="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+
+          <!-- Step content with directional slide -->
+          <Transition
+            :name="wizardDirection === 'forward' ? 'wizard-slide-fwd' : 'wizard-slide-bwd'"
+            mode="out-in"
+          >
+            <div :key="wizardStep" class="wizard-step">
+              <!-- Step 1: name -->
+              <template v-if="wizardStep === 'name'">
+                <div class="wizard-step__icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <h3 class="wizard-step__title">怎么称呼你？</h3>
+                <p class="wizard-step__desc">输入你想显示的名称</p>
+                <div class="wizard-step__field">
+                  <input
+                    v-model="authorName"
+                    type="text"
+                    class="wizard-step__input"
+                    placeholder="输入昵称"
+                    maxlength="40"
+                    @keydown.enter.prevent="isStepValid && nextStep()"
+                  />
+                </div>
+              </template>
+
+              <!-- Step 2: email -->
+              <template v-else-if="wizardStep === 'email'">
+                <div class="wizard-step__icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <polyline points="2 4 12 13 22 4"/>
+                  </svg>
+                </div>
+                <h3 class="wizard-step__title">留下联系方式</h3>
+                <p class="wizard-step__desc">方便博主与你联系</p>
+                <div class="wizard-step__field">
+                  <input
+                    v-model="authorEmail"
+                    type="text"
+                    class="wizard-step__input"
+                    placeholder="输入邮箱或 QQ 号"
+                    maxlength="80"
+                    @keydown.enter.prevent="isStepValid && nextStep()"
+                  />
+                </div>
+              </template>
+
+              <!-- Step 3: url -->
+              <template v-else-if="wizardStep === 'url'">
+                <div class="wizard-step__icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                </div>
+                <h3 class="wizard-step__title">你的网站</h3>
+                <p class="wizard-step__desc">可选，点击头像时会用到</p>
+                <div class="wizard-step__field">
+                  <input
+                    v-model="authorUrl"
+                    type="url"
+                    class="wizard-step__input"
+                    placeholder="输入你的网站地址"
+                    maxlength="120"
+                    @keydown.enter.prevent="nextStep()"
+                  />
+                </div>
+              </template>
+
+              <!-- Step 4: options + finish -->
+              <template v-else>
+                <div class="wizard-step__icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </div>
+                <h3 class="wizard-step__title">选项设置</h3>
+                <p class="wizard-step__desc">配置你的发布偏好</p>
+                <div class="wizard-step__options">
+                  <label v-if="formSettings.showPrivateOption !== false" class="wizard-step__option">
+                    <input v-model="isPrivate" type="checkbox" class="wizard-step__checkbox" />
+                    <span class="wizard-step__option-text">
+                      <span class="wizard-step__option-label">悄悄话</span>
+                      <span class="wizard-step__option-hint">仅博主和你可见</span>
+                    </span>
+                  </label>
+                  <label v-if="parentCommentId" class="wizard-step__option">
+                    <input v-model="mailNotify" type="checkbox" class="wizard-step__checkbox" />
+                    <span class="wizard-step__option-text">
+                      <span class="wizard-step__option-label">邮件提醒</span>
+                      <span class="wizard-step__option-hint">有回复时通知你</span>
+                    </span>
+                  </label>
+                  <label v-if="formSettings.showMarkdownOption !== false" class="wizard-step__option">
+                    <input v-model="useMarkdown" type="checkbox" class="wizard-step__checkbox" />
+                    <span class="wizard-step__option-text">
+                      <span class="wizard-step__option-label">Markdown</span>
+                      <span class="wizard-step__option-hint">使用 Markdown 格式</span>
+                    </span>
+                  </label>
+                  <label v-if="formSettings.showCookiesOptIn" class="wizard-step__option">
+                    <input v-model="cookiesConsent" type="checkbox" class="wizard-step__checkbox" />
+                    <span class="wizard-step__option-text">
+                      <span class="wizard-step__option-label">记住信息</span>
+                      <span class="wizard-step__option-hint">保存昵称、邮箱等信息</span>
+                    </span>
+                  </label>
+                </div>
+                <div v-if="formSettings.captchaEnabled" class="wizard-step__captcha">
+                  <span class="wizard-step__captcha-question">{{ captchaData?.question || '加载中...' }}</span>
+                  <input
+                    v-model="captchaAnswer"
+                    type="number"
+                    class="wizard-step__input wizard-step__captcha-input"
+                    placeholder="验证码"
+                    required
+                  />
+                </div>
+              </template>
+            </div>
+          </Transition>
+
+          <!-- Navigation -->
+          <div class="wizard-nav">
+            <button
+              v-if="currentStepIndex > 0"
+              type="button"
+              class="wizard-nav__btn wizard-nav__btn--prev"
+              @click="prevStep"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+              </svg>
+              上一步
+            </button>
+            <div v-else></div>
+            <button
+              v-if="currentStepIndex < totalWizardSteps - 1"
+              type="button"
+              class="wizard-nav__btn wizard-nav__btn--next"
+              :disabled="!isStepValid"
+              @click="nextStep"
+            >
+              下一步
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+            <button
+              v-else
+              type="button"
+              class="wizard-nav__btn wizard-nav__btn--submit"
+              @click="finishWizard"
+            >
+              完成
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<style scoped>
+/* ── Desktop base styles ── */
+
+.comments-form {
+  position: relative;
+}
+
+.comments-form__textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 400px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  -webkit-user-modify: read-write-plaintext-only;
+}
+
+.comments-form__textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.comments-form__textarea--empty::before {
+  content: attr(data-placeholder);
+  color: var(--secondary, #999);
+  pointer-events: none;
+}
+
+.comments-form__logged-in {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.comments-form__row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comments-form__input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--foreground);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.comments-form__input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.comments-form__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.comments-form__option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.comments-form__option input {
+  margin: 0;
+}
+
+.comments-form__captcha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comments-form__captcha-question {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  padding: 5px 10px;
+  background: var(--muted);
+  border-radius: 4px;
+  user-select: none;
+}
+
+.comments-form__captcha-input {
+  max-width: 100px;
+}
+
+.comments-replying {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--accent);
+  border-radius: var(--radius-medium, 6px);
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.comments-replying__cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--secondary);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.comments-replying__cancel:hover {
+  color: var(--danger);
+  background: rgba(221, 36, 36, 0.08);
+}
+
+.comments-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.comments-form__footer-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comments-form__footer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comments-form__remember {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--secondary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.comments-form__submit {
+  font-size: 13px;
+  padding: 5px 16px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.comments-form__submit:hover {
+  opacity: 0.85;
+}
+
+.comments-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.emoji-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--secondary);
+  transition: all 0.15s;
+}
+
+.emoji-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.emoji-toggle-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.emoji-panel-wrapper {
+  position: relative;
+}
+
+/* ── Mobile layout (fixed bottom) ── */
+.comments-form--mobile {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--card);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px) 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ── Mobile bottom sheet (≤600px) ── */
+
+.comments-form__expandable {
+  /* Desktop: always fully visible */
+  max-height: none;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (min-width: 601px) {
+  .comments-form__expandable {
+    display: block;
+    overflow: visible;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .comments-form {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--card);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+    padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px) 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .comments-form--expanded {
+    max-height: 85vh;
+  }
+
+  .comments-form--emoji-open {
+    height: auto !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    max-height: 85vh;
+  }
+
+  .comments-form--emoji-open .emoji-panel-wrapper--inline {
+    height: 45vh;
+    max-height: 300px;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .comments-form--emoji-open .comments-form__input-row {
+    flex-shrink: 0;
+  }
+
+  .comments-form--emoji-open .comments-form__expandable {
+    flex-shrink: 0;
+    min-height: 0;
+  }
+
+  .comments-form--emoji-open > * {
+    margin: 0;
+  }
+
+  /* ── Handle bar ── */
+	  /* ── Input row: textarea + buttons in flex row ── */
+  .comments-form__input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 0;
+  }
+
+  /* ── Collapsed textarea: compact pill ── */
+  .comments-form__textarea--collapsed {
+    min-height: 36px;
+    max-height: 36px;
+    height: 36px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 4px 10px;
+    flex: 1;
+    border-radius: 18px;
+    margin-bottom: 0;
+    border: 1px solid var(--border);
+    background: var(--faint);
+    line-height: 26px;
+    font-size: 14px;
+  }
+
+  .comments-form__textarea--collapsed:focus {
+    border-color: var(--primary);
+  }
+
+  /* ── Expanded textarea: normal multi-line ── */
+  .comments-form--expanded .comments-form__input-row {
+    display: block;
+  }
+  .comments-form--expanded .comments-form__textarea {
+    min-height: 80px;
+    max-height: 200px;
+    white-space: pre-wrap;
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin: 6px 0 0;
+    width: auto;
+    flex: none;
+  }
+
+  /* ── Collapsed action buttons ── */
+  .comments-form__collapse-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .comments-form__collapse-actions .emoji-toggle-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .comments-form__collapse-actions .comments-form__submit {
+    padding: 7px 14px;
+    font-size: 13px;
+    border-radius: 18px;
+    white-space: nowrap;
+  }
+
+  /* ── Expandable section ── */
+  .comments-form__expandable {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.25s ease,
+                transform 0.25s ease;
+    pointer-events: none;
+  }
+
+  .comments-form__expandable--open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .comments-form__expandable-inner {
+    min-height: 0;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 2px 0;
+  }
+  .comments-form__expandable-inner > .comments-form__row {
+    flex: 0 0 100%;
+  }
+  .comments-form__expandable-inner > .comments-form__options {
+    flex: 1;
+    min-width: 0;
+  }
+  .comments-form__expandable-inner > .comments-form__captcha {
+    flex: 0 0 100%;
+  }
+  .comments-form__expandable-inner > .comments-form__footer {
+    margin-left: auto;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  /* Expanded form inner spacing */
+  .comments-form--expanded .comments-form__row {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .comments-form--expanded .comments-form__options {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .comments-form--expanded .comments-form__captcha {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .comments-form--expanded .comments-form__footer {
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-top: 10px;
+    padding-bottom: 4px;
+  }
+
+  .comments-form--expanded .comments-form__submit {
+    padding: 6px 18px;
+  }
+
+  /* ── Mobile emoji panel (inline inside form, full width) ── */
+  .emoji-panel-wrapper--inline {
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  /* Desktop emoji panel (dropdown): keep position:relative so .comments-emoji's
+     position:absolute;bottom:100% works above the toggle button.
+     Base .emoji-panel-wrapper { position: relative } handles this. */
+
+  /* Reply indicator spacing */
+  .comments-replying {
+    margin: 4px 12px 8px;
+  }
+}
+
+/* ── Emoji panel slide animation (mobile) ── */
+.emoji-slide-enter-active {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.emoji-slide-leave-active {
+  transition: all 0.2s ease;
+}
+.emoji-slide-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.emoji-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ── Wizard Modal (modern) ── */
+
+.wizard-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  padding: 16px;
+}
+
+.wizard-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: wizard-card-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes wizard-card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Progress bar ── */
+
+.wizard-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--border);
+  z-index: 1;
+}
+
+.wizard-progress-bar__fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Close button ── */
+
+.wizard-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: var(--muted);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary);
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.wizard-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wizard-close:hover {
+  background: var(--border);
+  color: var(--foreground);
+  transform: rotate(90deg);
+}
+
+/* ── Step content ── */
+
+.wizard-step {
+  padding: 28px 24px 20px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-step__icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  color: var(--primary);
+}
+
+.wizard-step__title {
+  font-size: 1.3rem;
+  font-weight: 650;
+  color: var(--foreground);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.wizard-step__desc {
+  font-size: 0.85rem;
+  color: var(--secondary);
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+
+.wizard-step__field {
+  /* Input wrapper */
+}
+
+.wizard-step__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--faint);
+  color: var(--foreground);
+  font-family: inherit;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.wizard-step__input:focus {
+  border-color: var(--primary);
+  background: var(--card);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.wizard-step__input::placeholder {
+  color: var(--secondary);
+  opacity: 0.6;
+}
+
+/* ── Options (step 4) ── */
+
+.wizard-step__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wizard-step__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--faint);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin: 0;
+}
+
+.wizard-step__option:hover {
+  background: var(--muted);
+}
+
+.wizard-step__checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.wizard-step__option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wizard-step__option-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.wizard-step__option-hint {
+  font-size: 12px;
+  color: var(--secondary);
+  opacity: 0.75;
+}
+
+/* ── Captcha ── */
+
+.wizard-step__captcha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wizard-step__captcha-question {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  padding: 8px 12px;
+  background: var(--muted);
+  border-radius: 8px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.wizard-step__captcha-input {
+  max-width: 110px;
+}
+
+/* ── Navigation ── */
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 24px 20px;
+  gap: 12px;
+}
+
+.wizard-nav__btn {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wizard-nav__btn--prev {
+  background: var(--muted);
+  color: var(--secondary);
+}
+
+.wizard-nav__btn--prev:hover {
+  background: var(--border);
+  color: var(--foreground);
+}
+
+.wizard-nav__btn--next {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  margin-left: auto;
+}
+
+.wizard-nav__btn--next:hover {
+  filter: brightness(1.1);
+}
+
+.wizard-nav__btn--next:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.wizard-nav__btn--submit {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 10px 24px;
+  margin-left: auto;
+}
+
+.wizard-nav__btn--submit:hover {
+  filter: brightness(1.1);
+}
+
+.wizard-nav__btn--submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* ── Transitions ── */
+
+/* Mask fade */
+.wizard-enter-active {
+  transition: opacity 0.25s ease;
+}
+
+.wizard-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.wizard-enter-from,
+.wizard-leave-to {
+  opacity: 0;
+}
+
+/* Slide forward: new from right, old to left */
+.wizard-slide-fwd-enter-active {
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wizard-slide-fwd-leave-active {
+  transition: all 0.18s ease;
+}
+
+.wizard-slide-fwd-enter-from {
+  opacity: 0;
+  transform: translateX(35px);
+}
+
+.wizard-slide-fwd-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* Slide backward: new from left, old to right */
+.wizard-slide-bwd-enter-active {
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wizard-slide-bwd-leave-active {
+  transition: all 0.18s ease;
+}
+
+.wizard-slide-bwd-enter-from {
+  opacity: 0;
+  transform: translateX(-35px);
+}
+
+.wizard-slide-bwd-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+/* ── Dark mode ── */
+
+:global(body.dark) .wizard-mask {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+:global(body.dark) .wizard-modal {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+:global(body.dark) .wizard-close {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark) .wizard-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+:global(body.dark) .wizard-step__option {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:global(body.dark) .wizard-step__option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark) .wizard-step__input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+</style>

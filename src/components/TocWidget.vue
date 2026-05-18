@@ -1,12 +1,12 @@
 <script setup lang="ts">
+/**
+ * TocWidget — 目录小部件（桌面端侧边栏 + 移动端浮动按钮/抽屉）
+ */
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToc, type TocItem } from '@/composables/useToc'
-
-interface TocNode extends TocItem {
-  children: TocNode[]
-  hasActive: boolean
-}
+import TocTree from './toc/TocTree.vue'
+import type { TocNode } from './toc/TocTree.vue'
 
 const { tocItems, activeId, clearToc } = useToc()
 const route = useRoute()
@@ -147,36 +147,11 @@ onMounted(() => {
         文章目录
       </div>
       <nav>
-        <template v-for="node in tocData" :key="node.id">
-          <div class="toc-item" :class="{ active: activeId === node.id, 'has-active': node.hasActive }">
-            <a
-              class="toc-link"
-              :class="{ active: activeId === node.id }"
-              :href="'#' + node.id"
-              @click.prevent="scrollToHeading(node.id)"
-            >{{ node.text }}</a>
-            <ol v-if="node.children.length > 0" class="toc-child">
-              <li v-for="child in node.children" :key="child.id" class="toc-item" :class="{ active: activeId === child.id, 'has-active': child.hasActive }">
-                <a
-                  class="toc-link"
-                  :class="{ active: activeId === child.id }"
-                  :href="'#' + child.id"
-                  @click.prevent="scrollToHeading(child.id)"
-                >{{ child.text }}</a>
-                <ol v-if="child.children.length > 0" class="toc-child">
-                  <li v-for="grandchild in child.children" :key="grandchild.id" class="toc-item" :class="{ active: activeId === grandchild.id, 'has-active': grandchild.hasActive }">
-                    <a
-                      class="toc-link"
-                      :class="{ active: activeId === grandchild.id }"
-                      :href="'#' + grandchild.id"
-                      @click.prevent="scrollToHeading(grandchild.id)"
-                    >{{ grandchild.text }}</a>
-                  </li>
-                </ol>
-              </li>
-            </ol>
-          </div>
-        </template>
+        <TocTree
+          :nodes="tocData"
+          :active-id="activeId"
+          @scroll-to="scrollToHeading"
+        />
       </nav>
     </div>
   </div>
@@ -209,24 +184,11 @@ onMounted(() => {
             <button class="toc-drawer__close" @click="isOpen = false">&times;</button>
           </div>
           <nav>
-            <template v-for="node in tocData" :key="node.id">
-              <div class="toc-item" :class="{ active: activeId === node.id, 'has-active': node.hasActive }">
-                <a
-                  class="toc-link" :class="{ active: activeId === node.id }"
-                  :href="'#' + node.id"
-                  @click.prevent="scrollToHeading(node.id)"
-                >{{ node.text }}</a>
-                <ol v-if="node.children.length > 0" class="toc-child">
-                  <li v-for="child in node.children" :key="child.id" class="toc-item" :class="{ active: activeId === child.id, 'has-active': child.hasActive }">
-                    <a
-                      class="toc-link" :class="{ active: activeId === child.id }"
-                      :href="'#' + child.id"
-                      @click.prevent="scrollToHeading(child.id)"
-                    >{{ child.text }}</a>
-                  </li>
-                </ol>
-              </div>
-            </template>
+            <TocTree
+              :nodes="tocData"
+              :active-id="activeId"
+              @scroll-to="scrollToHeading"
+            />
           </nav>
         </div>
       </div>
@@ -283,98 +245,6 @@ onMounted(() => {
   color: var(--primary);
 }
 
-/* ==================== TOC Navigation ==================== */
-.toc-content nav > ol,
-.toc-content ol {
-  margin: 0;
-  padding: 0;
-  padding-left: 0.25rem;
-  list-style: none;
-}
-
-.toc-content li,
-.toc-content ol li {
-  list-style: none;
-}
-
-.toc-content > ol {
-  padding-left: 0 !important;
-}
-
-/* ==================== TOC Item ==================== */
-.toc-item {
-  position: relative;
-}
-
-.toc-content .toc-child {
-  display: none;
-}
-
-.toc-content .toc-item.active .toc-child,
-.toc-content .toc-item.has-active .toc-child {
-  display: block;
-}
-
-/* ==================== TOC Link ==================== */
-.toc-link {
-  display: flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 8px;
-  border-left: 0 solid transparent;
-  border-radius: 12px;
-  color: var(--secondary);
-  font-size: 13px;
-  line-height: 24px;
-  text-decoration: none;
-  cursor: default;
-  transition: all 0.3s ease;
-  word-break: break-word;
-}
-
-/* Non-active: blurred with low opacity */
-.toc-link:not(.active) {
-  opacity: 0.6;
-  cursor: pointer;
-  filter: blur(1px);
-  transition: 0.3s;
-}
-
-/* Card hover: unblur all non-active links */
-.card-widget:hover .toc-link:not(.active) {
-  filter: blur(0);
-  opacity: 1;
-}
-
-/* Link hover: highlight bg */
-.toc-link:hover {
-  background: var(--accent);
-}
-.toc-link:hover:not(.active) {
-  color: var(--foreground);
-}
-
-/* Active heading */
-.toc-link.active {
-  opacity: 1;
-  filter: blur(0);
-  font-weight: 700;
-  font-size: 14px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--primary);
-}
-
-/* Child level indentation */
-.toc-child .toc-link {
-  padding-left: 1rem;
-  font-size: 12.5px;
-}
-.toc-child .toc-child .toc-link {
-  padding-left: 1.6rem;
-  font-size: 12px;
-}
-
 /* ==================== Mobile Floating Button ==================== */
 .toc-floating-btn {
   display: none;
@@ -403,7 +273,6 @@ onMounted(() => {
   width: 100%;
   height: 100%;
 }
-
 
 /* ==================== Mobile Drawer (Teleported) ==================== */
 .toc-drawer-overlay {
@@ -484,5 +353,4 @@ onMounted(() => {
     display: block;
   }
 }
-
 </style>

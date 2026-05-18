@@ -2,9 +2,16 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const isVisible = ref(false)
+let ticking = false
 
 function onScroll() {
-  isVisible.value = window.scrollY > 300
+  if (!ticking) {
+    ticking = true
+    requestAnimationFrame(() => {
+      isVisible.value = window.scrollY > 300
+      ticking = false
+    })
+  }
 }
 
 function scrollToTop() {

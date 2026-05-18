@@ -1,0 +1,91 @@
+/* ==================== Custom Theme Variables ==================== */
+:root {
+  --page-width: 75rem;
+  --font-sans-serif:
+    'MiSans VF', 'OPPO Sans', 'SF Pro SC', HarmonyOS_Regular, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Noto Sans', 'Microsoft Yahei',
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --hero-top-offset: clamp(5.5rem, 8vw, 7rem);
+  --article-max-width: 900px;
+  --hero-overlay-opacity: 0.34;
+  --container-max: 1400px;
+  --container-pad: 2rem;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-full: 9999px;
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
+  --blur-lg: 12px;
+  --font-semibold: 600;
+  --transition: 0.3s ease;
+  --transition-fast: 0.15s ease;
+  --space-12: 3rem;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --theme-color: #333;
+  --theme-op-3: rgba(255 255 255 / 0.3);
+  --post-cover: #00000000;
+  --scroll: rgba(0 0 0 / 0.2);
+  --title-color: rgba(0 0 0 / 0.1);
+  --menu-hover: #f5f5f5;
+  --social-hover: #fff;
+  --theme-bak: #333;
+  --code-bgc: rgba(0 0 0 / 0.05);
+  --background: #f5f6f7;
+  --foreground: #333;
+  --card: #ffffff;
+  --card-foreground: #333;
+  --primary: #333;
+  --primary-foreground: #fff;
+  --secondary: #999;
+  --secondary-foreground: #333;
+  --muted: #f5f5f5;
+  --muted-foreground: #999;
+  --faint: #fafafa;
+  --faint-foreground: #999;
+  --accent: #f5f5f5;
+  --accent-foreground: #333;
+  --border: #e2e2e2;
+  --input: #e2e2e2;
+  --ring: #333;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --theme-color: #e0e0e0;
+  --theme-op-3: rgba(0 0 0 / 0.3);
+  --post-cover: #00000000;
+  --scroll: rgba(255 255 255 / 0.2);
+  --title-color: rgba(255 255 255 / 0.1);
+  --menu-hover: #2a2a2a;
+  --social-hover: #1a1a1a;
+  --theme-bak: #e0e0e0;
+  --code-bgc: rgba(255 255 255 / 0.05);
+  --background: #1a1a1a;
+  --foreground: #e0e0e0;
+  --card: #222;
+  --card-foreground: #e0e0e0;
+  --primary: #e0e0e0;
+  --primary-foreground: #1a1a1a;
+  --secondary: #999;
+  --secondary-foreground: #e0e0e0;
+  --muted: #2a2a2a;
+  --muted-foreground: #999;
+  --faint: #252525;
+  --faint-foreground: #999;
+  --accent: #2a2a2a;
+  --accent-foreground: #e0e0e0;
+  --border: #333;
+  --input: #333;
+  --ring: #e0e0e0;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+}

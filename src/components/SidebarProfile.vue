@@ -9,6 +9,8 @@ defineEmits<{
 
 const { siteInfo, shellLoading } = useSiteShell()
 
+const noToggle = defineModel<boolean>('noToggle', { default: false })
+
 const avatarUrl = computed(() => siteInfo.value.hero?.avatar || '')
 const showAvatar = computed(() => siteInfo.value.hero?.showAvatar || false)
 const siteName = computed(() => siteInfo.value.name || '')
@@ -94,7 +96,7 @@ function socialIconHtml(icon: string): string {
           <div><i>最后活动</i><span>{{ daysAgo(stats.lastActivityDate) }}</span></div>
         </div>
 
-        <div class="aside-btn-open" @click="$emit('toggle-sub')">
+        <div v-if="!noToggle" class="aside-btn-open" @click="$emit('toggle-sub')">
           查看更多
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
         </div>

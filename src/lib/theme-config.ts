@@ -15,6 +15,7 @@ const fallbackConfig: SimpleThemeConfig = {
     collection: `${origin}/wp-json/simple-theme/v1/collection`,
     about: `${origin}/wp-json/simple-theme/v1/about`,
     links: `${origin}/wp-json/simple-theme/v1/links`,
+	  settings: `${origin}/wp-json/simple-theme/v1/settings`,
   },
 }
 

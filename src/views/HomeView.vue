@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, fetchCategories, getErrorMessage } from '@/lib/wordpress'
 import { mockFetchCollection, mockFetchCategories, shouldUseMock } from '@/lib/mock-api'
+import { withCache } from '@/lib/api-cache'
 import { toInternalPath } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
 import type { WordPressPost, WordPressCategory } from '@/types/wordpress'
@@ -80,7 +81,7 @@ function resetPagination() {
 async function loadCategories() {
   try {
     const useMock = shouldUseMock()
-    const cats = useMock ? await mockFetchCategories() : await fetchCategories()
+    const cats = useMock ? await mockFetchCategories() : await withCache(fetchCategories, 'categories')()
     categories.value = cats
   } catch {
     // silently fail — categories are optional

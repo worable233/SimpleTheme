@@ -1,18 +1,37 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 
 const progress = ref(0)
+const displayProgress = ref(0)
 const isVisible = ref(false)
+const ticking = ref(false)
 
+// RAF 节流的滚动处理：仅在浏览器绘制帧内更新，避免布局抖动
 function updateProgress() {
-  const scrollTop = window.scrollY
-  const docHeight = document.documentElement.scrollHeight - window.innerHeight
-  const scrollPercent = scrollTop / docHeight
-  progress.value = Math.round(scrollPercent * 100)
-  
-  // 当滚动超过 5% 时显示进度条
-  isVisible.value = scrollPercent > 0.05
+  if (ticking.value) return
+  ticking.value = true
+
+  requestAnimationFrame(() => {
+    const scrollTop = window.scrollY
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight
+    const scrollPercent = scrollTop / docHeight
+    progress.value = Math.round(scrollPercent * 100)
+    
+    // 当滚动超过 5% 时显示进度条
+    isVisible.value = scrollPercent > 0.05
+
+    ticking.value = false
+  })
 }
+
+// 对 stroke-dashoffset 做防抖，减少重绘频率
+let dashDebounce: ReturnType<typeof setTimeout> | null = null
+watch(progress, (val) => {
+  if (dashDebounce) clearTimeout(dashDebounce)
+  dashDebounce = setTimeout(() => {
+    displayProgress.value = val
+  }, 50)
+})
 
 onMounted(() => {
   window.addEventListener('scroll', updateProgress, { passive: true })
@@ -21,13 +40,14 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', updateProgress)
+  if (dashDebounce) clearTimeout(dashDebounce)
 })
 
 const strokeWidth = 3
 const radius = 16
 const circumference = 2 * Math.PI * radius
 const strokeDashoffset = computed(() => {
-  return circumference - (progress.value / 100) * circumference
+  return circumference - (displayProgress.value / 100) * circumference
 })
 </script>
 

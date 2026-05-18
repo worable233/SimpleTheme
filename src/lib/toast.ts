@@ -1,3 +1,13 @@
+declare global {
+  interface Window {
+    ot?: {
+      toast: {
+        el: (el: HTMLElement, opts: { placement: string; duration: number }) => HTMLElement | null
+      }
+    }
+  }
+}
+
 // --- SVG icons (Semi Design style) ---
 const ICONS: Record<string, string> = {
   success:
@@ -61,7 +71,7 @@ export function showToast(
   title?: string,
   options?: { variant?: string; placement?: string; duration?: number },
 ) {
-  const ot = (window as any).ot
+  const ot = window.ot
   if (!ot?.toast) return
 
   const { variant = 'info', placement = 'bottom-center', duration = 4000 } = options || {}
@@ -103,7 +113,7 @@ export function dismissToast(toastEl: HTMLElement | null | undefined) {
 }
 
 export function showLoadingToast(message: string, title: string) {
-  const ot = (window as any).ot
+  const ot = window.ot
   if (!ot?.toast) return null
 
   const el = createToastElement(message, title, 'loading')

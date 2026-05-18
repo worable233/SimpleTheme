@@ -10,6 +10,7 @@ import {
   trackPostView,
 } from '@/lib/wordpress'
 import { mockResolveThemePath, mockFetchContentByRestUrl, shouldUseMock } from '@/lib/mock-api'
+import { withCache, clearAllCache } from '@/lib/api-cache'
 import { showError } from '@/lib/toast'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'
@@ -110,7 +111,10 @@ const loadCurrentContent = async () => {
 
   try {
     const useMock = shouldUseMock()
-    const resolved = await (useMock ? mockResolveThemePath(route.path) : resolveThemePath(route.path))
+    const cachedResolve = useMock
+      ? mockResolveThemePath
+      : withCache(resolveThemePath, `resolve:${route.path}`, 30_000)
+    const resolved = await cachedResolve(route.path)
     contentType.value = resolved.type
 
     if (
@@ -198,8 +202,8 @@ watch(
       description="抱歉，页面暂时无法加载，请稍后重试。"
     />
 
-    <!-- Loading skeleton -->
-    <article v-if="loading" class="single-post">
+    <!-- Loading skeleton (only for non-special pages; special pages like links/about have their own skeleton) -->
+    <article v-if="loading && !specialPageComponent" class="single-post">
       <!-- Cover skeleton (350px banner with title/meta overlay) -->
       <div class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
         <div class="single-post__cover-info">

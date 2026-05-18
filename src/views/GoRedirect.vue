@@ -29,7 +29,7 @@ const displayUrl = computed(() => {
 const countdown = ref(5)
 const isRedirecting = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
-let countdownToast: HTMLElement | null = null
+let countdownToast: HTMLElement | undefined
 
 function doRedirect() {
   if (isRedirecting.value) return

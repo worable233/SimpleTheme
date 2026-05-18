@@ -1,0 +1,333 @@
+<script setup lang="ts">
+/**
+ * CategoryModal — 分类详情弹窗（含文章列表）
+ */
+import { ref, watch, nextTick } from 'vue'
+import type { RenderedText } from '@/types/wordpress'
+
+interface PostWithMeta {
+  id: number
+  link: string
+  title: RenderedText | { rendered: string }
+  date: string
+  displayDate: string
+}
+
+const props = defineProps<{
+  show: boolean
+  name: string
+  posts: PostWithMeta[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+
+const modalLoading = ref(false)
+
+watch(() => props.show, (val) => {
+  if (val) {
+    modalLoading.value = true
+    nextTick(() => setTimeout(() => { modalLoading.value = false }, 350))
+  }
+})
+
+function onMaskClick(e: MouseEvent) {
+  if ((e.target as HTMLElement).classList.contains('modal-mask')) {
+    emit('close')
+  }
+}
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="show && name"
+        class="modal-mask"
+        @click="onMaskClick"
+      >
+        <div class="timeline-modal" @click.stop>
+          <button class="modal-close" @click="emit('close')" aria-label="按 ESC 关闭">ESC</button>
+          <div class="modal-content">
+            <div v-if="modalLoading" class="modal-skeleton">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-post" v-for="n in 4" :key="n"></div>
+            </div>
+            <div v-else class="modal-content-inner">
+              <div class="category-modal-header">
+                <h2 class="modal-title" style="margin:0;">{{ name }}</h2>
+              </div>
+              <div class="modal-post-list">
+                <a
+                  v-for="post in posts"
+                  :key="post.id"
+                  :href="post.link"
+                  class="modal-post-item"
+                >
+                  <span class="modal-post-title">{{ (post.title as RenderedText).rendered }}</span>
+                  <span class="modal-post-date">{{ post.displayDate }}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<style scoped>
+/* ===== Modal Shared ===== */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.timeline-modal {
+  background: var(--card, rgba(255,255,255,0.98));
+  border-radius: var(--radius-large, 8px);
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+}
+
+.timeline-modal .modal-content {
+  max-height: calc(85vh - 4rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  margin-right: -6px;
+}
+
+.timeline-modal::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.timeline-modal::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.timeline-modal::-webkit-scrollbar-thumb {
+  background: var(--border, rgba(0,0,0,0.15));
+  border-radius: 3px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  min-width: 3rem;
+  height: 1.8rem;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-small, 4px);
+  border: 1px solid var(--border, rgba(0,0,0,0.15));
+  background: var(--surface, rgba(0,0,0,0.03));
+  color: var(--foreground, #666);
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 0 var(--border, rgba(0,0,0,0.12));
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-close:hover {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--border, rgba(0,0,0,0.12));
+  background: var(--border, rgba(0,0,0,0.06));
+  color: var(--foreground, #222);
+}
+
+.modal-close:active {
+  transform: translateY(2px) scale(0.96);
+  box-shadow: none;
+}
+
+.modal-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--foreground, #222);
+  margin: 0 0 1.5rem;
+}
+
+/* ===== Transitions ===== */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-enter-active .timeline-modal,
+.modal-leave-active .timeline-modal {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+}
+
+.modal-enter-from .timeline-modal,
+.modal-leave-to .timeline-modal {
+  transform: translateY(24px);
+  opacity: 0;
+}
+
+/* ===== Category Header ===== */
+.category-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #eee);
+}
+
+/* ===== Post List ===== */
+.modal-post-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.modal-post-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.8rem;
+  background: var(--border, rgba(0,0,0,0.03));
+  border: 1px solid var(--border, rgba(0,0,0,0.06));
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(1) { animation-delay: 0.15s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(2) { animation-delay: 0.22s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(3) { animation-delay: 0.29s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(4) { animation-delay: 0.36s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(5) { animation-delay: 0.43s; }
+
+.modal-post-item:hover {
+  background: var(--border, rgba(0,0,0,0.05));
+  transform: translateX(6px) scale(1.005);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.modal-post-title {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--foreground, #222);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal-post-date {
+  font-size: 0.8rem;
+  color: var(--foreground, #999);
+  background: var(--border, rgba(0,0,0,0.03));
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ===== Skeleton ===== */
+.modal-skeleton {
+  padding: 2rem;
+  animation: skeletonPulse 2.2s ease-in-out infinite;
+}
+
+.skeleton-title {
+  height: 32px;
+  width: 200px;
+  background: var(--skeleton-bg, rgba(128,128,128,0.15));
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-post {
+  height: 20px;
+  width: 100%;
+  background: var(--skeleton-bg, rgba(128,128,128,0.15));
+  border-radius: var(--radius-xs, 4px);
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-post:last-child {
+  width: 75%;
+}
+
+/* ===== Slide In ===== */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .timeline-modal {
+    max-height: 82vh;
+    padding: 1.5rem;
+  }
+}
+
+/* ===== Dark Mode ===== */
+:global(body.dark) .timeline-modal {
+  background: rgba(25,25,25,0.98);
+  border-color: rgba(255,255,255,0.08);
+}
+
+:global(body.dark) .modal-title {
+  color: rgba(255,255,255,0.9);
+}
+
+:global(body.dark) .modal-post-item {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.06);
+}
+
+:global(body.dark) .modal-post-item:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+}
+
+:global(body.dark) .modal-post-title {
+  color: rgba(255,255,255,0.9);
+}
+
+:global(body.dark) .modal-post-date {
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.08);
+}
+
+:global(body.dark) .category-modal-header {
+  border-bottom-color: #333;
+}
+</style>

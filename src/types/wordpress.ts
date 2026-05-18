@@ -11,8 +11,13 @@ export interface SimpleThemeConfig {
     collection: string
     about: string
     links: string
+    settings: string
   }
   currentUser?: CurrentUser | null
+  restNonce?: string
+  features?: {
+    prismHighlight: boolean
+  }
 }
 
 // ----- About Page Types -----
@@ -94,6 +99,8 @@ export interface ThemeSettings {
     showWordCount: boolean
   }
   copyrightStyle?: string
+  showCredit?: boolean
+  prismEnabled?: boolean
 }
 
 export interface HeroSettings {
@@ -116,6 +123,9 @@ export interface CommentFormSettings {
   showEmailField: boolean
   showUrlField: boolean
   showCookiesOptIn: boolean
+  captchaEnabled?: boolean
+  showPrivateOption?: boolean
+  showMarkdownOption?: boolean
 }
 
 
@@ -147,6 +157,12 @@ export interface CollectionsSettings {
   homePostCount?: number
   homeShuoshuoCount?: number
   shuoshuoPageSize?: number
+}
+
+export interface UserData {
+  displayName: string
+  email?: string
+  url?: string
 }
 
 export interface CurrentUser {
@@ -210,6 +226,7 @@ export interface WordPressComment {
   parent: number
   date: string
   authorName: string
+  authorEmail: string
   authorUrl: string
   status?: string
   avatar: string
@@ -217,6 +234,25 @@ export interface WordPressComment {
   likes: number
   metaInfo: CommentMetaInfo
   children: WordPressComment[]
+  isPinned?: boolean
+  isPrivate?: boolean
+  canEdit?: boolean
+  useMarkdown?: boolean
+  canPin?: boolean
+  qqAvatar?: string
+}
+
+export interface CommentsResponse {
+  items: WordPressComment[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
+}
+
+export interface CaptchaData {
+  question: string
+  seed: string
 }
 
 export interface MenuItem {
