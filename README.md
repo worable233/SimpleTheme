@@ -3,6 +3,7 @@
 **Vue 3 + OAT UI + WordPress REST API 驱动的轻量 WordPress 主题**
 
 一款基于 Vue 3 单页应用架构的 WordPress 主题，前端渲染完全由 Vue 3 处理，通过 WordPress REST API 获取数据。使用 [OAT UI](https://github.com/knadh/oat.css) 作为 CSS 工具库，支持自定义主题色、明暗切换、响应式布局。
+目前正在开发ver2.0.0版本，待测试完成后再发布。
 
 ## 特性
 
@@ -140,15 +141,15 @@ template_include 钩子（优先级 99）
 
 ### 支持情况
 
-| 功能 | 状态 |
-|------|------|
-| 搜索引擎索引（Google、Bing、Baidu 等） | ✅ 全文静态 HTML |
-| Yoast SEO / Rank Math / SEOPress 等插件 | ✅ 完整兼容 |
-| `robots.txt` & `sitemap.xml` | ✅ WordPress 核心 + SEO 插件原生处理 |
-| Open Graph / Twitter Card | ✅ 由已安装的 SEO 插件输出 |
-| 结构化数据 (JSON-LD) | ✅ 由已安装的 SEO 插件输出 |
-| 页面标题 (`<title>`) | ✅ `wp_head()` 传递，SEO 插件控制 |
-| `canonical` URL | ✅ 由已安装的 SEO 插件输出 |
+| 功能                                    | 状态                                 |
+| --------------------------------------- | ------------------------------------ |
+| 搜索引擎索引（Google、Bing、Baidu 等）  | ✅ 全文静态 HTML                     |
+| Yoast SEO / Rank Math / SEOPress 等插件 | ✅ 完整兼容                          |
+| `robots.txt` & `sitemap.xml`            | ✅ WordPress 核心 + SEO 插件原生处理 |
+| Open Graph / Twitter Card               | ✅ 由已安装的 SEO 插件输出           |
+| 结构化数据 (JSON-LD)                    | ✅ 由已安装的 SEO 插件输出           |
+| 页面标题 (`<title>`)                    | ✅ `wp_head()` 传递，SEO 插件控制    |
+| `canonical` URL                         | ✅ 由已安装的 SEO 插件输出           |
 
 ### 爬虫识别范围
 
