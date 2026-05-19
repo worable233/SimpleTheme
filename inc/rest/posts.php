@@ -15,9 +15,31 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 	$term_id  = (int) ( $request->get_param( 'termId' ) ?: 0 );
 	$page     = (int) ( $request->get_param( 'page' ) ?: 1 );
 	$limit    = (int) ( $request->get_param( 'limit' ) ?: 0 );
+	$type     = $request->get_param( 'type' );
 
 	if ( $taxonomy && $term_id > 0 ) {
 		return simple_theme_get_home_posts( $request );
+	}
+
+	// If type is 'shuoshuo', query only shuoshuo posts (e.g. /shuoshuo page)
+	if ( 'shuoshuo' === $type ) {
+		$shuoshuo_limit = $limit > 0 ? $limit : 12;
+		$shuoshuo_posts = get_posts( array(
+			'post_type'      => 'shuoshuo',
+			'posts_per_page' => $shuoshuo_limit,
+			'paged'          => max( 1, $page ),
+			'post_status'    => 'publish',
+			'ignore_sticky_posts' => true,
+		) );
+		$total_shuoshuo  = (int) wp_count_posts( 'shuoshuo' )->publish;
+
+		return new WP_REST_Response( array(
+			'items'      => array_map( 'simple_theme_format_post_item', $shuoshuo_posts ),
+			'total'      => $total_shuoshuo,
+			'totalPages' => $shuoshuo_limit > 0 ? max( 1, (int) ceil( $total_shuoshuo / $shuoshuo_limit ) ) : 1,
+			'page'       => max( 1, $page ),
+			'perPage'    => $shuoshuo_limit,
+		), 200 );
 	}
 
 	$theme_options = get_option( 'simple_theme_options', array() );
