@@ -28,13 +28,13 @@ const formatDate = (dateString: string) =>
     </header>
 
     <!-- Term loading -->
-    <div v-if="termPostsLoading">
-      <div style="padding: var(--space-4); background: var(--card); border-radius: var(--radius-large, 12px); border: 1px solid var(--border);">
-        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-          <div role="status" class="skeleton line"></div>
-          <div role="status" class="skeleton line"></div>
-          <div role="status" class="skeleton line" style="width: 50%;"></div>
+    <div v-if="termPostsLoading" class="post-list">
+      <div v-for="i in 3" :key="'sk-term-' + i" class="post-card-skeleton">
+        <div class="post-card-skeleton__text">
+          <div class="skeleton-line w-70"></div>
+          <div class="skeleton-line w-50"></div>
         </div>
+        <div class="post-card-skeleton__cover"></div>
       </div>
     </div>
 
@@ -55,19 +55,35 @@ const formatDate = (dateString: string) =>
     />
 
     <!-- Term posts -->
-    <div v-else class="post-list post-list--two">
-      <article v-for="post in termPosts" :key="post.id" style="overflow: hidden; padding: 0; background: var(--card); border-radius: var(--radius-large, 12px); border: 1px solid var(--border);">
-        <div style="padding: var(--space-4);">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: var(--space-2);">
-            <span class="badge" data-variant="secondary">{{ post.categories?.[0] || '文章' }}</span>
-            <time class="text-light" style="font-size: var(--text-8);" :datetime="post.date">{{ formatDate(post.date) }}</time>
-          </div>
-          <h3 style="margin: 0 0 var(--space-1); font-size: var(--text-5);" v-html="post.title.rendered"></h3>
-          <div class="text-light" style="font-size: var(--text-7); line-height: 1.6; margin-bottom: var(--space-3);" v-html="post.excerpt?.rendered"></div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <RouterLink :to="toInternalPath(post.link)" class="button small">阅读全文</RouterLink>
-            <a :href="post.link" class="button ghost small">原始链接</a>
-          </div>
+    <div v-else class="post-list">
+      <article v-for="post in termPosts" :key="post.id" class="post-card">
+        <!-- Text content: left side -->
+        <div class="post-card__text">
+          <h2 class="post-card__title">
+            <router-link
+              :to="toInternalPath(post.link)"
+              v-html="post.title.rendered"
+            ></router-link>
+          </h2>
+          <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
+        </div>
+
+        <!-- Cover: right side -->
+        <div v-if="post.featuredImage" class="post-card__cover-wrap">
+          <router-link
+            :to="toInternalPath(post.link)"
+            :aria-label="post.title.rendered"
+            class="post-card__cover-link"
+          >
+            <img :src="post.featuredImage" alt="" loading="lazy" class="post-card__cover" />
+          </router-link>
+        </div>
+
+        <!-- Meta badge — top-right overlay -->
+        <div :class="['post-card__meta', { 'post-card__meta--bare': !post.featuredImage }]">
+          <time :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
+          <span v-if="post.readingTime" class="post-card__meta-item">{{ post.readingTime }} 分钟</span>
+          <span v-if="post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
         </div>
       </article>
     </div>
