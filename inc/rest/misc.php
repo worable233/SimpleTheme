@@ -319,7 +319,7 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		);
 		$rest_base = $rest_base_map[ $post->post_type ] ?? $post->post_type . 's';
 		return new WP_REST_Response( array(
-			'type'      => 'post',
+			'type'      => $post->post_type,
 			'id'        => $post->ID,
 			'name'      => $post->post_name,
 			'permalink' => get_permalink( $post ),

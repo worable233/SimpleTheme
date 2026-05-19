@@ -164,7 +164,7 @@ function simple_theme_format_post_item( WP_Post $post ) {
 		'modified'       => $post->post_modified,
 		'featuredImage'  => $featured,
 		'excerpt'        => array(
-			'rendered' => has_excerpt( $post ) ? get_the_excerpt( $post ) : '',
+			'rendered' => get_the_excerpt( $post ),
 		),
 		'categories'     => wp_get_post_terms( $post->ID, 'category', array( 'fields' => 'names' ) ),
 		'tags'           => wp_get_post_terms( $post->ID, 'post_tag', array( 'fields' => 'names' ) ),

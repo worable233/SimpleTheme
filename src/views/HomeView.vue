@@ -343,6 +343,11 @@ async function loadPage(pageNum: number) {
   animation: slideIn 0.4s ease both;
 }
 
+/* Top gap for loading-more skeleton */
+.post-list--append {
+  margin-top: 1.5rem;
+}
+
 /* Sentinel — invisible trigger for IntersectionObserver */
 .scroll-sentinel {
   height: 1px;

@@ -51,10 +51,6 @@ __screenshots__/
 参考Sakurairo/
 参考iEmo/
 
-# AI project context (keep tracked)
-# .atomcode.md — project instructions for AI
-# .learnings/ — AI learnings
-
 # Env files
 .env.docker
 .env.production
@@ -63,4 +59,14 @@ __screenshots__/
 Simple-Theme-v*.zip
 
 vendor/
+
+# AI configurations and local context
+.claude/
+.atomcode/
+.atomcode.md
+.learnings/
 .deepseek/
+.copilot/
+CLAUDE.md
+*.instructions.md
+.prompt.md
