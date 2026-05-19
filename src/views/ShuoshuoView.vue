@@ -9,6 +9,7 @@ import ErrorView from '@/components/ErrorView.vue'
 
 const items = ref<WordPressPost[]>([])
 const loading = ref(true)
+const errorMessage = ref('')
 
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -19,6 +20,7 @@ const formatDate = (dateString: string) =>
 
 async function loadShuoshuo() {
   loading.value = true
+  errorMessage.value = ''
 
   try {
     const response = await fetchCollection('shuoshuo', {
@@ -26,7 +28,8 @@ async function loadShuoshuo() {
     })
     items.value = response.items
   } catch (error) {
-    showError(getErrorMessage(error, '说说内容加载失败，请稍后重试。'))
+    errorMessage.value = getErrorMessage(error, '说说内容加载失败，请稍后重试。')
+    showError(errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -59,6 +62,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <ErrorView
+      v-else-if="errorMessage"
+      illustration="warning"
+      title="说说加载失败"
+      :description="errorMessage"
+    />
 
     <ErrorView
       v-else-if="items.length === 0"

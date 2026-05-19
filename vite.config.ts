@@ -38,7 +38,6 @@ export default defineConfig({
       output: {
         manualChunks(id: string) {
           if (id.includes('@fancyapps/ui')) return 'fancyapps-ui'
-          if (id.includes('prismjs')) return 'prismjs'
         },
       },
     },

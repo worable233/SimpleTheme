@@ -19,7 +19,8 @@ const coverUrl = computed(() => siteInfo.value.hero?.image || '')
 const stats = computed<SiteStats | undefined>(() => siteInfo.value.stats)
 const socialLinks = computed<SocialLink[] | undefined>(() => siteInfo.value.socialLinks)
 
-function formatWordCount(count: number): string {
+function formatWordCount(count: number | undefined | null): string {
+  if (!count) return '0'
   if (count >= 10000) {
     return (count / 10000).toFixed(1).replace(/\.0$/, '') + '万'
   }

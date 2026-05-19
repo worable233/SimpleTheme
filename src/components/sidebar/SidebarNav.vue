@@ -122,16 +122,15 @@ function hasChildren(item: MenuItem): boolean {
 </template>
 
 <style scoped>
-/* ========== Sub-menu slide animation ========== */
+/* ========== Sub-menu panel animation ========== */
 .sub-menu-slide-enter-active,
 .sub-menu-slide-leave-active {
   transition: all 0.2s ease;
-  overflow: hidden;
 }
 .sub-menu-slide-enter-from,
 .sub-menu-slide-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateX(-8px);
 }
 
 /* ========== Narrow left-drawer nav (mobile) ========== */
@@ -260,8 +259,6 @@ function hasChildren(item: MenuItem): boolean {
   visibility: visible;
 }
 
-/* Sub-menu (二级菜单) */
-
 /* Menu toggle button (parent item with children) */
 .left-sidebar__menu ul li button.menu-toggle {
   display: flex;
@@ -288,6 +285,11 @@ function hasChildren(item: MenuItem): boolean {
   color: var(--foreground);
 }
 
+/* Menu items that have children — positioned for sub-menu panel */
+.left-sidebar__menu ul li.menu-item-has-children {
+  position: relative;
+}
+
 /* Chevron indicator */
 .sub-menu-chevron {
   position: absolute;
@@ -303,75 +305,105 @@ function hasChildren(item: MenuItem): boolean {
   transform: rotate(180deg);
 }
 
-/* Nested sub-menu list */
+/* Desktop: floating sub-menu panel to the right */
 .sub-menu {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 160px;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px !important;
-  padding: 4px 0 8px !important;
-  width: 100%;
-  list-style: none;
-  margin: 0;
+  gap: 2px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  z-index: 100;
 }
 
 .sub-menu li {
-  width: 100%;
   display: flex;
-  justify-content: center;
 }
 
 .sub-menu li a {
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
-  border-radius: 6px;
-  color: var(--foreground);
-  position: relative;
-  transition: background-color var(--transition-fast);
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: #fff;
   text-decoration: none;
+  white-space: nowrap;
+  font-size: 14px;
+  transition: background-color 0.15s;
+  width: 100%;
 }
 
 .sub-menu li a:hover {
-  background-color: var(--menu-hover);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 .sub-menu li a svg {
   width: 18px;
   height: 18px;
-  color: var(--foreground);
+  flex-shrink: 0;
+  color: #fff;
 }
 
 .sub-menu li.current-menu-item a {
-  color: var(--primary-foreground);
   background-color: var(--primary);
-  box-shadow: 0 2px 20px 0 rgba(0 0 0 / 0.2);
+  color: var(--primary-foreground);
 }
 
 .sub-menu li.current-menu-item a svg {
   color: var(--primary-foreground);
-  filter: drop-shadow(0 0 3px rgba(0 0 0 / 0.2));
 }
 
-/* Mobile narrow sub-menu */
+/* Mobile: back to inline vertical sub-menu */
 @media (max-width: 1200px) {
+  .left-sidebar__menu ul li.menu-item-has-children {
+    position: static;
+  }
+
   .sub-menu {
+    position: static;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 2px !important;
     padding: 2px 0 4px !important;
+    width: 100%;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-radius: 0;
+    min-width: auto;
+    z-index: auto;
   }
 
   .sub-menu li a {
+    justify-content: center;
     width: 36px !important;
     height: 36px !important;
     min-height: 36px !important;
+    padding: 0;
+    gap: 0;
+    color: var(--foreground);
   }
 
   .sub-menu li a svg {
     width: 16px !important;
     height: 16px !important;
+  }
+
+  .sub-menu li.current-menu-item a {
+    color: var(--primary-foreground);
+    background-color: var(--primary);
   }
 }
 </style>

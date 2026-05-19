@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * unDraw 插画组件 - 支持从 undraw-svg 包动态加载 SVG
+ * unDraw 插画组件 — 构建时内联 SVG，无运行时 HTTP 请求
  *
  * 使用:
  *   <UndrawIllustration name="team-spirit" width="400" />
  *   <UndrawIllustration name="programming" width="100%" height="300px" />
  *
- * 可用插画名: 参见 node_modules/undraw-svg/svgs/ 目录
- * 或浏览 https://undraw.co/illustrations 选择
+ * 可用插画名:
+ *   参见 public/illustrations/ 目录或浏览 https://undraw.co/illustrations
  */
 import { ref, computed, watch, onMounted } from 'vue'
-import { getThemeConfig } from '@/lib/theme-config'
+import { getIllustration } from '@/data/illustrations'
 
 const props = withDefaults(
   defineProps<{
@@ -44,7 +44,7 @@ const containerStyle = computed(() => ({
   height: typeof props.height === 'number' ? `${props.height}px` : props.height,
 }))
 
-async function loadIllustration(name: string) {
+function loadIllustration(name: string) {
   if (!name) {
     hasError.value = true
     loading.value = false
@@ -55,21 +55,16 @@ async function loadIllustration(name: string) {
   loading.value = true
   hasError.value = false
 
-  try {
-    // 从 illustrations 目录获取 SVG 文件
-    const baseUrl = getThemeConfig().illustrationsUrl
-    const response = await fetch(`${baseUrl}${name}.svg`)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-    svgContent.value = await response.text()
+  const content = getIllustration(name)
+  if (content) {
+    svgContent.value = content
     loading.value = false
     emit('load')
-  } catch (e) {
-    console.error(`[UndrawIllustration] 加载插画失败: ${name}`, e)
+  } else {
+    console.error(`[UndrawIllustration] 找不到插画: ${name}`)
     hasError.value = true
     loading.value = false
-    emit('error', `加载插画失败: ${name}`)
+    emit('error', `找不到插画: ${name}`)
   }
 }
 

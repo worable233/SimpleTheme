@@ -28,6 +28,7 @@ const usedSvgs = [
   'programming',
   'navigator',
   'blank-canvas',
+  'add-friends',
 ]
 
 // 清空已有文件，避免构建打包未使用的旧文件

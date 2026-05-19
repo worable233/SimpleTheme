@@ -72,34 +72,91 @@ function scrollTo(id: string) {
 </template>
 
 <style scoped>
+/* ==================== TOC List Reset ==================== */
+nav > ol,
+ol {
+  margin: 0;
+  padding: 0;
+  padding-left: 0.25rem;
+  list-style: none;
+}
+
+nav > ol {
+  padding-left: 0 !important;
+}
+
+li,
+ol li {
+  list-style: none;
+}
+
+/* ==================== TOC Item ==================== */
 .toc-item {
   position: relative;
   margin: 1px 0;
 }
 
-.toc-link {
+.toc-child {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  padding-left: 0.25rem;
+}
+
+.toc-item.active > .toc-child,
+.toc-item.has-active > .toc-child {
   display: block;
-  padding: 5px 10px;
-  font-size: 13px;
+}
+
+/* ==================== TOC Link ==================== */
+.toc-link {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px;
+  border-left: 0 solid transparent;
+  border-radius: 12px;
   color: var(--secondary);
+  font-size: 13px;
+  line-height: 24px;
   text-decoration: none;
-  border-radius: 6px;
-  line-height: 1.5;
-  transition: all 0.15s;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  cursor: default;
+  transition: all 0.3s ease;
+  word-break: break-word;
 }
 
+/* Non-active: blurred with low opacity */
+.toc-link:not(.active) {
+  opacity: 0.6;
+  cursor: pointer;
+  filter: blur(1px);
+  transition: 0.3s;
+}
+
+/* Tree hover: unblur all non-active links */
+.toc-item:hover > .toc-link:not(.active) {
+  filter: blur(0);
+  opacity: 1;
+}
+
+/* Link hover: highlight bg */
 .toc-link:hover {
+  background: var(--accent);
+}
+.toc-link:hover:not(.active) {
   color: var(--foreground);
-  background: var(--muted);
 }
 
+/* Active heading */
 .toc-link.active {
-  color: var(--primary-foreground);
-  background: var(--primary);
-  font-weight: 500;
+  opacity: 1;
+  filter: blur(0);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--primary);
 }
 
 .toc-item.has-active > .toc-link {
@@ -108,19 +165,12 @@ function scrollTo(id: string) {
 }
 
 /* Nested list indentation */
-.toc-child {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  padding-left: 12px;
-}
-
-.toc-child .toc-item {
-  margin: 1px 0;
-}
-
 .toc-child .toc-link {
-  padding-left: 10px;
+  padding-left: 1rem;
   font-size: 12.5px;
+}
+.toc-child .toc-child .toc-link {
+  padding-left: 1.6rem;
+  font-size: 12px;
 }
 </style>

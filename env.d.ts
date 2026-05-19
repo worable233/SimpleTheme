@@ -21,7 +21,10 @@ declare module '*.svg?raw' {
 declare global {
   interface Window {
     SimpleThemeConfig?: SimpleThemeConfig
+    Prism: typeof import('prismjs')
   }
+  /** Prism syntax highlighter — loaded as a regular <script> by WordPress. */
+  const Prism: typeof import('prismjs')
 }
 
 export {}

@@ -18,6 +18,7 @@
 - 评论 IP 归属地查询：[api2.upk.com.cn](https://api2.upk.com.cn)（回退：[ip-api.com](http://ip-api.com)）
 - 样式参考 [iEmo](https://github.com/kannafay/iEmo)
 - 数据兼容 [Sakurairo](https://github.com/mirai-mamori/Sakurairo)
+- **SEO 兼容** — WordPress 原生模板向爬虫输出静态 HTML，完整兼容 Yoast、Rank Math 等 SEO 插件
 
 ## 构建流程
 
@@ -118,6 +119,44 @@ simple-theme/
 1. `ContentView` 调用 WordPress REST API 解析 URL
 2. 根据返回类型（post/page/term/404）渲染对应模板
 3. 特殊路径（`/shuoshuo`、`/about`、`/archives`、`/links`）在 WordPress 返回 404 时回退到 Vue 内置页面
+
+## SEO 兼容性
+
+本主题虽然是 Vue SPA，但通过**爬虫检测 + WordPress 原生模板回退**机制，确保所有主流搜索引擎都能正确索引文章内容。
+
+### 工作原理
+
+```
+爬虫请求 → WordPress 解析 URL
+  ↓
+template_include 钩子（优先级 99）
+  ├─ User-Agent 匹配爬虫 → 输出 templates/crawler-fallback.php
+  │    ├─ wp_head()      ← SEO 插件输出 title/meta/OG/JSON-LD
+  │    ├─ the_content()  ← 文章正文全文
+  │    └─ wp_footer()    ← 插件脚本
+  │
+  └─ User-Agent 非爬虫 → Vue SPA 正常加载
+```
+
+### 支持情况
+
+| 功能 | 状态 |
+|------|------|
+| 搜索引擎索引（Google、Bing、Baidu 等） | ✅ 全文静态 HTML |
+| Yoast SEO / Rank Math / SEOPress 等插件 | ✅ 完整兼容 |
+| `robots.txt` & `sitemap.xml` | ✅ WordPress 核心 + SEO 插件原生处理 |
+| Open Graph / Twitter Card | ✅ 由已安装的 SEO 插件输出 |
+| 结构化数据 (JSON-LD) | ✅ 由已安装的 SEO 插件输出 |
+| 页面标题 (`<title>`) | ✅ `wp_head()` 传递，SEO 插件控制 |
+| `canonical` URL | ✅ 由已安装的 SEO 插件输出 |
+
+### 爬虫识别范围
+
+- **搜索引擎**：Googlebot, Bingbot, Baiduspider, YandexBot, DuckDuckBot, Yahoo Slurp, Sogou, 360Spider, Bytespider (字节跳动), PetalBot (华为), CocCocBot, SeznamBot
+- **社交/工具**：Facebot, Twitterbot, Applebot, DiscordBot, SlackBot, TelegramBot, WhatsApp, Prerender
+- **SEO 分析**：AhrefsBot, SemrushBot, Majestic-12, RogerBot (Moz), Semantic Scholar
+
+可通过 `simple_theme_crawler_patterns` filter 扩展爬虫列表。
 
 ## 文档
 

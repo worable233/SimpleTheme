@@ -56,7 +56,7 @@ function simple_theme_get_frontend_config() {
 		'homeUrl'  => trailingslashit( home_url( '/' ) ),
 		'restRoot' => esc_url_raw( trailingslashit( rest_url() ) ),
 		'themeUrl' => get_theme_file_uri(),
-		'illustrationsUrl' => esc_url_raw( rest_url( 'simple-theme/v1/illustration/' ) ),
+		'illustrationsUrl' => esc_url_raw( get_theme_file_uri( 'dist/illustrations/' ) ),
 		'routes'   => array(
 			'resolveUrl' => esc_url_raw( rest_url( 'simple-theme/v1/resolve-url' ) ),
 			'menusBase'  => esc_url_raw( rest_url( 'simple-theme/v1/navigation' ) ),
@@ -72,6 +72,37 @@ function simple_theme_get_frontend_config() {
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
 		),
 	);
+}
+
+// ========== Prism (loaded as regular <script> tags, not ES modules) ==========
+
+add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_prism', 8 );
+function simple_theme_enqueue_prism() {
+	$prism_path = get_theme_file_path( 'dist/prism/prism.min.js' );
+	if ( ! file_exists( $prism_path ) ) {
+		return; // prism files not copied yet (npm run build-only)
+	}
+
+	$prism_uri = get_theme_file_uri( 'dist/prism/' );
+	$version   = '1.30.0';
+
+	// Core must come first
+	wp_enqueue_script( 'st-prism-core', $prism_uri . 'prism-core.min.js', array(), $version, true );
+
+	// Languages — dependency graph ensures correct load order
+	wp_enqueue_script( 'st-prism-clike', $prism_uri . 'prism-clike.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-markup', $prism_uri . 'prism-markup.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-javascript', $prism_uri . 'prism-javascript.min.js', array( 'st-prism-clike' ), $version, true );
+	wp_enqueue_script( 'st-prism-typescript', $prism_uri . 'prism-typescript.min.js', array( 'st-prism-javascript' ), $version, true );
+	wp_enqueue_script( 'st-prism-css', $prism_uri . 'prism-css.min.js', array( 'st-prism-markup' ), $version, true );
+	wp_enqueue_script( 'st-prism-bash', $prism_uri . 'prism-bash.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-json', $prism_uri . 'prism-json.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-python', $prism_uri . 'prism-python.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-sql', $prism_uri . 'prism-sql.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-yaml', $prism_uri . 'prism-yaml.min.js', array( 'st-prism-core' ), $version, true );
+	wp_enqueue_script( 'st-prism-markdown', $prism_uri . 'prism-markdown.min.js', array( 'st-prism-markup' ), $version, true );
+	wp_enqueue_script( 'st-prism-markup-templating', $prism_uri . 'prism-markup-templating.min.js', array( 'st-prism-markup' ), $version, true );
+	wp_enqueue_script( 'st-prism-php', $prism_uri . 'prism-php.min.js', array( 'st-prism-markup-templating' ), $version, true );
 }
 
 // ========== Frontend Assets ==========
@@ -115,18 +146,29 @@ function simple_theme_enqueue_assets() {
 		true
 	);
 
-	wp_add_inline_script(
-		SIMPLE_THEME_HANDLE,
-		'window.SimpleThemeConfig = ' . wp_json_encode( simple_theme_get_frontend_config() ) . ';',
-		'before'
-	);
-
 	add_filter( 'script_loader_tag', function ( $tag, $handle, $src ) {
 		if ( SIMPLE_THEME_HANDLE === $handle ) {
 			return '<script type="module" src="' . esc_url( $src ) . '"></script>';
 		}
 		return $tag;
 	}, 10, 3 );
+}
+
+/**
+ * Output the frontend config as an inline script.
+ *
+ * We use wp_head (priority 0) instead of wp_add_inline_script because the
+ * wp_opt plugin or the script_loader_tag filter may suppress the inline
+ * output. Manually printing the <script> tag ensures the config is always
+ * available to the Vue app before the module script executes.
+ */
+add_action( 'wp_head', 'simple_theme_output_frontend_config', 0 );
+function simple_theme_output_frontend_config() {
+	$config = wp_json_encode( simple_theme_get_frontend_config() );
+	if ( ! $config ) {
+		return;
+	}
+	echo '<script>window.SimpleThemeConfig = ' . $config . ';</script>' . "\n";
 }
 
 // ========== Admin Assets (Vue admin app) ==========

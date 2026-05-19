@@ -44,19 +44,41 @@ function simple_theme_get_links() {
 		);
 	}
 
-	$cats = array();
+	$result = array();
 	foreach ( $categories as $cat ) {
-		$cats[] = array(
-			'id'   => $cat->term_id,
-			'name' => $cat->name,
-			'slug' => $cat->slug,
+		$category_links = array();
+		foreach ( $links as $link ) {
+			if ( in_array( $cat->term_id, $link['categories'] ) ) {
+				$category_links[] = $link;
+			}
+		}
+		if ( ! empty( $category_links ) ) {
+			$result[] = array(
+				'id'    => $cat->term_id,
+				'name'  => $cat->name,
+				'slug'  => $cat->slug,
+				'links' => $category_links,
+			);
+		}
+	}
+
+	// Collect uncategorized links (no category assigned) under '未分类'
+	$uncategorized = array();
+	foreach ( $links as $link ) {
+		if ( empty( $link['categories'] ) ) {
+			$uncategorized[] = $link;
+		}
+	}
+	if ( ! empty( $uncategorized ) ) {
+		$result[] = array(
+			'id'    => 0,
+			'name'  => '未分类',
+			'slug'  => 'uncategorized',
+			'links' => $uncategorized,
 		);
 	}
 
-	return new WP_REST_Response( array(
-		'categories' => $cats,
-		'links'      => $links,
-	), 200 );
+	return new WP_REST_Response( $result, 200 );
 }
 
 // ========== Avatar Proxy ==========
@@ -140,7 +162,7 @@ function simple_theme_get_internal_path( $url ) {
 		$path = $parsed_url['path'] ?? '/';
 		// Strip home path (for subdirectory installs)
 		$home_path = $parsed_home['path'] ?? '/';
-		if ( '/' !== $home_path && str_starts_with( $path, $home_path ) ) {
+		if ( '/' !== $home_path && 0 === strpos( $path, $home_path ) ) {
 			$path = substr( $path, strlen( $home_path ) - 1 );
 		}
 	} else {

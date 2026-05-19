@@ -5,11 +5,13 @@ import { fetchPage, getErrorMessage } from '@/lib/wordpress'
 import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
+import ErrorView from '@/components/ErrorView.vue'
 
 const { siteInfo } = useSiteShell()
 
 const aboutPage = ref<WordPressPost | null>(null)
 const loading = ref(true)
+const errorMessage = ref('')
 const aboutContent = computed(() => aboutPage.value?.content?.rendered ?? null)
 useContentEnhancer(aboutContent)
 
@@ -17,7 +19,8 @@ onMounted(async () => {
   try {
     aboutPage.value = await fetchPage('about')
   } catch (err) {
-    showError(err instanceof Error ? err.message : '关于页面加载失败')
+    errorMessage.value = getErrorMessage(err, '关于页面加载失败')
+    showError(errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -41,6 +44,13 @@ onMounted(async () => {
         <article class="oat-prose" v-html="aboutPage.content?.rendered"></article>
       </div>
     </template>
+
+    <ErrorView
+      v-else-if="errorMessage"
+      illustration="warning"
+      title="关于页面加载失败"
+      :description="errorMessage"
+    />
 
     <template v-else>
       <div class="content-area">

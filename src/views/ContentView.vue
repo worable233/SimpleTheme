@@ -194,108 +194,92 @@ watch(
 <template>
   <section class="content-view" @click.capture="handleContentClick">
 
-    <!-- Error -->
-    <ErrorView
-      v-if="'error' === contentType"
-      illustration="warning"
-      title="页面加载失败"
-      description="抱歉，页面暂时无法加载，请稍后重试。"
-    />
+    <!-- Special pages (shuoshuo, about, archives, links) always render — they handle their own errors and headers -->
+    <template v-if="specialPageComponent">
+      <component :is="specialPageComponent" />
+    </template>
 
-    <!-- Loading skeleton (only for non-special pages; special pages like links/about have their own skeleton) -->
-    <article v-if="loading && !specialPageComponent" class="single-post">
-      <!-- Cover skeleton (350px banner with title/meta overlay) -->
-      <div class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
-        <div class="single-post__cover-info">
-          <div class="single-post__cover-title">
-            <div style="height: 1.5rem; width: 65%; margin: 0 auto; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
-          </div>
-          <div class="single-post__cover-meta">
-            <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
-            <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
-          </div>
-        </div>
-      </div>
-      <!-- Body skeleton -->
-      <div class="single-post__body">
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 85%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 60%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 70%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          <div style="height: 0.75rem; width: 90%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-        </div>
-      </div>
-    </article>
-
-    <!-- Special page component (shuoshuo, about, archives, links) — overrides page rendering -->
-    <component :is="specialPageComponent" v-if="specialPageComponent" />
-
-    <!-- 404 (non-special pages) -->
-    <NotFoundView v-else-if="'404' === contentType" />
-
-    <!-- Term Archive -->
-    <TermArchive
-      v-if="'term' === contentType"
-      :term-name="termName"
-      :term-taxonomy="termTaxonomy"
-      :term-posts-loading="termPostsLoading"
-      :error-message="errorMessage"
-      :term-posts="termPosts"
-    />
-
-    <!-- Page -->
-    <PageView v-if="'page' === contentType && postData && !specialPageComponent" :page-data="postData" />
-
-    <!-- Post / Shuoshuo Content (not for pages — PageView handles that above) -->
-    <article v-if="postData && 'page' !== contentType && !specialPageComponent" class="single-post">
-      <!-- Featured image banner (only when exists) -->
-      <div v-if="featuredImageUrl" class="single-post__cover">
-        <div class="single-post__cover-img">
-          <img :src="featuredImageUrl" alt="" />
-        </div>
-        <div class="single-post__cover-info">
-          <div class="single-post__cover-title">
-            <h1 v-html="postData.title.rendered"></h1>
-          </div>
-          <div class="single-post__cover-meta">
-            <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
-            <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__cover-category">{{ primaryCategory.name }}</router-link>
-          </div>
-        </div>
-      </div>
-
-      <!-- No featured image: clean header -->
-      <div v-else class="single-post__header">
-        <h1 class="single-post__header-title" v-html="postData.title.rendered"></h1>
-        <div class="single-post__header-meta">
-          <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
-          <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__header-category">{{ primaryCategory.name }}</router-link>
-        </div>
-      </div>
-
-      <!-- Article body -->
-      <div class="single-post__body">
-        <div class="oat-prose" v-html="postData.content?.rendered"></div>
-
-        <footer class="single-post__footer">
-          <div v-if="postTags.length > 0" class="single-post__tags">
-            <span v-for="tag in postTags" :key="tag">#{{ tag }}</span>
-          </div>
-        </footer>
-      </div>
-
-      <!-- Comments -->
-      <CommentsPanel
-        :post-id="postData.id"
-        :enabled="'open' === (postData.comment_status || 'closed')"
-        :form-settings="siteInfo.comments!"
+    <!-- Non-special pages — mutually exclusive states chained with v-if/v-else-if/v-else -->
+    <template v-else>
+      <ErrorView
+        v-if="'error' === contentType"
+        illustration="warning"
+        title="页面加载失败"
+        description="抱歉，页面暂时无法加载，请稍后重试。"
       />
-    </article>
+      <article v-else-if="loading" class="single-post">
+        <div class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
+          <div class="single-post__cover-info">
+            <div class="single-post__cover-title">
+              <div style="height: 1.5rem; width: 65%; margin: 0 auto; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
+            </div>
+            <div class="single-post__cover-meta">
+              <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
+              <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
+            </div>
+          </div>
+        </div>
+        <div class="single-post__body">
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 85%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 60%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 70%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 90%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+          </div>
+        </div>
+      </article>
+      <NotFoundView v-else-if="'404' === contentType" />
+      <TermArchive
+        v-else-if="'term' === contentType"
+        :term-name="termName"
+        :term-taxonomy="termTaxonomy"
+        :term-posts-loading="termPostsLoading"
+        :error-message="errorMessage"
+        :term-posts="termPosts"
+      />
+      <PageView v-else-if="'page' === contentType && postData" :page-data="postData" />
+      <article v-else-if="postData && 'page' !== contentType" class="single-post">
+        <div v-if="featuredImageUrl" class="single-post__cover">
+          <div class="single-post__cover-img">
+            <img :src="featuredImageUrl" alt="" />
+          </div>
+          <div class="single-post__cover-info">
+            <div class="single-post__cover-title">
+              <h1 v-html="postData.title.rendered"></h1>
+            </div>
+            <div class="single-post__cover-meta">
+              <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+              <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__cover-category">{{ primaryCategory.name }}</router-link>
+            </div>
+          </div>
+        </div>
+        <div v-else class="single-post__header">
+          <h1 class="single-post__header-title" v-html="postData.title.rendered"></h1>
+          <div class="single-post__header-meta">
+            <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+            <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__header-category">{{ primaryCategory.name }}</router-link>
+          </div>
+        </div>
+        <div class="single-post__body">
+          <div class="oat-prose" v-html="postData.content?.rendered"></div>
+          <footer class="single-post__footer">
+            <div v-if="postTags.length > 0" class="single-post__tags">
+              <span v-for="tag in postTags" :key="tag">#{{ tag }}</span>
+            </div>
+          </footer>
+        </div>
+        <CommentsPanel
+          :post-id="postData.id"
+          :enabled="'open' === (postData.comment_status || 'closed')"
+          :form-settings="siteInfo.comments!"
+        />
+      </article>
+    </template>
   </section>
 </template>
 

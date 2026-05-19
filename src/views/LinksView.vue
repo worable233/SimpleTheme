@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { fetchLinks, fetchPage } from '@/lib/wordpress'
+import { fetchLinks, fetchPage, getErrorMessage } from '@/lib/wordpress'
 import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import { useSiteShell } from '@/composables/useSiteShell'
@@ -14,6 +14,7 @@ const { siteInfo } = useSiteShell()
 
 const linkCategories = ref<WordPressLinkCategory[]>([])
 const loading = ref(true)
+const errorMessage = ref('')
 const linksPage = ref<WordPressPost | null>(null)
 const linksPageContent = computed(() => linksPage.value?.content?.rendered ?? null)
 useContentEnhancer(linksPageContent)
@@ -27,7 +28,8 @@ onMounted(async () => {
     linkCategories.value = data
     linksPage.value = page
   } catch (err) {
-    showError(err instanceof Error ? err.message : '友链加载失败')
+    errorMessage.value = getErrorMessage(err, '友链加载失败')
+    showError(errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -55,6 +57,14 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- 加载失败 -->
+    <ErrorView
+      v-else-if="errorMessage"
+      illustration="warning"
+      title="友链加载失败"
+      :description="errorMessage"
+    />
 
     <!-- 友链列表 -->
     <template v-else-if="linkCategories.length > 0">

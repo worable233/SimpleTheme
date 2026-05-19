@@ -22,6 +22,7 @@ const activeCategory = ref<string>('all')
 const page = ref(1)
 const totalPages = ref(0)
 const hasMore = ref(true)
+const errorMessage = ref('')
 
 const SENTINEL_MARGIN = 400
 const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ?? 6)
@@ -98,6 +99,7 @@ function onCategoryClick(slug: string) {
 
 async function loadHomepageData() {
   initialLoading.value = true
+  errorMessage.value = ''
   page.value = 1
   latestPosts.value = []
 
@@ -105,7 +107,8 @@ async function loadHomepageData() {
     await ensureLoaded()
     await loadPage(1)
   } catch (error) {
-    showError(getErrorMessage(error, '首页内容加载失败，请稍后再试。'))
+    errorMessage.value = getErrorMessage(error, '首页内容加载失败，请稍后再试。')
+    showError(errorMessage.value)
   } finally {
     initialLoading.value = false
   }
@@ -202,6 +205,14 @@ async function loadPage(pageNum: number) {
           <div class="post-card-skeleton__cover"></div>
         </div>
       </div>
+
+      <!-- Error state -->
+      <ErrorView
+        v-else-if="errorMessage"
+        illustration="warning"
+        title="首页加载失败"
+        :description="errorMessage"
+      />
 
       <!-- Post list -->
       <div v-else-if="latestPosts.length" class="content-area">

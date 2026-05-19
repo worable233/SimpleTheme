@@ -7,7 +7,7 @@ const fallbackConfig: SimpleThemeConfig = {
   homeUrl: `${origin}/`,
   restRoot: `${origin}/wp-json/`,
   themeUrl: `${origin}/wp-content/themes/simple-theme`,
-  illustrationsUrl: `${origin}/illustrations/`,
+  illustrationsUrl: `${origin}/wp-content/themes/simple-theme/dist/illustrations/`,
   routes: {
     resolveUrl: `${origin}/wp-json/simple-theme/v1/resolve-url`,
     menusBase: `${origin}/wp-json/simple-theme/v1/navigation`,

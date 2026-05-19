@@ -5,6 +5,7 @@ import type {
   HeroSettings,
   MenuItem,
   SiteInfo,
+  SiteStats,
   SocialLink,
   ThemeSettings,
 } from '@/types/wordpress'
@@ -51,6 +52,17 @@ const fallbackHeroSettings: HeroSettings = {
   typewriterTexts: '',
 }
 
+
+const fallbackSiteStats: SiteStats = {
+  postCount: 0,
+  categoryCount: 0,
+  tagCount: 0,
+  shuoshuoCount: 0,
+  totalWordCount: 0,
+  commentCount: 0,
+  registeredDate: '',
+  lastActivityDate: '',
+}
 
 const fallbackSiteInfo: SiteInfo = {
   name: '',
@@ -121,7 +133,10 @@ export function useSiteShell() {
           showCookiesOptIn:
             nextSiteInfo.comments?.showCookiesOptIn ?? fallbackSiteInfo.comments!.showCookiesOptIn,
         },
-        stats: nextSiteInfo.stats,
+        stats: {
+          ...fallbackSiteStats,
+          ...nextSiteInfo.stats,
+        },
         socialLinks:
           nextSiteInfo.socialLinks && nextSiteInfo.socialLinks.length > 0
             ? nextSiteInfo.socialLinks

@@ -40,8 +40,20 @@ async function download(url, dest) {
 }
 
 async function main() {
-  mkdirSync(join(outDir, 'bili'), { recursive: true })
-  mkdirSync(join(outDir, 'tieba'), { recursive: true })
+  // 检查是否已经下载过（以已有文件为标准）
+  const biliDir = join(outDir, 'bili')
+  const tiebaDir = join(outDir, 'tieba')
+  const existing = [
+    ...(existsSync(biliDir) ? readdirSync(biliDir) : []),
+    ...(existsSync(tiebaDir) ? readdirSync(tiebaDir) : []),
+  ]
+  if (existing.length >= bilibiliNames.length + tiebaNames.length) {
+    console.log('  ✓ 表情文件已存在，跳过下载')
+    return
+  }
+
+  mkdirSync(biliDir, { recursive: true })
+  mkdirSync(tiebaDir, { recursive: true })
 
   let downloaded = 0
   let failed = 0
