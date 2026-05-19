@@ -47,13 +47,19 @@ onMounted(async () => {
     </header>
 
     <!-- 加载骨架 -->
-    <div v-if="loading" class="links-loading">
-      <div v-for="i in 3" :key="i" class="link-card-skeleton">
-        <div class="skeleton-avatar"></div>
-        <div class="skeleton-body">
-          <div class="skeleton-line w-50"></div>
-          <div class="skeleton-line w-70"></div>
-          <div class="skeleton-line w-40"></div>
+    <div v-if="loading" class="links-skeleton">
+      <div v-for="c in 2" :key="'cat-' + c" class="sk-category">
+        <div class="sk-category-header">
+          <span role="status" class="skeleton" style="width: 80px; height: 22px; border-radius: 6px;"></span>
+          <span role="status" class="skeleton" style="width: 100px; height: 16px; border-radius: 6px;"></span>
+        </div>
+        <div class="link-grid">
+          <div v-for="i in 4" :key="'card-' + c + '-' + i" class="sk-link-card">
+            <div class="link-card__inner">
+              <span role="status" class="skeleton" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; flex-shrink: 0;"></span>
+              <span role="status" class="skeleton" style="flex: 1; height: 16px; border-radius: 6px;"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -146,60 +152,50 @@ onMounted(async () => {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
 }
 
-.link-card-skeleton {
+.sk-link-card {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
 }
-.link-card-skeleton:nth-child(1) { animation-delay: 0.06s; }
-.link-card-skeleton:nth-child(2) { animation-delay: 0.11s; }
-.link-card-skeleton:nth-child(3) { animation-delay: 0.16s; }
+.sk-category:nth-child(1) .sk-link-card:nth-child(1) { animation-delay: 0.04s; }
+.sk-category:nth-child(1) .sk-link-card:nth-child(2) { animation-delay: 0.08s; }
+.sk-category:nth-child(1) .sk-link-card:nth-child(3) { animation-delay: 0.12s; }
+.sk-category:nth-child(1) .sk-link-card:nth-child(4) { animation-delay: 0.16s; }
+.sk-category:nth-child(2) .sk-link-card:nth-child(1) { animation-delay: 0.14s; }
+.sk-category:nth-child(2) .sk-link-card:nth-child(2) { animation-delay: 0.18s; }
+.sk-category:nth-child(2) .sk-link-card:nth-child(3) { animation-delay: 0.22s; }
+.sk-category:nth-child(2) .sk-link-card:nth-child(4) { animation-delay: 0.26s; }
 
-/* ============ Loading Skeleton ============ */
-.links-loading {
+.links-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
 }
 
-.link-card-skeleton {
+.sk-category {
+  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
+}
+.sk-category:nth-child(1) { animation-delay: 0s; }
+.sk-category:nth-child(2) { animation-delay: 0.1s; }
+
+.sk-category-header {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--muted);
+}
+
+.sk-link-card {
   background: var(--card);
   border-radius: var(--radius-large, 8px);
   border: 1px solid var(--border, transparent);
+  overflow: hidden;
 }
-
-.skeleton-avatar {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background: var(--muted);
-  animation: pulse 1.5s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-.skeleton-body {
-  flex: 1;
+.sk-link-card .link-card__inner {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.skeleton-line {
-  height: 0.75rem;
-  border-radius: var(--radius-small, 4px);
-  background: var(--muted);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.w-50 { width: 50%; }
-.w-70 { width: 70%; }
-.w-40 { width: 40%; }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
 }
 
 /* ============ Category Section ============ */

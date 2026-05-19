@@ -83,7 +83,7 @@ function simple_theme_register_shuoshuo_post_type() {
 		'show_ui'            => true,
 		'show_in_menu'       => true,
 		'query_var'          => true,
-		'rewrite'            => array( 'slug' => 'shuoshuo' ),
+		'rewrite'            => array( 'slug' => 'shuoshuo', 'with_front' => false ),
 		'capability_type'    => 'post',
 		'has_archive'        => true,
 		'hierarchical'       => false,

@@ -199,38 +199,41 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     </header>
 
     <!-- Loading skeleton -->
-    <div v-if="isLoading" class="archives-page">
+    <div v-if="isLoading" class="archives-skeleton">
       <div class="section-header">
-        <div role="status" class="skeleton line" style="width: 140px; height: 28px;"></div>
+        <div role="status" class="skeleton" style="width: 140px; height: 28px;"></div>
       </div>
       <div class="timeline-root">
-        <div v-for="i in 3" :key="'sk-year-' + i" class="timeline-year-card-skeleton" style="pointer-events: none;">
+        <div v-for="i in 3" :key="'sk-year-' + i" class="timeline-year-card">
           <div class="timeline-year-header">
-            <div role="status" class="skeleton line" style="width: 80px; height: 36px;"></div>
-            <div role="status" class="skeleton line" style="width: 90px; height: 28px;"></div>
+            <span role="status" class="skeleton" style="width: 60px; height: 38px; border-radius: 6px;"></span>
+            <span role="status" class="skeleton" style="width: 85px; height: 28px; border-radius: 9999px;"></span>
           </div>
           <div class="timeline-year-calendar">
-            <div
+            <span
               v-for="m in 12"
               :key="m"
               role="status"
-              class="skeleton box"
-              style="width: 100%; height: auto; aspect-ratio: 1; border-radius: 6px; margin: 0;"
-            ></div>
+              class="skeleton"
+              style="width: 100%; aspect-ratio: 1; border-radius: 6px;"
+            ></span>
           </div>
         </div>
       </div>
       <div class="section-header" style="margin-top: 3rem;">
-        <div role="status" class="skeleton line" style="width: 140px; height: 28px;"></div>
+        <div role="status" class="skeleton" style="width: 140px; height: 28px;"></div>
       </div>
       <div class="category-root">
-        <div v-for="i in 4" :key="'sk-cat-' + i" class="category-card-skeleton" style="pointer-events: none;">
+        <div v-for="i in 4" :key="'sk-cat-' + i" class="category-card">
           <div class="category-header">
-            <div role="status" class="skeleton line" style="width: 120px; height: 26px;"></div>
-            <div role="status" class="skeleton line" style="width: 80px; height: 26px;"></div>
+            <span role="status" class="skeleton" style="width: 100px; height: 26px; border-radius: 6px;"></span>
+            <span role="status" class="skeleton" style="width: 56px; height: 26px; border-radius: 9999px;"></span>
           </div>
-          <div class="category-posts" style="border-top: none;">
-            <div v-for="j in 3" :key="j" role="status" class="skeleton line" style="width: 100%; height: 20px; margin: 0.35rem 0;"></div>
+          <div class="category-posts">
+            <div v-for="j in 3" :key="j" class="category-post-item">
+              <span role="status" class="skeleton" style="width: 65%; height: 18px; border-radius: 4px;"></span>
+              <span role="status" class="skeleton" style="width: 64px; height: 16px; border-radius: 4px;"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -341,8 +344,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   gap: 0.8rem;
 }
 
-.timeline-year-card-skeleton,
-.category-card-skeleton {
+.archives-skeleton .timeline-year-card,
+.archives-skeleton .category-card {
   background: var(--card, rgba(255,255,255,0.7));
   border-radius: var(--radius-large, 8px);
   box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
@@ -350,6 +353,46 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   display: flex;
   flex-direction: column;
   border: 1.5px solid var(--border, #e0e0e0);
+  pointer-events: none;
+}
+.archives-skeleton .timeline-year-card {
+  gap: 1rem;
+}
+.archives-skeleton .timeline-year-card:hover,
+.archives-skeleton .category-card:hover {
+  transform: none;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+  border-color: var(--border, #e0e0e0);
+}
+.archives-skeleton .timeline-year-header,
+.archives-skeleton .category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.archives-skeleton .category-header {
+  margin-bottom: 0.8rem;
+}
+.archives-skeleton .timeline-year-calendar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+}
+.archives-skeleton .timeline-year-calendar .skeleton {
+  border: 1.5px solid var(--border, #e0e0e0);
+}
+.archives-skeleton .category-posts {
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border, #e0e0e0);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.archives-skeleton .category-post-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
 }
 
 /* ========== Grid Layouts ========== */

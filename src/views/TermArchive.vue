@@ -23,7 +23,6 @@ const formatDate = (dateString: string) =>
     <header class="section-header">
       <h1>
         <span class="section-header__title">{{ termName }}</span>
-        <span class="section-header__subtitle">{{ termTaxonomy }}.</span>
       </h1>
     </header>
 

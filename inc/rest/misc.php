@@ -177,11 +177,127 @@ function simple_theme_get_internal_path( $url ) {
 	return $path . $query . $fragment;
 }
 
+/**
+ * Find a post by path, with direct DB fallback for Chinese/URL-encoded slugs
+ * that get_page_by_path() cannot handle (sanitize_title_for_query strips non-ASCII).
+ *
+ * @param string $path       Request URI path.
+ * @param array  $post_types Post types to search.
+ * @return WP_Post|null
+ */
+function simple_theme_find_post_by_path( $path, $post_types ) {
+	global $wpdb;
+
+	// Try get_page_by_path first (works for ASCII slugs)
+	$post = get_page_by_path( $path, OBJECT, $post_types );
+	if ( $post ) {
+		return $post;
+	}
+
+	// Extract last segment as slug candidate
+	$trimmed   = trim( $path, '/' );
+	$parts     = explode( '/', $trimmed );
+	$last_slug = end( $parts );
+	if ( ! $last_slug ) {
+		return null;
+	}
+
+	// Also try the last segment alone via get_page_by_path
+	$post = get_page_by_path( $last_slug, OBJECT, $post_types );
+	if ( $post ) {
+		return $post;
+	}
+
+	// Build IN clause for post types (safe: array_map with static values)
+	$in_types = "'" . implode( "','", array_map( 'esc_sql', $post_types ) ) . "'";
+
+	// Helper: escape % for $wpdb->prepare (sprintf interprets %e8 etc. as format specifiers)
+	$escape_pct = function ( $s ) { return str_replace( '%', '%%', $s ); };
+
+	// Strategy 1: URL-decoded slug (e.g. "test-说说")
+	// This is what gets passed by default (PHP POST/GET automatically URL-decodes)
+	$decoded = urldecode( $last_slug ); // safe: idempotent if already decoded
+	$row = $wpdb->get_row( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts}
+		WHERE post_name = %s
+		AND post_type IN ({$in_types})
+		AND post_status = 'publish'
+		LIMIT 1",
+		$escape_pct( $decoded )
+	) );
+	if ( $row ) {
+		return get_post( $row->ID );
+	}
+
+	// Strategy 2: URL-encoded slug (lowercase, as stored by WordPress)
+	// e.g. "test-说说" → urlencode → "test-%E8%AF%B4%E8%AF%B4" → strtolower → "test-%e8%af%b4%e8%af%b4"
+	$re_encoded = strtolower( urlencode( $decoded ) );
+	$row = $wpdb->get_row( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts}
+		WHERE post_name = %s
+		AND post_type IN ({$in_types})
+		AND post_status = 'publish'
+		LIMIT 1",
+		$escape_pct( $re_encoded )
+	) );
+	if ( $row ) {
+		return get_post( $row->ID );
+	}
+
+	// Strategy 3: URL-encoded slug (uppercase hex)
+	// Fallback for sites that might store uppercase
+	$re_encoded_upper = urlencode( $decoded );
+	if ( $re_encoded_upper !== $re_encoded ) {
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts}
+			WHERE post_name = %s
+			AND post_type IN ({$in_types})
+			AND post_status = 'publish'
+			LIMIT 1",
+			$escape_pct( $re_encoded_upper )
+		) );
+		if ( $row ) {
+			return get_post( $row->ID );
+		}
+	}
+
+	// Strategy 4: LIKE fallback for truncated/partial slugs
+	$row = $wpdb->get_row( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts}
+		WHERE post_name LIKE %s
+		AND post_type IN ({$in_types})
+		AND post_status = 'publish'
+		LIMIT 1",
+		$escape_pct( $wpdb->esc_like( $re_encoded ) . '%' )
+	) );
+	if ( $row ) {
+		return get_post( $row->ID );
+	}
+
+	// Strategy 4: remove known CPT prefix and try again
+	// e.g. /shuoshuo/test-说说 → try "test-说说" only
+	$stripped = ltrim( $path, '/' );
+	$cpt_slugs = array( 'shuoshuo' );
+	foreach ( $cpt_slugs as $cpt_slug ) {
+		if ( 0 === strpos( $stripped, $cpt_slug . '/' ) ) {
+			$inner_path = '/' . substr( $stripped, strlen( $cpt_slug ) + 1 );
+			$post = get_page_by_path( $inner_path, OBJECT, $post_types );
+			if ( $post ) {
+				return $post;
+			}
+		}
+	}
+
+	return null;
+}
+
 function simple_theme_resolve_path( WP_REST_Request $request ) {
 	$path = $request->get_param( 'path' );
 	if ( ! $path ) {
 		return new WP_REST_Response( array( 'error' => 'Path required' ), 400 );
 	}
+
+	error_log( '[simple-theme] simple_theme_resolve_path called: path=' . $path );
 
 	// Try to match WordPress native routes
 	$home_url  = home_url( '/' );
@@ -193,14 +309,21 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 
 	$internal_path = simple_theme_get_internal_path( $full_url );
 
-	// Check if it's a post/CPT by slug
-	$post = get_page_by_path( $internal_path, OBJECT, array( 'post', 'page', 'shuoshuo' ) );
+	// Check if it's a post/CPT by slug (with Chinese slug fallback)
+	$post = simple_theme_find_post_by_path( $internal_path, array( 'post', 'page', 'shuoshuo' ) );
 	if ( $post ) {
+		$rest_base_map = array(
+			'post'     => 'posts',
+			'page'     => 'pages',
+			'shuoshuo' => 'shuoshuo',
+		);
+		$rest_base = $rest_base_map[ $post->post_type ] ?? $post->post_type . 's';
 		return new WP_REST_Response( array(
 			'type'      => 'post',
 			'id'        => $post->ID,
 			'name'      => $post->post_name,
 			'permalink' => get_permalink( $post ),
+			'restUrl'   => rest_url( 'wp/v2/' . $rest_base . '/' . $post->ID . '?_embed=1' ),
 			'path'      => $internal_path,
 		), 200 );
 	}
