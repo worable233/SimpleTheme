@@ -55,11 +55,7 @@ function simple_theme_get_post_term_names( $post_id, $taxonomy ) {
 		return array();
 	}
 	return array_map( function ( $term ) {
-		return array(
-			'id'   => $term->term_id,
-			'name' => $term->name,
-			'slug' => $term->slug,
-		);
+		return $term->name;
 	}, $terms );
 }
 

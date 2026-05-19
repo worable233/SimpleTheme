@@ -16,34 +16,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 function simple_theme_format_comment_item( WP_Comment $comment ) {
 	$user_id = (int) $comment->user_id;
 	$avatar  = simple_theme_get_comment_avatar( $comment->comment_author_email, $user_id );
-	$badge   = null;
-	if ( $user_id > 0 ) {
-		$user = get_userdata( $user_id );
-		if ( $user && in_array( 'administrator', $user->roles, true ) ) {
-			$badge = '管理员';
-		}
-	}
 
 	return array(
-		'id'            => $comment->comment_ID,
-		'postId'        => $comment->comment_post_ID,
+		'id'            => (int) $comment->comment_ID,
 		'parent'        => (int) $comment->comment_parent,
-		'author'        => array(
-			'name'    => $comment->comment_author,
-			'email'   => $comment->comment_author_email,
-			'url'     => $comment->comment_author_url,
-			'avatar'  => $avatar,
-			'badge'   => $badge,
-			'userId'  => $user_id,
-		),
-		'content'       => $comment->comment_content,
 		'date'          => $comment->comment_date,
+		'authorName'    => $comment->comment_author,
+		'authorEmail'   => $comment->comment_author_email,
+		'authorUrl'     => $comment->comment_author_url,
 		'status'        => $comment->comment_approved,
+		'avatar'        => $avatar,
+		'content'       => array( 'rendered' => $comment->comment_content ),
 		'likes'         => (int) get_comment_meta( $comment->comment_ID, 'st_likes', true ),
+		'metaInfo'      => array(
+			'location' => '',
+			'browser'  => '',
+			'os'       => '',
+			'ipMask'   => '',
+		),
+		'children'      => array(),
 		'isPinned'      => simple_theme_is_comment_pinned( $comment->comment_ID ),
+		'isPrivate'     => simple_theme_is_private_comment( $comment->comment_ID ),
 		'canEdit'       => simple_theme_user_can_edit_comment( $comment->comment_ID ),
-		'usesMarkdown'  => simple_theme_comment_uses_markdown( $comment->comment_ID ),
-		'editedAt'      => get_comment_meta( $comment->comment_ID, 'st_edited_at', true ) ?: null,
+		'canPin'        => current_user_can( 'moderate_comments' ),
+		'useMarkdown'   => simple_theme_comment_uses_markdown( $comment->comment_ID ),
+		'qqAvatar'      => simple_theme_get_qq_avatar_url( $comment->comment_author_email ),
 	);
 }
 
@@ -83,7 +80,7 @@ function simple_theme_build_comment_tree( array $items, $parent_id = 0, $max_dep
 			if ( $current_depth < $max_depth ) {
 				$children = simple_theme_build_comment_tree( $items, $item['id'], $max_depth, $current_depth + 1 );
 			}
-			$item['replies'] = $children;
+			$item['children'] = $children;
 			$branch[] = $item;
 		}
 	}
@@ -238,7 +235,7 @@ function simple_theme_get_comments( WP_REST_Request $request ) {
 
 function simple_theme_create_comment( WP_REST_Request $request ) {
 	$params = $request->get_json_params();
-	$post_id = (int) ( $params['postId'] ?? 0 );
+	$post_id = (int) ( $params['post'] ?? 0 );
 
 	if ( ! $post_id || ! get_post( $post_id ) ) {
 		return new WP_REST_Response( array( 'error' => 'Invalid post' ), 400 );
@@ -252,9 +249,9 @@ function simple_theme_create_comment( WP_REST_Request $request ) {
 		'comment_post_ID'      => $post_id,
 		'comment_parent'       => max( 0, (int) ( $params['parent'] ?? 0 ) ),
 		'comment_content'      => wp_kses_post( $params['content'] ?? '' ),
-		'comment_author'       => sanitize_text_field( $params['author'] ?? '' ),
-		'comment_author_email'  => sanitize_email( $params['email'] ?? '' ),
-		'comment_author_url'   => esc_url_raw( $params['url'] ?? '' ),
+		'comment_author'       => sanitize_text_field( $params['author_name'] ?? '' ),
+		'comment_author_email'  => sanitize_email( $params['author_email'] ?? '' ),
+		'comment_author_url'   => esc_url_raw( $params['author_url'] ?? '' ),
 		'comment_type'         => 'comment',
 	);
 
@@ -293,12 +290,12 @@ function simple_theme_create_comment( WP_REST_Request $request ) {
 	if ( ! empty( $params['mailNotify'] ) ) {
 		update_comment_meta( $comment_id, 'st_mail_notify', '1' );
 	}
-	if ( ! empty( $params['usesMarkdown'] ) ) {
+	if ( ! empty( $params['useMarkdown'] ) ) {
 		update_comment_meta( $comment_id, 'st_markdown', '1' );
 	}
 
 	$comment = get_comment( $comment_id );
-	return new WP_REST_Response( simple_theme_format_comment_item( $comment ), 201 );
+	return new WP_REST_Response( array( 'item' => simple_theme_format_comment_item( $comment ) ), 201 );
 }
 
 function simple_theme_like_comment( WP_REST_Request $request ) {
@@ -406,13 +403,13 @@ function simple_theme_rest_edit_comment( WP_REST_Request $request ) {
 	) );
 	update_comment_meta( $comment_id, 'st_edited_at', current_time( 'mysql' ) );
 
-	return new WP_REST_Response( simple_theme_format_comment_item( get_comment( $comment_id ) ), 200 );
+	return new WP_REST_Response( array( 'item' => simple_theme_format_comment_item( get_comment( $comment_id ) ) ), 200 );
 }
 
 function simple_theme_rest_comment_history( WP_REST_Request $request ) {
 	$comment_id = (int) $request->get_param( 'id' );
 	$history    = get_comment_meta( $comment_id, 'st_edit_history', true ) ?: array();
-	return new WP_REST_Response( $history, 200 );
+	return new WP_REST_Response( array( 'history' => $history ), 200 );
 }
 
 function simple_theme_rest_pin_comment( WP_REST_Request $request ) {
@@ -424,7 +421,7 @@ function simple_theme_rest_pin_comment( WP_REST_Request $request ) {
 	}
 
 	update_comment_meta( $comment_id, 'st_pinned', $pin ? '1' : '0' );
-	return new WP_REST_Response( array( 'pinned' => $pin ), 200 );
+	return new WP_REST_Response( array( 'pinned' => $pin, 'id' => $comment_id ), 200 );
 }
 
 // ========== Comment meta & hooks ==========

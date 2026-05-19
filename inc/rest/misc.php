@@ -41,6 +41,7 @@ function simple_theme_get_links() {
 			'rating'      => $bookmark->link_rating,
 			'categories'  => $cat_ids ? array_map( 'intval', $cat_ids ) : array(),
 			'target'      => $bookmark->link_target,
+			'notes'       => $bookmark->link_notes,
 		);
 	}
 
@@ -54,10 +55,11 @@ function simple_theme_get_links() {
 		}
 		if ( ! empty( $category_links ) ) {
 			$result[] = array(
-				'id'    => $cat->term_id,
-				'name'  => $cat->name,
-				'slug'  => $cat->slug,
-				'links' => $category_links,
+				'id'          => $cat->term_id,
+				'name'        => $cat->name,
+				'slug'        => $cat->slug,
+				'description' => $cat->description,
+				'links'       => $category_links,
 			);
 		}
 	}
@@ -195,11 +197,11 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 	$post = get_page_by_path( $internal_path, OBJECT, array( 'post', 'page', 'shuoshuo' ) );
 	if ( $post ) {
 		return new WP_REST_Response( array(
-			'type' => 'post',
-			'id'   => $post->ID,
-			'slug' => $post->post_name,
-			'url'  => get_permalink( $post ),
-			'path' => $internal_path,
+			'type'      => 'post',
+			'id'        => $post->ID,
+			'name'      => $post->post_name,
+			'permalink' => get_permalink( $post ),
+			'path'      => $internal_path,
 		), 200 );
 	}
 
@@ -207,11 +209,12 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 	$term = simple_theme_path_to_term( $internal_path );
 	if ( $term ) {
 		return new WP_REST_Response( array(
-			'type' => 'term',
-			'id'   => $term->term_id,
-			'slug' => $term->slug,
-			'url'  => get_term_link( $term ),
-			'path' => $internal_path,
+			'type'      => 'term',
+			'id'        => $term->term_id,
+			'name'      => $term->name,
+			'taxonomy'  => $term->taxonomy,
+			'permalink' => get_term_link( $term ),
+			'path'      => $internal_path,
 		), 200 );
 	}
 
@@ -220,18 +223,19 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		return new WP_REST_Response( array(
 			'type' => 'home',
 			'id'   => 0,
-			'slug' => '',
-			'url'  => $home_url,
+			'name' => '',
+			'permalink' => $home_url,
 			'path' => '/',
 		), 200 );
 	}
 
 	return new WP_REST_Response( array(
-		'type' => 'unknown',
-		'id'   => 0,
-		'slug' => trim( $internal_path, '/' ),
-		'url'  => $full_url,
-		'path' => $internal_path,
+		'type'      => '404',
+		'id'        => 0,
+		'name'      => trim( $internal_path, '/' ),
+		'permalink' => $full_url,
+		'path'      => $internal_path,
+		'message'   => '页面未找到',
 	), 200 );
 }
 

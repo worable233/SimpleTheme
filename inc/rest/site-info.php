@@ -30,6 +30,7 @@ function simple_theme_get_site_info() {
 			'name'          => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES, 'UTF-8' ),
 			'description'   => html_entity_decode( get_bloginfo( 'description' ), ENT_QUOTES, 'UTF-8' ),
 			'url'           => home_url( '/' ),
+			'siteIcon'      => get_site_icon_url() ?: '',
 			'hero'          => array(
 				'image'      => (string) ( $theme_options['hero_image'] ?? '' ),
 				'showAvatar' => (bool) ( $theme_options['hero_show_avatar'] ?? false ),

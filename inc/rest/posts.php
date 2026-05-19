@@ -120,7 +120,7 @@ function simple_theme_track_post_view( WP_REST_Request $request ) {
 	}
 	$count = (int) get_post_meta( $post_id, 'views', true );
 	update_post_meta( $post_id, 'views', $count + 1 );
-	return new WP_REST_Response( array( 'views' => $count + 1 ), 200 );
+	return new WP_REST_Response( array( 'viewCount' => $count + 1 ), 200 );
 }
 
 function simple_theme_format_post_item( WP_Post $post ) {
@@ -144,8 +144,8 @@ function simple_theme_format_post_item( WP_Post $post ) {
 		'excerpt'        => array(
 			'rendered' => has_excerpt( $post ) ? get_the_excerpt( $post ) : '',
 		),
-		'categories'     => simple_theme_get_post_term_names( $post->ID, 'category' ),
-		'tags'           => simple_theme_get_post_term_names( $post->ID, 'post_tag' ),
+		'categories'     => wp_get_post_terms( $post->ID, 'category', array( 'fields' => 'names' ) ),
+		'tags'           => wp_get_post_terms( $post->ID, 'post_tag', array( 'fields' => 'names' ) ),
 		'comment_status' => $post->comment_status,
 		'comment_count'  => (int) $post->comment_count,
 		'viewCount'      => max( 0, (int) get_post_meta( $post->ID, 'views', true ) ),

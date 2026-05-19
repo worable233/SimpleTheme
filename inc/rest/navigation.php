@@ -39,13 +39,16 @@ function simple_theme_format_menu_items( array $items ) {
 		$icon = get_post_meta( $item->ID, '_menu_item_icon', true );
 
 		$formatted[] = array(
-			'id'     => $item->ID,
-			'title'  => $item->title,
-			'url'    => $item->url,
-			'target' => $item->target ?: '_self',
-			'parent' => (int) $item->menu_item_parent,
-			'icon'   => $icon ?: '',
-			'order'  => (int) $item->menu_order,
+			'id'          => $item->ID,
+			'title'       => $item->title,
+			'url'         => $item->url,
+			'path'        => simple_theme_get_internal_path( $item->url ),
+			'description' => $item->description ?: '',
+			'current'     => false,
+			'target'      => $item->target ?: '_self',
+			'parent'      => (int) $item->menu_item_parent,
+			'icon'        => $icon ?: '',
+			'order'       => (int) $item->menu_order,
 		);
 	}
 	return simple_theme_build_menu_tree( simple_theme_build_children_map( $formatted ), 0 );
