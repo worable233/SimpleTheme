@@ -36,6 +36,10 @@ function simple_theme_get_asset_version( $relative_path ) {
 	return filemtime( get_theme_file_path( $relative_path ) );
 }
 
+function simple_theme_asset_uri( $path = '' ) {
+	return wp_make_link_relative( get_theme_file_uri( $path ) );
+}
+
 // ========== Frontend Config (injected into page) ==========
 
 function simple_theme_get_frontend_config() {
@@ -83,7 +87,7 @@ function simple_theme_enqueue_prism() {
 		return; // prism files not copied yet (npm run build-only)
 	}
 
-	$prism_uri = get_theme_file_uri( 'dist/prism/' );
+	$prism_uri = simple_theme_asset_uri( 'dist/prism/' );
 	$version   = '1.30.0';
 
 	// Core must come first
@@ -116,7 +120,7 @@ function simple_theme_enqueue_oat() {
 	}
 	wp_enqueue_script(
 		'simple-theme-oat',
-		get_theme_file_uri( $oat_file ),
+		simple_theme_asset_uri( $oat_file ),
 		array(),
 		filemtime( $oat_path ),
 		true
@@ -175,7 +179,7 @@ function simple_theme_enqueue_assets() {
 	}
 
 	$entry      = $manifest['src/main.ts'];
-	$script_uri = get_theme_file_uri( 'dist/' . ltrim( $entry['file'], '/' ) );
+	$script_uri = simple_theme_asset_uri( 'dist/' . ltrim( $entry['file'], '/' ) );
 	$script_ver = simple_theme_get_asset_version( 'dist/' . ltrim( $entry['file'], '/' ) );
 
 	$all_css = simple_theme_collect_entry_css( $manifest, 'src/main.ts' );
@@ -183,7 +187,7 @@ function simple_theme_enqueue_assets() {
 		$relative_css_path = 'dist/' . ltrim( $css_file, '/' );
 		wp_enqueue_style(
 			"simple-theme-bundle-{$index}",
-			get_theme_file_uri( $relative_css_path ),
+			simple_theme_asset_uri( $relative_css_path ),
 			array( 'simple-theme-style' ),
 			simple_theme_get_asset_version( $relative_css_path )
 		);
@@ -238,9 +242,9 @@ function simple_theme_output_bundle_css() {
 	}
 
 	$all_css = simple_theme_collect_entry_css( $manifest, 'src/main.ts' );
-	foreach ( $all_css as $css_file ) {
-		$uri = get_theme_file_uri( 'dist/' . ltrim( $css_file, '/' ) );
-		echo '<link rel="stylesheet" id="st-bundle-fallback" href="' . esc_url( $uri ) . '">' . "
+	foreach ( $all_css as $index => $css_file ) {
+		$uri = simple_theme_asset_uri( 'dist/' . ltrim( $css_file, '/' ) );
+		echo '<link rel="stylesheet" id="st-bundle-css-' . $index . '" href="' . esc_url( $uri ) . '">' . "
 ";
 	}
 }
@@ -267,7 +271,7 @@ function simple_theme_enqueue_admin_assets( $hook ) {
 		foreach ( $entry['css'] as $index => $css_file ) {
 			wp_enqueue_style(
 				'simple-theme-admin-bundle-' . $index,
-				get_theme_file_uri( 'dist/' . ltrim( $css_file, '/' ) ),
+				simple_theme_asset_uri( 'dist/' . ltrim( $css_file, '/' ) ),
 				array(),
 				simple_theme_get_asset_version( 'dist/' . ltrim( $css_file, '/' ) )
 			);
@@ -278,7 +282,7 @@ function simple_theme_enqueue_admin_assets( $hook ) {
 		$admin_handle = 'simple-theme-admin-bundle';
 		wp_enqueue_script(
 			$admin_handle,
-			get_theme_file_uri( 'dist/' . ltrim( $entry['file'], '/' ) ),
+			simple_theme_asset_uri( 'dist/' . ltrim( $entry['file'], '/' ) ),
 			array(),
 			simple_theme_get_asset_version( 'dist/' . ltrim( $entry['file'], '/' ) ),
 			true

@@ -2021,3 +2021,24 @@ body[data-theme='dark'] .post-card:hover {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ==================== Image Loading Animation ==================== */
+@keyframes imgFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.post-card__cover-wrap img,
+.single-post__cover-img img,
+.shuoshuo-item .post-card__cover,
+.aside-author__cover img,
+.aside-author__avatar img,
+.comments-item__avatar-img,
+.link-card__avatar-wrap img,
+.link-card__tip-avatar img {
+  animation: imgFadeIn 0.5s ease-in-out;
+}

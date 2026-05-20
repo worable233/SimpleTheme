@@ -254,7 +254,7 @@ watch(
       <article v-else-if="postData" class="single-post">
         <div v-if="featuredImageUrl" class="single-post__cover">
           <div class="single-post__cover-img">
-            <img :src="featuredImageUrl" alt="" />
+            <img :src="featuredImageUrl" alt="" loading="lazy" />
           </div>
           <div class="single-post__cover-info">
             <div class="single-post__cover-title">
