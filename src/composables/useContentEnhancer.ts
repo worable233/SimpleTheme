@@ -234,8 +234,8 @@ function initFancyboxImages(container: Element) {
     if (img.closest('a')) continue
     // Skip already-processed images (already wrapped in data-fancybox)
     if (img.closest('[data-fancybox]')) continue
-    // Skip tiny icons/avatars — only skip if natural dimensions are known and tiny
-    if (img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth < 40 && img.naturalHeight < 40) continue
+    // Skip tiny icons/avatars/emojis — check rendered size (CSS dimensions)
+    if (img.offsetWidth > 0 && img.offsetHeight > 0 && img.offsetWidth < 48 && img.offsetHeight < 48) continue
 
     const src = img.getAttribute('src') || img.getAttribute('data-src') || ''
     if (!src || src.startsWith('data:')) continue
