@@ -173,3 +173,26 @@
   50% { transform: translateX(330%); }
   100% { transform: translateX(-30%); }
 }
+/* ── Mobile responsive toasts ── */
+@media (max-width: 600px) {
+  .toast-container {
+    z-index: 10001;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  }
+
+  .toast-container[data-placement="bottom-center"] {
+    padding: 0 12px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .toast {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+}

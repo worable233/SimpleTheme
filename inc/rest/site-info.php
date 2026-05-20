@@ -103,26 +103,30 @@ function simple_theme_get_site_info() {
 function simple_theme_compute_site_stats() {
 	global $wpdb;
 
-	$cache_key   = 'simple_theme_site_stats';
+	$cache_key   = 'simple_theme_site_stats_v2';
 	$cached = get_transient( $cache_key );
 	if ( false !== $cached ) {
 		return $cached;
 	}
 
-	$total_posts    = (int) wp_count_posts( 'post' )->publish;
-	$total_words    = (int) $wpdb->get_var( "SELECT SUM( LENGTH( post_content ) - LENGTH( REPLACE( post_content, ' ', '' ) ) + 1 ) FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish'" );
-	$total_comments = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = '1'" );
-	$total_tags     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'post_tag'" );
-	$total_cats     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'category'" );
-	$last_updated   = $wpdb->get_var( "SELECT post_modified FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_modified DESC LIMIT 1" );
+	$total_posts     = (int) wp_count_posts( 'post' )->publish;
+	$total_shuoshuo  = (int) wp_count_posts( 'shuoshuo' )->publish;
+	$total_words     = (int) $wpdb->get_var( "SELECT COALESCE( SUM( LENGTH( post_content ) - LENGTH( REPLACE( post_content, ' ', '' ) ) + 1 ), 0 ) FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish'" );
+	$total_comments  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = '1'" );
+	$total_tags      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'post_tag'" );
+	$total_cats      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'category'" );
+	$last_updated    = $wpdb->get_var( "SELECT post_modified FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_modified DESC LIMIT 1" );
+	$first_post_date = $wpdb->get_var( "SELECT post_date FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date ASC LIMIT 1" );
 
 	$stats = array(
-		'totalPosts'    => $total_posts,
-		'totalComments' => $total_comments,
-		'totalTags'     => $total_tags,
-		'totalCats'     => $total_cats,
-		'totalWords'    => max( 0, $total_words ),
-		'lastUpdated'   => $last_updated ?: '',
+		'postCount'        => $total_posts,
+		'shuoshuoCount'    => $total_shuoshuo,
+		'categoryCount'    => $total_cats,
+		'tagCount'         => $total_tags,
+		'totalWordCount'   => max( 0, $total_words ),
+		'commentCount'     => $total_comments,
+		'registeredDate'   => $first_post_date ? gmdate( 'c', strtotime( $first_post_date ) ) : '',
+		'lastActivityDate' => $last_updated ? gmdate( 'c', strtotime( $last_updated ) ) : '',
 	);
 
 	set_transient( $cache_key, $stats, HOUR_IN_SECONDS );
