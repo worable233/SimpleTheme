@@ -78,7 +78,7 @@ function simple_theme_get_frontend_config() {
 
 add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_prism', 8 );
 function simple_theme_enqueue_prism() {
-	$prism_path = get_theme_file_path( 'dist/prism/prism.min.js' );
+	$prism_path = get_theme_file_path( 'dist/prism/prism-core.min.js' );
 	if ( ! file_exists( $prism_path ) ) {
 		return; // prism files not copied yet (npm run build-only)
 	}
@@ -107,6 +107,40 @@ function simple_theme_enqueue_prism() {
 
 // ========== Frontend Assets ==========
 
+/**
+ * Recursively collect CSS from an entry and all its imports.
+ *
+ * Vite/Rolldown may extract CSS from code-split chunks (e.g. Fancybox)
+ * into separate CSS files. The entry's direct `css` array only includes
+ * CSS imported synchronously -- async/dynamic imports end up in child
+ * chunk entries. This walks the `imports` chain to find them all.
+ */
+function simple_theme_collect_entry_css( $manifest, $entry_key, &$seen = array() ) {
+	$css_files = array();
+	if ( empty( $manifest[ $entry_key ] ) ) {
+		return $css_files;
+	}
+	$entry = $manifest[ $entry_key ];
+
+	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
+		foreach ( $entry['css'] as $css_file ) {
+			if ( ! in_array( $css_file, $seen, true ) ) {
+				$seen[] = $css_file;
+				$css_files[] = $css_file;
+			}
+		}
+	}
+
+	if ( ! empty( $entry['imports'] ) && is_array( $entry['imports'] ) ) {
+		foreach ( $entry['imports'] as $import_key ) {
+			$child_css = simple_theme_collect_entry_css( $manifest, $import_key, $seen );
+			$css_files = array_merge( $css_files, $child_css );
+		}
+	}
+
+	return $css_files;
+}
+
 add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_assets' );
 function simple_theme_enqueue_assets() {
 	$manifest = simple_theme_get_manifest();
@@ -126,16 +160,15 @@ function simple_theme_enqueue_assets() {
 	$script_uri = get_theme_file_uri( 'dist/' . ltrim( $entry['file'], '/' ) );
 	$script_ver = simple_theme_get_asset_version( 'dist/' . ltrim( $entry['file'], '/' ) );
 
-	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
-		foreach ( $entry['css'] as $index => $css_file ) {
-			$relative_css_path = 'dist/' . ltrim( $css_file, '/' );
-			wp_enqueue_style(
-				"simple-theme-bundle-{$index}",
-				get_theme_file_uri( $relative_css_path ),
-				array( 'simple-theme-style' ),
-				simple_theme_get_asset_version( $relative_css_path )
-			);
-		}
+	$all_css = simple_theme_collect_entry_css( $manifest, 'src/main.ts' );
+	foreach ( $all_css as $index => $css_file ) {
+		$relative_css_path = 'dist/' . ltrim( $css_file, '/' );
+		wp_enqueue_style(
+			"simple-theme-bundle-{$index}",
+			get_theme_file_uri( $relative_css_path ),
+			array( 'simple-theme-style' ),
+			simple_theme_get_asset_version( $relative_css_path )
+		);
 	}
 
 	wp_enqueue_script(

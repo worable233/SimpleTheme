@@ -19,7 +19,7 @@ import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import TocWidget from '@/components/TocWidget.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import ErrorView from '@/components/ErrorView.vue'
-import PageView from '@/views/PageView.vue'
+
 import ShuoshuoView from '@/views/ShuoshuoView.vue'
 import ArchivesView from '@/views/ArchivesView.vue'
 import AboutView from '@/views/AboutView.vue'
@@ -32,6 +32,15 @@ const specialPageMap: Record<string, Component> = {
   '/archives': ArchivesView,
   '/links': LinksView,
 }
+
+/**
+ * Normalize route path: trim trailing slash (except for root `/`)
+ * so `/about/` and `/about` map to the same special page / cache key.
+ */
+const normalizedPath = computed(() => {
+  const p = route.path
+  return p.length > 1 ? p.replace(/\/+$/, '') : p
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -72,7 +81,7 @@ const featuredImageUrl = computed(() => {
 })
 
 const specialPageComponent = computed(() => {
-  return specialPageMap[route.path] || null
+  return specialPageMap[normalizedPath.value] || null
 })
 
 
@@ -113,7 +122,7 @@ const loadCurrentContent = async () => {
     const useMock = shouldUseMock()
     const cachedResolve = useMock
       ? mockResolveThemePath
-      : withCache(resolveThemePath, `resolve:${route.path}`, 30_000)
+      : withCache(resolveThemePath, `resolve:${normalizedPath.value}`, 30_000)
     const resolved = await cachedResolve(route.path)
     contentType.value = resolved.type
 
@@ -242,8 +251,7 @@ watch(
         :error-message="errorMessage"
         :term-posts="termPosts"
       />
-      <PageView v-else-if="'page' === contentType && postData" :page-data="postData" />
-      <article v-else-if="postData && 'page' !== contentType" class="single-post">
+      <article v-else-if="postData" class="single-post">
         <div v-if="featuredImageUrl" class="single-post__cover">
           <div class="single-post__cover-img">
             <img :src="featuredImageUrl" alt="" />

@@ -148,10 +148,17 @@ function simple_theme_serve_illustration( WP_REST_Request $request ) {
 // ========== Path Resolution ==========
 
 function simple_theme_get_internal_path( $url ) {
+	// URL-encode non-ASCII bytes so parse_url doesn't truncate Chinese content
+	$safe_url = preg_replace_callback(
+		'/[^\x20-\x7e\/\?\#&=\.\-\_\,\:\@\%]/',
+		function ( $m ) { return rawurlencode( $m[0] ); },
+		$url
+	);
+
 	$home = trailingslashit( home_url() );
 
 	$parsed_home = wp_parse_url( $home );
-	$parsed_url  = wp_parse_url( $url );
+	$parsed_url  = wp_parse_url( $safe_url );
 
 	if ( ! $parsed_url ) {
 		return '/';
@@ -159,7 +166,7 @@ function simple_theme_get_internal_path( $url ) {
 
 	if ( isset( $parsed_url['host'] ) ) {
 		if ( ( $parsed_home['host'] ?? '' ) !== $parsed_url['host'] ) {
-			return $url;
+			return $safe_url;
 		}
 		$path = $parsed_url['path'] ?? '/';
 		// Strip home path (for subdirectory installs)
@@ -171,7 +178,7 @@ function simple_theme_get_internal_path( $url ) {
 		$path = $parsed_url['path'] ?? '/';
 	}
 
-	$query  = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
+	$query    = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
 	$fragment = isset( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
 
 	return $path . $query . $fragment;
@@ -187,6 +194,9 @@ function simple_theme_get_internal_path( $url ) {
  */
 function simple_theme_find_post_by_path( $path, $post_types ) {
 	global $wpdb;
+
+	// Normalize: remove trailing slash so get_page_by_path and slug matching work consistently
+	$path = '/' . trim( $path, '/' );
 
 	// Try get_page_by_path first (works for ASCII slugs)
 	$post = get_page_by_path( $path, OBJECT, $post_types );
@@ -274,7 +284,7 @@ function simple_theme_find_post_by_path( $path, $post_types ) {
 		return get_post( $row->ID );
 	}
 
-	// Strategy 4: remove known CPT prefix and try again
+	// Strategy 5: remove known CPT prefix and try again
 	// e.g. /shuoshuo/test-说说 → try "test-说说" only
 	$stripped = ltrim( $path, '/' );
 	$cpt_slugs = array( 'shuoshuo' );
@@ -301,10 +311,19 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 
 	// Try to match WordPress native routes
 	$home_url  = home_url( '/' );
-	$full_url  = $path;
 
-	if ( ! preg_match( '#^https?://#', $path ) ) {
-		$full_url = $home_url . ltrim( $path, '/' );
+	// URL-encode non-ASCII characters so wp_parse_url can handle the path
+	// (PHP's parse_url cannot handle raw UTF-8; it truncates or mangles Chinese content)
+	$safe_path = preg_replace_callback(
+		'/[^\x20-\x7e\/\?\#&=\.\-\_\,\:\@\%]/',
+		function ( $m ) { return rawurlencode( $m[0] ); },
+		$path
+	);
+
+	$full_url = $safe_path;
+
+	if ( ! preg_match( '#^https?://#', $safe_path ) ) {
+		$full_url = $home_url . ltrim( $safe_path, '/' );
 	}
 
 	$internal_path = simple_theme_get_internal_path( $full_url );

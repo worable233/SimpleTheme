@@ -1086,90 +1086,198 @@ defineExpose({ clearForm })
     white-space: nowrap;
   }
 
-  /* ── Expandable section ── */
-  .comments-form__expandable {
-    display: grid;
-    grid-template-rows: 0fr;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.25s ease,
-                transform 0.25s ease;
-    pointer-events: none;
-  }
+  	  /* ── Expandable section (mobile QQ-style) ── */
+	  .comments-form__expandable {
+	    display: grid;
+	    grid-template-rows: 0fr;
+	    overflow: hidden;
+	    opacity: 0;
+	    transform: translateY(8px);
+	    transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+	                opacity 0.25s ease,
+	                transform 0.25s ease;
+	    pointer-events: none;
+	  }
 
-  .comments-form__expandable--open {
-    grid-template-rows: 1fr;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
+	  .comments-form__expandable--open {
+	    grid-template-rows: 1fr;
+	    opacity: 1;
+	    transform: translateY(0);
+	    pointer-events: auto;
+	  }
 
-  .comments-form__expandable-inner {
-    min-height: 0;
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    gap: 2px 0;
-  }
-  .comments-form__expandable-inner > .comments-form__row {
-    flex: 0 0 100%;
-  }
-  .comments-form__expandable-inner > .comments-form__options {
-    flex: 1;
-    min-width: 0;
-  }
-  .comments-form__expandable-inner > .comments-form__captcha {
-    flex: 0 0 100%;
-  }
-  .comments-form__expandable-inner > .comments-form__footer {
-    margin-left: auto;
-    margin-top: 0;
-    flex-shrink: 0;
-  }
+	  .comments-form__expandable-inner {
+	    min-height: 0;
+	    padding: 8px 14px 4px;
+	    display: flex;
+	    flex-direction: column;
+	    gap: 10px;
+	  }
 
-  /* Expanded form inner spacing */
-  .comments-form--expanded .comments-form__row {
-    margin-left: 12px;
-    margin-right: 12px;
-  }
-  .comments-form--expanded .comments-form__options {
-    margin-left: 12px;
-    margin-right: 12px;
-  }
-  .comments-form--expanded .comments-form__captcha {
-    margin-left: 12px;
-    margin-right: 12px;
-  }
-  .comments-form--expanded .comments-form__footer {
-    margin-left: 12px;
-    margin-right: 12px;
-    margin-top: 10px;
-    padding-bottom: 4px;
-  }
+	  /* ── Stack inputs vertically ── */
+	  .comments-form__expandable-inner > .comments-form__row {
+	    display: flex;
+	    flex-direction: column;
+	    gap: 8px;
+	    flex: none;
+	    margin: 0;
+	  }
 
-  .comments-form--expanded .comments-form__submit {
-    padding: 6px 18px;
-  }
+	  .comments-form__expandable-inner .comments-form__input {
+	    width: 100%;
+	    box-sizing: border-box;
+	    padding: 12px 14px;
+	    font-size: 15px;
+	    border-radius: 10px;
+	    border: 1.5px solid var(--border);
+	    background: var(--faint);
+	    transition: all 0.2s;
+	  }
+	  .comments-form__expandable-inner .comments-form__input:focus {
+	    border-color: var(--primary);
+	    background: var(--card);
+	    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+	  }
 
-  /* ── Mobile emoji panel (inline inside form, full width) ── */
-  .emoji-panel-wrapper--inline {
-    padding: 0;
-    flex-shrink: 0;
-  }
+	  /* ── Logged-in badge ── */
+	  .comments-form__expandable-inner > .comments-form__logged-in {
+	    margin: 0;
+	    padding: 2px 0;
+	  }
 
-  /* Desktop emoji panel (dropdown): keep position:relative so .comments-emoji's
-     position:absolute;bottom:100% works above the toggle button.
-     Base .emoji-panel-wrapper { position: relative } handles this. */
+	  /* ── Options as chip-style toggles ── */
+	  .comments-form__expandable-inner > .comments-form__options {
+	    display: flex;
+	    flex-wrap: wrap;
+	    gap: 8px;
+	    flex: none;
+	    margin: 0;
+	  }
 
-  /* Reply indicator spacing */
-  .comments-replying {
-    margin: 4px 12px 8px;
-  }
-}
+	  .comments-form__expandable-inner .comments-form__option {
+	    position: relative;
+	    display: inline-flex;
+	    align-items: center;
+	    gap: 6px;
+	    padding: 6px 14px;
+	    border-radius: 20px;
+	    font-size: 13px;
+	    background: var(--muted);
+	    cursor: pointer;
+	    transition: all 0.15s;
+	    user-select: none;
+	    margin: 0;
+	    min-height: 34px;
+	  }
 
-/* ── Emoji panel slide animation (mobile) ── */
+	  .comments-form__expandable-inner .comments-form__option:has(input:checked) {
+	    background: color-mix(in srgb, var(--primary) 15%, transparent);
+	    color: var(--primary);
+	  }
+
+	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"] {
+	    appearance: none;
+	    -webkit-appearance: none;
+	    width: 18px;
+	    height: 18px;
+	    border: 2px solid var(--border);
+	    border-radius: 50%;
+	    margin: 0;
+	    cursor: pointer;
+	    position: relative;
+	    flex-shrink: 0;
+	    transition: all 0.2s;
+	  }
+
+	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"]:checked {
+	    border-color: var(--primary);
+	    background: var(--primary);
+	  }
+
+	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"]:checked::after {
+	    content: '';
+	    position: absolute;
+	    left: 4.5px;
+	    top: 1.5px;
+	    width: 5px;
+	    height: 9px;
+	    border: solid white;
+	    border-width: 0 2px 2px 0;
+	    transform: rotate(45deg);
+	  }
+
+	  /* ── Captcha ── */
+	  .comments-form__expandable-inner > .comments-form__captcha {
+	    display: flex;
+	    align-items: center;
+	    gap: 8px;
+	    flex: none;
+	    margin: 0;
+	  }
+
+	  .comments-form__expandable-inner .comments-form__captcha-question {
+	    font-size: 14px;
+	    font-weight: 600;
+	    padding: 8px 12px;
+	    background: var(--muted);
+	    border-radius: 8px;
+	    white-space: nowrap;
+	    flex-shrink: 0;
+	  }
+
+	  .comments-form__expandable-inner .comments-form__captcha-input {
+	    max-width: 100px;
+	  }
+
+	  /* ── Footer toolbar ── */
+	  .comments-form__expandable-inner > .comments-form__footer {
+	    display: flex;
+	    align-items: center;
+	    justify-content: space-between;
+	    margin: 2px 0 0;
+	    flex: none;
+	    padding: 0;
+	  }
+
+	  .comments-form__expandable-inner .comments-form__footer-right {
+	    display: flex;
+	    align-items: center;
+	    gap: 6px;
+	    width: 100%;
+	    justify-content: flex-end;
+	  }
+
+	  .comments-form__expandable-inner .emoji-toggle-btn {
+	    width: 38px;
+	    height: 38px;
+	    border-radius: 10px;
+	  }
+
+	  .comments-form__expandable-inner .emoji-toggle-btn svg {
+	    width: 22px;
+	    height: 22px;
+	  }
+
+	  .comments-form__expandable-inner .comments-form__submit {
+	    padding: 9px 22px;
+	    font-size: 14px;
+	    font-weight: 600;
+	    border-radius: 20px;
+	    min-height: 38px;
+	  }
+
+		  /* ── Mobile emoji panel (inline inside form, full width) ── */
+		  .emoji-panel-wrapper--inline {
+		    padding: 0;
+		    flex-shrink: 0;
+		  }
+
+		  /* Reply indicator spacing */
+		  .comments-replying {
+		    margin: 4px 12px 8px;
+		  }
+		}
+
 .emoji-slide-enter-active {
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
