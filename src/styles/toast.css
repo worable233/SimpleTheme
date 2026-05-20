@@ -177,10 +177,10 @@
 @media (max-width: 600px) {
   .toast-container {
     z-index: 10001;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
   }
 
-  .toast-container[data-placement="bottom-center"] {
+  .toast-container[data-placement^="top"] {
     padding: 0 12px;
     box-sizing: border-box;
     width: 100%;

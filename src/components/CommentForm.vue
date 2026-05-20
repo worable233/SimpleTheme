@@ -413,6 +413,27 @@ defineExpose({ clearForm })
         @focus="expandMobile"
         @click="expandMobile"
       ></div>
+
+      <!-- Collapsed actions: shown on mobile when form is not expanded -->
+      <div v-if="isMobile && !mobileExpanded" class="comments-form__collapse-actions">
+        <button type="button" class="emoji-toggle-btn" @click="toggleEmoji" title="表情">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+            <line x1="9" y1="9" x2="9.01" y2="9" />
+            <line x1="15" y1="9" x2="15.01" y2="9" />
+          </svg>
+        </button>
+        <button type="submit" class="comments-form__submit" :disabled="submitting || loading">
+          <svg v-if="submitting" class="toast-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Expandable section (above emoji panel on mobile) -->
@@ -1080,10 +1101,15 @@ defineExpose({ clearForm })
   }
 
   .comments-form__collapse-actions .comments-form__submit {
-    padding: 7px 14px;
-    font-size: 13px;
-    border-radius: 18px;
-    white-space: nowrap;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    line-height: 1;
   }
 
   	  /* ── Expandable section (mobile QQ-style) ── */

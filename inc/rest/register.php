@@ -142,6 +142,16 @@ add_action( 'rest_api_init', function () {
 	) );
 } );
 
+// ========== About Info ==========
+
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'simple-theme/v1', '/about', array(
+		'methods'             => WP_REST_Server::READABLE,
+		'callback'            => 'simple_theme_get_about',
+		'permission_callback' => '__return_true',
+	) );
+} );
+
 // ========== Avatar Proxy ==========
 
 add_action( 'rest_api_init', function () {

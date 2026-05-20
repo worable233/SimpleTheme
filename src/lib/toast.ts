@@ -74,7 +74,7 @@ export function showToast(
   const ot = window.ot
   if (!ot?.toast) return
 
-  const { variant = 'info', placement = 'bottom-center', duration = 4000 } = options || {}
+  const { variant = 'info', placement = 'top-center', duration = 4000 } = options || {}
 
   const el = createToastElement(message, title, variant)
   el.style.setProperty('--toast-duration', `${duration}ms`)
@@ -129,7 +129,7 @@ export function showLoadingToast(message: string, title: string) {
   el.appendChild(progress)
 
   // Long timeout as safety net
-  const toastEl = ot.toast.el(el, { placement: 'bottom-center', duration: 60000 })
+  const toastEl = ot.toast.el(el, { placement: 'top-center', duration: 60000 })
   if (!toastEl) return null
 
   // Wire up close button on the actual DOM node
