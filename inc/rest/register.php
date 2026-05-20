@@ -124,21 +124,45 @@ add_action( 'rest_api_init', function () {
 
 // ========== Settings (Admin) ==========
 
+/**
+ * Permission callback for admin-only endpoints.
+ *
+ * Primary auth: WordPress REST API nonce (X-WP-Nonce header).
+ * Fallback: validate the logged-in cookie directly, so admin pages
+ * that already have a valid session never fail on stale/missing nonce.
+ */
+function simple_theme_settings_permission() {
+	// Fast path: already authenticated via nonce.
+	if ( current_user_can( 'manage_options' ) ) {
+		return true;
+	}
+
+	// Fallback: manually validate the auth cookie. This covers
+	// browsers that may not send X-WP-Nonce for the very first
+	// admin AJAX call, or where the inline script timing is off.
+	$user_id = wp_validate_auth_cookie( '', 'logged_in' );
+	if ( $user_id ) {
+		$user = get_userdata( $user_id );
+		if ( $user && $user->has_cap( 'manage_options' ) ) {
+			wp_set_current_user( $user_id );
+			return true;
+		}
+	}
+
+	return false;
+}
+
 add_action( 'rest_api_init', function () {
 	register_rest_route( 'simple-theme/v1', '/settings', array(
 		'methods'             => WP_REST_Server::READABLE,
 		'callback'            => 'simple_theme_get_settings',
-		'permission_callback' => function () {
-			return current_user_can( 'manage_options' );
-		},
+		'permission_callback' => 'simple_theme_settings_permission',
 	) );
 
 	register_rest_route( 'simple-theme/v1', '/settings', array(
 		'methods'             => WP_REST_Server::CREATABLE,
 		'callback'            => 'simple_theme_save_settings',
-		'permission_callback' => function () {
-			return current_user_can( 'manage_options' );
-		},
+		'permission_callback' => 'simple_theme_settings_permission',
 	) );
 } );
 
