@@ -222,6 +222,29 @@ function simple_theme_output_frontend_config() {
 	echo '<script>window.SimpleThemeConfig = ' . $config . ';</script>' . "\n";
 }
 
+
+/**
+ * Fallback: output bundle CSS <link> tags directly in wp_head.
+ *
+ * The WPOPT (wp-opt) plugin suppresses output of some enqueued styles,
+ * specifically the first indexed CSS from the Vite manifest (index 0).
+ * This ensures the CSS always renders regardless of plugin interference.
+ */
+add_action( 'wp_head', 'simple_theme_output_bundle_css', 1 );
+function simple_theme_output_bundle_css() {
+	$manifest = simple_theme_get_manifest();
+	if ( empty( $manifest['src/main.ts'] ) ) {
+		return;
+	}
+
+	$all_css = simple_theme_collect_entry_css( $manifest, 'src/main.ts' );
+	foreach ( $all_css as $css_file ) {
+		$uri = get_theme_file_uri( 'dist/' . ltrim( $css_file, '/' ) );
+		echo '<link rel="stylesheet" id="st-bundle-fallback" href="' . esc_url( $uri ) . '">' . "
+";
+	}
+}
+
 // ========== Admin Assets (Vue admin app) ==========
 
 add_action( 'admin_enqueue_scripts', 'simple_theme_enqueue_admin_assets' );

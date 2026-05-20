@@ -94,7 +94,7 @@ function simple_theme_avatar_proxy( WP_REST_Request $request ) {
 		$url = "https://q1.qlogo.cn/g?b=qq&nk={$qq}&s={$size}";
 	} elseif ( $hash ) {
 		// Get configurable Gravatar base URL
-		$gravatar_base = rtrim(get_option('simple_theme_options', [])['gravatar_base_url'] ?? 'https://www.gravatar.com/avatar', '/');
+		$gravatar_base = rtrim(get_option('simple_theme_options', [])['gravatar_base_url'] ?? 'https://weavatar.com/avatar/', '/');
 		$url = "{$gravatar_base}/{$hash}?s={$size}&d=mp";
 	} else {
 		wp_die( 'Missing parameter', '', 400 );
