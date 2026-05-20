@@ -78,16 +78,19 @@ function toggleSubMenu(id: number) {
 
 const menuItems = computed<MenuItem[]>(() => {
   const apiMenu = primaryMenu.value
-  const fixedMenuItems: MenuItem[] = [
+
+  // User has configured a menu in WordPress → use it directly
+  if (apiMenu && apiMenu.length > 0) {
+    return apiMenu
+  }
+
+  // Fallback defaults when no menu is configured
+  const fallbackItems: MenuItem[] = [
     { id: -1, title: '首页', url: '/', path: '/', target: '', description: '', current: false, icon: '', children: [] },
     { id: -2, title: '说说', url: '/shuoshuo', path: '/shuoshuo', target: '', description: '', current: false, icon: '', children: [] },
     { id: -3, title: '友链', url: '/links', path: '/links', target: '', description: '', current: false, icon: '', children: [] },
-  ] as MenuItem[]
-
-  if (!apiMenu || apiMenu.length === 0) return fixedMenuItems
-
-  const unique = apiMenu.filter(apiItem => !fixedMenuItems.some(fixed => fixed.url === apiItem.url))
-  return [...fixedMenuItems, ...unique]
+  ]
+  return fallbackItems
 })
 </script>
 
