@@ -48,6 +48,8 @@ function simple_theme_render_admin_page() {
 		wp_die( esc_html__( '你没有权限访问此页面。', 'simple-theme' ) );
 	}
 	simple_theme_migrate_from_customizer();
+	// Hide the default WordPress admin footer on this page.
+	echo "<style>#wpfooter{display:none!important}</style>\n";
 	// Output config directly in the page body — this is the most reliable
 	// way to ensure window.SimpleThemeConfig is available before the Vue
 	// admin app mounts, regardless of wp_add_inline_script behavior.
