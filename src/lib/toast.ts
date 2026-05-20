@@ -72,7 +72,10 @@ export function showToast(
   options?: { variant?: string; placement?: string; duration?: number },
 ) {
   const ot = window.ot
-  if (!ot?.toast) return
+  if (!ot?.toast) {
+    console.warn('[toast] window.ot?.toast unavailable — toasts will be silent')
+    return
+  }
 
   const { variant = 'info', placement = 'top-center', duration = 4000 } = options || {}
 
@@ -114,7 +117,10 @@ export function dismissToast(toastEl: HTMLElement | null | undefined) {
 
 export function showLoadingToast(message: string, title: string) {
   const ot = window.ot
-  if (!ot?.toast) return null
+  if (!ot?.toast) {
+    console.warn('[toast] window.ot?.toast unavailable — loading toast silent')
+    return null
+  }
 
   const el = createToastElement(message, title, 'loading')
   // Duration-based progress bar is replaced by indeterminate animation

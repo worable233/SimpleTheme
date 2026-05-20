@@ -107,6 +107,17 @@ const emit = defineEmits<{
         </label>
       </div>
       <div class="sta-field">
+        <label class="sta-field__label">Gravatar 基础 URL</label>
+        <input
+          type="url"
+          class="sta-input"
+          :value="(settings.gravatar_base_url as string) || 'https://www.gravatar.com/avatar'"
+          placeholder="https://www.gravatar.com/avatar"
+          @input="emit('update', 'gravatar_base_url', ($event.target as HTMLInputElement).value)"
+        />
+        <p class="sta-field__desc">评论头像代理使用的 Gravatar 服务地址。可更换为国内镜像，如 https://cn.gravatar.com/avatar。</p>
+      </div>
+      <div class="sta-field">
         <label class="sta-checkbox">
           <input
             type="checkbox"

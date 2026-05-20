@@ -172,6 +172,17 @@ function useReply(id: number) {
   parentCommentId.value = id
 }
 
+function generateVisitorId(): string {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+    })
+  }
+}
+
 async function handleFormSubmit(payload: {
   name: string
   email: string
@@ -202,7 +213,7 @@ async function handleFormSubmit(payload: {
   const loadingToast = showLoadingToast('正在提交评论...', '发送中')
 
   try {
-    const visitorId = crypto.randomUUID()
+    const visitorId = generateVisitorId()
     const newComment = await createComment({
       post: props.postId,
       parent: parentCommentId.value || undefined,

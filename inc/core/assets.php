@@ -105,6 +105,24 @@ function simple_theme_enqueue_prism() {
 	wp_enqueue_script( 'st-prism-php', $prism_uri . 'prism-php.min.js', array( 'st-prism-markup-templating' ), $version, true );
 }
 
+// ========== Oat (toast notifications) ==========
+
+add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_oat', 9 );
+function simple_theme_enqueue_oat() {
+	$oat_file = 'dist/oat.min.js';
+	$oat_path = get_theme_file_path( $oat_file );
+	if ( ! file_exists( $oat_path ) ) {
+		return;
+	}
+	wp_enqueue_script(
+		'simple-theme-oat',
+		get_theme_file_uri( $oat_file ),
+		array(),
+		filemtime( $oat_path ),
+		true
+	);
+}
+
 // ========== Frontend Assets ==========
 
 /**

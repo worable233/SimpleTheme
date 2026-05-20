@@ -1695,4 +1695,13 @@ defineExpose({ clearForm })
 :global(body.dark) .wizard-step__input:focus {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
+.toast-spinner {
+  animation: comment-spin 1s linear infinite;
+}
+
+@keyframes comment-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 </style>

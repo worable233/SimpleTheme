@@ -62,6 +62,7 @@ function simple_theme_get_default_options() {
 		'comment_show_url'          => true,
 		'comment_show_cookies'      => true,
 		'comment_captcha_enabled'   => true,
+		'gravatar_base_url'         => 'https://www.gravatar.com/avatar',
 		'comment_show_private'      => true,
 		'comment_show_markdown'     => true,
 
