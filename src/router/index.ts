@@ -16,9 +16,12 @@ const router = createRouter({
     if (savedPosition) {
       return savedPosition
     }
-
-    return { top: 0 }
+    return false
   },
+})
+
+router.afterEach(() => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 })
 
 export default router
