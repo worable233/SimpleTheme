@@ -235,6 +235,9 @@ function simple_theme_enqueue_admin_assets( $hook ) {
 		return;
 	}
 
+	// Load WordPress Media Library JS (wp.media) for image selection buttons.
+	wp_enqueue_media();
+
 	$entry = $manifest['src/admin/main.ts'];
 
 	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
