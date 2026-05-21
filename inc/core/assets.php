@@ -28,8 +28,10 @@ function simple_theme_get_manifest() {
 
 function simple_theme_get_asset_version( $relative_path ) {
 	$manifest = simple_theme_get_manifest();
+	// manifest 存储的路径不含 dist/ 前缀，去掉后再比较
+	$search_key = preg_replace( '#^dist/?#', '', $relative_path );
 	foreach ( $manifest as $entry ) {
-		if ( isset( $entry['file'] ) && $entry['file'] === $relative_path ) {
+		if ( isset( $entry['file'] ) && $entry['file'] === $search_key ) {
 			return ! empty( $entry['version'] ) ? $entry['version'] : filemtime( get_theme_file_path( $relative_path ) );
 		}
 	}
@@ -74,6 +76,18 @@ function simple_theme_get_frontend_config() {
 		'restNonce'  => wp_create_nonce( 'wp_rest' ),
 		'features'   => array(
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
+			'showStats'   => (bool) ($theme_options['sidebar_show_stats']   ?? true),
+			'showHeatmap' => (bool) ($theme_options['sidebar_show_heatmap'] ?? true),
+						'showSocial'  => (bool) ($theme_options['sidebar_show_social']  ?? true),
+			'meta' => array(
+				'showCategory'     => (bool) ($theme_options['meta_show_category']      ?? true),
+				'showPublishDate'  => (bool) ($theme_options['meta_show_publish_date']   ?? true),
+				'showModifiedDate' => (bool) ($theme_options['meta_show_modified_date']  ?? false),
+				'showCommentCount' => (bool) ($theme_options['meta_show_comment_count']  ?? true),
+				'showViewCount'    => (bool) ($theme_options['meta_show_view_count']     ?? true),
+				'showReadingTime'  => (bool) ($theme_options['meta_show_reading_time']     ?? true),
+				'showWordCount'    => (bool) ($theme_options['meta_show_word_count']       ?? false),
+			),
 		),
 	);
 }
@@ -203,6 +217,8 @@ function simple_theme_enqueue_assets() {
 
 	add_filter( 'script_loader_tag', function ( $tag, $handle, $src ) {
 		if ( SIMPLE_THEME_HANDLE === $handle ) {
+			// Strip origin to avoid CORS on module scripts when WP site URL differs from page URL
+			$src = preg_replace( '#^https?://[^/]+#', '', $src );
 			return '<script type="module" src="' . esc_url( $src ) . '"></script>';
 		}
 		return $tag;
@@ -247,6 +263,28 @@ function simple_theme_output_bundle_css() {
 		echo '<link rel="stylesheet" id="st-bundle-css-' . $index . '" href="' . esc_url( $uri ) . '">' . "
 ";
 	}
+}
+
+// ========== Console Warning Suppression ==========
+
+/**
+ * Inject inline script to suppress console warnings matching known plugin patterns (e.g. WPOPT).
+ * Controlled via the "suppress_console_warnings" admin setting.
+ */
+add_action( 'wp_head', 'simple_theme_output_console_suppression', 2 );
+function simple_theme_output_console_suppression() {
+	$options = get_option( 'simple_theme_options', array() );
+	if ( empty( $options['suppress_console_warnings'] ) ) {
+		return;
+	}
+
+	$patterns = array( 'wp-opt', 'WPOPT' );
+	$patterns_json = wp_json_encode( $patterns );
+	if ( ! $patterns_json ) {
+		return;
+	}
+	echo '<script>window.__SUPPRESS_CONSOLE_PATTERNS=' . $patterns_json . ';</script>';
+	echo "<script>(function(){var p=window.__SUPPRESS_CONSOLE_PATTERNS||[];if(!p.length)return;var wn=console.warn;console.warn=function(){for(var a=arguments,l=a.length,i=0;i<l;i++)for(var j=0;j<p.length;j++)if(String(a[i]).indexOf(p[j])>-1)return;return wn.apply(console,a)}})();</script>\n";
 }
 
 // ========== Admin Assets (Vue admin app) ==========

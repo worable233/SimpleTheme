@@ -36,9 +36,7 @@ onUnmounted(() => {
       aria-label="回到顶部"
       style="position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9998; width: 3rem; height: 3rem; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m18 15-6-6-6 6" />
-      </svg>
+      <i class="bx bx-chevron-up" style="font-size: 20px;"></i>
     </button>
   </Transition>
 </template>

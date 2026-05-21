@@ -4,6 +4,7 @@ import { RouterView, useRoute } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
 import LeftSidebar from '@/components/LeftSidebar.vue'
 import SidebarProfile from '@/components/SidebarProfile.vue'
+import TechInfo from '@/components/sidebar/TechInfo.vue'
 import TocWidget from '@/components/TocWidget.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { showError } from '@/lib/toast'
@@ -46,6 +47,7 @@ function applyThemeSettings(theme?: ThemeSettings) {
 
   root.style.setProperty('--primary', theme.primaryColor)
   root.style.setProperty('--font-sans-serif', theme.bodyFont)
+  root.style.setProperty('--font-code', theme.codeFont)
   root.style.setProperty('--radius-medium', radius.medium)
   root.style.setProperty('--radius-large', radius.large)
   root.style.setProperty('--shadow-small', shadow.small)
@@ -123,6 +125,7 @@ watch(
               <!-- Main page: profile + social -->
               <div class="aside-page main-page">
                 <SidebarProfile @toggle-sub="showSubPage = !showSubPage" />
+                <TechInfo />
               </div>
               <!-- Sub page: menu -->
               <div class="aside-page sub-page">
@@ -132,7 +135,7 @@ watch(
                   返回
                 </div>
               </div>
-              <div v-if="footerMenu && footerMenu.length > 0" class="sub-page__menu">
+              <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
                 <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
                 <ul class="sub-page__menu-list">
                   <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">

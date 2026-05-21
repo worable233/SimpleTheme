@@ -182,6 +182,11 @@ function hasChildren(item: MenuItem): boolean {
     flex-shrink: 0;
   }
 
+  .left-sidebar__menu ul li a i.bx {
+    font-size: 24px;
+    line-height: 1;
+  }
+
   .left-sidebar__menu ul li {
     position: relative;
     padding-bottom: 14px;
@@ -229,6 +234,13 @@ function hasChildren(item: MenuItem): boolean {
 .left-sidebar__menu ul li a,
 .left-sidebar__menu ul li button.menu-toggle {
   position: relative;
+}
+
+/* 菜单图标统一尺寸 — 桌面版 24px, 子菜单 16px 由各自选择器覆写 */
+.left-sidebar__menu ul li a i.bx {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--foreground);
 }
 
 .left-sidebar__menu ul li a .menu-item-title,
@@ -285,6 +297,12 @@ function hasChildren(item: MenuItem): boolean {
   color: var(--foreground);
 }
 
+.left-sidebar__menu ul li button.menu-toggle i.bx {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--foreground);
+}
+
 /* Menu items that have children — positioned for sub-menu panel */
 .left-sidebar__menu ul li.menu-item-has-children {
   position: relative;
@@ -293,35 +311,36 @@ function hasChildren(item: MenuItem): boolean {
 /* Chevron indicator */
 .sub-menu-chevron {
   position: absolute;
-  bottom: 3px;
-  right: 3px;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 10px !important;
   height: 10px !important;
-  opacity: 0.5;
-  transition: transform 0.2s ease;
+  opacity: 0.4;
+  transition: transform 0.25s ease;
 }
 
 .menu-item-open .sub-menu-chevron {
-  transform: rotate(180deg);
+  transform: translateY(-50%) rotate(180deg);
 }
 
 /* Desktop: floating sub-menu panel to the right */
 .sub-menu {
   position: absolute;
-  left: calc(100% + 12px);
+  left: calc(100% + 14px);
   top: 50%;
   transform: translateY(-50%);
-  min-width: 160px;
+  min-width: 170px;
   padding: 6px;
   margin: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.55);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  gap: 1px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   z-index: 100;
 }
 
@@ -333,25 +352,61 @@ function hasChildren(item: MenuItem): boolean {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  color: #fff;
+  padding: 9px 14px;
+  border-radius: 7px;
+  color: var(--foreground);
   text-decoration: none;
   white-space: nowrap;
-  font-size: 14px;
-  transition: background-color 0.15s;
+  font-size: 13px;
+  font-weight: 450;
+  transition: all 0.15s ease;
   width: 100%;
 }
 
 .sub-menu li a:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--menu-hover);
 }
 
 .sub-menu li a svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-  color: #fff;
+  color: var(--secondary);
+  transition: color 0.15s;
+}
+
+.sub-menu li a i.bx {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--secondary);
+  transition: color 0.15s;
+}
+
+.sub-menu li a:hover svg {
+  color: var(--foreground);
+}
+
+.sub-menu li a:hover i.bx {
+  color: var(--foreground);
+}
+
+/* Sub-menu items: show icon + title inline, not as tooltip */
+.sub-menu li a .menu-item-title {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  pointer-events: auto;
+  padding: 0;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  white-space: nowrap;
+  display: inline;
 }
 
 .sub-menu li.current-menu-item a {
@@ -360,6 +415,10 @@ function hasChildren(item: MenuItem): boolean {
 }
 
 .sub-menu li.current-menu-item a svg {
+  color: var(--primary-foreground);
+}
+
+.sub-menu li.current-menu-item a i.bx {
   color: var(--primary-foreground);
 }
 
@@ -379,8 +438,8 @@ function hasChildren(item: MenuItem): boolean {
     padding: 2px 0 4px !important;
     width: 100%;
     background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
     border-radius: 0;
     min-width: auto;
     z-index: auto;
@@ -399,6 +458,11 @@ function hasChildren(item: MenuItem): boolean {
   .sub-menu li a svg {
     width: 16px !important;
     height: 16px !important;
+  }
+
+  .sub-menu li a i.bx {
+    font-size: 16px !important;
+    line-height: 1;
   }
 
   .sub-menu li.current-menu-item a {

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchCollection, getErrorMessage } from '@/lib/wordpress'
-import { toInternalPath } from '@/lib/theme-config'
+import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+
+const metaConfig = computed(() => getThemeConfig().features?.meta)
 
 const items = ref<WordPressPost[]>([])
 const loading = ref(true)
@@ -80,24 +82,23 @@ onMounted(() => {
     <div v-else class="content-area">
       <div class="shuoshuo-list">
         <article v-for="post in items" :key="post.id" class="post-card post-card--stack">
-          <!-- Meta badge — top-right overlay -->
-          <div :class="['post-card__meta', { 'post-card__meta--bare': !post.featuredImage }]">
+          <!-- Cover image — full width top -->
+          <img
+            v-if="post.featuredImage"
+            :src="post.featuredImage"
+            :alt="post.title.rendered"
+            class="post-card__cover"
+            loading="lazy"
+          />
+          <!-- Meta badge — overlay on cover -->
+          <div class="post-card__meta">
             <span class="post-card__meta-item">说说</span>
-            <time class="post-card__meta-item" :datetime="post.date">{{ formatDate(post.date) }}</time>
+            <time v-if="metaConfig?.showPublishDate" class="post-card__meta-item" :datetime="post.date">{{ formatDate(post.date) }}</time>
+            <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
+            <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
           </div>
-
-          <!-- Cover image — full width, inline order -->
-          <div v-if="post.featuredImage" class="post-card__cover-wrap">
-            <img
-              :src="post.featuredImage"
-              :alt="post.title.rendered"
-              class="post-card__cover"
-              loading="lazy"
-            />
-          </div>
-
           <!-- Text content -->
-          <div class="post-card__text">
+          <div class="post-card__body">
             <h2 class="post-card__title">
               <RouterLink :to="toInternalPath(post.link)" v-html="post.title.rendered" />
             </h2>
@@ -154,14 +155,20 @@ onMounted(() => {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
 }
 
-.post-card--stack .post-card__cover-wrap {
+/* Stack variant: image is full-width normal flow, not absolute overlay */
+.post-card--stack .post-card__cover {
+  position: revert;
   width: 100%;
-  min-height: auto;
-  order: -1; /* show cover above text, below meta which is absolute */
+  max-height: 256px;
+  aspect-ratio: 2.4;
+  mask-image: none;
+  -webkit-mask-image: none;
+  opacity: 1;
 }
 
-.post-card--stack .post-card__text {
-  justify-content: flex-start;
+.post-card--stack .post-card__body {
+  width: auto;
+  min-height: auto;
 }
 
 .post-card--stack:nth-child(1) { animation-delay: 0.06s; }
@@ -225,7 +232,7 @@ onMounted(() => {
     padding: 1rem;
   }
 
-  .post-card--stack .post-card__cover-wrap {
+  .post-card--stack .post-card__cover {
     max-height: 180px;
   }
 }

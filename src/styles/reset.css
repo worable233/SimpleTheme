@@ -14,6 +14,7 @@ html {
 body {
   background-color: var(--background);
   min-height: 100vh;
+  scrollbar-width: none; /* Firefox: hide scrollbar */
 }
 
 body::-webkit-scrollbar {

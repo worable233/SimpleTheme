@@ -246,13 +246,6 @@ function simple_theme_sakurairo_editor_assets() {
 		true
 	);
 
-	// Enqueue FontAwesome for the editor (icons used in blocks).
-	wp_enqueue_style(
-		'fontawesome',
-		'https://s4.zstatic.net/ajax/libs/font-awesome/6.7.2/css/all.min.css',
-		array(),
-		'6.7.2'
-	);
 
 	// Enqueue block styles in the editor.
 	wp_enqueue_style(
@@ -260,6 +253,12 @@ function simple_theme_sakurairo_editor_assets() {
 		get_theme_file_uri( '/inc/blocks/notice-block.css' ),
 		array(),
 		$version
+	);
+
+	// Match editor body font to the theme's general text font.
+	wp_add_inline_style(
+		'simple-theme-sakurairo-blocks-editor-css',
+		'body { font-family: \'MiSans VF\',\'OPPO Sans\',\'SF Pro SC\',HarmonyOS_Regular,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Segoe UI\',\'Noto Sans\',\'Microsoft Yahei\',Helvetica,Arial,sans-serif,\'Apple Color Emoji\',\'Segoe UI Emoji\'; }'
 	);
 }
 

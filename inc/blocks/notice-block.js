@@ -51,22 +51,22 @@
   var typeConfig = {
     task: {
       label: labels.taskLabel,
-      icon: '<i class="fa-solid fa-clipboard-list"></i>',
+      icon: '<i class="bx bx-list-check"></i>',
       className: 'task'
     },
     warning: {
       label: labels.warningLabel,
-      icon: '<i class="fa-solid fa-triangle-exclamation"></i>',
+      icon: '<i class="bx bx-error"></i>',
       className: 'warning'
     },
     noway: {
       label: labels.nowayLabel,
-      icon: '<i class="fa-solid fa-square-xmark"></i>',
+      icon: '<i class="bx bx-x-circle"></i>',
       className: 'noway'
     },
     buy: {
       label: labels.buyLabel,
-      icon: '<i class="fa-solid fa-square-check"></i>',
+      icon: '<i class="bx bx-check-circle"></i>',
       className: 'buy'
     }
   };

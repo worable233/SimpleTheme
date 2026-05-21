@@ -47,6 +47,7 @@ const currentUser = computed(() => {
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalComments = ref(0)
+const allLoaded = ref(false)
 const PER_PAGE = 50
 
 function startLazyObserver() {
@@ -142,6 +143,7 @@ async function loadComments(page = 1) {
     totalComments.value = result.total
     totalPages.value = result.totalPages
     currentPage.value = result.page
+    allLoaded.value = currentPage.value >= totalPages.value
     if (page === 1) {
       comments.value = result.items
     } else {
@@ -195,18 +197,24 @@ async function handleFormSubmit(payload: {
   mailNotify?: boolean
   useMarkdown?: boolean
 }) {
-  if (!payload.name.trim() || !payload.content.trim()) {
-    showToast('请填写必填项后再提交。', '提示', { variant: 'warning' })
-    return
-  }
-
-  if (
-    props.formSettings.requireNameEmail &&
-    props.formSettings.showEmailField &&
-    !payload.email.trim()
-  ) {
-    showToast('请填写邮箱。', '提示', { variant: 'warning' })
-    return
+  // Logged-in users: use currentUser info, skip name/email validation
+  if (currentUser.value) {
+    payload.name = currentUser.value.displayName
+    payload.email = currentUser.value.email ?? ''
+    payload.url = currentUser.value.url ?? ''
+  } else {
+    if (!payload.name.trim() || !payload.content.trim()) {
+      showToast('请填写必填项后再提交。', '提示', { variant: 'warning' })
+      return
+    }
+    if (
+      props.formSettings.requireNameEmail &&
+      props.formSettings.showEmailField &&
+      !payload.email.trim()
+    ) {
+      showToast('请填写邮箱。', '提示', { variant: 'warning' })
+      return
+    }
   }
 
   submitting.value = true
@@ -334,6 +342,7 @@ watch(
     comments.value = []
     currentPage.value = 1
     totalPages.value = 1
+    allLoaded.value = false
     commentsLoaded.value = false
     startLazyObserver()
   },
@@ -414,7 +423,7 @@ watch(
     </div>
 
     <!-- Load More -->
-    <div v-if="!loading && currentPage < totalPages" class="comments-load-more">
+    <div v-if="!loading && !allLoaded" class="comments-load-more">
       <button
         class="comments-load-more__btn"
         :disabled="loadingMore"
@@ -423,6 +432,11 @@ watch(
         {{ loadingMore ? '加载中...' : '加载更多评论' }}
       </button>
     </div>
+
+    <!-- End note -->
+    <p v-if="commentsLoaded && allLoaded && comments.length > 0" class="end-note">
+      {{ siteInfo.endNote || '好像就这么多' }}
+    </p>
   </section>
 </template>
 
@@ -489,5 +503,13 @@ watch(
 .comments-load-more__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.end-note {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--secondary);
+  padding: 1.5rem 0 0.5rem;
+  margin: 0;
 }
 </style>

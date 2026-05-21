@@ -42,7 +42,6 @@ add_action( 'rest_api_init', function () {
 			'path' => array(
 				'required'          => true,
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
 			),
 		),
 	) );

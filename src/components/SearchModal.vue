@@ -191,10 +191,7 @@ onUnmounted(() => {
         <div class="search-modal__panel">
           <!-- Search input -->
           <div class="search-modal__input">
-            <svg class="search-modal__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
+            <i class="bx bx-search search-modal__icon" style="font-size: 22px;"></i>
             <input
               ref="searchInput"
               :value="searchQuery"
@@ -211,10 +208,7 @@ onUnmounted(() => {
               @click="searchQuery = ''; searchResults = []; hasSearched = false; errorMessage = ''; cancelSearch()"
               aria-label="清除搜索"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <i class="bx bx-x" style="font-size: 18px;"></i>
             </button>
             <kbd class="search-modal__shortcut" @click="closeSearch" aria-label="关闭搜索">ESC</kbd>
           </div>

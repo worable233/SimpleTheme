@@ -17,6 +17,18 @@ export interface SimpleThemeConfig {
   restNonce?: string
   features?: {
     prismHighlight: boolean
+    showStats?: boolean
+    showHeatmap?: boolean
+    showSocial?: boolean
+    meta?: {
+      showCategory: boolean
+      showPublishDate: boolean
+      showModifiedDate: boolean
+      showCommentCount: boolean
+      showViewCount: boolean
+      showReadingTime: boolean
+      showWordCount: boolean
+    }
   }
 }
 
@@ -75,6 +87,7 @@ export type ThemeShadow = 'none' | 'small' | 'medium' | 'large'
 export interface ThemeSettings {
   primaryColor: string
   bodyFont: string
+  codeFont: string
   radius: ThemeRadius
   shadow: ThemeShadow
   backgroundLight: string
@@ -99,6 +112,7 @@ export interface ThemeSettings {
     showWordCount: boolean
   }
   copyrightStyle?: string
+  articleLicense?: string
   showCredit?: boolean
   prismEnabled?: boolean
 }
@@ -130,6 +144,11 @@ export interface CommentFormSettings {
 
 
 
+export interface HeatmapEntry {
+  day: string
+  count: number
+}
+
 export interface SiteStats {
   postCount: number
   categoryCount: number
@@ -139,6 +158,7 @@ export interface SiteStats {
   commentCount: number
   registeredDate: string
   lastActivityDate: string
+  heatmapData?: HeatmapEntry[]
 }
 
 export interface SocialLink {
@@ -146,6 +166,11 @@ export interface SocialLink {
   url: string
   icon: string
   sidebarEnabled?: boolean
+}
+
+export interface TechInfoItem {
+  label: string
+  value: string
 }
 
 export interface CollectionsSettings {
@@ -176,11 +201,16 @@ export interface SiteInfo {
   description: string
   url: string
   siteIcon?: string
+  wpVersion?: string
+  phpVersion?: string
+  restApiVersion?: string
   hero?: HeroSettings
   comments?: CommentFormSettings
   theme?: ThemeSettings
+  themeVersion?: string
   stats?: SiteStats
   socialLinks?: SocialLink[]
+  techInfoItems?: TechInfoItem[]
   loginUrl?: string
   currentUser?: CurrentUser
   icp?: string

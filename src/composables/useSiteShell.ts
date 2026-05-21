@@ -13,6 +13,7 @@ import type {
 const fallbackThemeSettings: ThemeSettings = {
   primaryColor: '#333333',
   bodyFont: '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+  codeFont: 'ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Menlo, Monaco, "Courier New", monospace',
   radius: 'medium',
   shadow: 'small',
   backgroundLight: '#f5f6f7',
@@ -62,6 +63,7 @@ const fallbackSiteStats: SiteStats = {
   commentCount: 0,
   registeredDate: '',
   lastActivityDate: '',
+  heatmapData: [],
 }
 
 const fallbackSiteInfo: SiteInfo = {

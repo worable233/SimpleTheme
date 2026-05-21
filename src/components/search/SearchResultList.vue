@@ -133,6 +133,8 @@ function onResultsLeave(el: Element, done: () => void) {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 
 .search-modal__results::-webkit-scrollbar {

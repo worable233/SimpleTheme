@@ -3,6 +3,7 @@ import { useToc } from '@/composables/useToc'
 import { isExternalUrl } from '@/lib/theme-config'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
+declare var Prism: { highlightElement: (el: HTMLElement) => void } | undefined
 import { Fancybox } from '@fancyapps/ui'
 import '@fancyapps/ui/dist/fancybox/fancybox.css'
 import { showToast } from '@/lib/toast'
@@ -188,13 +189,15 @@ function processCodeBlocks(container: Element) {
       code.classList.add('language-' + lang)
     }
 
-    // Highlight (Prism silently skips unknown languages, no throw)
-    try {
-      Prism.highlightElement(code)
-      highlighted++
-    } catch (e) {
-      errors++
-      console.error('[useContentEnhancer] Prism highlight failed:', e)
+    // Highlight using Prism (loaded globally by WordPress, may be unavailable in dev)
+    if (typeof Prism !== 'undefined') {
+      try {
+        Prism.highlightElement(code)
+        highlighted++
+      } catch (e) {
+        errors++
+        console.error('[useContentEnhancer] Prism highlight failed:', e)
+      }
     }
 
     // Wrap in UI chrome

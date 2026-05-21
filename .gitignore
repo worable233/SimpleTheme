@@ -61,12 +61,8 @@ Simple-Theme-v*.zip
 vendor/
 
 # AI configurations and local context
-.claude/
-.atomcode/
-.atomcode.md
-.learnings/
-.deepseek/
-.copilot/
+/.*/
+!.vscode/
 CLAUDE.md
 *.instructions.md
 .prompt.md

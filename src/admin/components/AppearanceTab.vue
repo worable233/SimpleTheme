@@ -29,7 +29,7 @@ const darkColors = [
   <div class="sta-section">
     <h3 class="sta-section__title">主题主色</h3>
     <p class="sta-section__desc">主题主色将自动生成完整的 Material Design 3 配色方案。</p>
-    <div class="sta-field">
+    <div class="sta-field sta-field--primary-color">
       <label class="sta-field__label">主色</label>
       <div class="sta-color-row">
         <input
@@ -52,10 +52,10 @@ const darkColors = [
 
   <div class="sta-section">
     <h3 class="sta-section__title">字体设置</h3>
-    <p class="sta-section__desc">配置正文字体和标题字体的 font-family。</p>
+    <p class="sta-section__desc">全局字体用于正文和标题，代码字体对代码块、&lt;code&gt; 标签生效。</p>
     <div class="sta-grid">
       <div class="sta-field">
-        <label class="sta-field__label">正文字体</label>
+        <label class="sta-field__label">全局字体</label>
         <input
           type="text"
           class="sta-input"
@@ -64,13 +64,14 @@ const darkColors = [
         />
       </div>
       <div class="sta-field">
-        <label class="sta-field__label">标题字体</label>
+        <label class="sta-field__label">代码字体</label>
         <input
           type="text"
           class="sta-input"
-          :value="(settings.heading_font as string) || ''"
-          @input="emit('update', 'heading_font', ($event.target as HTMLInputElement).value)"
+          :value="(settings.code_font as string) || ''"
+          @input="emit('update', 'code_font', ($event.target as HTMLInputElement).value)"
         />
+        <p class="sta-field__desc">对代码块、&lt;code&gt; 标签生效。</p>
       </div>
     </div>
   </div>
@@ -183,4 +184,32 @@ const darkColors = [
       </div>
     </div>
   </div>
+
+  <div class="sta-section">
+    <h3 class="sta-section__title">代码高亮</h3>
+    <p class="sta-section__desc">使用 Prism.js 对文章中的代码块和行内代码进行语法高亮。</p>
+    <div class="sta-field">
+      <label class="sta-checkbox">
+        <input
+          type="checkbox"
+          :checked="!!settings.enable_prism_highlight"
+          @change="emit('update', 'enable_prism_highlight', ($event.target as HTMLInputElement).checked)"
+        />
+        <span class="sta-checkbox__label">启用代码高亮</span>
+      </label>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.sta-field--primary-color {
+  max-width: 280px;
+}
+
+/* Dark mode color swatch adjustments */
+@media (prefers-color-scheme: dark) {
+  .sta-field--primary-color :deep(.sta-input--color-picker) {
+    background: var(--sta-card);
+  }
+}
+</style>

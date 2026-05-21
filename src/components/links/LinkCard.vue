@@ -17,6 +17,13 @@ function getDomain(url: string): string {
     return url
   }
 }
+
+/** Decode HTML entities (&#039; → ', &amp; → &, etc.) */
+function decodeHtml(str: string): string {
+  const el = document.createElement('div')
+  el.innerHTML = str
+  return el.textContent || ''
+}
 </script>
 
 <template>
@@ -39,7 +46,7 @@ function getDomain(url: string): string {
       </div>
 
       <!-- 站点名称 -->
-      <h3 class="link-card__name">{{ link.name }}</h3>
+      <h3 class="link-card__name">{{ decodeHtml(link.name) }}</h3>
     </div>
 
     <!-- Hover tooltip -->
@@ -50,11 +57,11 @@ function getDomain(url: string): string {
           <span v-else>{{ link.name.charAt(0) }}</span>
         </div>
         <div class="link-card__tip-info">
-          <span class="link-card__tip-name">{{ link.name }}</span>
+          <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
           <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
         </div>
       </div>
-      <div v-if="link.description" class="link-card__tip-desc">{{ link.description }}</div>
+      <div v-if="link.description" class="link-card__tip-desc">{{ decodeHtml(link.description) }}</div>
     </div>
   </router-link>
 </template>

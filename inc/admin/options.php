@@ -16,7 +16,7 @@ function simple_theme_get_default_options() {
 		// ---- Appearance ----
 		'primary_color'            => '#333333',
 		'body_font'                => '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
-		'heading_font'             => '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+		'code_font'                => 'ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Menlo, Monaco, "Courier New", monospace',
 		'radius'                   => 'medium',
 		'shadow'                   => 'small',
 		'background_light'         => '#f5f6f7',
@@ -42,20 +42,25 @@ function simple_theme_get_default_options() {
 		'meta_show_category'       => true,
 		'meta_show_publish_date'   => true,
 		'meta_show_modified_date'  => false,
-		'meta_show_comment_count'  => true,
+		'meta_show_comment_count'  => false,
 		'meta_show_view_count'     => true,
 		'meta_show_reading_time'     => true,
 		'meta_show_word_count'       => false,
 		'reading_speed'              => 300,
 		'enable_prism_highlight'     => true,
+		'sidebar_show_stats'         => true,
+		'sidebar_show_heatmap'       => true,
+		'sidebar_show_social'        => true,
 		'show_theme_credit'          => true,
 
 		// ---- Footer & Legal ----
 		'copyright_style'          => 'detailed',
+		'article_license'          => 'cc-by-nc-sa-40',
 		'end_note'                 => '好像就这么多',
 		'icp_text'                 => '',
 		'icp_gov_text'             => '',
 		'social_links'             => '',
+		'tech_info_items'          => '',
 
 		// ---- Comments ----
 		'comment_show_email'        => true,
@@ -75,6 +80,7 @@ function simple_theme_get_default_options() {
 		'posts_subtitle'           => '整理过的长文、笔记与项目更新。',
 		'shuoshuo_title'           => '最近说说',
 		'shuoshuo_subtitle'        => '',
+			'suppress_console_warnings' => false,
 	);
 }
 
@@ -89,6 +95,7 @@ function simple_theme_migrate_from_customizer() {
 	$migrate_map = array(
 		'primary_color'            => 'simple_theme_primary_color',
 		'body_font'                => 'simple_theme_body_font',
+		'code_font'                => 'simple_theme_code_font',
 		'heading_font'             => 'simple_theme_heading_font',
 		'radius'                   => 'simple_theme_radius',
 		'shadow'                   => 'simple_theme_shadow',
@@ -119,6 +126,7 @@ function simple_theme_migrate_from_customizer() {
 		'meta_show_reading_time'   => 'simple_theme_meta_show_reading_time',
 		'meta_show_word_count'     => 'simple_theme_meta_show_word_count',
 		'copyright_style'          => 'simple_theme_copyright_style',
+		'article_license'          => 'simple_theme_article_license',
 		'end_note'                 => 'simple_theme_end_note',
 		'icp_text'                 => 'simple_theme_icp_text',
 		'icp_gov_text'             => 'simple_theme_icp_gov_text',
@@ -176,7 +184,13 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = in_array( (string) $value, array( 'none', 'small', 'medium', 'large' ), true ) ? (string) $value : $default_value;
 		} elseif ( 'copyright_style' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'none', 'simple', 'detailed' ), true ) ? (string) $value : $default_value;
+		} elseif ( 'article_license' === $key ) {
+			$allowed_licenses = array( 'none', 'cc-by-40', 'cc-by-sa-40', 'cc-by-nc-40', 'cc-by-nc-sa-40', 'cc-by-nd-40', 'cc-by-nc-nd-40', 'cc0-10', 'mit', 'arr' );
+			$output[ $key ] = in_array( (string) $value, $allowed_licenses, true ) ? (string) $value : $default_value;
 		} elseif ( 'social_links' === $key ) {
+			$decoded = json_decode( $value, true );
+			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;
+		} elseif ( 'tech_info_items' === $key ) {
 			$decoded = json_decode( $value, true );
 			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;
 		} else {

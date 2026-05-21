@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { toInternalPath } from '@/lib/theme-config'
+import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 
@@ -12,10 +13,22 @@ defineProps<{
   termPosts: WordPressPost[]
 }>()
 
+const metaConfig = computed(() => getThemeConfig().features?.meta)
+
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric', month: 'long', day: 'numeric',
   }).format(new Date(dateString))
+
+const formatModifiedDate = (dateString?: string) => {
+  if (!dateString) return ''
+  return '更新: ' + formatDate(dateString)
+}
+
+const formatWordCount = (count?: number) => {
+  if (!count) return ''
+  return count >= 1000 ? `${(count / 1000).toFixed(1)}k 字` : `${count} 字`
+}
 </script>
 
 <template>
@@ -56,8 +69,26 @@ const formatDate = (dateString: string) =>
     <!-- Term posts -->
     <div v-else class="post-list">
       <article v-for="post in termPosts" :key="post.id" class="post-card">
-        <!-- Text content: left side -->
-        <div class="post-card__text">
+        <!-- Cover image — absolute positioned right overlay -->
+        <img
+          v-if="post.featuredImage"
+          :src="post.featuredImage"
+          alt=""
+          loading="lazy"
+          class="post-card__cover"
+        />
+        <!-- Meta badge — top-right overlay -->
+        <div class="post-card__meta">
+          <span v-if="metaConfig?.showCategory && post.categories?.[0]" class="post-card__meta-item">{{ post.categories[0] }}</span>
+          <time v-if="metaConfig?.showPublishDate" :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
+          <time v-if="metaConfig?.showModifiedDate && post.modified" :datetime="post.modified" class="post-card__meta-item">{{ formatModifiedDate(post.modified) }}</time>
+          <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
+          <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
+          <span v-if="metaConfig?.showReadingTime && post.readingTime" class="post-card__meta-item">{{ post.readingTime }} 分钟</span>
+          <span v-if="metaConfig?.showWordCount && post.wordCount" class="post-card__meta-item">{{ formatWordCount(post.wordCount) }}</span>
+        </div>
+        <!-- Body: title, excerpt -->
+        <div class="post-card__body">
           <h2 class="post-card__title">
             <router-link
               :to="toInternalPath(post.link)"
@@ -65,24 +96,6 @@ const formatDate = (dateString: string) =>
             ></router-link>
           </h2>
           <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
-        </div>
-
-        <!-- Cover: right side -->
-        <div v-if="post.featuredImage" class="post-card__cover-wrap">
-          <router-link
-            :to="toInternalPath(post.link)"
-            :aria-label="post.title.rendered"
-            class="post-card__cover-link"
-          >
-            <img :src="post.featuredImage" alt="" loading="lazy" class="post-card__cover" />
-          </router-link>
-        </div>
-
-        <!-- Meta badge — top-right overlay -->
-        <div :class="['post-card__meta', { 'post-card__meta--bare': !post.featuredImage }]">
-          <time :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
-          <span v-if="post.readingTime" class="post-card__meta-item">{{ post.readingTime }} 分钟</span>
-          <span v-if="post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
         </div>
       </article>
     </div>

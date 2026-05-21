@@ -21,6 +21,7 @@ export const mockSiteInfo = {
   theme: {
     primaryColor: '#333333',
     bodyFont: '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+    codeFont: '"Fira Code", "Cascadia Code", "JetBrains Mono", "SF Mono", ui-monospace, "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace',
     radius: 'medium' as const,
     shadow: 'small' as const,
     backgroundLight: '#f5f6f7',

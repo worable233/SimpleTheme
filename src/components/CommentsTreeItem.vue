@@ -207,7 +207,7 @@ function togglePin() {
           <span v-if="item.status === 'hold'" class="comments-item__badge comments-item__badge--pending">待审核</span>
 
           <span class="comments-item__time">{{ relativeTime }}</span>
-          <span v-if="item.metaInfo" class="comments-item__meta-info">
+          <span v-if="item.metaInfo?.browser || item.metaInfo?.os" class="comments-item__meta-info">
             {{ item.metaInfo.browser }} · {{ item.metaInfo.os }} · {{ item.metaInfo.location }}
           </span>
         </div>

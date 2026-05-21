@@ -213,6 +213,8 @@ onMounted(() => {
   position: relative;
   overflow-y: auto;
   max-height: calc(100vh - 300px);
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 
 .toc-content::-webkit-scrollbar {

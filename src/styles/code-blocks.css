@@ -47,7 +47,6 @@
   font-size: 0.8125rem;
   line-height: 1.7;
   -webkit-font-smoothing: auto;
-  -moz-osx-font-smoothing: auto;
 }
 
 .code-block-body pre code {

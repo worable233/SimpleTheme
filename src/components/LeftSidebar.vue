@@ -7,13 +7,16 @@ import SidebarMobileHeader from './sidebar/SidebarMobileHeader.vue'
 import SidebarNav from './sidebar/SidebarNav.vue'
 import SidebarActions from './sidebar/SidebarActions.vue'
 import SearchModal from './SearchModal.vue'
+import TechInfo from './sidebar/TechInfo.vue'
+import SiteFooter from './SiteFooter.vue'
 import type { MenuItem } from '@/types/wordpress'
 
-const { siteInfo, primaryMenu, shellLoading } = useSiteShell()
+const { siteInfo, primaryMenu, footerMenu, shellLoading } = useSiteShell()
 const route = useRoute()
 const searchOpen = ref(false)
 const leftOpen = ref(false)
 const rightOpen = ref(false)
+const showRightSubPage = ref(false)
 const currentTheme = ref('light')
 
 // ========== Theme ==========
@@ -53,16 +56,19 @@ function toggleMenu() {
 function closeAll() {
   leftOpen.value = false
   rightOpen.value = false
+  showRightSubPage.value = false
 }
 
 watch(() => route.path, () => {
   leftOpen.value = false
   rightOpen.value = false
+  showRightSubPage.value = false
 })
 
 // ========== Sub-menu ==========
 
 const openMenus = ref<Set<number>>(new Set())
+const closeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 function toggleSubMenu(id: number) {
   const next = new Set(openMenus.value)
@@ -74,28 +80,45 @@ function toggleSubMenu(id: number) {
   openMenus.value = next
 }
 
+function closeAllSubMenus() {
+  openMenus.value = new Set()
+}
+
+function onSidebarMouseLeave() {
+  if (openMenus.value.size === 0) return
+  closeTimer.value = setTimeout(() => {
+    closeAllSubMenus()
+  }, 300)
+}
+
+function onSidebarMouseEnter() {
+  if (closeTimer.value !== null) {
+    clearTimeout(closeTimer.value)
+    closeTimer.value = null
+  }
+}
+
 // ========== Menu items ==========
 
 const menuItems = computed<MenuItem[]>(() => {
   const apiMenu = primaryMenu.value
 
-  // User has configured a menu in WordPress → use it directly
+  // Only show menu items when API has returned data
   if (apiMenu && apiMenu.length > 0) {
     return apiMenu
   }
 
-  // Fallback defaults when no menu is configured
-  const fallbackItems: MenuItem[] = [
-    { id: -1, title: '首页', url: '/', path: '/', target: '', description: '', current: false, icon: '', children: [] },
-    { id: -2, title: '说说', url: '/shuoshuo', path: '/shuoshuo', target: '', description: '', current: false, icon: '', children: [] },
-    { id: -3, title: '友链', url: '/links', path: '/links', target: '', description: '', current: false, icon: '', children: [] },
-  ]
-  return fallbackItems
+  // No items until API is ready
+  return []
 })
 </script>
 
 <template>
-  <div class="sidebar-root">
+  <div
+    class="sidebar-root"
+    @mouseleave="onSidebarMouseLeave"
+    @mouseenter="onSidebarMouseEnter"
+  >
     <!-- Mobile header (fixed top, visible on < 1200px) -->
     <SidebarMobileHeader
       :shell-loading="shellLoading"
@@ -118,11 +141,8 @@ const menuItems = computed<MenuItem[]>(() => {
     <aside class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
       <!-- Search button -->
       <div class="left-sidebar__search">
-        <button class="sidebar-search-btn gradient-card" @click="searchOpen = true" aria-label="搜索">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
+        <button class="sidebar-search-btn" @click="searchOpen = true" aria-label="搜索">
+          <i class="bx bx-search" style="font-size: 20px;"></i>
         </button>
       </div>
 
@@ -142,32 +162,61 @@ const menuItems = computed<MenuItem[]>(() => {
 
     <!-- Mobile right profile panel -->
     <aside class="right-panel" :class="{ 'right-panel--open': rightOpen }">
-      <div class="right-panel__profile">
-        <template v-if="shellLoading">
-          <div class="aside-author__cover" style="background:var(--muted);"></div>
-          <div class="aside-author__info">
-            <div class="aside-author__avatar">
-              <div role="status" class="skeleton box" style="width:80px;height:80px;border-radius:50%;margin:0 auto;"></div>
+      <div class="right-panel__scroll">
+        <div class="right-panel__slide-wrap">
+          <div class="right-panel__content" :class="{ active: showRightSubPage }">
+            <!-- Main page: profile + tech info -->
+            <div class="right-panel__page main-page">
+              <template v-if="shellLoading">
+                <div class="aside-author__cover" style="background:var(--muted);"></div>
+                <div class="aside-author__info">
+                  <div class="aside-author__avatar">
+                    <div role="status" class="skeleton box" style="width:80px;height:80px;border-radius:50%;margin:0 auto;"></div>
+                  </div>
+                  <div class="aside-author__name">
+                    <div role="status" class="skeleton" style="width:50%;height:16px;margin:0 auto;"></div>
+                  </div>
+                  <div class="aside-author__des">
+                    <div role="status" class="skeleton" style="width:70%;height:14px;margin:0 auto;"></div>
+                  </div>
+                  <div class="aside-author__stats is-loading">
+                    <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
+                    <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
+                    <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
+                    <div><div role="status" class="skeleton" style="width:48px;height:18px;margin:0 auto;"></div></div>
+                    <div><div role="status" class="skeleton" style="width:56px;height:18px;margin:0 auto;"></div></div>
+                    <div><div role="status" class="skeleton" style="width:56px;height:18px;margin:0 auto;"></div></div>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <SidebarProfile @toggle-sub="showRightSubPage = !showRightSubPage" />
+                <TechInfo />
+              </template>
             </div>
-            <div class="aside-author__name">
-              <div role="status" class="skeleton" style="width:50%;height:16px;margin:0 auto;"></div>
-            </div>
-            <div class="aside-author__des">
-              <div role="status" class="skeleton" style="width:70%;height:14px;margin:0 auto;"></div>
-            </div>
-            <div class="aside-author__stats is-loading">
-              <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
-              <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
-              <div><div role="status" class="skeleton" style="width:36px;height:18px;margin:0 auto;"></div></div>
-              <div><div role="status" class="skeleton" style="width:48px;height:18px;margin:0 auto;"></div></div>
-              <div><div role="status" class="skeleton" style="width:56px;height:18px;margin:0 auto;"></div></div>
-              <div><div role="status" class="skeleton" style="width:56px;height:18px;margin:0 auto;"></div></div>
+
+            <!-- Sub page: menu / links -->
+            <div class="right-panel__page sub-page">
+              <div class="sub-page__header">
+                <div class="aside-btn-close" @click="showRightSubPage = false">
+                  <i class="bx bx-chevron-left" style="font-size: 14px;"></i>
+                  返回
+                </div>
+              </div>
+              <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
+                <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
+                <ul class="sub-page__menu-list">
+                  <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
+                    <router-link :to="item.path || item.url" @click="closeAll">{{ item.title }}</router-link>
+                  </li>
+                </ul>
+              </div>
+              <p v-else class="sub-page__empty">暂无菜单</p>
             </div>
           </div>
-        </template>
-        <template v-else>
-          <SidebarProfile :no-toggle="true" />
-        </template>
+        </div>
+
+        <SiteFooter :site-info="siteInfo" />
       </div>
     </aside>
 
@@ -314,8 +363,48 @@ const menuItems = computed<MenuItem[]>(() => {
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   }
 
-  .right-panel__profile {
+  .right-panel__scroll {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .right-panel__slide-wrap {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     width: 100%;
+    flex-shrink: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .right-panel__slide-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  .right-panel__content {
+    flex: none;
+    width: 200%;
+    display: flex;
+    position: relative;
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+    overflow: clip;
+  }
+
+  .right-panel__content.active {
+    transform: translateX(-50%);
+  }
+
+  .right-panel__page {
+    width: 50%;
+    flex-shrink: 0;
+  }
+
+  .right-panel__page.sub-page {
+    display: flex;
+    flex-direction: column;
   }
 
   .drawer-overlay--right {
@@ -324,37 +413,11 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 </style>
 
-<!-- ==================== NON-SCOPED: Root layout + gradient card ==================== -->
+<!-- ==================== NON-SCOPED: Root layout ==================== -->
 <style>
 .sidebar-root {
   display: flex;
   flex-shrink: 0;
   width: 100px;
-}
-
-/* Gradient card: applied to search button */
-.gradient-card {
-  border-radius: 0.5rem;
-  position: relative;
-  z-index: 0;
-}
-.gradient-card::before {
-  background:
-    linear-gradient(var(--card), var(--card)) padding-box,
-    linear-gradient(45deg, var(--accent), var(--primary)) border-box;
-  border: 2px solid transparent;
-  border-radius: inherit;
-  content: "";
-  inset: 0;
-  opacity: 0;
-  position: absolute;
-  transition: opacity 0.2s;
-  z-index: -1;
-}
-.gradient-card:hover {
-  color: var(--foreground);
-}
-.gradient-card:hover::before {
-  opacity: 1;
 }
 </style>

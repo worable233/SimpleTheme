@@ -114,6 +114,11 @@ function onMaskClick(e: MouseEvent) {
   margin-right: -6px;
 }
 
+.timeline-modal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+
 .timeline-modal::-webkit-scrollbar {
   width: 6px;
   height: 6px;

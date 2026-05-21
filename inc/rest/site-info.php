@@ -23,10 +23,21 @@ function simple_theme_get_site_info() {
 	}
 	$icp_text     = ! empty( $theme_options['icp_text'] ) ? $theme_options['icp_text'] : '';
 	$icp_gov_text = ! empty( $theme_options['icp_gov_text'] ) ? $theme_options['icp_gov_text'] : '';
-	$stats        = simple_theme_compute_site_stats();
+	$stats          = simple_theme_compute_site_stats();
+	$theme_version  = wp_get_theme()->get( 'Version' ) ?: '';
+	$tech_info_items = array();
+	if ( ! empty( $theme_options['tech_info_items'] ) ) {
+		$decoded = json_decode( $theme_options['tech_info_items'], true );
+		if ( is_array( $decoded ) ) {
+			$tech_info_items = $decoded;
+		}
+	}
 
 	return new WP_REST_Response(
 		array(
+			'wpVersion'     => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : '',
+			'phpVersion'    => PHP_VERSION,
+			'restApiVersion' => 'v1',
 			'name'          => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES, 'UTF-8' ),
 			'description'   => html_entity_decode( get_bloginfo( 'description' ), ENT_QUOTES, 'UTF-8' ),
 			'url'           => home_url( '/' ),
@@ -40,7 +51,7 @@ function simple_theme_get_site_info() {
 			'theme'         => array(
 				'primaryColor'    => sanitize_hex_color( (string) ( $theme_options['primary_color'] ?? '#333333' ) ) ?: '#333333',
 				'bodyFont'        => (string) ( $theme_options['body_font'] ?? '' ) ?: '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
-				'headingFont'     => (string) ( $theme_options['heading_font'] ?? '' ) ?: '"MiSans VF", "OPPO Sans", "SF Pro SC", HarmonyOS_Regular, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans", "Microsoft Yahei", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+				'codeFont'        => (string) ( $theme_options['code_font'] ?? '' ) ?: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Consolas', 'Menlo', Monaco, monospace",
 				'radius'          => simple_theme_sanitize_choice( $theme_options['radius'] ?? 'medium', array( 'small', 'medium', 'large' ), 'medium' ),
 				'shadow'          => simple_theme_sanitize_choice( $theme_options['shadow'] ?? 'small', array( 'none', 'small', 'medium', 'large' ), 'small' ),
 				'backgroundLight' => sanitize_hex_color( (string) ( $theme_options['background_light'] ?? '#f5f6f7' ) ) ?: '#f5f6f7',
@@ -56,6 +67,7 @@ function simple_theme_get_site_info() {
 				'containerMaxWidth'=> simple_theme_get_option_number( 'container_max_width', 1400, 960, 1680 ),
 				'articleMaxWidth' => simple_theme_get_option_number( 'article_max_width', 900, 680, 1200 ),
 				'copyrightStyle' => (string) ( $theme_options['copyright_style'] ?? 'detailed' ),
+				'articleLicense' => (string) ( $theme_options['article_license'] ?? 'cc-by-nc-sa-40' ),
 				'showCredit'        => (bool) ( $theme_options['show_theme_credit'] ?? true ),
 				'prismEnabled'      => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
 				'cardMeta'        => array(
@@ -93,8 +105,10 @@ function simple_theme_get_site_info() {
 			'loginUrl'       => wp_login_url(),
 			'icp'            => $icp_text,
 			'icpGov'         => $icp_gov_text,
-			'endNote'        => ! empty( $theme_options['end_note'] ) ? $theme_options['end_note'] : '',
-			'currentUser'    => simple_theme_get_current_commenter(),
+			'endNote'         => ! empty( $theme_options['end_note'] ) ? $theme_options['end_note'] : '',
+			'currentUser'     => simple_theme_get_current_commenter(),
+			'themeVersion'    => $theme_version,
+			'techInfoItems'   => $tech_info_items,
 		),
 		200
 	);
@@ -117,6 +131,7 @@ function simple_theme_compute_site_stats() {
 	$total_cats      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'category'" );
 	$last_updated    = $wpdb->get_var( "SELECT post_modified FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_modified DESC LIMIT 1" );
 	$first_post_date = $wpdb->get_var( "SELECT post_date FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date ASC LIMIT 1" );
+	$heatmap_raw     = $wpdb->get_results( "SELECT DATE(post_date) AS day, COUNT(*) AS count FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' AND post_date >= DATE_SUB( CURDATE(), INTERVAL 365 DAY ) GROUP BY day ORDER BY day ASC" );
 
 	$stats = array(
 		'postCount'        => $total_posts,
@@ -127,6 +142,7 @@ function simple_theme_compute_site_stats() {
 		'commentCount'     => $total_comments,
 		'registeredDate'   => $first_post_date ? gmdate( 'c', strtotime( $first_post_date ) ) : '',
 		'lastActivityDate' => $last_updated ? gmdate( 'c', strtotime( $last_updated ) ) : '',
+		'heatmapData'      => $heatmap_raw,
 	);
 
 	set_transient( $cache_key, $stats, HOUR_IN_SECONDS );
