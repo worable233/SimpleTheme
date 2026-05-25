@@ -64,10 +64,9 @@ vendor/
 /.*/
 !.vscode/
 CLAUDE.md
+.atomcode.md
 *.instructions.md
 .prompt.md
-.claude/*
-.atomcode/*
 response.txt
 
 # Debug / temp files
@@ -83,5 +82,3 @@ test_queue_behavior.php
 emojis/**/*.png
 emojis/**/*.jpg
 emojis/**/*.jpeg
-.claude/settings.local.json
-.atomcode/graph.bin
