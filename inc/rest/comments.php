@@ -217,8 +217,12 @@ function simple_theme_comment_uses_markdown( int $comment_id ): bool {
 	return '1' === get_comment_meta( $comment_id, 'st_markdown', true );
 }
 
-// ========== Comment Mail Notification ==========
+// ========== Comment Mail Notification (async via cron) ==========
 
+/**
+ * Schedule an async mail notification when a comment receives a reply.
+ * Hooked to wp_insert_comment so the REST endpoint returns immediately.
+ */
 function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
 	$parent_id = (int) $comment->comment_parent;
 	if ( $parent_id <= 0 ) {
@@ -226,6 +230,33 @@ function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
 	}
 	$notify = get_comment_meta( $comment->comment_parent, 'st_mail_notify', true );
 	if ( '1' !== $notify ) {
+		return;
+	}
+	$parent = get_comment( $parent_id );
+	if ( ! $parent || empty( $parent->comment_author_email ) ) {
+		return;
+	}
+	// Schedule a single cron event to send the email asynchronously.
+	// This prevents SMTP connection delay from blocking the comment submission.
+	wp_schedule_single_event(
+		time(),
+		'simple_theme_async_mail_notify',
+		array( $comment_id )
+	);
+}
+add_action( 'wp_insert_comment', 'simple_theme_mail_notify', 10, 2 );
+
+/**
+ * Actually send the reply notification email.
+ * Runs via wp-cron, not during the HTTP request that created the comment.
+ */
+function simple_theme_send_mail_notify( int $comment_id ) {
+	$comment = get_comment( $comment_id );
+	if ( ! $comment ) {
+		return;
+	}
+	$parent_id = (int) $comment->comment_parent;
+	if ( $parent_id <= 0 ) {
 		return;
 	}
 	$parent = get_comment( $parent_id );
@@ -247,7 +278,7 @@ function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
 	);
 	wp_mail( $parent->comment_author_email, $subject, $message );
 }
-add_action( 'wp_insert_comment', 'simple_theme_mail_notify', 10, 2 );
+add_action( 'simple_theme_async_mail_notify', 'simple_theme_send_mail_notify' );
 
 // ========== REST Endpoints ==========
 

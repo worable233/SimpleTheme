@@ -70,4 +70,16 @@ const emit = defineEmits<{
       <p class="xh-field__desc">屏蔽插件（如 WPOPT）在浏览器控制台输出的广告/提示信息。</p>
     </div>
   </AppCard>
+
+  <!-- Admin Bar -->
+  <AppCard title="Admin Bar" description="控制顶部工具栏的显示。">
+    <div class="xh-field xh-field--compact">
+      <AppToggle
+        :modelValue="!!settings.hide_admin_bar"
+        label="隐藏前台 Admin Bar"
+        @update:modelValue="emit('update', 'hide_admin_bar', $event)"
+      />
+      <p class="xh-field__desc">开启后，已登录用户在前台页面将不再显示 WordPress 顶部工具栏。</p>
+    </div>
+  </AppCard>
 </template>

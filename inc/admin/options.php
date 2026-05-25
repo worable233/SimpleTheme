@@ -96,6 +96,9 @@ function simple_theme_get_default_options() {
 
 			// ---- Admin Theme ----
 			'admin_theme_enabled'     => false,
+
+			// ---- Admin Bar ----
+			'hide_admin_bar'          => false,
 	);
 }
 

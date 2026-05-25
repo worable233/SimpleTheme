@@ -125,14 +125,14 @@ export function renderCommentContent(content: string, useMarkdown?: boolean): st
   let html: string
 
   if (useMarkdown) {
-    // Markdown 模式：marked 解析（默认转义 HTML），再替换表情
+    // Markdown mode: marked parses markdown, then replace emoji shortcodes
     html = marked.parse(content, { breaks: true }) as string
   } else {
-    // 纯文本模式：先转义 HTML 实体，再替换表情
-    html = escapeHtml(content)
+    // Plain text mode: WordPress already filtered HTML on save, just replace emoji shortcodes
+    html = content
   }
 
-  // 替换表情 shortcodes（在 Markdown 输出的 HTML 上替换，或转义后的文本上替换）
+  // Replace emoji shortcodes (on markdown output or raw content)
   return replaceEmoji(html)
 }
 

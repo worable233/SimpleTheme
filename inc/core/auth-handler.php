@@ -472,9 +472,13 @@ function simple_theme_intercept_postpass() {
  * 所以注册关闭的情况会被重定向到首页，附带 registration=disabled 参数。
  */
 
-// 允许 WordPress Admin Bar 在前台使用
-add_action( 'init', function () {
+// 控制 WordPress Admin Bar 显示（主题设置中可关闭）
+add_filter( 'show_admin_bar', function ( $show ) {
 	if ( is_user_logged_in() && ! is_admin() ) {
-		show_admin_bar( true );
+		$options = get_option( 'simple_theme_options', array() );
+		if ( ! empty( $options['hide_admin_bar'] ) ) {
+			return false;
+		}
 	}
+	return $show;
 } );
