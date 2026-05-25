@@ -28,6 +28,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Generate a context-aware <meta name="description"> for the current page.
+ *
+ * - Homepage:     使用站点副标题（tagline）
+ * - 文章/页面:    使用摘要（excerpt），无摘要则取内容前 160 字
+ * - 分类/标签:    使用分类描述
+ * - 其他:         使用站点副标题
+ */
+function simple_theme_get_meta_description(): string {
+	if ( is_front_page() || is_home() ) {
+		$desc = get_bloginfo( 'description', 'display' );
+		if ( ! empty( $desc ) ) {
+			return $desc;
+		}
+	}
+
+	if ( is_singular() ) {
+		$post = get_queried_object();
+		if ( $post instanceof WP_Post ) {
+			// 有手动摘要则用摘要
+			if ( ! empty( $post->post_excerpt ) ) {
+				return wp_trim_words( $post->post_excerpt, 40 );
+			}
+			// 否则取正文前 160 字符
+			$content = wp_strip_all_tags( $post->post_content, true );
+			$content = preg_replace( '/\s+/', ' ', $content );
+			return mb_substr( $content, 0, 160 );
+		}
+	}
+
+	if ( is_category() || is_tag() || is_tax() ) {
+		$term = get_queried_object();
+		if ( $term instanceof WP_Term && ! empty( $term->description ) ) {
+			return wp_trim_words( $term->description, 40 );
+		}
+	}
+
+	// 兜底：站点副标题
+	return get_bloginfo( 'description', 'display' );
+}
+
+/**
  * Safety net: catch unhandled technical file requests before the SPA shell.
  *
  * Priority 5: runs after SEO plugins (typically 0-1) and WordPress core,

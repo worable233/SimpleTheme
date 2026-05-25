@@ -1,12 +1,31 @@
-/** 表情渲染工具 — 来自 Sakurairo 主题的 emoji 数据 */
+/**
+ * emoji — 表情渲染 + 评论内容渲染管线
+ *
+ * 评论内容渲染顺序：
+ *   1. HTML 实体转义（防止 XSS）
+ *   2. 可选 Markdown → HTML 转换
+ *   3. 表情 shortcodes（{{name}} / ::name:: / #name#）→ <img>
+ */
+
+import { marked } from 'marked'
 import { getThemeConfig } from '@/lib/theme-config'
 
 export function emojiBase(): string {
+  const config = getThemeConfig()
+  // DEV mode: Vite dev server serves public/emojis/ at root
   if (import.meta.env.DEV) {
     return '/emojis/'
   }
-  const themeUrl = getThemeConfig().themeUrl.replace(/\/+$/, '')
-  return `${themeUrl}/emojis/`
+  // Production: extract root-relative path from themeUrl (strip origin)
+  // This avoids origin mismatches (127.0.0.1 vs localhost vs domain.com)
+  let themePath = config.themeUrl
+  try {
+    const parsed = new URL(themePath)
+    themePath = parsed.pathname.replace(/\/+$/, '')
+  } catch {
+    themePath = themePath.replace(/\/+$/, '')
+  }
+  return `${themePath}/emojis/`
 }
 
 // Bilibili 表情 (50个)
@@ -42,20 +61,20 @@ const tiebaNames = Object.freeze([
 const tiebaSet = Object.freeze(new Set(tiebaNames))
 
 function biliImg(name: string) {
-  return `${emojiBase()}bili/emoji_${name}.png`
+  return `${emojiBase()}bili/emoji_${name}.webp`
 }
 
 function tiebaImg(name: string) {
-  return `${emojiBase()}tieba/icon_${name}.png`
+  return `${emojiBase()}tieba/icon_${name}.webp`
 }
 
 function dinoImg(name: string) {
   const num = dinosaurNames.indexOf(name) + 1
-  return `${emojiBase()}dinosaur/${num}.jpg`
+  return `${emojiBase()}dinosaur/${num}.webp`
 }
 
 /** 将纯文本中的表情标记渲染为 <img> HTML */
-export function renderToHtml(text: string): string {
+function replaceEmoji(text: string): string {
   const biliRe = /\{\{(\w+)\}\}/g
   const tiebaRe = /::(\w+)::/g
   let result = text
@@ -82,6 +101,47 @@ export function renderToHtml(text: string): string {
     return m
   })
   return result
+}
+
+/** 转义 HTML 实体，防止 XSS */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }
+  return text.replace(/[&<>"']/g, (ch) => map[ch] ?? ch)
+}
+
+/**
+ * 渲染评论内容：HTML 转义 → 可选 Markdown → 表情替换
+ *
+ * @param content 原始评论内容（纯文本）
+ * @param useMarkdown 是否解析 Markdown 语法
+ */
+export function renderCommentContent(content: string, useMarkdown?: boolean): string {
+  let html: string
+
+  if (useMarkdown) {
+    // Markdown 模式：marked 解析（默认转义 HTML），再替换表情
+    html = marked.parse(content, { breaks: true }) as string
+  } else {
+    // 纯文本模式：先转义 HTML 实体，再替换表情
+    html = escapeHtml(content)
+  }
+
+  // 替换表情 shortcodes（在 Markdown 输出的 HTML 上替换，或转义后的文本上替换）
+  return replaceEmoji(html)
+}
+
+/**
+ * 纯表情渲染（供 CommentForm 编辑器预览使用）
+ * 转义 HTML + 替换表情 shortcodes
+ */
+export function renderToHtml(text: string): string {
+  return replaceEmoji(escapeHtml(text))
 }
 
 /** 将纯文本中的表情标记替换为表情名称（用于提取纯文本，反向操作） */

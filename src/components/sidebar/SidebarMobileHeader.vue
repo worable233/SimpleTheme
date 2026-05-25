@@ -1,17 +1,54 @@
 <script setup lang="ts">
-defineProps<{
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const props = defineProps<{
   shellLoading: boolean
   siteName: string
+  menuOpen: boolean
 }>()
 
 defineEmits<{
   'toggle-menu': []
   'open-search': []
 }>()
+
+/* ========== 滚动时自动隐藏/显示（往下滑隐藏，往上滑出现） ========== */
+const HEADER_H = 56
+const SCROLL_DELTA = 8 // 滚动增量阈值，防抖
+
+const lastScrollY = ref(0)
+const hidden = ref(false)
+
+function onScroll() {
+  // 菜单打开时 → 始终固定显示，不响应滚动
+  if (props.menuOpen) {
+    hidden.value = false
+    return
+  }
+
+  const sy = window.scrollY
+  const delta = sy - lastScrollY.value
+
+  // 页面顶部 → 始终显示
+  if (sy <= HEADER_H) {
+    hidden.value = false
+    lastScrollY.value = sy
+    return
+  }
+
+  // 增量太小 → 忽略，防抖
+  if (Math.abs(delta) < SCROLL_DELTA) return
+
+  lastScrollY.value = sy
+  hidden.value = delta > 0
+}
+
+onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
-  <header class="mobile-header">
+  <header class="mobile-header" :class="{ 'mobile-header--hidden': hidden }">
     <button class="menu-btn" @click="$emit('toggle-menu')" aria-label="打开菜单">
       <!-- ≤1000px: 汉堡菜单（两边都收起） -->
       <svg class="menu-btn__icon menu-btn__icon--hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
@@ -64,6 +101,11 @@ defineEmits<{
     border-bottom: 1px solid var(--border);
     z-index: 999;
     overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-header--hidden {
+    transform: translateY(-100%);
   }
 
   .mobile-header__brand {

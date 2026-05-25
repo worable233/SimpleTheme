@@ -47,21 +47,9 @@ add_action( 'rest_api_init', function () {
 	) );
 } );
 
-// ========== Comments ==========
+// ========== Comments (like only; create/fetch via /wp/v2/comments) ==========
 
 add_action( 'rest_api_init', function () {
-	register_rest_route( 'simple-theme/v1', '/comments/(?P<post_id>\d+)', array(
-		'methods'             => WP_REST_Server::READABLE,
-		'callback'            => 'simple_theme_get_comments',
-		'permission_callback' => '__return_true',
-	) );
-
-	register_rest_route( 'simple-theme/v1', '/comments', array(
-		'methods'             => WP_REST_Server::CREATABLE,
-		'callback'            => 'simple_theme_create_comment',
-		'permission_callback' => '__return_true',
-	) );
-
 	register_rest_route( 'simple-theme/v1', '/comment-like', array(
 		'methods'             => WP_REST_Server::CREATABLE,
 		'callback'            => 'simple_theme_like_comment',

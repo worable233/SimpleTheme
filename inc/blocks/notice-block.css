@@ -1,202 +1,245 @@
-/* ========== Sakurairo Notice Block (ported) ========== */
+/* ===================================================================
+   Sakurairo Block Styles — Simple Theme Design
+   ===================================================================
+   Redesigned to match Simple Theme's design language:
+   - CSS custom properties from variables.css
+   - Card-based layout with subtle shadows
+   - Colored accent borders for callout types (Fumadocs/Gitbook-inspired)
+   - Responsive, minimal, clean
+   =================================================================== */
+
+/* ==================== Notice Block (Callout) ==================== */
+
 .shortcodestyle {
-  margin: 20px 8px !important;
-  padding: 15px 15px 15px 30px !important;
-  position: relative !important;
-  box-shadow: 0 1px 30px -4px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  margin: 1.5em 0;
+  padding: 1rem 1.25rem 1rem 1rem;
+  position: relative;
   background: var(--card);
-  border-radius: 10px !important;
-  text-indent: 0 !important;
-  border: 1.5px solid var(--border);
+  border-radius: var(--radius-large, 8px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-small);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  /* Accent left border — color set by type below */
+  border-left: 4px solid var(--border);
   box-sizing: border-box;
 }
 
 .shortcodestyle:hover {
-  box-shadow: 0 1px 20px 10px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-medium);
+  border-color: color-mix(in srgb, var(--foreground) 12%, var(--border));
 }
 
 .shortcodestyle i {
-  margin-right: 25px;
-  font-size: 20px;
+  margin-right: 0.75rem;
+  font-size: 1.125rem;
+  vertical-align: middle;
 }
 
 .shortcodestyle a {
-  padding: 5px !important;
+  padding: 2px 4px;
 }
 
-.warning,
-.noway,
-.task,
-.buy {
-  text-indent: 0 !important;
+/* ---- Type-specific accent colours ---- */
+
+/* Task / default — neutral (info) */
+.task {
+  border-left-color: var(--secondary, #999);
 }
 
 .task i {
-  color: #7d7d7d !important;
-  text-indent: 0 !important;
+  color: var(--secondary, #999);
 }
 
-.task p {
-  text-indent: 0 !important;
+/* Warning — amber */
+.warning {
+  border-left-color: var(--warning, #e6a23c);
 }
 
 .warning i {
-  color: #F1C700 !important;
-  text-indent: 0 !important;
+  color: var(--warning, #e6a23c);
+}
+
+/* Noway / error — red */
+.noway {
+  border-left-color: var(--danger, #dd2424);
 }
 
 .noway i {
-  color: #DC143C !important;
-  text-indent: 0 !important;
+  color: var(--danger, #dd2424);
+}
+
+/* Buy / success — green */
+.buy {
+  border-left-color: var(--success, #67c23a);
 }
 
 .buy i {
-  color: #32CD32 !important;
-  text-indent: 0 !important;
+  color: var(--success, #67c23a);
 }
 
-/* Dark mode overrides */
+/* ---- Dark mode overrides ---- */
+
 [data-theme="dark"] .shortcodestyle {
   background: var(--card);
-  box-shadow: 0 1px 30px -4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-small), var(--card-highlight);
 }
 
 [data-theme="dark"] .shortcodestyle:hover {
-  box-shadow: 0 1px 30px -2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-medium), var(--card-highlight);
 }
 
-/* ========== Sakurairo Showcard Block ========== */
+/* ==================== Showcard Block ==================== */
+
 .showcard {
   position: relative;
-  width: 240px;
-  height: auto;
-  left: 0;
-  top: 0;
-  margin-top: 20px;
-  margin-bottom: 20px;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 1px 30px -4px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  max-width: 260px;
+  width: 100%;
+  margin: 1.5em 0;
+  padding: 1rem;
   background: var(--card);
-  border: 1.5px solid var(--border);
+  border-radius: var(--radius-large, 8px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-small);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .showcard:hover {
-  box-shadow: 0 1px 20px 10px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-medium);
+  border-color: color-mix(in srgb, var(--foreground) 12%, var(--border));
 }
 
 .showcard .img {
   position: relative;
-  height: 200px;
-  width: 200px;
-  border-radius: 10px;
-  margin: auto;
-  margin-top: 4%;
-  margin-bottom: 0%;
-  box-shadow: 0 1px 30px -4px var(--shadow-color, rgba(0, 0, 0, 0.08));
-  opacity: 1;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: calc(var(--radius-large, 8px) - 2px);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  box-shadow: var(--shadow-small);
+  background: var(--muted);
+  transition: box-shadow 0.3s ease;
 }
 
 .showcard .img:hover {
-  box-shadow: 0 1px 20px 10px var(--shadow-color, rgba(0, 0, 0, 0.08));
-  height: 180px;
-  margin-top: 8%;
-  margin-bottom: 5.1%;
-  width: 180px;
+  box-shadow: var(--shadow-medium);
+}
+
+.showcard .img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+.showcard .img:hover img {
+  transform: scale(1.03);
   opacity: 0.9;
 }
 
 .showcard .icon-title {
-  left: 5%;
-  margin-top: 4%;
-  position: relative;
   display: inline-flex;
-  overflow: hidden;
-  max-width: 90%;
-  width: fit-content;
-  gap: 10px;
   align-items: center;
-  font-size: 12px;
+  gap: 0.5rem;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.875rem;
+  color: var(--foreground);
 }
 
 .showcard .icon-title i {
-  font-size: 11px;
+  font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 .showcard-button {
   position: absolute;
-  float: right;
-  box-shadow: 0 1px 30px -4px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
   background: var(--card);
   backdrop-filter: saturate(180%) blur(10px);
   -webkit-backdrop-filter: saturate(180%) blur(10px);
-  will-change: backdrop-filter;
-  padding: 5px;
-  font-size: 16px;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 100%;
-  top: 0;
-  right: 0;
-  margin: 10px;
-  transition: all 0.4s cubic-bezier(0.07, 0.53, 0.65, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full, 9999px);
+  box-shadow: var(--shadow-small);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.07, 0.53, 0.65, 0.95);
+  z-index: 2;
+}
+
+.showcard-button:hover {
+  box-shadow: var(--shadow-medium);
+  transform: scale(1.1);
 }
 
 .showcard .img:hover .showcard-button {
-  font-size: 32px;
-  width: 60px;
-  height: 60px;
-  top: 27.5%;
-  right: 27.5%;
-  box-shadow: 0 1px 20px 8px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%);
+  box-shadow: var(--shadow-large);
 }
 
-/* ========== Sakurairo Conversations Block ========== */
+/* ---- Dark mode overrides ---- */
+
+[data-theme="dark"] .showcard {
+  box-shadow: var(--shadow-small), var(--card-highlight);
+}
+
+[data-theme="dark"] .showcard:hover {
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+}
+
+/* ==================== Conversations Block ==================== */
+
 .conversations-code {
   display: flex;
-  padding: 10px;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
 }
 
 .conversations-code img {
   border-radius: 50%;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
+  object-fit: cover;
 }
 
 .conversations-code-text {
-  margin: auto 10px;
-  padding: 8px 14px;
-  color: var(--text, #505050);
+  margin: 0;
+  padding: 0.5rem 0.875rem;
+  color: var(--foreground);
   max-width: 80%;
   width: fit-content;
-  font-size: 15px;
-  box-shadow: 0 1px 30px -4px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  font-size: 0.9375rem;
+  line-height: 1.6;
   background: var(--card);
-  border-radius: 10px !important;
-  text-indent: 0 !important;
-  border: 1.5px solid var(--border);
+  border-radius: var(--radius-large, 8px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-small);
+  transition: box-shadow 0.3s ease;
 }
 
 .conversations-code-text:hover {
-  box-shadow: 0 1px 20px 10px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-medium);
 }
 
-/* Dark mode overrides for showcard & conversations */
-[data-theme="dark"] .showcard {
-  background: var(--card);
-  box-shadow: 0 1px 30px -4px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .showcard:hover {
-  box-shadow: 0 1px 30px -2px rgba(0, 0, 0, 0.5);
-}
+/* ---- Dark mode overrides ---- */
 
 [data-theme="dark"] .conversations-code-text {
-  background: var(--card);
-  box-shadow: 0 1px 30px -4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-small), var(--card-highlight);
 }
 
 [data-theme="dark"] .conversations-code-text:hover {
-  box-shadow: 0 1px 20px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-medium), var(--card-highlight);
 }

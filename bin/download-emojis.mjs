@@ -6,6 +6,15 @@ import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve, join } from 'node:path'
 
+// lazily import compress-emojis when needed
+let compressModule = null
+async function ensureCompress() {
+  if (!compressModule) {
+    compressModule = await import('./compress-emojis.mjs')
+  }
+  return compressModule
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
 
@@ -88,6 +97,12 @@ async function main() {
 
   console.log(`\n完成: 下载 ${downloaded} 个文件${failed ? `, ${failed} 个失败` : ''}`)
   if (failed > 0) process.exit(1)
+
+  // 下载完成后自动压缩为 WebP
+  if (downloaded > 0) {
+    const compress = await ensureCompress()
+    await compress.main()
+  }
 }
 
 main()

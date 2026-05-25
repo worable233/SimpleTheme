@@ -43,13 +43,26 @@ function simple_theme_register_settings() {
 // Auto-migrate on theme activation
 add_action( 'after_switch_theme', 'simple_theme_migrate_from_customizer' );
 
+// Hide WordPress admin chrome on the theme settings page via admin_head.
+add_action( 'admin_head', 'simple_theme_hide_admin_chrome' );
+function simple_theme_hide_admin_chrome() {
+	$screen = get_current_screen();
+	if ( ! $screen || 'toplevel_page_simple-theme' !== $screen->id ) {
+		return;
+	}
+	echo "<style>
+#wpfooter{display:none!important}
+.notice,.notice-warning,.update-nag,.clear,.inline{display:none!important}
+#screen-meta,#contextual-help-wrap,#screen-options-wrap{display:none!important}
+#wpbody-content{padding-bottom:0!important}
+</style>\n";
+}
+
 function simple_theme_render_admin_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( '你没有权限访问此页面。', 'simple-theme' ) );
 	}
 	simple_theme_migrate_from_customizer();
-	// Hide the default WordPress admin footer on this page.
-	echo "<style>#wpfooter{display:none!important}</style>\n";
 	// Output config directly in the page body — this is the most reliable
 	// way to ensure window.SimpleThemeConfig is available before the Vue
 	// admin app mounts, regardless of wp_add_inline_script behavior.

@@ -43,9 +43,20 @@ function simple_theme_get_default_options() {
 		'meta_show_publish_date'   => true,
 		'meta_show_modified_date'  => false,
 		'meta_show_comment_count'  => false,
-		'meta_show_view_count'     => true,
+		'meta_show_view_count'     => false,
 		'meta_show_reading_time'     => true,
-		'meta_show_word_count'       => false,
+		'meta_show_word_count'       => true,
+		'meta_show_author'          => true,
+
+		// ---- Article Meta ----
+		'article_meta_show_category'       => true,
+		'article_meta_show_publish_date'   => true,
+		'article_meta_show_modified_date'  => false,
+		'article_meta_show_comment_count'  => true,
+		'article_meta_show_view_count'     => true,
+		'article_meta_show_reading_time'   => true,
+		'article_meta_show_word_count'     => false,
+		'article_meta_show_author'         => true,
 		'reading_speed'              => 300,
 		'enable_prism_highlight'     => true,
 		'sidebar_show_stats'         => true,
@@ -63,13 +74,14 @@ function simple_theme_get_default_options() {
 		'tech_info_items'          => '',
 
 		// ---- Comments ----
-		'comment_show_email'        => true,
-		'comment_show_url'          => true,
 		'comment_show_cookies'      => true,
-		'comment_captcha_enabled'   => true,
+		'comment_captcha_enabled'   => false,
 		'gravatar_base_url'         => 'https://weavatar.com/avatar/',
 		'comment_show_private'      => true,
 		'comment_show_markdown'     => true,
+		'comment_image_upload_enabled' => true,
+		'ip_location_api'          => 'xinyew',
+		'ip_location_cache'        => true,
 
 		// ---- Collections & Home ----
 		'show_shuoshuo_section'    => true,
@@ -81,6 +93,9 @@ function simple_theme_get_default_options() {
 		'shuoshuo_title'           => '最近说说',
 		'shuoshuo_subtitle'        => '',
 			'suppress_console_warnings' => false,
+
+			// ---- Admin Theme ----
+			'admin_theme_enabled'     => false,
 	);
 }
 
@@ -125,13 +140,12 @@ function simple_theme_migrate_from_customizer() {
 		'meta_show_view_count'     => 'simple_theme_meta_show_view_count',
 		'meta_show_reading_time'   => 'simple_theme_meta_show_reading_time',
 		'meta_show_word_count'     => 'simple_theme_meta_show_word_count',
+		'meta_show_author'          => 'simple_theme_meta_show_author',
 		'copyright_style'          => 'simple_theme_copyright_style',
 		'article_license'          => 'simple_theme_article_license',
 		'end_note'                 => 'simple_theme_end_note',
 		'icp_text'                 => 'simple_theme_icp_text',
 		'icp_gov_text'             => 'simple_theme_icp_gov_text',
-		'comment_show_email'       => 'simple_theme_comment_show_email',
-		'comment_show_url'         => 'simple_theme_comment_show_url',
 		'comment_show_cookies'     => 'simple_theme_comment_show_cookies',
 		'shuoshuo_subtitle'        => 'simple_theme_shuoshuo_subtitle',
 		'hero_subtitle'            => 'simple_theme_hero_subtitle',
@@ -189,7 +203,13 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = in_array( (string) $value, $allowed_licenses, true ) ? (string) $value : $default_value;
 		} elseif ( 'social_links' === $key ) {
 			$decoded = json_decode( $value, true );
-			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;
+			if ( is_array( $decoded ) ) {
+				// 自动将单个对象包装为数组
+				$normalized = isset( $decoded[0] ) ? $decoded : array( $decoded );
+				$output[ $key ] = wp_json_encode( $normalized );
+			} else {
+				$output[ $key ] = $default_value;
+			}
 		} elseif ( 'tech_info_items' === $key ) {
 			$decoded = json_decode( $value, true );
 			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;

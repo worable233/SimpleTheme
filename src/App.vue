@@ -6,13 +6,19 @@ import LeftSidebar from '@/components/LeftSidebar.vue'
 import SidebarProfile from '@/components/SidebarProfile.vue'
 import TechInfo from '@/components/sidebar/TechInfo.vue'
 import TocWidget from '@/components/TocWidget.vue'
+import AuthModal from '@/components/AuthModal.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { useAuth } from '@/composables/useAuth'
+import { useAuthModal } from '@/composables/useAuthModal'
 import { showError } from '@/lib/toast'
 import type { ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
 
 const { siteInfo, shellError, ensureLoaded, footerMenu } = useSiteShell()
 const route = useRoute()
 const showSubPage = ref(false)
+
+const { init: initAuth } = useAuth()
+const { visible: authModalVisible } = useAuthModal()
 
 const radiusMap: Record<ThemeRadius, { medium: string; large: string }> = {
   small: { medium: '0.25rem', large: '0.5rem' },
@@ -69,6 +75,7 @@ function applyThemeSettings(theme?: ThemeSettings) {
 
 onMounted(() => {
   void ensureLoaded()
+  void initAuth()
 })
 
 watch(
@@ -98,6 +105,29 @@ watch(
       document.head.appendChild(link)
     }
     link.href = icon
+  },
+  { immediate: true },
+)
+
+// 动态更新页面描述（<meta name="description">）
+function updateMetaDescription(desc: string) {
+  if (!desc) return
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.name = 'description'
+    document.head.appendChild(meta)
+  }
+  meta.content = desc
+}
+
+watch(
+  [() => route.path, () => siteInfo.value.description],
+  ([path]) => {
+    // 首页标题用站点副标题
+    if (path === '/') {
+      updateMetaDescription(siteInfo.value.description || siteInfo.value.name || '')
+    }
   },
   { immediate: true },
 )
@@ -153,4 +183,6 @@ watch(
       </div>
     </div>
   </div>
+
+  <AuthModal v-if="authModalVisible" @close="useAuthModal().close()" />
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Component } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { isExternalUrl, toInternalPath, toResolvablePath } from '@/lib/theme-config'
+import { getThemeConfig, isExternalUrl, toInternalPath, toResolvablePath } from '@/lib/theme-config'
 import {
   fetchContentByRestUrl,
   fetchPostCollectionByTaxonomy,
@@ -97,6 +97,21 @@ const postTags = computed(() => {
   return [] as string[]
 })
 
+const showMeta = computed(() => getThemeConfig().features?.articleMeta || {} as Record<string, boolean>)
+
+
+const authorName = computed(() => {
+  const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
+  const authors = (post?._embedded?.['author'] as Array<{ name?: string }> | undefined)
+  return authors?.[0]?.name || ''
+})
+
+function formatWordCount(count?: number | null): string {
+  if (!count) return '0'
+  if (count >= 10000) return (count / 10000).toFixed(1).replace(/\.0$/, '') + '万'
+  return count.toLocaleString()
+}
+
 const loadTermPosts = async (taxonomy: string, id: number) => {
   termPostsLoading.value = true
   termPosts.value = []
@@ -130,7 +145,10 @@ const loadCurrentContent = async () => {
       ('post' === resolved.type || 'page' === resolved.type || 'shuoshuo' === resolved.type) &&
       resolved.restUrl
     ) {
-      postData.value = await (useMock ? mockFetchContentByRestUrl(resolved.restUrl) : fetchContentByRestUrl(resolved.restUrl))
+      const fetchPost = useMock
+        ? mockFetchContentByRestUrl
+        : withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)
+      postData.value = await fetchPost(resolved.restUrl)
       if (!postData.value) {
         contentType.value = '404'
         return
@@ -261,17 +279,77 @@ watch(
               <h1 v-html="postData.title.rendered"></h1>
             </div>
             <div class="single-post__cover-meta">
-              <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
-              <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__cover-category">{{ primaryCategory.name }}</router-link>
+              <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
+                <i class="bx bx-time"></i>
+                <span>{{ postData.readingTime }} 分钟</span>
+              </span>
+              <span v-if="showMeta?.showPublishDate" class="meta-item">
+                <i class="bx bx-calendar"></i>
+                <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+              </span>
+              <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
+                <i class="bx bx-file"></i>
+                <span>{{ formatWordCount(postData.wordCount) }}</span>
+              </span>
+              <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
+                <i class="bx bx-edit"></i>
+                <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
+              </span>
+              <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
+                <i class="bx bx-message-dots"></i>
+                <span>{{ postData.commentCount }} 条评论</span>
+              </span>
+              <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
+                <i class="bx bx-show"></i>
+                <span>{{ postData.viewCount }} 次浏览</span>
+              </span>
+              <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
+                <i class="bx bx-folder"></i>
+                <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
+              </span>
+              <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
+                <i class="bx bx-user"></i>
+                <span>{{ authorName }}</span>
+              </span>
             </div>
           </div>
         </div>
         <div v-else class="single-post__header">
           <h1 class="single-post__header-title" v-html="postData.title.rendered"></h1>
           <div class="single-post__header-meta">
-            <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
-            <router-link v-if="primaryCategory" :to="{ path: '/', query: { category: primaryCategory.slug } }" class="single-post__header-category">{{ primaryCategory.name }}</router-link>
-          </div>
+              <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
+                <i class="bx bx-time"></i>
+                <span>{{ postData.readingTime }} 分钟</span>
+              </span>
+              <span v-if="showMeta?.showPublishDate" class="meta-item">
+                <i class="bx bx-calendar"></i>
+                <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+              </span>
+              <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
+                <i class="bx bx-file"></i>
+                <span>{{ formatWordCount(postData.wordCount) }}</span>
+              </span>
+              <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
+                <i class="bx bx-edit"></i>
+                <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
+              </span>
+              <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
+                <i class="bx bx-message-dots"></i>
+                <span>{{ postData.commentCount }} 条评论</span>
+              </span>
+              <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
+                <i class="bx bx-show"></i>
+                <span>{{ postData.viewCount }} 次浏览</span>
+              </span>
+              <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
+                <i class="bx bx-folder"></i>
+                <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
+              </span>
+              <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
+                <i class="bx bx-user"></i>
+                <span>{{ authorName }}</span>
+              </span>
+            </div>
         </div>
         <div class="single-post__body">
           <div class="oat-prose" v-html="postData.content?.rendered"></div>
@@ -318,5 +396,45 @@ watch(
 .single-post__footer {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
   animation-delay: 0.24s;
+}
+
+/* ----- Cover meta (on featured image) — white on dark overlay ----- */
+.single-post__cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: 0.8125rem;
+  color: rgba(255 255 255 / 0.88);
+  text-shadow: 0 1px 6px rgba(0 0 0 / 0.45);
+}
+
+/* ----- Header meta (no image) — adapts to theme ----- */
+.single-post__header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground, #888);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.meta-item i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.meta-item a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.meta-item a:hover {
+  color: var(--primary);
 }
 </style>

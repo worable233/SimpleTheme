@@ -306,7 +306,7 @@ function simple_theme_find_post_by_path( $path, $post_types ) {
 function simple_theme_resolve_path( WP_REST_Request $request ) {
 	$path = $request->get_param( 'path' );
 	if ( ! $path ) {
-		return new WP_REST_Response( array( 'error' => 'Path required' ), 400 );
+		return new WP_REST_Response( array( 'message' => 'Path required' ), 400 );
 	}
 
 	error_log( '[simple-theme] simple_theme_resolve_path called: path=' . $path );

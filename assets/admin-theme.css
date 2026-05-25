@@ -1,0 +1,1918 @@
+﻿/* ================================================================
+ * Simple Theme Admin - Frontend Design Language
+ *
+ * Complete WordPress admin redesign matching the frontend theme's
+ * minimal, clean aesthetic. Uses the same CSS custom properties
+ * as the frontend for perfect visual consistency.
+ *
+ * Strategy:
+ *   - Hides WP's native sidebar (#adminmenu) and topbar (#wpadminbar)
+ *   - Vue components render the new sidebar (100px icon-bar) and topbar
+ *   - Content area restyled with frontend design tokens
+ *   - Loaded after WP stylesheets (source-order wins for same specificity)
+ * ================================================================ */
+
+
+/* =================================================================
+ *  1. DESIGN TOKENS
+ *  Matches frontend src/styles/variables.css exactly.
+ *  Uses [data-theme] selectors (same as frontend), not light-dark().
+ * ================================================================= */
+
+:root {
+  /* -- Layout constants (not in OAT) ---------------------------------- */
+  --sidebar-width: 100px;
+  --topbar-height: 48px;
+
+  /* -- Font stack (Chinese-friendly) ---------------------------------- */
+  --font-sans:
+    'MiSans VF', 'OPPO Sans', 'SF Pro SC', HarmonyOS_Regular, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Noto Sans', 'Microsoft Yahei',
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+  /* -- Shadows -------------------------------------------------------- */
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
+
+  /* -- WordPress admin theme color (matches frontend primary) --------- */
+  --wp-admin-theme-color: #333;
+  --wp-admin-theme-color-darker-10: #2a2a2a;
+  --wp-admin-theme-color-darker-20: #222;
+  --wp-admin-theme-color-rgb: 51, 51, 51;
+}
+
+/* Light mode — matches frontend [data-theme='light'] exactly */
+[data-theme='light'] {
+  color-scheme: light;
+  --background: #f5f6f7;
+  --foreground: #333;
+  --card: #ffffff;
+  --card-foreground: #333;
+  --primary: #333;
+  --primary-foreground: #fff;
+  --secondary: #999;
+  --secondary-foreground: #333;
+  --muted: #f5f5f5;
+  --muted-foreground: #999;
+  --faint: #fafafa;
+  --faint-foreground: #999;
+  --accent: #f5f5f5;
+  --accent-foreground: #333;
+  --border: #e2e2e2;
+  --input: #e2e2e2;
+  --ring: #333;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+}
+
+/* Dark mode — matches frontend [data-theme='dark'] exactly */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #1a1a1a;
+  --foreground: #e0e0e0;
+  --card: #222;
+  --card-foreground: #e0e0e0;
+  --primary: #e0e0e0;
+  --primary-foreground: #1a1a1a;
+  --secondary: #999;
+  --secondary-foreground: #e0e0e0;
+  --muted: #2a2a2a;
+  --muted-foreground: #999;
+  --faint: #252525;
+  --faint-foreground: #999;
+  --accent: #2a2a2a;
+  --accent-foreground: #e0e0e0;
+  --border: #333;
+  --input: #333;
+  --ring: #e0e0e0;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+
+  /* Login dark background */
+  --login-bg: #131315;
+}
+
+
+/* =================================================================
+ *  2. LAYOUT RESET
+ *  Hide WP's native nav shell, adjust layout for our components.
+ * ================================================================= */
+
+/* Hide WP's native sidebar */
+#adminmenuwrap,
+#adminmenuback,
+#adminmenu {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* Hide WP's native toolbar */
+#wpadminbar {
+  display: none !important;
+}
+
+/* Reset WP toolbar padding since our shell uses fixed positioning */
+html.wp-toolbar {
+  padding-top: 0 !important;
+}
+
+/* Adjust content area for our 100px sidebar + 48px topbar */
+#wpcontent {
+  margin-left: 100px !important;
+  padding-top: 48px !important;
+  padding-left: 0 !important;
+}
+
+#wpfooter {
+  margin-left: 100px !important;
+}
+
+#wpbody {
+  display: flow-root;
+  min-height: calc(100vh - var(--topbar-height, 48px));
+}
+
+#wpbody-content {
+  padding-bottom: 48px;
+}
+
+
+/* =================================================================
+ *  3. BASE & RESET
+ *  Global background, body typography, scrollbars, footer.
+ * ================================================================= */
+
+html.wp-toolbar,
+body,
+#wpcontent {
+  background: var(--background, #f5f6f7);
+}
+
+body {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--foreground, #333);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+a {
+  color: var(--primary);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+a:hover {
+  color: var(--foreground, #333);
+}
+
+/* Footer */
+#wpfooter {
+  background: var(--card, #ffffff);
+  border-top: 1px solid var(--border, #e2e2e2);
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  padding: 12px 24px;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #e2e2e2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border, #e2e2e2);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground, #999);
+}
+
+
+/* =================================================================
+ *  4. PAGE LAYOUT & HEADINGS
+ *  Content wrapper spacing, page titles, filter links.
+ * ================================================================= */
+
+.wrap {
+  margin: 0;
+  padding: 28px 28px 0;
+}
+
+.wrap > h1,
+.wrap > h2 {
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--foreground, #333);
+  margin: 0 0 24px;
+  padding: 0;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+
+.wrap > h1:first-child,
+.wrap > h2:first-child {
+  margin-top: 0;
+}
+
+/* Page title action button */
+.page-title-action {
+  top: -2px;
+  margin-left: 12px;
+  border-radius: var(--radius-full);
+  padding: 4px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border, #e2e2e2);
+  color: var(--foreground, #333);
+  background: var(--card, #ffffff);
+  transition: all var(--transition-fast, 0.15s ease);
+  line-height: 2;
+  min-height: 0;
+  box-shadow: none;
+}
+.page-title-action:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+.page-title-action:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  outline: none;
+}
+
+/* Subsubsub filter links */
+.subsubsub {
+  font-size: 13px;
+  color: var(--muted-foreground, #999);
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.subsubsub a {
+  color: var(--muted-foreground, #999);
+  line-height: 2.2;
+  padding: 2px 8px;
+  border-radius: var(--radius-medium);
+  transition: all var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+}
+
+.subsubsub a.current {
+  color: var(--primary);
+  font-weight: 600;
+  background: var(--muted, #f5f5f5);
+}
+
+.subsubsub a:hover {
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+.subsubsub .count {
+  color: var(--border, #e2e2e2);
+  font-weight: 400;
+}
+
+.subsubsub a.current .count {
+  color: var(--primary);
+}
+
+/* Screen options & help tabs */
+#screen-meta {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-top: none;
+  box-shadow: var(--shadow-small);
+  margin: 0 0 -1px;
+}
+
+#screen-meta-links .show-settings {
+  border: 1px solid var(--border, #e2e2e2);
+  border-top: none;
+  border-radius: 0 0 var(--radius-medium) var(--radius-medium);
+  background: var(--card, #ffffff);
+  color: var(--muted-foreground, #999);
+  transition: all var(--transition-fast, 0.15s ease);
+}
+#screen-meta-links .show-settings:hover {
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+.contextual-help-tabs-wrap {
+  padding: 12px 20px;
+}
+.contextual-help-tabs {
+  border-color: var(--border, #e2e2e2);
+}
+.contextual-help-tabs a {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.contextual-help-tabs a:hover {
+  color: var(--primary);
+}
+.contextual-help-tabs .active {
+  border-color: var(--primary);
+}
+.contextual-help-tabs .active a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+
+/* =================================================================
+ *  5. CARDS & POSTBOXES
+ *  Dashboard widgets with card styling, meta boxes.
+ * ================================================================= */
+
+/* Dashboard widgets */
+#dashboard-widgets .postbox {
+  border: 1px solid var(--border, #e2e2e2);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  transition: box-shadow var(--transition, 0.3s ease);
+}
+
+#dashboard-widgets .postbox:hover {
+  box-shadow: var(--shadow-medium);
+}
+
+#dashboard-widgets .postbox .hndle {
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+  background: var(--card, #ffffff);
+  cursor: move;
+}
+
+#dashboard-widgets .postbox .handlediv {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+#dashboard-widgets .postbox .handlediv:hover {
+  color: var(--primary);
+}
+
+#dashboard-widgets .postbox .inside {
+  padding: 16px 20px;
+}
+
+#dashboard-widgets .postbox .inside table {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+#dashboard-widgets .postbox.closed .hndle {
+  border-bottom: none;
+}
+
+#dashboard-widgets .meta-box-sortables {
+  margin-top: 20px;
+}
+
+/* Postboxes (meta boxes) */
+.postbox {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  transition: box-shadow var(--transition, 0.3s ease);
+}
+
+.postbox .hndle {
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+  background: var(--card, #ffffff);
+  cursor: move;
+}
+
+.postbox .handlediv {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.postbox .handlediv:hover {
+  color: var(--primary);
+}
+
+.postbox .inside {
+  padding: 14px 18px;
+}
+
+.postbox.closed .hndle {
+  border-bottom: none;
+}
+
+.meta-box-sortables {
+  margin-top: 16px;
+}
+
+.postbox .toggle-indicator {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.postbox:hover .toggle-indicator {
+  color: var(--primary);
+}
+
+/* Welcome panel */
+.welcome-panel {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  padding: 24px;
+  margin: 0 0 20px;
+}
+
+.welcome-panel h2 {
+  font-size: 22px;
+  font-weight: 650;
+  color: var(--foreground, #333);
+}
+
+.welcome-panel .welcome-panel-column p {
+  color: var(--muted-foreground, #999);
+}
+
+.welcome-panel .welcome-panel-dismiss {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.welcome-panel .welcome-panel-dismiss:hover {
+  color: var(--primary);
+}
+
+
+/* =================================================================
+ *  6. FORMS & INPUTS
+ *  Clean rounded inputs with primary focus ring.
+ * ================================================================= */
+
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="tel"],
+input[type="time"],
+input[type="week"],
+input[type="month"],
+select,
+textarea {
+  border: 1px solid var(--input, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--foreground, #333);
+  background: var(--card, #ffffff);
+  box-shadow: none;
+  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+  line-height: 1.5;
+  min-height: 40px;
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="tel"]:focus,
+input[type="time"]:focus,
+input[type="week"]:focus,
+input[type="month"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  outline: none;
+}
+
+input[type="text"]:disabled,
+input[type="search"]:disabled,
+input[type="email"]:disabled,
+input[type="url"]:disabled,
+input[type="password"]:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--background, #f5f6f7);
+  color: var(--muted-foreground, #999);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+input[type="text"][readonly],
+input[type="email"][readonly],
+input[type="url"][readonly],
+textarea[readonly] {
+  background: var(--background, #f5f6f7);
+  cursor: default;
+}
+
+select {
+  appearance: auto;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+input[type="search"] {
+  -webkit-appearance: textfield;
+}
+
+.search-box {
+  margin-bottom: 12px;
+}
+
+.search-box input[name="s"],
+.search-box .search-input {
+  border-radius: var(--radius-medium) 0 0 var(--radius-medium);
+  border-right: none;
+}
+
+.search-box .button {
+  border-radius: 0 var(--radius-medium) var(--radius-medium) 0;
+  margin-left: -1px;
+}
+
+.form-table th {
+  color: var(--foreground, #333);
+  font-weight: 600;
+  padding: 16px 12px 16px 0;
+}
+
+.form-table td {
+  padding: 16px 0;
+}
+
+.form-table .description {
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.wp-core-ui .description,
+.wp-core-ui .form-wrap p {
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+}
+
+
+/* =================================================================
+ *  7. BUTTONS
+ *  Pill-shaped primary buttons, clean secondary buttons.
+ * ================================================================= */
+
+.wp-core-ui .button,
+.wp-core-ui .button-secondary {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-full);
+  padding: 6px 20px;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  line-height: 1.4;
+  color: var(--foreground, #333);
+  background: var(--card, #ffffff);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  box-shadow: none;
+  min-height: 0;
+  font-weight: 450;
+}
+
+.wp-core-ui .button:hover,
+.wp-core-ui .button-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+.wp-core-ui .button:focus,
+.wp-core-ui .button-secondary:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+  outline: none;
+}
+
+.wp-core-ui .button:active,
+.wp-core-ui .button-secondary:active {
+  transform: scale(0.97);
+}
+
+.wp-core-ui .button-primary {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-full);
+  color: var(--primary-foreground);
+  padding: 6px 24px;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  line-height: 1.4;
+  box-shadow: none;
+  text-shadow: none;
+  font-weight: 500;
+  transition: all var(--transition-fast, 0.15s ease);
+  cursor: pointer;
+}
+
+.wp-core-ui .button-primary:hover {
+  background: color-mix(in srgb, var(--primary) 85%, #000);
+  border-color: color-mix(in srgb, var(--primary) 85%, #000);
+  color: var(--primary-foreground);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.wp-core-ui .button-primary:focus {
+  background: color-mix(in srgb, var(--primary) 85%, #000);
+  border-color: color-mix(in srgb, var(--primary) 85%, #000);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  outline: none;
+}
+
+.wp-core-ui .button-primary:active {
+  background: color-mix(in srgb, var(--primary) 70%, #000);
+  border-color: color-mix(in srgb, var(--primary) 70%, #000);
+  transform: scale(0.97);
+  box-shadow: none;
+}
+
+.wp-core-ui .button-primary[disabled],
+.wp-core-ui .button-primary:disabled {
+  background: var(--muted-foreground, #999);
+  border-color: var(--border, #e2e2e2);
+  color: var(--primary-foreground);
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+.wp-core-ui .button-link {
+  color: var(--primary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  transition: color var(--transition-fast, 0.15s ease);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.wp-core-ui .button-link:hover {
+  color: var(--foreground, #333);
+  text-decoration: underline;
+}
+
+.wp-core-ui .button-link:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+  outline: none;
+  border-radius: var(--radius-medium);
+}
+
+.wp-core-ui .button-danger {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-full);
+  color: #fff;
+  padding: 6px 20px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: none;
+  text-shadow: none;
+  font-weight: 500;
+  transition: all var(--transition-fast, 0.15s ease);
+  cursor: pointer;
+}
+.wp-core-ui .button-danger:hover {
+  background: #c62828;
+  border-color: #c62828;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.wp-core-ui .button-small {
+  padding: 4px 14px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+
+/* =================================================================
+ *  8. LIST TABLES
+ *  Modern rounded data tables with clean styling.
+ * ================================================================= */
+
+.wp-list-table,
+.widefat {
+  border: none;
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.wp-list-table thead th,
+.widefat thead th {
+  background: var(--background, #f5f6f7);
+  color: var(--muted-foreground, #999);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wp-list-table thead th a,
+.widefat thead th a {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.wp-list-table thead th a:hover,
+.widefat thead th a:hover {
+  color: var(--primary);
+}
+
+.wp-list-table tbody td,
+.widefat tbody td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  color: var(--foreground, #333);
+  font-size: 13px;
+}
+
+.wp-list-table tbody tr:last-child td,
+.widefat tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wp-list-table tbody tr:hover td,
+.widefat tbody tr:hover td {
+  background: var(--faint, #fafafa);
+}
+
+.wp-list-table.striped > tbody > :nth-child(odd),
+.striped > tbody > :nth-child(odd),
+.alternate {
+  background-color: var(--faint, #fafafa);
+}
+
+.wp-list-table tbody tr.active td,
+.widefat tbody tr.active td {
+  background: var(--muted, #f5f5f5);
+}
+
+.wp-list-table .row-actions {
+  color: var(--border, #e2e2e2);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.wp-list-table .row-actions span a {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+  padding: 2px 4px;
+  border-radius: var(--radius-small);
+}
+.wp-list-table .row-actions span a:hover {
+  color: var(--primary);
+}
+.wp-list-table .row-actions .trash a {
+  color: var(--danger);
+}
+.wp-list-table .row-actions .trash a:hover {
+  color: #c62828;
+}
+
+.wp-list-table th.check-column,
+.wp-list-table td.check-column {
+  width: 2.4em;
+  text-align: center;
+  padding-left: 12px;
+}
+
+/* Table navigation (pagination + filters) */
+.tablenav {
+  margin: 16px 0;
+  color: var(--muted-foreground, #999);
+  font-size: 13px;
+  padding: 0;
+  min-height: 36px;
+}
+
+.tablenav-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tablenav-pages .displaying-num {
+  color: var(--muted-foreground, #999);
+  margin-right: 8px;
+}
+
+.tablenav-pages .pagination-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tablenav-pages .pagination-links > span,
+.tablenav-pages .pagination-links > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  background: var(--card, #ffffff);
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  transition: all var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+}
+
+.tablenav-pages .pagination-links a:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+.tablenav-pages .pagination-links .current-page {
+  border-radius: var(--radius-medium);
+  border: 1px solid var(--border, #e2e2e2);
+  text-align: center;
+  width: 40px;
+  height: 30px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--foreground, #333);
+}
+
+.tablenav-pages .pagination-links .tablenav-pages-navspan {
+  color: var(--muted-foreground, #999);
+  border-color: var(--border, #e2e2e2);
+}
+
+.tablenav .actions {
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tablenav .bulkactions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tablenav .alignleft.actions select {
+  min-width: 140px;
+}
+
+.wp-list-table .sorting-indicator {
+  color: var(--primary);
+  margin-left: 4px;
+}
+
+/* Inline edit */
+#inline-edit-wrapper {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-medium);
+  padding: 16px;
+}
+
+#inline-edit-wrapper fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+#bulk-edit-wrapper {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  padding: 16px;
+}
+
+
+/* --- Comment tables (dashboard widget + list table) --- */
+
+/* Activity block */
+.activity-block {
+  border-bottom-color: var(--border, #e2e2e2);
+}
+.activity-block .subsubsub li {
+  color: var(--muted-foreground, #999);
+}
+
+/* Dashboard widget: each comment item is a card */
+#activity-widget #the-comment-list .comment-item {
+  background: var(--card, #ffffff);
+}
+
+/* Unapproved comments — yellow tint in light, dark brown in dark */
+#activity-widget #the-comment-list .unapproved,
+#the-comment-list .unapproved th,
+#the-comment-list .unapproved td {
+  background-color: light-dark(#fcf9e8, #2a2010);
+}
+
+#activity-widget #the-comment-list .unapproved::before,
+#the-comment-list .unapproved th.check-column {
+  background: var(--warning, #e6a23c);
+  border-left-color: var(--warning, #e6a23c);
+}
+
+/* Undo row */
+#the-comment-list tr.undo,
+#the-comment-list div.undo {
+  background-color: var(--background, #f5f6f7);
+}
+
+/* Vim current highlight */
+.vim-current,
+.vim-current th,
+.vim-current td {
+  background-color: var(--accent, #f5f5f5) !important;
+}
+
+
+/* =================================================================
+ *  9. NOTICES & ALERTS
+ *  Card-style notices with left border accent.
+ * ================================================================= */
+
+.notice,
+.updated,
+.error {
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  border: 1px solid var(--border, #e2e2e2);
+  border-left: 4px solid var(--border, #e2e2e2);
+  margin: 20px 0;
+  padding: 14px 18px;
+  background: var(--card, #ffffff);
+  position: relative;
+}
+
+.notice p,
+.updated p,
+.error p {
+  margin: 4px 0;
+  color: var(--foreground, #333);
+}
+
+.notice a,
+.updated a,
+.error a {
+  font-weight: 500;
+}
+
+.notice .notice-dismiss,
+.updated .notice-dismiss,
+.error .notice-dismiss {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.notice .notice-dismiss:hover,
+.updated .notice-dismiss:hover,
+.error .notice-dismiss:hover {
+  color: var(--primary);
+}
+
+/* Success */
+.updated,
+.notice-success {
+  border-left-color: var(--success, #67c23a);
+  background: light-dark(#f0f9eb, #1b3a1b);
+}
+
+/* Error */
+.error,
+.notice-error {
+  border-left-color: var(--danger, #dd2424);
+  background: light-dark(#fef0f0, #3a1b1b);
+}
+
+/* Warning */
+.notice-warning {
+  border-left-color: var(--warning, #e6a23c);
+  background: light-dark(#fdf6ec, #3a2e1b);
+}
+
+/* Info (primary) */
+.notice-info {
+  border-left-color: var(--primary, #333);
+  background: light-dark(#fff0f2, #2a1520);
+}
+
+/* Update nag */
+.update-nag {
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: #fdf6ec;
+  border: 1px solid var(--warning);
+  border-left: 4px solid var(--warning);
+  color: var(--foreground, #333);
+  font-size: 13px;
+  padding: 12px 18px;
+  margin: 20px 0;
+  display: inline-block;
+}
+
+/* Inline notice */
+.notice.inline {
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+  border: 1px solid var(--border, #e2e2e2);
+  background: var(--background, #f5f6f7);
+  padding: 10px 14px;
+  margin: 8px 0;
+}
+
+
+/* =================================================================
+ *  10. LOGIN PAGE
+ *  Centered card design matching frontend aesthetic.
+ * ================================================================= */
+
+body.login {
+  background: var(--background, #f5f6f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+body.login::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--muted-foreground, #999), var(--primary));
+  z-index: 1;
+}
+
+.login #login {
+  background: var(--card, #ffffff);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-large);
+  padding: 44px 40px 36px;
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  border: 1px solid var(--border, #e2e2e2);
+}
+
+.login #login h1 {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login #login h1 a {
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: auto;
+  height: 64px;
+  margin: 0 auto 8px;
+  display: block;
+}
+
+.login form {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.login form label {
+  color: var(--foreground, #333);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.login form .input,
+.login input[type="text"],
+.login input[type="password"],
+.login input[type="email"] {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 12px 16px;
+  font-size: 15px;
+  min-height: 48px;
+  width: 100%;
+  margin: 4px 0 16px;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.login form .input:focus,
+.login input[type="text"]:focus,
+.login input[type="password"]:focus,
+.login input[type="email"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.login .button-primary {
+  width: 100%;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  height: auto;
+  margin-top: 4px;
+  transition: all var(--transition-fast, 0.15s ease);
+  background: var(--primary);
+  border: none;
+  color: var(--primary-foreground);
+  cursor: pointer;
+}
+
+.login .button-primary:hover {
+  background: color-mix(in srgb, var(--primary) 85%, #000);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.login .button-primary:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--primary) 70%, #000);
+}
+
+.login #backtoblog,
+.login #nav {
+  color: var(--muted-foreground, #999);
+  font-size: 13px;
+  padding: 0;
+  margin: 20px 0 0;
+  text-align: center;
+}
+
+.login #backtoblog a,
+.login #nav a {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+}
+
+.login #backtoblog a:hover,
+.login #nav a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.login .message,
+.login .success {
+  border-radius: var(--radius-medium);
+  border-left: 4px solid var(--success);
+  background: #f0f9eb;
+  box-shadow: var(--shadow-small);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+
+.login #login_error {
+  border-radius: var(--radius-medium);
+  border-left: 4px solid var(--danger);
+  background: #fef0f0;
+  box-shadow: var(--shadow-small);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+
+.login .forgetmenot {
+  margin: 0 0 16px;
+}
+
+.login .forgetmenot label {
+  font-weight: 400;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login .forgetmenot input[type="checkbox"] {
+  margin: 0;
+}
+
+
+/* =================================================================
+ *  11. CLASSIC EDITOR
+ *  Clean content area with card styling.
+ * ================================================================= */
+
+#post-body-content {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-small);
+  margin-bottom: 20px;
+}
+
+#post-body-content textarea#content {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  min-height: 300px;
+}
+
+#wp-content-editor-tools {
+  background: transparent;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  padding: 12px 0;
+  margin: 0 -24px 16px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+#wp-content-editor-container {
+  border: none;
+}
+
+#wp-content-editor-tools .wp-editor-tabs button {
+  border: 1px solid var(--border, #e2e2e2);
+  border-bottom: none;
+  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+  background: var(--background, #f5f6f7);
+  color: var(--muted-foreground, #999);
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+#wp-content-editor-tools .wp-editor-tabs button:hover {
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+#wp-content-editor-tools .wp-editor-tabs .active {
+  background: var(--card, #ffffff);
+  color: var(--foreground, #333);
+  border-bottom-color: var(--card, #ffffff);
+}
+
+.wp-media-buttons .button {
+  margin-bottom: 0;
+  border-radius: var(--radius-medium);
+}
+
+#submitdiv .inside {
+  padding: 14px 18px;
+}
+
+#submitdiv #major-publishing-actions {
+  background: transparent;
+  border-top: 1px solid var(--border, #e2e2e2);
+  padding: 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#submitdiv #delete-action {
+  margin-right: auto;
+}
+
+#submitdiv #publishing-action {
+  display: flex;
+  gap: 8px;
+}
+
+#poststuff .postbox .inside {
+  margin: 0;
+  padding: 14px 18px;
+}
+
+#poststuff h2 {
+  color: var(--foreground, #333);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#misc-publishing-actions .misc-pub-section {
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border, #e2e2e2);
+}
+
+
+/* =================================================================
+ *  12. MISC COMPONENTS
+ *  Taxonomy panels, nav menus, widgets, color picker, media, etc.
+ * ================================================================= */
+
+/* Category / taxonomy panels */
+.categorydiv div.tabs-panel {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  background: var(--card, #ffffff);
+  padding: 8px;
+}
+
+.categorydiv ul.category-tabs {
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.categorydiv ul.category-tabs li a {
+  color: var(--muted-foreground, #999);
+  padding: 8px 16px;
+  display: block;
+  transition: all var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+}
+
+.categorydiv ul.category-tabs li a:hover {
+  color: var(--primary);
+  background: var(--muted, #f5f5f5);
+}
+
+.categorydiv ul.category-tabs li.tabs a {
+  color: var(--primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Nav menu editor */
+.menu-item-handle {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  background: var(--card, #ffffff);
+  box-shadow: var(--shadow-small);
+  padding: 10px 14px;
+  transition: box-shadow var(--transition-fast, 0.15s ease);
+}
+.menu-item-handle:hover {
+  box-shadow: var(--shadow-medium);
+}
+
+.menu-item-handle .item-title {
+  font-weight: 600;
+  color: var(--foreground, #333);
+}
+
+.menu-item-handle .item-controls a {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.menu-item-handle .item-controls a:hover {
+  color: var(--primary);
+}
+
+.accordion-section-content {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 16px;
+}
+
+/* Widgets */
+.widgets-holder-wrap {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.widget-title {
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--background, #f5f6f7);
+  color: var(--foreground, #333);
+  transition: background var(--transition-fast, 0.15s ease);
+}
+.widget-title:hover {
+  background: var(--muted, #f5f5f5);
+}
+
+.widget-title h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+}
+
+.widget-inside {
+  padding: 16px;
+  border: none;
+  background: var(--card, #ffffff);
+}
+
+.widget-control-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #e2e2e2);
+}
+
+/* Color picker */
+.wp-picker-container .wp-color-result {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border, #e2e2e2);
+  padding: 0 0 0 36px;
+  height: 36px;
+  line-height: 34px;
+  font-size: 13px;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+.wp-picker-container .wp-color-result:hover {
+  border-color: var(--primary);
+}
+
+.wp-picker-container .iris-picker {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-small);
+}
+
+/* Progress bar */
+.upload-progress .upload-progress-bar {
+  background: var(--muted, #f5f5f5);
+  border-radius: var(--radius-full);
+  height: 6px;
+  overflow: hidden;
+}
+
+.upload-progress .upload-progress-bar .progress {
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  height: 100%;
+  transition: width var(--transition-fast, 0.15s ease);
+}
+
+/* Plugin cards */
+.plugin-card {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  background: var(--card, #ffffff);
+  transition: box-shadow var(--transition, 0.3s ease), transform var(--transition, 0.3s ease);
+}
+
+.plugin-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+.plugin-card .plugin-card-top {
+  padding: 24px;
+}
+
+.plugin-card .name h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+  margin: 0 0 8px;
+}
+
+.plugin-card .desc p {
+  color: var(--muted-foreground, #999);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.plugin-card .plugin-icon {
+  border-radius: var(--radius-large);
+}
+
+.plugin-card .column-rating .star-rating {
+  color: var(--warning);
+}
+
+/* Theme browser */
+.theme-browser .theme {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
+  transition: box-shadow var(--transition, 0.3s ease), transform var(--transition, 0.3s ease);
+  background: var(--card, #ffffff);
+}
+
+.theme-browser .theme:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+.theme-browser .theme .theme-screenshot {
+  border-radius: var(--radius-large) var(--radius-large) 0 0;
+}
+
+.theme-browser .theme .theme-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+}
+
+.theme-browser .theme.active .theme-name {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.theme-browser .theme.active .theme-actions {
+  background: var(--muted, #f5f5f5);
+}
+
+.theme-browser .theme .theme-actions {
+  background: var(--background, #f5f6f7);
+  border-top: 1px solid var(--border, #e2e2e2);
+  padding: 8px 12px;
+}
+
+.theme-browser .theme .more-details {
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: var(--radius-medium);
+  backdrop-filter: blur(4px);
+}
+
+/* Media library */
+.attachments-browser .attachments {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 8px;
+}
+
+.attachments-browser .media-toolbar {
+  background: var(--background, #f5f6f7);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 8px 12px;
+}
+
+.media-frame {
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-large);
+  overflow: hidden;
+  border: 1px solid var(--border, #e2e2e2);
+}
+
+.media-frame-title {
+  background: var(--card, #ffffff);
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.media-frame-title,
+.media-frame-router,
+.media-frame-content,
+.media-frame-toolbar {
+  border-color: var(--border, #e2e2e2);
+}
+
+.media-frame-router {
+  background: var(--background, #f5f6f7);
+}
+
+.media-router .media-menu-item {
+  color: var(--muted-foreground, #999);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+.media-router .media-menu-item:hover,
+.media-router .media-menu-item.active {
+  color: var(--primary);
+}
+
+.media-frame-toolbar {
+  background: var(--card, #ffffff);
+  border-top: 1px solid var(--border, #e2e2e2);
+  padding: 12px 16px;
+}
+
+.media-frame-content {
+  background: var(--background, #f5f6f7);
+}
+
+.attachment {
+  border-radius: var(--radius-medium);
+  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+}
+.attachment:hover {
+  border-color: var(--primary);
+}
+.attachment.details {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* Admin pointers */
+.wp-pointer .wp-pointer-content {
+  border: none;
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-medium);
+  padding: 0;
+  overflow: hidden;
+}
+
+.wp-pointer .wp-pointer-content h3 {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 18px;
+  margin: 0;
+  border: none;
+}
+
+.wp-pointer .wp-pointer-content p {
+  padding: 14px 18px;
+  margin: 0;
+  color: var(--foreground, #333);
+  font-size: 13px;
+}
+
+.wp-pointer .wp-pointer-buttons {
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--border, #e2e2e2);
+  margin: 0;
+}
+
+/* Export / Import */
+.export-filters {
+  background: var(--background, #f5f6f7);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 16px;
+  margin: 8px 0;
+}
+
+
+/* =================================================================
+ *  13. DARK MODE
+ *  Already handled by [data-theme='dark'] selector block (Section 1).
+ *  OAT's CSS variables are overridden by our [data-theme] selectors,
+ *  same as the frontend. The JS in admin_head sets both data-theme
+ *  and color-scheme on <html> before first paint.
+ * ================================================================= */
+
+
+/* =================================================================
+ *  14. RESPONSIVE
+ * ================================================================= */
+
+/* 鈮?960px 鈥?fold sidebar to narrow */
+@media (max-width: 960px) {
+  #wpcontent {
+    margin-left: 0 !important;
+  }
+
+  #wpfooter {
+    margin-left: 0 !important;
+  }
+
+  .wrap {
+    padding: 20px 16px 0;
+  }
+}
+
+/* 鈮?782px 鈥?WP mobile breakpoint */
+@media (max-width: 782px) {
+  html.wp-toolbar {
+    padding-top: 0 !important;
+  }
+
+  #wpcontent {
+    padding-top: 0 !important;
+  }
+
+  #wpbody-content {
+    padding-bottom: 48px;
+  }
+
+  .wrap {
+    padding: 16px 16px 0;
+  }
+
+  .wrap > h1,
+  .wrap > h2 {
+    font-size: 20px;
+  }
+
+  .wp-list-table thead th {
+    padding: 10px 12px;
+    font-size: 10px;
+  }
+
+  .wp-list-table tbody td {
+    padding: 10px 12px;
+  }
+
+  .wp-list-table,
+  .widefat {
+    border-radius: var(--radius-large);
+  }
+
+  #dashboard-widgets .postbox {
+    border-radius: var(--radius-large);
+  }
+
+  .postbox {
+    border-radius: var(--radius-large);
+  }
+
+  .login #login {
+    padding: 32px 24px 28px;
+    border-radius: var(--radius-large);
+    margin: 0;
+    box-shadow: var(--shadow-medium);
+  }
+
+  .plugin-card .plugin-card-top {
+    padding: 16px;
+  }
+
+  .form-table th,
+  .form-table td {
+    display: block;
+    padding: 8px 0;
+    width: 100%;
+  }
+
+  .form-table th {
+    padding-top: 16px;
+  }
+
+  .tablenav {
+    min-height: 48px;
+  }
+
+  .notice,
+  .updated,
+  .error {
+    margin: 16px 0;
+    padding: 12px 14px;
+  }
+
+  .tablenav-pages .displaying-num {
+    display: none;
+  }
+
+  .search-box {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+}
+
+/* 鈮?600px 鈥?extra small screens */
+@media (max-width: 600px) {
+  .wrap {
+    padding: 12px 12px 0;
+  }
+
+  .wrap > h1,
+  .wrap > h2 {
+    font-size: 18px;
+  }
+
+  .login #login {
+    padding: 24px 16px 20px;
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-small);
+  }
+
+  .page-title-action {
+    display: inline-block;
+    margin: 8px 0 0;
+  }
+
+  .theme-browser .theme {
+    border-radius: var(--radius-large);
+  }
+}
+
+
+/* =================================================================
+ *  15. PRINT
+ *  Clean print styles.
+ * ================================================================= */
+
+@media print {
+  #adminmenuwrap,
+  #adminmenuback,
+  #adminmenu,
+  #wpadminbar,
+  .admin-sidebar,
+  .admin-topbar,
+  #simple-theme-admin-shell,
+  #wpfooter,
+  .notice,
+  .tablenav,
+  .search-box,
+  .subsubsub,
+  .row-actions {
+    display: none !important;
+  }
+
+  #wpcontent {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .wrap {
+    padding: 0 !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  .wp-list-table,
+  .widefat {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}
+

@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+
+const { siteInfo, ensureLoaded } = useSiteShell()
+
+const pageSize = computed(() => siteInfo.value.collections?.shuoshuoPageSize ?? 12)
+const sectionTitle = computed(() => siteInfo.value.collections?.shuoshuoTitle || '说说')
+const sectionSubtitle = computed(() => siteInfo.value.collections?.shuoshuoSubtitle || 'Shuoshuo.')
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
@@ -25,8 +32,9 @@ async function loadShuoshuo() {
   errorMessage.value = ''
 
   try {
+    await ensureLoaded()
     const response = await fetchCollection('shuoshuo', {
-      limit: 12,
+      limit: pageSize.value,
     })
     items.value = response.items
   } catch (error) {
@@ -46,22 +54,20 @@ onMounted(() => {
   <div class="shuoshuo-page">
     <header class="section-header">
       <h1>
-        <span class="section-header__title">说说</span>
-        <span class="section-header__subtitle">Shuoshuo.</span>
+        <span class="section-header__title">{{ sectionTitle }}</span>
+        <span class="section-header__subtitle">{{ sectionSubtitle }}</span>
       </h1>
     </header>
 
     <!-- Loading skeleton -->
-    <div v-if="loading" class="content-area">
-      <div class="shuoshuo-list">
-        <div v-for="item in 4" :key="'sk-' + item" class="shuoshuo-card-skeleton">
-          <div class="skeleton-body">
-            <div class="skeleton-line w-30"></div>
-            <div class="skeleton-line w-70"></div>
-            <div class="skeleton-line w-100"></div>
-            <div class="skeleton-line w-50"></div>
-          </div>
+    <div v-if="loading" class="post-list">
+      <div v-for="i in Math.min(pageSize, 8)" :key="'sk-' + i" class="post-card-skeleton">
+        <div class="post-card-skeleton__text">
+          <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: 4px; background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+          <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: 4px; background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+          <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: 4px; background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
         </div>
+        <div class="post-card-skeleton__cover"></div>
       </div>
     </div>
 
@@ -79,33 +85,31 @@ onMounted(() => {
       description="还没有发布说说内容，稍后回来看看吧。"
     />
 
-    <div v-else class="content-area">
-      <div class="shuoshuo-list">
-        <article v-for="post in items" :key="post.id" class="post-card post-card--stack">
-          <!-- Cover image — full width top -->
-          <img
-            v-if="post.featuredImage"
-            :src="post.featuredImage"
-            :alt="post.title.rendered"
-            class="post-card__cover"
-            loading="lazy"
-          />
-          <!-- Meta badge — overlay on cover -->
-          <div class="post-card__meta">
-            <span class="post-card__meta-item">说说</span>
-            <time v-if="metaConfig?.showPublishDate" class="post-card__meta-item" :datetime="post.date">{{ formatDate(post.date) }}</time>
-            <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
-            <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
-          </div>
-          <!-- Text content -->
-          <div class="post-card__body">
-            <h2 class="post-card__title">
-              <RouterLink :to="toInternalPath(post.link)" v-html="post.title.rendered" />
-            </h2>
-            <div class="post-card__content" v-html="post.content?.rendered" />
-          </div>
-        </article>
-      </div>
+    <div v-else class="post-list">
+      <article v-for="post in items" :key="post.id" class="post-card">
+        <!-- Cover image — absolute positioned right overlay -->
+        <img
+          v-if="post.featuredImage"
+          :src="post.featuredImage"
+          :alt="post.title.rendered"
+          class="post-card__cover"
+          loading="lazy"
+        />
+        <!-- Meta badge -->
+        <div class="post-card__meta">
+          <span class="post-card__meta-item">说说</span>
+          <time v-if="metaConfig?.showPublishDate" class="post-card__meta-item" :datetime="post.date">{{ formatDate(post.date) }}</time>
+          <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
+          <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
+        </div>
+        <!-- Text content -->
+        <div class="post-card__body">
+          <h2 class="post-card__title">
+            <RouterLink :to="toInternalPath(post.link)" v-html="post.title.rendered" />
+          </h2>
+          <div class="post-card__content" v-html="post.content?.rendered" />
+        </div>
+      </article>
     </div>
   </div>
 </template>
@@ -131,50 +135,24 @@ onMounted(() => {
   }
 }
 
-.content-area .section-header,
-.content-area .shuoshuo-list {
-  animation: none;
-  opacity: 1;
-  transform: none;
-}
-
 .section-header {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
 }
 
-.shuoshuo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Post card — vertical stack variant */
-.post-card--stack {
-  flex-direction: column;
-  min-height: auto;
+/* Staggered slide-in for cards */
+.post-card {
   animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
 }
+.post-card:nth-child(1) { animation-delay: 0.06s; }
+.post-card:nth-child(2) { animation-delay: 0.11s; }
+.post-card:nth-child(3) { animation-delay: 0.16s; }
+.post-card:nth-child(4) { animation-delay: 0.21s; }
+.post-card:nth-child(5) { animation-delay: 0.26s; }
+.post-card:nth-child(6) { animation-delay: 0.31s; }
+.post-card:nth-child(7) { animation-delay: 0.36s; }
+.post-card:nth-child(8) { animation-delay: 0.41s; }
 
-/* Stack variant: image is full-width normal flow, not absolute overlay */
-.post-card--stack .post-card__cover {
-  position: revert;
-  width: 100%;
-  max-height: 256px;
-  aspect-ratio: 2.4;
-  mask-image: none;
-  -webkit-mask-image: none;
-  opacity: 1;
-}
 
-.post-card--stack .post-card__body {
-  width: auto;
-  min-height: auto;
-}
-
-.post-card--stack:nth-child(1) { animation-delay: 0.06s; }
-.post-card--stack:nth-child(2) { animation-delay: 0.11s; }
-.post-card--stack:nth-child(3) { animation-delay: 0.16s; }
-.post-card--stack:nth-child(4) { animation-delay: 0.21s; }
 
 /* Full content within text area */
 .post-card__content {
@@ -195,45 +173,28 @@ onMounted(() => {
   margin: 0.75em 0;
 }
 
-/* ============ Loading Skeleton ============ */
-.shuoshuo-card-skeleton {
-  padding: 1.25rem;
-  background: var(--card);
-  border-radius: var(--radius-large, 12px);
-  border: 1px solid var(--border);
-}
-
-.skeleton-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.skeleton-line {
-  height: 0.75rem;
-  border-radius: var(--radius-small, 4px);
-  background: var(--muted);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.w-30 { width: 30%; }
-.w-50 { width: 50%; }
-.w-70 { width: 70%; }
-.w-100 { width: 100%; }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
 /* ============ Responsive ============ */
 @media (max-width: 640px) {
   .shuoshuo-page {
     padding: 1rem;
   }
+}
 
-  .post-card--stack .post-card__cover {
-    max-height: 180px;
+/* Responsive skeleton — stack vertically on mobile */
+@media (max-width: 600px) {
+  .post-card-skeleton {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .post-card-skeleton__text {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  .post-card-skeleton__cover {
+    width: 100%;
+    height: 140px;
+    min-height: auto;
+    flex-shrink: 0;
   }
 }
 </style>

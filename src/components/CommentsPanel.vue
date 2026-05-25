@@ -8,7 +8,7 @@ import CommentForm from '@/components/CommentForm.vue'
 import CommentsTreeItem from '@/components/CommentsTreeItem.vue'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { createComment, fetchComments, getErrorMessage, editComment, pinComment } from '@/lib/wordpress'
+import { createComment, fetchComments, getErrorMessage, pinComment, deleteComment, fetchUserPendingComments } from '@/lib/wordpress'
 import { showError, showLoadingToast, showToast, dismissToast } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { CommentFormSettings, WordPressComment } from '@/types/wordpress'
@@ -73,7 +73,6 @@ function startLazyObserver() {
 watch(cookiesConsent, (newVal) => {
   if (!newVal) {
     localStorage.removeItem(CONSENT_KEY)
-    localStorage.removeItem('simple_theme_visitor_id')
     localStorage.removeItem('simple_theme_comment_name')
     localStorage.removeItem('simple_theme_comment_email')
     localStorage.removeItem('simple_theme_comment_url')
@@ -138,14 +137,34 @@ async function loadComments(page = 1) {
   if (page === 1) loading.value = true
   else loadingMore.value = true
   try {
-    const storedId = localStorage.getItem('simple_theme_visitor_id') || undefined
-    const result = await fetchComments(props.postId, storedId, page, PER_PAGE)
+    const result = await fetchComments(props.postId, undefined, page, PER_PAGE)
     totalComments.value = result.total
     totalPages.value = result.totalPages
     currentPage.value = result.page
     allLoaded.value = currentPage.value >= totalPages.value
     if (page === 1) {
       comments.value = result.items
+      // Also fetch user's pending comments and merge
+      try {
+        const pending = await fetchUserPendingComments(props.postId)
+        if (pending.length > 0) {
+          const existingIds = new Set(comments.value.map((c) => c.id))
+          for (const item of pending) {
+            if (!existingIds.has(item.id)) {
+              if (item.parent > 0) {
+                const parent = findComment(comments.value, item.parent)
+                if (parent) {
+                  parent.children.push(item)
+                } else {
+                  comments.value.push(item)
+                }
+              } else {
+                comments.value.push(item)
+              }
+            }
+          }
+        }
+      } catch { /* ignore */ }
     } else {
       // Merge new items, avoiding duplicates
       const existingIds = new Set(comments.value.map((c) => c.id))
@@ -174,25 +193,13 @@ function useReply(id: number) {
   parentCommentId.value = id
 }
 
-function generateVisitorId(): string {
-  try {
-    return crypto.randomUUID()
-  } catch {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0
-      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
-    })
-  }
-}
-
 async function handleFormSubmit(payload: {
   name: string
   email: string
   url: string
   content: string
   cookies: boolean
-  captchaSeed?: string
-  captchaAnswer?: number
+  captchaPayload?: string
   isPrivate?: boolean
   mailNotify?: boolean
   useMarkdown?: boolean
@@ -221,7 +228,6 @@ async function handleFormSubmit(payload: {
   const loadingToast = showLoadingToast('正在提交评论...', '发送中')
 
   try {
-    const visitorId = generateVisitorId()
     const newComment = await createComment({
       post: props.postId,
       parent: parentCommentId.value || undefined,
@@ -229,9 +235,8 @@ async function handleFormSubmit(payload: {
       author_email: props.formSettings.showEmailField ? payload.email.trim() : '',
       author_url: props.formSettings.showUrlField ? payload.url.trim() : '',
       content: payload.content.trim(),
-      client_id: visitorId,
-      captchaSeed: payload.captchaSeed,
-      captchaAnswer: payload.captchaAnswer,
+      client_id: '',
+      captchaPayload: payload.captchaPayload,
       isPrivate: payload.isPrivate,
       mailNotify: payload.mailNotify,
       useMarkdown: payload.useMarkdown,
@@ -241,7 +246,6 @@ async function handleFormSubmit(payload: {
 
     if (payload.cookies) {
       localStorage.setItem(CONSENT_KEY, '1')
-      localStorage.setItem('simple_theme_visitor_id', visitorId)
       localStorage.setItem('simple_theme_comment_name', payload.name)
       localStorage.setItem('simple_theme_comment_email', payload.email)
       localStorage.setItem('simple_theme_comment_url', payload.url)
@@ -257,37 +261,19 @@ async function handleFormSubmit(payload: {
     parentCommentId.value = 0
     formRef.value?.clearForm()
 
-    // Build local comment object
-    const localComment: WordPressComment = {
-      id: newComment.id,
-      parent: newComment.parent,
-      date: newComment.date || new Date().toISOString(),
-      authorName: newComment.authorName || payload.name.trim(),
-      authorEmail: newComment.authorEmail || payload.email.trim() || '',
-      authorUrl: newComment.authorUrl || payload.url.trim() || '',
-      status: 'hold',
-      avatar: newComment.avatar || '',
-      content: newComment.content || { rendered: payload.content.trim() },
-      likes: newComment.likes ?? 0,
-      metaInfo: newComment.metaInfo || { location: '', browser: '', os: '', ipMask: '' },
-      isPinned: newComment.isPinned,
-      isPrivate: newComment.isPrivate,
-      canEdit: newComment.canEdit,
-      useMarkdown: newComment.useMarkdown,
-      canPin: newComment.canPin,
-      qqAvatar: newComment.qqAvatar,
-      children: [],
-    }
+    // createComment already returns a fully mapped WordPressComment via mapWPComment
+    newComment.status = 'hold'
+    newComment.children = []
 
-    if (localComment.parent > 0) {
-      const parent = findComment(comments.value, localComment.parent)
+    if (newComment.parent > 0) {
+      const parent = findComment(comments.value, newComment.parent)
       if (parent) {
-        parent.children.push(localComment)
+        parent.children.push(newComment)
       } else {
-        comments.value = [...comments.value, localComment]
+        comments.value = [...comments.value, newComment]
       }
     } else {
-      comments.value = [localComment, ...comments.value]
+      comments.value = [newComment, ...comments.value]
     }
 
     showToast('评论提交成功，等待审核。', '成功', { variant: 'success', duration: 3200 })
@@ -299,29 +285,29 @@ async function handleFormSubmit(payload: {
   }
 }
 
-async function handleEditComment(commentId: number, newContent: string) {
-  const toast = showLoadingToast('正在编辑评论...', '编辑中')
+async function handleDeleteComment(commentId: number) {
+  const toast = showLoadingToast('正在删除评论...', '删除中')
   try {
-    const updated = await editComment(commentId, newContent)
-    // Update in-place
-    function updateItem(items: WordPressComment[]): boolean {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]
-        if (!item) continue
-        if (item.id === commentId) {
-          items[i] = { ...updated, children: item.children }
-          return true
-        }
-        if (item.children.length && updateItem(item.children)) return true
+    await deleteComment(commentId)
+    dismissToast(toast)
+
+    // Remove from tree
+    function removeItem(items: WordPressComment[]): boolean {
+      const idx = items.findIndex((c) => c.id === commentId)
+      if (idx !== -1) {
+        items.splice(idx, 1)
+        return true
+      }
+      for (const item of items) {
+        if (item.children.length && removeItem(item.children)) return true
       }
       return false
     }
-    updateItem(comments.value)
-    dismissToast(toast)
-    showToast('评论已更新。', '成功', { variant: 'success', duration: 2000 })
+    removeItem(comments.value)
+    showToast('评论已删除。', '成功', { variant: 'success', duration: 2000 })
   } catch {
     dismissToast(toast)
-    showToast('编辑失败，请稍后重试。', '错误', { variant: 'danger' })
+    showToast('删除失败，请稍后重试。', '错误', { variant: 'danger' })
   }
 }
 
@@ -417,13 +403,13 @@ watch(
         @reply="useReply"
         @liked="handleLiked"
         @like-error="handleLikeError"
-        @edit="handleEditComment"
+        @delete="handleDeleteComment"
         @pin-toggle="handlePinToggle"
       />
     </div>
 
     <!-- Load More -->
-    <div v-if="!loading && !allLoaded" class="comments-load-more">
+    <div v-if="commentsLoaded && !loading && !allLoaded" class="comments-load-more">
       <button
         class="comments-load-more__btn"
         :disabled="loadingMore"

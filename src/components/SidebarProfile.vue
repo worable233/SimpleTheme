@@ -34,22 +34,23 @@ const heatmapData = computed<HeatmapEntry[]>(() => {
 
 const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+// 从两个月前的 1 号开始，正好覆盖最近三个完整月份
 const heatmapCells = computed(() => {
   const data = heatmapData.value
   const dataMap = new Map(data.map(d => [d.day, d.count]))
-  const cells: { day: string; count: number; level: number; col: number; row: number }[] = []
-  const today = new Date()
-  const startDate = new Date(today)
-  startDate.setDate(startDate.getDate() - 364)
-
-  // 按最大 count 分 4 档
+  const now = new Date()
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const DAYS = Math.round((today.getTime() - startDate.getTime()) / 86400000) + 1
   const maxCount = Math.max(...dataMap.values(), 1)
   const step = Math.max(1, Math.ceil(maxCount / 4))
 
-  for (let i = 0; i < 365; i++) {
+  const cells: { day: string; count: number; level: number; col: number; row: number }[] = []
+  for (let i = 0; i < DAYS; i++) {
     const date = new Date(startDate)
     date.setDate(startDate.getDate() + i)
-    const dayStr = date.toISOString().split('T')[0] ?? ''
+    const col = Math.floor(i / 7)
+    const dayStr = ldate(date)
     const count = dataMap.get(dayStr) || 0
     const level = count === 0 ? 0 : Math.min(Math.ceil(count / step), 4)
     cells.push({
@@ -57,7 +58,7 @@ const heatmapCells = computed(() => {
       count,
       level,
       col: Math.floor(i / 7),
-      row: i % 7,
+      row: (i + startDate.getDay() + 6) % 7,
     })
   }
   return cells
@@ -65,12 +66,12 @@ const heatmapCells = computed(() => {
 
 const monthLabels = computed(() => {
   const labels: { name: string; col: number }[] = []
-  const today = new Date()
-  const startDate = new Date(today)
-  startDate.setDate(startDate.getDate() - 364)
-
+  const now = new Date()
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const DAYS = Math.round((today.getTime() - startDate.getTime()) / 86400000) + 1
   let currentMonth = -1
-  for (let i = 0; i < 365; i++) {
+  for (let i = 0; i < DAYS; i++) {
     const date = new Date(startDate)
     date.setDate(startDate.getDate() + i)
     const month = date.getMonth()
@@ -82,6 +83,21 @@ const monthLabels = computed(() => {
   }
   return labels
 })
+
+// 局部日期格式化 YYYY-MM-DD
+function ldate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const dayLabels = [
+  { text: 'Mon', row: 0 },
+  { text: 'Wed', row: 2 },
+  { text: 'Fri', row: 4 },
+  { text: 'Sun', row: 6 },
+]
 
 function formatWordCount(count: number | undefined | null): string {
   if (!count) return '0'
@@ -116,7 +132,9 @@ function daysAgo(isoDate: string): string {
 }
 
 function socialIconHtml(icon: string): string {
-  return `<i class="${icon}"></i>`
+  // 如果已经是完整类名（包含空格）则直接使用，否则用 bx bxl- 前缀
+  const cls = icon.includes(' ') ? icon : `bx bxl-${icon}`
+  return `<i class="${cls}"></i>`
 }
 </script>
 
@@ -180,23 +198,40 @@ function socialIconHtml(icon: string): string {
   <!-- ======== Card 3: 贡献热力图 ======== -->
   <div v-if="features.showHeatmap !== false && heatmapData.length > 0" class="aside-card aside-card--heatmap">
     <h3 class="aside-card__title">贡献 <span>Heatmap.</span></h3>
-    <div class="heatmap-month-labels">
-      <span
-        v-for="m in monthLabels"
-        :key="m.name"
-        class="heatmap-month-label"
-        :style="{ gridColumn: m.col + 1 }"
-      >{{ m.name }}</span>
-    </div>
-    <div class="heatmap-grid">
-      <div
-        v-for="cell in heatmapCells"
-        :key="cell.day"
-        class="heatmap-cell"
-        :class="`level-${cell.level}`"
-        :title="`${cell.day}: ${cell.count} 篇`"
-        :style="{ gridColumn: cell.col + 1, gridRow: cell.row + 1 }"
-      ></div>
+    <div class="heatmap-wrap">
+      <div class="heatmap-month-labels">
+        <span
+          v-for="m in monthLabels"
+          :key="m.name"
+          class="heatmap-month-label"
+          :style="{ gridColumn: m.col + 2 }"
+        >{{ m.name }}</span>
+      </div>
+      <div class="heatmap-body">
+        <span
+          v-for="d in dayLabels"
+          :key="d.text"
+          class="heatmap-day-label"
+          :style="{ gridColumn: 1, gridRow: d.row + 1 }"
+        >{{ d.text }}</span>
+        <div
+          v-for="cell in heatmapCells"
+          :key="cell.day"
+          class="heatmap-cell"
+          :class="`level-${cell.level}`"
+          :title="`${cell.day}: ${cell.count} 篇`"
+          :style="{ gridColumn: cell.col + 2, gridRow: cell.row + 1 }"
+        ></div>
+      </div>
+      <div class="heatmap-legend">
+        <span class="legend-label">Less</span>
+        <span class="legend-cell level-0"></span>
+        <span class="legend-cell level-1"></span>
+        <span class="legend-cell level-2"></span>
+        <span class="legend-cell level-3"></span>
+        <span class="legend-cell level-4"></span>
+        <span class="legend-label">More</span>
+      </div>
     </div>
   </div>
 
@@ -204,11 +239,9 @@ function socialIconHtml(icon: string): string {
   <div v-if="features.showSocial !== false && socialLinks && socialLinks.length > 0" class="aside-card aside-card--social">
     <h3 class="aside-card__title">社交 <span>Social.</span></h3>
     <div class="social-content">
-      <ul>
-        <li v-for="link in socialLinks" :key="link.label">
-          <a :href="link.url" target="_blank" rel="noopener noreferrer" :title="link.label" v-html="socialIconHtml(link.icon)"></a>
-        </li>
-      </ul>
+      <div class="social-icons">
+        <a v-for="link in socialLinks" :key="link.label" :href="link.url" target="_blank" rel="noopener noreferrer" :title="link.label" v-html="socialIconHtml(link.icon)"></a>
+      </div>
     </div>
   </div>
 </template>
@@ -238,18 +271,28 @@ function socialIconHtml(icon: string): string {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
-/* ----- 贡献热力图 ----- */
-.aside-heatmap {
-  padding: 8px 4px 4px;
+[data-theme="dark"] .aside-btn-open {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .aside-btn-open:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* ----- GitHub 风格贡献热力图 ----- */
+.heatmap-wrap {
+  padding: 0;
+  max-width: 200px;
+  margin: 0 auto;
 }
 
 .heatmap-month-labels {
   display: grid;
-  grid-template-columns: repeat(53, 1fr);
+  grid-template-columns: 22px repeat(13, 1fr);
+  gap: 2px;
   font-size: 9px;
   color: var(--muted-foreground, #888);
   margin-bottom: 2px;
-  padding-left: 0;
 }
 
 .heatmap-month-label {
@@ -257,11 +300,21 @@ function socialIconHtml(icon: string): string {
   line-height: 1;
 }
 
-.heatmap-grid {
+.heatmap-body {
   display: grid;
-  grid-template-columns: repeat(53, 1fr);
-  grid-template-rows: repeat(7, 1fr);
-  gap: 2px;
+  grid-template-columns: 22px repeat(13, 1fr);
+  grid-template-rows: repeat(7, auto);
+  gap: 3px;
+}
+
+.heatmap-day-label {
+  font-size: 8px;
+  color: var(--muted-foreground, #888);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 2px;
+  line-height: 1;
 }
 
 .heatmap-cell {
@@ -271,19 +324,60 @@ function socialIconHtml(icon: string): string {
   cursor: default;
 }
 
-.heatmap-cell.level-1 {
-  background: var(--heatmap-1, #9be9a8);
+.heatmap-cell.level-1 { background: var(--heatmap-1, #9be9a8); }
+.heatmap-cell.level-2 { background: var(--heatmap-2, #40c463); }
+.heatmap-cell.level-3 { background: var(--heatmap-3, #30a14e); }
+.heatmap-cell.level-4 { background: var(--heatmap-4, #216e39); }
+
+/* 暗色模式：空单元格变暗，高等级略微提亮对比 */
+[data-theme="dark"] .heatmap-cell {
+  background: var(--heatmap-0, #2a2a2a);
+}
+[data-theme="dark"] .heatmap-cell.level-1 {
+  background: var(--heatmap-1, #0d4429);
+}
+[data-theme="dark"] .heatmap-cell.level-2 {
+  background: var(--heatmap-2, #006d32);
+}
+[data-theme="dark"] .heatmap-cell.level-3 {
+  background: var(--heatmap-3, #26a641);
+}
+[data-theme="dark"] .heatmap-cell.level-4 {
+  background: var(--heatmap-4, #39d353);
+}
+[data-theme="dark"] .heatmap-day-label,
+[data-theme="dark"] .heatmap-month-label {
+  color: var(--muted-foreground, #666);
 }
 
-.heatmap-cell.level-2 {
-  background: var(--heatmap-2, #40c463);
+/* 图例：少→多色块提示 */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 6px;
+  padding-right: 2px;
 }
-
-.heatmap-cell.level-3 {
-  background: var(--heatmap-3, #30a14e);
+.legend-label {
+  font-size: 9px;
+  color: var(--muted-foreground, #888);
+  line-height: 1;
 }
-
-.heatmap-cell.level-4 {
-  background: var(--heatmap-4, #216e39);
+.legend-cell {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
 }
+.legend-cell.level-0 { background: var(--heatmap-0, #ebedf0); }
+.legend-cell.level-1 { background: var(--heatmap-1, #9be9a8); }
+.legend-cell.level-2 { background: var(--heatmap-2, #40c463); }
+.legend-cell.level-3 { background: var(--heatmap-3, #30a14e); }
+.legend-cell.level-4 { background: var(--heatmap-4, #216e39); }
+[data-theme="dark"] .legend-cell.level-0 { background: var(--heatmap-0, #2a2a2a); }
+[data-theme="dark"] .legend-cell.level-1 { background: var(--heatmap-1, #0d4429); }
+[data-theme="dark"] .legend-cell.level-2 { background: var(--heatmap-2, #006d32); }
+[data-theme="dark"] .legend-cell.level-3 { background: var(--heatmap-3, #26a641); }
+[data-theme="dark"] .legend-cell.level-4 { background: var(--heatmap-4, #39d353); }
 </style>

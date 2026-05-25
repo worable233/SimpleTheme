@@ -8,8 +8,9 @@ const router = createRouter({
   history: createWebHistory(getRouterBase()),
   routes: [
     { path: '/', name: 'home', component: HomeView },
+    { path: '/categories/:slug', name: 'category', component: HomeView },
     { path: '/go', name: 'go', component: GoRedirect },
-    { path: '/category/:slug', redirect: (to) => ({ path: '/', query: { category: to.params.slug as string } }) },
+
     { path: '/:pathMatch(.*)*', name: 'content', component: ContentView },
   ],
   scrollBehavior(_to, _from, savedPosition) {

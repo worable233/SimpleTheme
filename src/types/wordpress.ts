@@ -15,24 +15,29 @@ export interface SimpleThemeConfig {
   }
   currentUser?: CurrentUser | null
   restNonce?: string
+  logoutUrl?: string
   features?: {
     prismHighlight: boolean
     showStats?: boolean
     showHeatmap?: boolean
     showSocial?: boolean
-    meta?: {
-      showCategory: boolean
-      showPublishDate: boolean
-      showModifiedDate: boolean
-      showCommentCount: boolean
-      showViewCount: boolean
-      showReadingTime: boolean
-      showWordCount: boolean
-    }
+    meta?: ArticleMeta
+    articleMeta?: ArticleMeta
   }
 }
 
 // ----- About Page Types -----
+
+export interface ArticleMeta {
+  showCategory: boolean
+  showPublishDate: boolean
+  showModifiedDate: boolean
+  showCommentCount: boolean
+  showViewCount: boolean
+  showReadingTime: boolean
+  showWordCount: boolean
+  showAuthor: boolean
+}
 
 export interface AboutTimelineEntry {
   period: string
@@ -102,15 +107,8 @@ export interface ThemeSettings {
   borderDark: string
   containerMaxWidth: number
   articleMaxWidth: number
-  cardMeta?: {
-    showCategory: boolean
-    showPublishDate: boolean
-    showModifiedDate: boolean
-    showCommentCount: boolean
-    showViewCount: boolean
-    showReadingTime: boolean
-    showWordCount: boolean
-  }
+  cardMeta?: ArticleMeta
+  articleMeta?: ArticleMeta
   copyrightStyle?: string
   articleLicense?: string
   showCredit?: boolean
@@ -140,6 +138,7 @@ export interface CommentFormSettings {
   captchaEnabled?: boolean
   showPrivateOption?: boolean
   showMarkdownOption?: boolean
+  showImageUpload?: boolean
 }
 
 
@@ -204,6 +203,7 @@ export interface SiteInfo {
   wpVersion?: string
   phpVersion?: string
   restApiVersion?: string
+  serverOs?: string
   hero?: HeroSettings
   comments?: CommentFormSettings
   theme?: ThemeSettings
@@ -281,8 +281,7 @@ export interface CommentsResponse {
 }
 
 export interface CaptchaData {
-  question: string
-  seed: string
+  challenge: string
 }
 
 export interface MenuItem {

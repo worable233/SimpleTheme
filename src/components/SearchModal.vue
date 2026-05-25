@@ -409,4 +409,9 @@ onUnmounted(() => {
     padding: 2rem 1rem;
   }
 }
+
+body[data-theme='dark'] .search-modal__input {
+  background: var(--card);
+  box-shadow: inset 0 1px 0 0 #fff3;
+}
 </style>

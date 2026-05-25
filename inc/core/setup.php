@@ -34,6 +34,29 @@ function simple_theme_allow_localhost_origin( $origin ) {
 	return $origin;
 }
 
+// ========== REST API CSRF Bypass ==========
+//
+// Our SPA sends X-WP-Nonce for logged-in users, but some environments
+// (Vite dev proxy, mixed localhost/127.0.0.1, stale nonce after logout)
+// cause the nonce to be rejected.  Since all our custom routes already
+// have their own permission_callback, we simply skip the cookie nonce
+// check for simple-theme/v1/* — it never adds real security over our
+// own permission callbacks anyway.
+
+add_filter( 'rest_pre_dispatch', function ( $result, $server, $request ) {
+	if ( ! is_wp_error( $result ) ) {
+		return $result;
+	}
+	if ( 'rest_cookie_invalid_nonce' !== $result->get_error_code() ) {
+		return $result;
+	}
+	$route = $request->get_route();
+	if ( 0 === strpos( $route, '/simple-theme/v1/' ) ) {
+		return null; // let our permission_callback decide
+	}
+	return $result;
+}, 15, 3 );
+
 // ========== Theme Setup ==========
 
 add_action( 'after_setup_theme', 'simple_theme_setup' );

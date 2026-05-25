@@ -1,15 +1,52 @@
 <script setup lang="ts">
-defineProps<{
+import { useAuth } from '@/composables/useAuth'
+import { useAuthModal } from '@/composables/useAuthModal'
+
+const props = defineProps<{
   currentTheme: string
 }>()
 
 defineEmits<{
   'toggle-theme': []
 }>()
+
+const { auth } = useAuth()
+const { open: openAuthModal } = useAuthModal()
 </script>
 
 <template>
   <div class="left-sidebar__actions">
+    <!-- Login / User -->
+    <template v-if="auth.loading">
+      <div class="sidebar-action-btn sidebar-action-btn--skeleton"></div>
+    </template>
+    <template v-else-if="auth.loggedIn && auth.user">
+      <a
+        v-if="auth.adminUrl"
+        :href="auth.adminUrl"
+        class="sidebar-action-btn sidebar-action-btn--user"
+        :title="auth.user.displayName"
+      >
+        <img
+          v-if="auth.user.avatar"
+          :src="auth.user.avatar"
+          :alt="auth.user.displayName"
+          class="sidebar-avatar"
+        />
+        <span v-else class="sidebar-avatar sidebar-avatar--fallback">{{ auth.user.displayName.charAt(0) }}</span>
+      </a>
+    </template>
+    <template v-else>
+      <button class="sidebar-action-btn" @click="openAuthModal" title="登录">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+      </button>
+    </template>
+
+    <!-- Theme toggle -->
     <button class="sidebar-action-btn" @click="$emit('toggle-theme')" :aria-label="currentTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         :style="{ display: currentTheme === 'dark' ? 'none' : 'block' }">
@@ -64,5 +101,37 @@ defineEmits<{
 .left-sidebar__actions .sidebar-action-btn svg {
   width: 24px;
   height: 24px;
+}
+
+/* Skeleton loading */
+.sidebar-action-btn--skeleton {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  background: var(--muted, #f5f5f5);
+  animation: skeleton-pulse 1.5s infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Avatar */
+.sidebar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sidebar-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary, #333);
+  color: var(--primary-foreground, #fff);
+  font-size: 14px;
+  font-weight: 600;
 }
 </style>

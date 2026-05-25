@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, reactive, ref, onMounted, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { isExternalUrl } from '@/lib/theme-config'
+import { getItemIcon } from './sidebar/icon-map'
 import SidebarProfile from './SidebarProfile.vue'
 import SidebarMobileHeader from './sidebar/SidebarMobileHeader.vue'
 import SidebarNav from './sidebar/SidebarNav.vue'
@@ -14,6 +16,7 @@ import type { MenuItem } from '@/types/wordpress'
 const { siteInfo, primaryMenu, footerMenu, shellLoading } = useSiteShell()
 const route = useRoute()
 const searchOpen = ref(false)
+const leftSidebarRef = ref<HTMLElement | null>(null)
 const leftOpen = ref(false)
 const rightOpen = ref(false)
 const showRightSubPage = ref(false)
@@ -57,12 +60,14 @@ function closeAll() {
   leftOpen.value = false
   rightOpen.value = false
   showRightSubPage.value = false
+  closeAllSubMenus()
 }
 
 watch(() => route.path, () => {
   leftOpen.value = false
   rightOpen.value = false
   showRightSubPage.value = false
+  closeAllSubMenus()
 })
 
 // ========== Sub-menu ==========
@@ -76,6 +81,15 @@ function toggleSubMenu(id: number) {
     next.delete(id)
   } else {
     next.add(id)
+    const li = document.querySelector<HTMLElement>(`[data-menu-id="${id}"]`)
+    if (li && leftSidebarRef.value) {
+      const sidebarRect = leftSidebarRef.value.getBoundingClientRect()
+      const liRect = li.getBoundingClientRect()
+      subMenuPositions[id] = {
+        x: sidebarRect.right + 14,
+        y: liRect.top + liRect.height / 2,
+      }
+    }
   }
   openMenus.value = next
 }
@@ -85,6 +99,7 @@ function closeAllSubMenus() {
 }
 
 function onSidebarMouseLeave() {
+  tooltip.visible = false
   if (openMenus.value.size === 0) return
   closeTimer.value = setTimeout(() => {
     closeAllSubMenus()
@@ -111,6 +126,49 @@ const menuItems = computed<MenuItem[]>(() => {
   // No items until API is ready
   return []
 })
+
+// ========== Sub-menu helpers ==========
+
+function isCurrent(path: string): boolean {
+  return route.path === path
+}
+
+function isHome(url: string): boolean {
+  return url === '/' || url === ''
+}
+
+const subMenuPositions = reactive<Record<number, { x: number; y: number }>>({})
+
+// ========== Global tooltip (escapes scroll container clipping) ==========
+
+const tooltip = reactive({ visible: false, text: '', x: 0, y: 0 })
+
+function onRootTooltipHover(e: MouseEvent) {
+  // Only on desktop — mobile has its own tooltip positioning below icons
+  if (window.innerWidth < 1200) return
+
+  const link = (e.target as HTMLElement).closest<HTMLElement>(
+    '.left-sidebar__menu > ul > li > a, .left-sidebar__menu > ul > li > button.menu-toggle',
+  )
+  if (!link) {
+    tooltip.visible = false
+    return
+  }
+
+  const titleEl = link.querySelector<HTMLElement>('.menu-item-title')
+  if (!titleEl?.textContent?.trim()) {
+    tooltip.visible = false
+    return
+  }
+
+  const sidebarRect = leftSidebarRef.value?.getBoundingClientRect()
+  if (!sidebarRect) return
+  const linkRect = link.getBoundingClientRect()
+  tooltip.text = titleEl.textContent.trim()
+  tooltip.x = sidebarRect.right + 10
+  tooltip.y = linkRect.top + linkRect.height / 2
+  tooltip.visible = true
+}
 </script>
 
 <template>
@@ -118,11 +176,13 @@ const menuItems = computed<MenuItem[]>(() => {
     class="sidebar-root"
     @mouseleave="onSidebarMouseLeave"
     @mouseenter="onSidebarMouseEnter"
+    @mouseover="onRootTooltipHover"
   >
     <!-- Mobile header (fixed top, visible on < 1200px) -->
     <SidebarMobileHeader
       :shell-loading="shellLoading"
       :site-name="siteInfo.name"
+      :menu-open="leftOpen"
       @toggle-menu="toggleMenu"
       @open-search="searchOpen = true"
     />
@@ -138,7 +198,7 @@ const menuItems = computed<MenuItem[]>(() => {
     </Transition>
 
     <!-- Desktop sidebar / Mobile narrow left drawer -->
-    <aside class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
+    <aside ref="leftSidebarRef" class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
       <!-- Search button -->
       <div class="left-sidebar__search">
         <button class="sidebar-search-btn" @click="searchOpen = true" aria-label="搜索">
@@ -221,6 +281,60 @@ const menuItems = computed<MenuItem[]>(() => {
     </aside>
 
     <SearchModal v-model="searchOpen" />
+
+    <!-- Global tooltip (rendered outside scrollable menu, position:fixed to escape overflow clipping) -->
+    <div
+      class="sidebar-global-tooltip"
+      :class="{ 'is-visible': tooltip.visible }"
+      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+    >{{ tooltip.text }}</div>
+
+    <!-- Floating sub-menu panels (desktop only, outside scroll container) -->
+    <div class="sidebar-sub-menu-desktop">
+      <template v-for="item in menuItems" :key="'sub-' + item.id">
+        <ul
+          v-if="item.children?.length"
+          class="sub-menu sub-menu--floating"
+          :class="{ 'is-open': openMenus.has(item.id) }"
+          :style="{
+            left: (subMenuPositions[item.id]?.x ?? 0) + 'px',
+            top: (subMenuPositions[item.id]?.y ?? 0) + 'px',
+          }"
+        >
+          <li
+            v-for="child in item.children"
+            :key="child.id"
+            :class="{ 'current-menu-item': isCurrent(child.path) }"
+          >
+            <RouterLink
+              v-if="!isExternalUrl(child.url) && !isHome(child.url)"
+              :to="child.path || child.url"
+              :aria-current="isCurrent(child.path) ? 'page' : undefined"
+            >
+              <span v-html="getItemIcon(child, isCurrent(child.path))"></span>
+              <span class="menu-item-title">{{ child.title }}</span>
+            </RouterLink>
+            <RouterLink
+              v-else-if="!isExternalUrl(child.url) && isHome(child.url)"
+              to="/"
+              :aria-current="isCurrent('/') ? 'page' : undefined"
+            >
+              <span v-html="getItemIcon(child, isCurrent('/'))"></span>
+              <span class="menu-item-title">{{ child.title }}</span>
+            </RouterLink>
+            <a
+              v-else
+              :href="child.url"
+              :target="child.target || '_blank'"
+              rel="noreferrer noopener"
+            >
+              <span v-html="getItemIcon(child)"></span>
+              <span class="menu-item-title">{{ child.title }}</span>
+            </a>
+          </li>
+        </ul>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -311,6 +425,10 @@ const menuItems = computed<MenuItem[]>(() => {
     flex-direction: column;
     align-items: center;
     padding-top: 12px !important;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
     box-shadow: none;
   }
 
@@ -410,6 +528,62 @@ const menuItems = computed<MenuItem[]>(() => {
   .drawer-overlay--right {
     z-index: 998;
   }
+}
+</style>
+
+<!-- ==================== Global sidebar tooltip (escapes overflow clip) ==================== -->
+<style>
+.sidebar-global-tooltip {
+  position: fixed;
+  z-index: 9999;
+  transform: translateY(-50%) translateX(-4px);
+  opacity: 0;
+  pointer-events: none;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.sidebar-global-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Floating sub-menu panel — position:fixed escapes scroll container clipping */
+.sub-menu--floating {
+  position: fixed !important;
+  transform: translateY(-50%) translateX(-8px) !important;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Mobile: floating panel above drawer (z-index: 999) */
+@media (max-width: 1200px) {
+  .sub-menu--floating {
+    z-index: 1000 !important;
+  }
+}
+
+.sub-menu--floating.is-open {
+  transform: translateY(-50%) translateX(0) !important;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Always show floating sub-menu panels (desktop + mobile) */
+.sidebar-sub-menu-desktop {
+  display: block;
 }
 </style>
 

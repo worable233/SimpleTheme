@@ -156,23 +156,18 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- Mobile floating TOC trigger button -->
-  <button
-    v-if="tocData.length > 0"
-    class="toc-floating-btn"
-    :class="{ open: isOpen }"
-    @click="isOpen = !isOpen"
-    aria-label="目录"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="8" y1="6" x2="21" y2="6" />
-      <line x1="8" y1="12" x2="21" y2="12" />
-      <line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="3" y1="6" x2="3.01" y2="6" />
-      <line x1="3" y1="12" x2="3.01" y2="12" />
-      <line x1="3" y1="18" x2="3.01" y2="18" />
-    </svg>
-  </button>
+  <!-- Mobile floating TOC trigger button (teleported to body to escape right-sidebar hiding) -->
+  <Teleport to="body">
+    <button
+      v-if="tocData.length > 0"
+      class="toc-floating-btn"
+      :class="{ open: isOpen }"
+      @click="isOpen = !isOpen"
+      aria-label="目录"
+    >
+      <i class="bx bx-list-ul"></i>
+    </button>
+  </Teleport>
 
   <!-- Mobile TOC drawer -->
   <Teleport to="body">
@@ -249,11 +244,11 @@ onMounted(() => {
 
 /* ==================== Mobile Floating Button ==================== */
 .toc-floating-btn {
-  display: none;
+  display: block;
   position: fixed;
   right: 20px;
   bottom: 30px;
-  z-index: 100;
+  z-index: 600;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -271,9 +266,20 @@ onMounted(() => {
   box-shadow: 0 6px 24px rgba(0 0 0 / 0.18);
 }
 
-.toc-floating-btn svg {
+@media (max-width: 600px) {
+  .toc-floating-btn {
+    bottom: 80px;
+  }
+}
+
+.toc-floating-btn svg,
+.toc-floating-btn i {
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
 }
 
 /* ==================== Mobile Drawer (Teleported) ==================== */
@@ -350,9 +356,6 @@ onMounted(() => {
 @media screen and (max-width: 1200px) {
   .card-widget {
     display: none;
-  }
-  .toc-floating-btn {
-    display: block;
   }
 }
 </style>

@@ -1,4 +1,4 @@
-import { fileURLToPath, URL } from 'node:url'
+﻿import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -6,8 +6,14 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // eslint-disable-next-line n/no-process-env
 const WP_URL = process.env.WP_URL || 'http://localhost'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'serve'
+    ? '/wp-content/themes/simple-theme/dist/'
+    : './',
   plugins: [vue(), vueDevTools()],
+  define: {
+    '__BUILD_TIME__': JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -34,6 +40,7 @@ export default defineConfig({
       input: {
         frontend: 'src/main.ts',
         admin: 'src/admin/main.ts',
+        'admin-shell': 'src/admin/shell-entry.ts',
       },
       output: {
         manualChunks(id: string) {
@@ -44,4 +51,4 @@ export default defineConfig({
     minify: 'esbuild',
     // esbuild 内置于 Vite，不需要额外依赖
   },
-})
+}))

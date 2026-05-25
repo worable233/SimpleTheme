@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppCard from './AppCard.vue'
+import AppToggle from './AppToggle.vue'
+import AppImageUpload from './AppImageUpload.vue'
+
 defineProps<{
   settings: Record<string, unknown>
   defaults: Record<string, unknown>
@@ -7,223 +11,178 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update', key: string, value: unknown): void
 }>()
-
-function openMediaLibrary(key: string) {
-  if (typeof wp !== 'undefined' && wp.media) {
-    const frame = wp.media({
-      title: '选择图片',
-      button: { text: '使用此图片' },
-      multiple: false,
-    })
-    frame.on('select', () => {
-      const attachment = frame.state().get('selection').first().toJSON()
-      emit('update', key, attachment.url)
-    })
-    frame.open()
-  }
-}
 </script>
 
 <template>
-  <!-- 个人信息卡片 -->
-  <div class="sta-section">
-    <h3 class="sta-section__title">个人信息卡片</h3>
-    <p class="sta-section__desc">配置封面区域的背景图和头像等信息。</p>
-    <div class="sta-field">
-      <label class="sta-field__label">背景图 URL</label>
-      <div class="sta-input-row">
-        <input
-          class="sta-input"
-          type="text"
-          :value="(settings.hero_image as string) || ''"
-          placeholder="输入背景图 URL 或点击选择"
-          @input="emit('update', 'hero_image', ($event.target as HTMLInputElement).value)"
-        />
-        <button class="sta-btn" type="button" @click="openMediaLibrary('hero_image')">选择图片</button>
-      </div>
-      <div v-if="settings.hero_image" class="hero-preview">
-        <img :src="settings.hero_image as string" alt="背景图预览" />
-      </div>
+  <!-- Hero / Profile Card -->
+  <AppCard title="个人信息卡片" description="配置首页封面区域的背景图和头像等信息。">
+    <div class="xh-field">
+      <label class="xh-field__label">背景图</label>
+      <AppImageUpload
+        :modelValue="(settings.hero_image as string) || ''"
+        placeholder="输入背景图 URL 或点击选择"
+        @update:modelValue="emit('update', 'hero_image', $event)"
+      />
     </div>
-    <div class="sta-field">
-      <label class="sta-checkbox">
-        <input
-          type="checkbox"
-          :checked="settings.hero_show_avatar !== false"
-          @change="emit('update', 'hero_show_avatar', ($event.target as HTMLInputElement).checked)"
-        />
-        <span class="sta-checkbox__label">显示头像</span>
-      </label>
+    <div class="xh-field" style="margin-top: 16px;">
+      <AppToggle
+        :modelValue="settings.hero_show_avatar !== false"
+        label="显示头像"
+        @update:modelValue="emit('update', 'hero_show_avatar', $event)"
+      />
     </div>
-    <div v-if="settings.hero_show_avatar !== false" class="sta-field">
-      <label class="sta-field__label">头像 URL</label>
-      <div class="sta-input-row">
-        <input
-          class="sta-input"
-          type="text"
-          :value="(settings.hero_avatar as string) || ''"
-          placeholder="输入头像 URL 或点击选择"
-          @input="emit('update', 'hero_avatar', ($event.target as HTMLInputElement).value)"
-        />
-        <button class="sta-btn" type="button" @click="openMediaLibrary('hero_avatar')">选择图片</button>
-      </div>
+    <div v-if="settings.hero_show_avatar !== false" class="xh-field">
+      <label class="xh-field__label">头像</label>
+      <AppImageUpload
+        :modelValue="(settings.hero_avatar as string) || ''"
+        placeholder="输入头像 URL 或点击选择"
+        @update:modelValue="emit('update', 'hero_avatar', $event)"
+      />
     </div>
-    <div class="sta-field sta-field--full">
-      <label class="sta-field__label">描述语</label>
+    <div class="xh-field xh-field--full">
+      <label class="xh-field__label">描述语</label>
       <textarea
-        class="sta-textarea"
+        class="xh-textarea"
         :value="(settings.hero_subtitle as string) || ''"
         placeholder="输入描述语"
         @input="emit('update', 'hero_subtitle', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
     </div>
-  </div>
+  </AppCard>
 
-  <!-- 侧边栏卡片 -->
-  <div class="sta-section">
-    <h3 class="sta-section__title">侧边栏卡片</h3>
-    <p class="sta-section__desc">控制右侧面板显示哪些卡片区域。</p>
-    <div class="sta-grid">
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.sidebar_show_stats !== false"
-            @change="emit('update', 'sidebar_show_stats', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示站点统计</span>
-        </label>
+  <!-- Sidebar Toggles -->
+  <AppCard title="侧边栏卡片" description="控制右侧面板显示哪些卡片区域。">
+    <div class="xh-grid">
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.sidebar_show_stats !== false"
+          label="显示站点统计"
+          @update:modelValue="emit('update', 'sidebar_show_stats', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.sidebar_show_heatmap !== false"
-            @change="emit('update', 'sidebar_show_heatmap', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示贡献热力图</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.sidebar_show_heatmap !== false"
+          label="显示贡献热力图"
+          @update:modelValue="emit('update', 'sidebar_show_heatmap', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.sidebar_show_social !== false"
-            @change="emit('update', 'sidebar_show_social', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示社交链接</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.sidebar_show_social !== false"
+          label="显示社交链接"
+          @update:modelValue="emit('update', 'sidebar_show_social', $event)"
+        />
       </div>
     </div>
-    <div v-if="settings.sidebar_show_social !== false" class="sta-field sta-field--full">
-      <label class="sta-field__label">社交链接</label>
+    <div v-if="settings.sidebar_show_social !== false" class="xh-field xh-field--full" style="margin-top: 16px;">
+      <label class="xh-field__label">社交链接</label>
       <textarea
-        class="sta-textarea"
+        class="xh-textarea"
         :value="(settings.social_links as string) || ''"
         placeholder='[{"label":"GitHub","url":"https://github.com/...","icon":"github"}]'
         @input="emit('update', 'social_links', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
-      <p class="sta-field__desc">JSON 数组格式：{"label":"...","url":"...","icon":"..."}</p>
+      <p class="xh-field__desc">JSON 数组格式：{ "label": "...", "url": "...", "icon": "..." }</p>
     </div>
-    <div class="sta-field sta-field--full">
-      <label class="sta-field__label">技术信息</label>
+    <div class="xh-field xh-field--full" style="margin-top: 16px;">
+      <label class="xh-field__label">技术信息</label>
       <textarea
-        class="sta-textarea"
+        class="xh-textarea"
         :value="(settings.tech_info_items as string) || ''"
         placeholder='[{"label":"运行天数","value":"365"}]'
         @input="emit('update', 'tech_info_items', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
-      <p class="sta-field__desc">JSON 数组格式：{"label":"...","value":"..."}</p>
+      <p class="xh-field__desc">JSON 数组格式：{ "label": "...", "value": "..." }</p>
     </div>
-  </div>
+  </AppCard>
 
-  <!-- 评论设置 -->
-  <div class="sta-section">
-    <h3 class="sta-section__title">评论设置</h3>
-    <p class="sta-section__desc">配置评论表单的显示选项。</p>
-    <div class="sta-grid">
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_show_email !== false"
-            @change="emit('update', 'comment_show_email', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示邮箱字段</span>
-        </label>
+  <!-- Comments -->
+  <AppCard title="评论设置" description="配置评论表单的显示选项。">
+    <div class="xh-grid">
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.comment_show_cookies !== false"
+          label="显示 Cookie 保存选项"
+          @update:modelValue="emit('update', 'comment_show_cookies', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_show_url !== false"
-            @change="emit('update', 'comment_show_url', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示网址字段</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.comment_captcha_enabled !== false"
+          label="启用验证码"
+          @update:modelValue="emit('update', 'comment_captcha_enabled', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_show_cookies !== false"
-            @change="emit('update', 'comment_show_cookies', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示 Cookie 保存选项</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.comment_show_private !== false"
+          label="显示私密评论选项"
+          @update:modelValue="emit('update', 'comment_show_private', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_captcha_enabled !== false"
-            @change="emit('update', 'comment_captcha_enabled', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">启用验证码</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.comment_show_markdown !== false"
+          label="支持 Markdown"
+          @update:modelValue="emit('update', 'comment_show_markdown', $event)"
+        />
       </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_show_private !== false"
-            @change="emit('update', 'comment_show_private', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">显示私密评论选项</span>
-        </label>
-      </div>
-      <div class="sta-field">
-        <label class="sta-checkbox">
-          <input
-            type="checkbox"
-            :checked="settings.comment_show_markdown !== false"
-            @change="emit('update', 'comment_show_markdown', ($event.target as HTMLInputElement).checked)"
-          />
-          <span class="sta-checkbox__label">支持 Markdown</span>
-        </label>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.comment_image_upload_enabled !== false"
+          label="允许用户上传图片"
+          @update:modelValue="emit('update', 'comment_image_upload_enabled', $event)"
+        />
       </div>
     </div>
-    <div class="sta-field">
-      <label class="sta-field__label">Gravatar 基础 URL</label>
+
+    <div class="xh-field" style="margin-top: 8px;">
+      <label class="xh-field__label">Gravatar 基础 URL</label>
       <input
-        class="sta-input"
+        class="xh-input"
         type="text"
         :value="(settings.gravatar_base_url as string) || ''"
         placeholder="如 https://cn.gravatar.com/avatar/"
         @input="emit('update', 'gravatar_base_url', ($event.target as HTMLInputElement).value)"
       />
-      <p class="sta-field__desc">用于加载 Gravatar 头像的 CDN 地址，默认 https://secure.gravatar.com/avatar/。</p>
+      <p class="xh-field__desc">用于加载 Gravatar 头像的 CDN 地址，默认 https://secure.gravatar.com/avatar/。</p>
     </div>
-  </div>
 
-  <!-- 页脚版权 -->
-  <div class="sta-section">
-    <h3 class="sta-section__title">页脚版权</h3>
-    <p class="sta-section__desc">配置页脚版权信息和备案号。</p>
-    <div class="sta-field">
-      <label class="sta-field__label">版权信息样式</label>
+    <div class="xh-field">
+      <label class="xh-field__label">IP 归属地 API</label>
+      <div class="xh-select" style="display: inline-flex; align-items: center; gap: 16px; border: none; padding: 0; background: none; min-width: auto;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="radio" value="xinyew" :checked="(settings.ip_location_api as string) === 'xinyew'" @change="emit('update', 'ip_location_api', 'xinyew')" style="accent-color: var(--xh-primary);" />
+          <span style="font-size: 14px;">新野API（百度数据）</span>
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="radio" value="ip.sb" :checked="(settings.ip_location_api as string) === 'ip.sb'" @change="emit('update', 'ip_location_api', 'ip.sb')" style="accent-color: var(--xh-primary);" />
+          <span style="font-size: 14px;">ip.sb</span>
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="radio" value="ip-api.com" :checked="(settings.ip_location_api as string) === 'ip-api.com'" @change="emit('update', 'ip_location_api', 'ip-api.com')" style="accent-color: var(--xh-primary);" />
+          <span style="font-size: 14px;">ip-api.com</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="xh-field xh-field--compact" style="margin-top: 8px;">
+      <AppToggle
+        :modelValue="settings.ip_location_cache === true"
+        label="启用IP归属地缓存（永久缓存）"
+        @update:modelValue="emit('update', 'ip_location_cache', $event)"
+      />
+      <p class="xh-field__desc">开启后永久缓存IP定位结果，减少API请求</p>
+    </div>
+  </AppCard>
+
+  <!-- Footer -->
+  <AppCard title="页脚版权" description="配置页脚版权信息和备案号。">
+    <div class="xh-field">
+      <label class="xh-field__label">版权信息样式</label>
       <select
-        class="sta-select"
+        class="xh-select"
         :value="(settings.copyright_style as string) || 'detailed'"
         @change="emit('update', 'copyright_style', ($event.target as HTMLSelectElement).value)"
       >
@@ -232,10 +191,10 @@ function openMediaLibrary(key: string) {
         <option value="none">不显示</option>
       </select>
     </div>
-    <div class="sta-field">
-      <label class="sta-field__label">文章许可协议</label>
+    <div class="xh-field">
+      <label class="xh-field__label">文章许可协议</label>
       <select
-        class="sta-select"
+        class="xh-select"
         :value="(settings.article_license as string) || 'cc-by-nc-sa-40'"
         @change="emit('update', 'article_license', ($event.target as HTMLSelectElement).value)"
       >
@@ -249,77 +208,43 @@ function openMediaLibrary(key: string) {
         <option value="none">不显示</option>
       </select>
     </div>
-    <div class="sta-field">
-      <label class="sta-field__label">底部寄语</label>
-      <p class="sta-field__desc">显示在文章列表和评论区末尾</p>
+    <div class="xh-field">
+      <label class="xh-field__label">底部寄语</label>
+      <p class="xh-field__desc">显示在文章列表和评论区末尾</p>
       <input
-        class="sta-input"
+        class="xh-input"
         type="text"
         :value="(settings.end_note as string) || ''"
         placeholder="输入底部寄语"
         @input="emit('update', 'end_note', ($event.target as HTMLInputElement).value)"
       />
     </div>
-    <div class="sta-field">
-      <label class="sta-field__label">ICP 备案号</label>
+    <div class="xh-field">
+      <label class="xh-field__label">ICP 备案号</label>
       <input
-        class="sta-input"
+        class="xh-input"
         type="text"
         :value="(settings.icp_text as string) || ''"
         placeholder="如 京ICP备2021000000号-1"
         @input="emit('update', 'icp_text', ($event.target as HTMLInputElement).value)"
       />
     </div>
-    <div class="sta-field">
-      <label class="sta-field__label">公安备案号</label>
+    <div class="xh-field">
+      <label class="xh-field__label">公安备案号</label>
       <input
-        class="sta-input"
+        class="xh-input"
         type="text"
         :value="(settings.icp_gov_text as string) || ''"
         placeholder="如 京公网安备 11010802000001号"
         @input="emit('update', 'icp_gov_text', ($event.target as HTMLInputElement).value)"
       />
     </div>
-    <div class="sta-field">
-      <label class="sta-checkbox">
-        <input
-          type="checkbox"
-          :checked="settings.show_theme_credit !== false"
-          @change="emit('update', 'show_theme_credit', ($event.target as HTMLInputElement).checked)"
-        />
-        <span class="sta-checkbox__label">显示主题版权信息</span>
-      </label>
+    <div class="xh-field xh-field--compact">
+      <AppToggle
+        :modelValue="settings.show_theme_credit !== false"
+        label="显示主题版权信息"
+        @update:modelValue="emit('update', 'show_theme_credit', $event)"
+      />
     </div>
-  </div>
+  </AppCard>
 </template>
-
-<style scoped>
-.sta-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.sta-checkbox__label {
-  font-weight: 500;
-}
-
-.hero-preview {
-  margin-top: 12px;
-  border-radius: 8px;
-  overflow: hidden;
-  max-width: 300px;
-}
-
-.hero-preview img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-.sta-field--full {
-  grid-column: 1 / -1;
-}
-</style>

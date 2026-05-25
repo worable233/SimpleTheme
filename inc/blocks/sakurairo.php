@@ -275,3 +275,80 @@ function simple_theme_sakurairo_frontend_assets() {
 		'3.0.10'
 	);
 }
+
+// ============================================================
+// 7. FontAwesome → Boxicons icon conversion
+// ============================================================
+
+/**
+ * Convert Font Awesome icons to Boxicons in HTML content.
+ *
+ * Matches <i class="...fa-*..."> elements and replaces FA icon
+ * classes with equivalent bx bx-* classes via a mapping table.
+ * Skips FA style prefixes (fa-solid, fa-regular, fa-brands, etc.).
+ *
+ * @param string $html HTML content.
+ * @return string HTML with FA icons replaced by Boxicons.
+ */
+function simple_theme_fa_to_bx( $html ) {
+	$fa_to_bx = array(
+		'triangle-exclamation' => 'bx bx-error',
+		'exclamation-triangle' => 'bx bx-error',
+		'warning'              => 'bx bx-error',
+		'check'                => 'bx bx-check',
+		'check-circle'         => 'bx bx-check-circle',
+		'times'                => 'bx bx-x',
+		'xmark'                => 'bx bx-x',
+		'ban'                  => 'bx bxs-ban',
+		'shopping-cart'        => 'bx bx-cart',
+		'shopping-bag'         => 'bx bx-shopping-bag',
+		'gift'                 => 'bx bx-gift',
+		'bookmark'             => 'bx bx-bookmark',
+		'info-circle'          => 'bx bx-info-circle',
+		'question-circle'      => 'bx bx-question-mark',
+	);
+
+	// FA modifier/style prefixes to skip (not icon names).
+	$style_prefixes = array( 'solid', 'regular', 'brands', 'fw', 'xs', 'sm', 'lg', '2x', '3x', '5x' );
+
+	return preg_replace_callback(
+		'/<i\s+[^>]*class\s*=\s*"([^"]*)"[^>]*>/i',
+		function ( $matches ) use ( $fa_to_bx, $style_prefixes ) {
+			$classes     = explode( ' ', $matches[1] );
+			$fa_icon     = '';
+			$new_classes = array();
+
+			foreach ( $classes as $class ) {
+				$class = trim( $class );
+				if ( strpos( $class, 'fa-' ) === 0 ) {
+					$icon_name = substr( $class, 3 );
+					if ( ! in_array( $icon_name, $style_prefixes, true ) && isset( $fa_to_bx[ $icon_name ] ) ) {
+						$fa_icon = $fa_to_bx[ $icon_name ];
+					}
+				} else {
+					// Keep non-FA classes (e.g. custom classes, bx classes already present).
+					$new_classes[] = $class;
+				}
+			}
+
+			if ( $fa_icon ) {
+				$new_classes[] = $fa_icon;
+			}
+
+			if ( empty( $new_classes ) ) {
+				return $matches[0];
+			}
+
+			return '<i class="' . esc_attr( implode( ' ', $new_classes ) ) . '">';
+		},
+		$html
+	);
+}
+
+add_filter( 'render_block', 'simple_theme_render_block_fa_to_bx', 10, 2 );
+function simple_theme_render_block_fa_to_bx( $block_content, $block ) {
+	if ( ! empty( $block['blockName'] ) && strpos( $block['blockName'], 'sakurairo/' ) === 0 ) {
+		$block_content = simple_theme_fa_to_bx( $block_content );
+	}
+	return $block_content;
+}

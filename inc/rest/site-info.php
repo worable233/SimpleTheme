@@ -11,14 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function simple_theme_get_site_info() {
 	$theme_options     = get_option( 'simple_theme_options', array() );
-	$comment_show_email   = (bool) ( $theme_options['comment_show_email'] ?? true );
-	$comment_show_url     = (bool) ( $theme_options['comment_show_url'] ?? true );
+	$comment_show_email   = true;
+	$comment_show_url     = true;
 	$comment_show_cookies = (bool) ( $theme_options['comment_show_cookies'] ?? (bool) get_option( 'show_comments_cookies_opt_in' ) );
 	$social_links  = array();
 	if ( ! empty( $theme_options['social_links'] ) ) {
 		$decoded = json_decode( $theme_options['social_links'], true );
 		if ( is_array( $decoded ) ) {
-			$social_links = $decoded;
+			// 如果用户只填了单个对象 {...}，自动包装成数组 [{...}]
+			$social_links = isset( $decoded[0] ) ? $decoded : array( $decoded );
 		}
 	}
 	$icp_text     = ! empty( $theme_options['icp_text'] ) ? $theme_options['icp_text'] : '';
@@ -37,6 +38,7 @@ function simple_theme_get_site_info() {
 		array(
 			'wpVersion'     => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : '',
 			'phpVersion'    => PHP_VERSION,
+			'serverOs'      => PHP_OS,
 			'restApiVersion' => 'v1',
 			'name'          => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES, 'UTF-8' ),
 			'description'   => html_entity_decode( get_bloginfo( 'description' ), ENT_QUOTES, 'UTF-8' ),
@@ -74,11 +76,22 @@ function simple_theme_get_site_info() {
 					'showCategory'      => (bool) ( $theme_options['meta_show_category'] ?? true ),
 					'showPublishDate'   => (bool) ( $theme_options['meta_show_publish_date'] ?? true ),
 					'showModifiedDate'  => (bool) ( $theme_options['meta_show_modified_date'] ?? false ),
-					'showCommentCount'  => (bool) ( $theme_options['meta_show_comment_count'] ?? true ),
-					'showViewCount'     => (bool) ( $theme_options['meta_show_view_count'] ?? true ),
+					'showCommentCount'  => (bool) ( $theme_options['meta_show_comment_count'] ?? false ),
+					'showViewCount'     => (bool) ( $theme_options['meta_show_view_count'] ?? false ),
 					'showReadingTime'   => (bool) ( $theme_options['meta_show_reading_time'] ?? true ),
-					'showWordCount'     => (bool) ( $theme_options['meta_show_word_count'] ?? false ),
+					'showWordCount'     => (bool) ( $theme_options['meta_show_word_count'] ?? true ),
+					'showAuthor'      => (bool) ( $theme_options['meta_show_author'] ?? true ),
 				),
+					'articleMeta'        => array(
+						'showCategory'      => (bool) ( $theme_options['article_meta_show_category'] ?? true ),
+						'showPublishDate'   => (bool) ( $theme_options['article_meta_show_publish_date'] ?? true ),
+						'showModifiedDate'  => (bool) ( $theme_options['article_meta_show_modified_date'] ?? false ),
+						'showCommentCount'  => (bool) ( $theme_options['article_meta_show_comment_count'] ?? true ),
+						'showViewCount'     => (bool) ( $theme_options['article_meta_show_view_count'] ?? true ),
+						'showReadingTime'   => (bool) ( $theme_options['article_meta_show_reading_time'] ?? true ),
+						'showWordCount'     => (bool) ( $theme_options['article_meta_show_word_count'] ?? false ),
+						'showAuthor'      => (bool) ( $theme_options['article_meta_show_author'] ?? true ),
+					),
 			),
 			'comments'      => array(
 				'requireNameEmail' => (bool) get_option( 'require_name_email' ),
@@ -86,9 +99,10 @@ function simple_theme_get_site_info() {
 				'showEmailField'   => $comment_show_email,
 				'showUrlField'     => $comment_show_url,
 				'showCookiesOptIn' => $comment_show_cookies,
-				'captchaEnabled'   => (bool) ( $theme_options['comment_captcha_enabled'] ?? true ),
+				'captchaEnabled'   => (bool) ( $theme_options['comment_captcha_enabled'] ?? false ),
 				'showPrivateOption' => (bool) ( $theme_options['comment_show_private'] ?? true ),
 				'showMarkdownOption' => (bool) ( $theme_options['comment_show_markdown'] ?? true ),
+			'showImageUpload' => (bool) ( $theme_options['comment_image_upload_enabled'] ?? true ),
 			),
 			'collections'   => array(
 				'postsTitle'         => (string) ( $theme_options['posts_title'] ?? '最新文章' ),

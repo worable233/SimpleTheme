@@ -90,28 +90,54 @@ function simple_theme_get_current_commenter() {
 	);
 }
 
-// ========== IP Location ==========
+// ========== IP Location (归属地) ==========
 
 function simple_theme_get_ip_location( $ip ) {
-	$location = get_transient( 'st_ip_' . $ip );
-	if ( false !== $location ) {
+	$options = get_option( 'simple_theme_options', array() );
+	$api     = isset( $options['ip_location_api'] ) ? $options['ip_location_api'] : 'xinyew';
+	$cache   = isset( $options['ip_location_cache'] ) ? (bool) $options['ip_location_cache'] : true;
+
+	if ( $cache ) {
+		$location = get_transient( 'st_ip_' . $ip );
+		if ( false !== $location ) {
+			return $location;
+		}
+		$location = simple_theme_query_ip_location( $ip, $api );
+		if ( $location ) {
+			set_transient( 'st_ip_' . $ip, $location, 0 );
+		}
 		return $location;
 	}
-	$location = simple_theme_query_ip_location( $ip );
-	if ( $location ) {
-		set_transient( 'st_ip_' . $ip, $location, DAY_IN_SECONDS );
-	}
-	return $location;
+
+	return simple_theme_query_ip_location( $ip, $api );
 }
 
-function simple_theme_query_ip_location( $ip ) {
-	$result = simple_theme_try_api_upk( $ip );
-	if ( $result ) {
-		return $result;
+function simple_theme_query_ip_location( $ip, $api = 'xinyew' ) {
+	switch ( $api ) {
+		case 'ip.sb':
+			return simple_theme_try_api_upk( $ip );
+		case 'ip-api.com':
+			return simple_theme_try_api_ipapi( $ip );
+		case 'xinyew':
+		default:
+			return simple_theme_try_api_xinyew( $ip );
 	}
-	$result = simple_theme_try_api_ipapi( $ip );
-	if ( $result ) {
-		return $result;
+}
+
+function simple_theme_try_api_xinyew( $ip ) {
+	if ( ! function_exists( 'wp_remote_get' ) ) {
+		return null;
+	}
+	$response = wp_remote_get( "https://api.xinyew.cn/api/baiduchaip?ip={$ip}", array(
+		'timeout' => 5,
+	) );
+	if ( is_wp_error( $response ) ) {
+		return null;
+	}
+	$body = wp_remote_retrieve_body( $response );
+	$data = json_decode( $body, true );
+	if ( ! empty( $data['status'] ) && '0' === $data['status'] && ! empty( $data['data'][0]['location'] ) ) {
+		return $data['data'][0]['location'];
 	}
 	return null;
 }

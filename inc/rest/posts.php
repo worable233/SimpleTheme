@@ -138,7 +138,7 @@ function simple_theme_get_home_posts( WP_REST_Request $request ) {
 function simple_theme_track_post_view( WP_REST_Request $request ) {
 	$post_id = (int) $request->get_param( 'postId' );
 	if ( ! $post_id ) {
-		return new WP_REST_Response( array( 'error' => 'Invalid post ID' ), 400 );
+		return new WP_REST_Response( array( 'message' => 'Invalid post ID' ), 400 );
 	}
 	$count = (int) get_post_meta( $post_id, 'views', true );
 	update_post_meta( $post_id, 'views', $count + 1 );

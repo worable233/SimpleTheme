@@ -1,29 +1,31 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, onBeforeUnmount, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { fetchCollection, fetchCategories, getErrorMessage } from '@/lib/wordpress'
-import { mockFetchCollection, mockFetchCategories, shouldUseMock } from '@/lib/mock-api'
+import { fetchCollection, fetchCategories, getErrorMessage, resolveThemePath, fetchContentByRestUrl } from '@/lib/wordpress'
+import { mockFetchCollection, mockFetchCategories, shouldUseMock, mockResolveThemePath, mockFetchContentByRestUrl } from '@/lib/mock-api'
 import { withCache } from '@/lib/api-cache'
 import { toInternalPath } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
-import type { WordPressPost, WordPressCategory } from '@/types/wordpress'
+import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
 const route = useRoute()
-const router = useRouter()
 
 const initialLoading = ref(false)
 const loadingMore = ref(false)
+const categoryLoading = ref(false)
 const latestPosts = ref<WordPressPost[]>([])
 const categories = ref<WordPressCategory[]>([])
-const activeCategory = ref<string>('all')
 const page = ref(1)
 const totalPages = ref(0)
 const hasMore = ref(true)
 const errorMessage = ref('')
+
+/** Local category slug; '' means 'all'. Initialized from route param on mount. */
+const categorySlug = ref((route.params.slug as string) || '')
 
 const SENTINEL_MARGIN = 400
 const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ?? 6)
@@ -52,6 +54,14 @@ const sentinelRef = ref<HTMLElement | null>(null)
 
 function setupObserver() {
   observer?.disconnect()
+  prefetchTimers.forEach((t) => clearTimeout(t))
+  prefetchTimers.clear()
+  prefetchTimers.forEach((t) => clearTimeout(t))
+  prefetchTimers.clear()
+  prefetchTimers.forEach((t) => clearTimeout(t))
+  prefetchTimers.clear()
+  prefetchTimers.forEach((t) => clearTimeout(t))
+  prefetchTimers.clear()
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
@@ -67,30 +77,27 @@ function setupObserver() {
 
 onMounted(async () => {
   await loadHomepageData()
-  await loadCategories()
   setupObserver()
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  prefetchTimers.forEach((t) => clearTimeout(t))
+  prefetchTimers.clear()
 })
 
-// Watch route query changes (category filter)
+// Watch route param changes (category filter via /categories/:slug)
+// For browser back/forward navigation — sync local ref and reload.
 watch(
-  () => route.query.category,
-  async () => {
-    activeCategory.value = (route.query.category as string) || 'all'
-    resetPagination()
-    await loadHomepageData()
+  () => route.params.slug,
+  async (newSlug) => {
+    categorySlug.value = (newSlug as string) || ''
+    page.value = 1
+    hasMore.value = true
+    totalPages.value = 0
+    await loadPage(1)
   },
 )
-
-function resetPagination() {
-  page.value = 1
-  totalPages.value = 0
-  hasMore.value = true
-  latestPosts.value = []
-}
 
 async function loadCategories() {
   try {
@@ -103,11 +110,24 @@ async function loadCategories() {
 }
 
 function onCategoryClick(slug: string) {
-  if (slug === 'all') {
-    router.push({ path: '/', query: {} })
-  } else {
-    router.push({ path: '/', query: { category: slug } })
-  }
+  const newSlug = slug === 'all' ? '' : slug
+  if (newSlug === categorySlug.value) return
+  categorySlug.value = newSlug
+
+  // Clear current posts — old content disappears instantly
+  latestPosts.value = []
+  page.value = 1
+  hasMore.value = true
+  totalPages.value = 0
+  categoryLoading.value = true
+
+  loadPage(1)
+    .catch(() => {
+      // loadPage errors propagate; silently handled
+    })
+    .finally(() => {
+      categoryLoading.value = false
+    })
 }
 
 async function loadHomepageData() {
@@ -118,6 +138,7 @@ async function loadHomepageData() {
 
   try {
     await ensureLoaded()
+    await loadCategories()
     await loadPage(1)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '首页内容加载失败，请稍后再试。')
@@ -142,15 +163,17 @@ async function loadMorePosts() {
 
 async function loadPage(pageNum: number) {
   const useMock = shouldUseMock()
-  const categorySlug = route.query.category as string | undefined
+  // Capture slug at call time — if it changes mid-fetch, discard results
+  const capturedSlug = categorySlug.value
+  const slug = capturedSlug || undefined
 
   let termId: number | undefined
-  if (categorySlug) {
-    const found = categories.value.find((c) => c.slug === categorySlug)
+  if (slug) {
+    const found = categories.value.find((c) => c.slug === slug)
     if (found) termId = found.id
   }
 
-  const postsResponse = await (useMock
+  const postsResponse: PagedPostCollection = await (useMock
     ? mockFetchCollection('post', {
         limit: perPageCount.value,
         page: pageNum,
@@ -165,8 +188,18 @@ async function loadPage(pageNum: number) {
       }))
 
   const newItems = postsResponse.items || []
+
   if (pageNum === 1) {
-    latestPosts.value = newItems
+    // Stale check: if user clicked another category while we were fetching, discard
+    if (capturedSlug !== categorySlug.value) return
+
+    // Progressive render: add cards one at a time so users see first card ASAP
+    latestPosts.value = newItems.length ? newItems.slice(0, 1) : []
+    for (let i = 1; i < newItems.length; i++) {
+      if (capturedSlug !== categorySlug.value) return // category changed, stop adding
+      await new Promise((r) => setTimeout(r, 60))
+      latestPosts.value = newItems.slice(0, i + 1)
+    }
   } else {
     latestPosts.value = [...latestPosts.value, ...newItems]
   }
@@ -175,6 +208,37 @@ async function loadPage(pageNum: number) {
   totalPages.value = postsResponse.totalPages
   hasMore.value = pageNum < postsResponse.totalPages
 }
+
+// ----- 悬停预取文章内容 (hover prefetch) -----
+const prefetchTimers = new Map<number, ReturnType<typeof setTimeout>>()
+
+function prefetchPost(post: WordPressPost) {
+  const t = prefetchTimers.get(post.id)
+  if (t) clearTimeout(t)
+  prefetchTimers.set(
+    post.id,
+    setTimeout(async () => {
+      try {
+        const path = toInternalPath(post.link)
+        const useMock = shouldUseMock()
+        const resolver = useMock ? mockResolveThemePath : withCache(resolveThemePath, `resolve:${path}`, 30_000)
+        const resolved = await resolver(path)
+        if (resolved.restUrl) {
+          const fetcher = useMock
+            ? mockFetchContentByRestUrl
+            : withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)
+          await fetcher(resolved.restUrl)
+        }
+      } catch { /* 预取失败静默忽略 */ }
+    }, 200),
+  )
+}
+
+function cancelPrefetch(post: WordPressPost) {
+  const t = prefetchTimers.get(post.id)
+  if (t) { clearTimeout(t); prefetchTimers.delete(post.id) }
+}
+
 </script>
 
 <template>
@@ -192,7 +256,7 @@ async function loadPage(pageNum: number) {
       <!-- Filter bar -->
       <div class="filter-bar">
         <button
-          :class="['filter-bar__btn', { 'filter-bar__btn--active': activeCategory === 'all' }]"
+          :class="['filter-bar__btn', { 'filter-bar__btn--active': categorySlug === '' }]"
           @click="onCategoryClick('all')"
         >
           全部
@@ -200,94 +264,101 @@ async function loadPage(pageNum: number) {
         <button
           v-for="cat in categories"
           :key="cat.id"
-          :class="['filter-bar__btn', { 'filter-bar__btn--active': activeCategory === cat.slug }]"
+          :class="['filter-bar__btn', { 'filter-bar__btn--active': categorySlug === cat.slug }]"
           @click="onCategoryClick(cat.slug)"
         >
           {{ cat.name }}
         </button>
       </div>
 
-      <!-- Initial loading skeleton -->
-      <div v-if="initialLoading" class="post-list">
-        <div v-for="i in 3" :key="'sk-post-' + i" class="post-card-skeleton">
-          <div class="post-card-skeleton__text">
-            <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-          </div>
-          <div class="post-card-skeleton__cover"></div>
-        </div>
-      </div>
-
-      <!-- Error state -->
+      <!-- Error state overlays everything -->
       <ErrorView
-        v-else-if="errorMessage"
+        v-if="errorMessage"
         illustration="warning"
         title="首页加载失败"
         :description="errorMessage"
       />
 
-      <!-- Post list -->
-      <div v-else-if="latestPosts.length" class="content-area">
-        <div class="post-list">
-          <article v-for="post in latestPosts" :key="post.id" class="post-card">
-            <!-- Cover image — absolute positioned right overlay -->
-            <img
-              v-if="post.featuredImage"
-              :src="post.featuredImage"
-              alt=""
-              loading="lazy"
-              class="post-card__cover"
-            />
-            <!-- Meta badge — top-right overlay -->
-            <div class="post-card__meta">
-              <span v-if="metaConfig?.showCategory && post.categories?.[0]" class="post-card__meta-item">{{ post.categories[0] }}</span>
-              <time v-if="metaConfig?.showPublishDate" :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
-              <time v-if="metaConfig?.showModifiedDate && post.modified" :datetime="post.modified" class="post-card__meta-item">{{ formatModifiedDate(post.modified) }}</time>
-              <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
-              <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
-              <span v-if="metaConfig?.showReadingTime && post.readingTime" class="post-card__meta-item">{{ post.readingTime }} 分钟</span>
-              <span v-if="metaConfig?.showWordCount && post.wordCount" class="post-card__meta-item">{{ formatWordCount(post.wordCount) }}</span>
-            </div>
-            <!-- Body: title, excerpt -->
-            <div class="post-card__body">
-              <h2 class="post-card__title">
-                <router-link
-                  :to="toInternalPath(post.link)"
-                  v-html="post.title.rendered"
-                ></router-link>
-              </h2>
-              <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
-            </div>
-          </article>
-        </div>
-
-        <!-- Loading more skeleton (shown below existing posts) -->
-        <div v-if="loadingMore" class="post-list post-list--append">
-          <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton">
+      <!-- Progressively rendered post cards: skeleton → real cards -->
+      <template v-else>
+        <!-- Skeleton grid (initial load only — category transitions skip skeleton) -->
+        <div v-if="initialLoading && latestPosts.length === 0" class="post-list">
+          <div v-for="i in perPageCount" :key="'sk-init-' + i" class="post-card-skeleton">
+            <div class="post-card-skeleton__cover"></div>
             <div class="post-card-skeleton__text">
               <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
               <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
               <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
             </div>
+          </div>
+        </div>
+
+        <!-- Real post cards with fade-up transition -->
+        <div v-else class="post-list">
+          <TransitionGroup name="fade-up" tag="div" class="post-list__grid">
+            <article
+              v-for="post in latestPosts"
+              :key="post.id"
+              class="post-card"
+              @mouseenter="prefetchPost(post)"
+              @mouseleave="cancelPrefetch(post)"
+            >
+              <img
+                v-if="post.featuredImage"
+                :src="post.featuredImage"
+                alt=""
+                loading="lazy"
+                class="post-card__cover"
+              />
+              <div class="post-card__meta">
+                <span v-if="metaConfig?.showCategory && post.categories?.[0]" class="post-card__meta-item">{{ post.categories[0] }}</span>
+                <time v-if="metaConfig?.showPublishDate" :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
+                <time v-if="metaConfig?.showModifiedDate && post.modified" :datetime="post.modified" class="post-card__meta-item">{{ formatModifiedDate(post.modified) }}</time>
+                <span v-if="metaConfig?.showCommentCount && post.commentCount !== undefined" class="post-card__meta-item">{{ post.commentCount }} 评论</span>
+                <span v-if="metaConfig?.showViewCount && post.viewCount !== undefined" class="post-card__meta-item">{{ post.viewCount }} 热度</span>
+                <span v-if="metaConfig?.showReadingTime && post.readingTime" class="post-card__meta-item">{{ post.readingTime }} 分钟</span>
+                <span v-if="metaConfig?.showWordCount && post.wordCount" class="post-card__meta-item">{{ formatWordCount(post.wordCount) }}</span>
+              </div>
+              <div class="post-card__body">
+                <h2 class="post-card__title">
+                  <router-link
+                    :to="toInternalPath(post.link)"
+                    v-html="post.title.rendered"
+                  ></router-link>
+                </h2>
+                <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
+              </div>
+            </article>
+          </TransitionGroup>
+        </div>
+
+        <!-- Empty state (not during initial load or category loading) -->
+        <ErrorView
+          v-if="!initialLoading && !categoryLoading && latestPosts.length === 0"
+          illustration="blank-canvas"
+          title="还没有文章"
+          description="还没有文章，稍后回来看看吧。"
+        />
+
+        <!-- Loading more skeleton (appended below existing posts) -->
+        <div v-if="loadingMore" class="post-list post-list--append">
+          <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton">
             <div class="post-card-skeleton__cover"></div>
+            <div class="post-card-skeleton__text">
+              <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            </div>
           </div>
         </div>
 
         <!-- Intersection sentinel -->
         <div
-          v-if="hasMore"
+          v-if="hasMore && latestPosts.length > 0"
           ref="sentinelRef"
           class="scroll-sentinel"
         ></div>
-      </div>
-
-      <ErrorView
-        v-else-if="!initialLoading"
-        illustration="blank-canvas"
-        title="还没有文章"
-        description="还没有文章，稍后回来看看吧。"
-      />
+      </template>
     </section>
 
     <!-- End note (shown when all pages loaded) -->
@@ -303,54 +374,20 @@ async function loadPage(pageNum: number) {
   --anim-duration-hover: 0.35s;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Fade-up enter transition for category switch (each card fades in rising) */
+.fade-up-enter-active {
+  transition: opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.content-area .section-header,
-.content-area .filter-bar,
-.content-area .post-card,
-.content-area .post-list {
-  animation: none;
-  opacity: 1;
-  transform: none;
-}
-
-.section-header {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-
-.filter-bar {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-  animation-delay: 0.06s;
-}
-
-.post-card {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-.post-card:nth-child(1) {
-  animation-delay: 0.12s;
-}
-.post-card:nth-child(2) {
-  animation-delay: 0.18s;
-}
-.post-card:nth-child(3) {
-  animation-delay: 0.24s;
-}
-.post-card:nth-child(4) {
-  animation-delay: 0.30s;
-}
-
-/* Skeleton cards pulled from global pulse animation */
-:deep(.post-list--append .post-card-skeleton) {
-  animation: slideIn 0.4s ease both;
+/* Leave is instant — cards disappear immediately */
+.fade-up-leave-active {
+  position: absolute;
+  opacity: 0;
+  transition: none;
 }
 
 /* Top gap for loading-more skeleton */
@@ -362,5 +399,23 @@ async function loadPage(pageNum: number) {
 .scroll-sentinel {
   height: 1px;
   pointer-events: none;
+}
+
+/* Responsive skeleton — stack vertically on mobile */
+@media (max-width: 600px) {
+  .post-card-skeleton {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .post-card-skeleton__text {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  .post-card-skeleton__cover {
+    width: 100%;
+    height: 140px;
+    min-height: auto;
+    flex-shrink: 0;
+  }
 }
 </style>

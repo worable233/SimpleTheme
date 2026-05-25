@@ -281,3 +281,18 @@
   opacity: 1;
   transform: scale(1.05);
 }
+
+/* ---------- 11. Mobile overflow protection ---------- */
+@media (max-width: 600px) {
+  .oat-prose table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .oat-prose figure.wp-block-table {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+}

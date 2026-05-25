@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { version as vueVersion } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 
+declare const __BUILD_TIME__: string
+
 const expanded = ref(false)
 
 const { siteInfo, shellLoading } = useSiteShell()
@@ -31,7 +33,7 @@ const autoItems = computed<TechInfoItem[]>(() => {
   return [
     { label: '文章许可', value: articleLicense },
     { label: '规范域名', value: window.location.hostname },
-    ...(s.themeVersion ? [{ label: '主题版本', value: s.themeVersion }] : []),
+
   ]
 })
 
@@ -42,33 +44,25 @@ const userItems = computed<TechInfoItem[]>(() => {
 
 const allItems = computed<TechInfoItem[]>(() => [...userItems.value, ...autoItems.value])
 
-function detectOS(): string {
-  const ua = navigator.userAgent
-  if (ua.includes('Windows')) return 'Windows'
-  if (ua.includes('Mac OS X')) return 'macOS'
-  if (ua.includes('Linux') && !ua.includes('Android')) return 'Linux'
-  if (ua.includes('Android')) return 'Android'
-  if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS'
-  return 'Unknown'
-}
-
 const techVersions = computed<TechInfoItem[]>(() => {
   const s = siteInfo.value
   return [
     { label: 'WordPress', value: s.wpVersion || '6.x' },
+    { label: 'Version', value: s.themeVersion || '-' },
     { label: 'Vue', value: vueVersion },
     { label: 'OatUI', value: '^0.5.1' },
     { label: 'Prism', value: '^1.30.0' },
     { label: 'PHP', value: s.phpVersion || '8.x' },
     { label: 'REST API', value: s.restApiVersion ? `simple-theme/${s.restApiVersion}` : 'v1' },
-    { label: 'OS', value: detectOS() },
+    { label: 'OS', value: s.serverOs || 'Unknown' },
+    { label: 'Build', value: new Date(__BUILD_TIME__).toISOString().replace('T', ' · ').replace(/\.\d{3}Z$/, ' UTC') },
   ]
 })
 </script>
 
 <template>
-  <div class="aside-card">
-    <h3 class="aside-card__title">技术信息 <span>Tech Info.</span></h3>
+  <div v-if="!shellLoading" class="aside-card">
+    <h3 class="aside-card__title">信息 <span>Info.</span></h3>
 
     <div class="info-grid">
       <template v-for="(item, index) in allItems" :key="index">

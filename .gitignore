@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -66,3 +66,22 @@ vendor/
 CLAUDE.md
 *.instructions.md
 .prompt.md
+.claude/*
+.atomcode/*
+response.txt
+
+# Debug / temp files
+debug-resolve.php
+debug-lines.cjs
+check_captcha.php
+dist.zip
+original.css
+test_queue.cjs
+test_queue_behavior.php
+
+# Emoji originals (converted to WebP)
+emojis/**/*.png
+emojis/**/*.jpg
+emojis/**/*.jpeg
+.claude/settings.local.json
+.atomcode/graph.bin

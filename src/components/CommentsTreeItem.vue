@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { likeComment, fetchCommentHistory } from '@/lib/wordpress'
-import { renderToHtml } from '@/lib/emoji'
+import { likeComment } from '@/lib/wordpress'
+import { renderCommentContent } from '@/lib/emoji'
 import type { WordPressComment } from '@/types/wordpress'
 
 defineOptions({ name: 'CommentsTreeItem' })
@@ -15,19 +15,13 @@ const emit = defineEmits<{
   (e: 'reply', id: number): void
   (e: 'liked', payload: { id: number; likes: number }): void
   (e: 'like-error', message: string): void
-  (e: 'edit', commentId: number, content: string): void
+  (e: 'delete', commentId: number): void
   (e: 'pin-toggle', commentId: number, pin: boolean): void
 }>()
 
 const level = computed(() => props.depth || 0)
 const liking = ref(false)
 const liked = ref(localStorage.getItem(`simple_theme_comment_liked_${props.item.id}`) === '1')
-
-// Editing state
-const editing = ref(false)
-const editContent = ref('')
-const editingHistory = ref(false)
-const history = ref<Array<{ content: string; time: string }>>([])
 
 const relativeTime = computed(() => {
   const now = Date.now()
@@ -94,52 +88,21 @@ const goUrl = computed(() => {
 
 const hasChildren = computed(() => !!(props.item.children && props.item.children.length > 0))
 
-const renderedContent = computed(() => renderToHtml(props.item.content.rendered))
+const renderedContent = computed(() => renderCommentContent(props.item.content.rendered, props.item.useMarkdown))
 
 async function handleLike() {
-  if (liked.value || liking.value) return
+  if (liking.value) return
   liking.value = true
   try {
     const nextLikes = await likeComment(props.item.id)
-    liked.value = true
-    localStorage.setItem(`simple_theme_comment_liked_${props.item.id}`, '1')
+    liked.value = !liked.value
+    localStorage.setItem(`simple_theme_comment_liked_${props.item.id}`, liked.value ? '1' : '0')
     emit('liked', { id: props.item.id, likes: nextLikes })
   } catch (error) {
     const message = error instanceof Error ? error.message : '点赞失败，请稍后再试。'
     emit('like-error', message)
   } finally {
     liking.value = false
-  }
-}
-
-function startEdit() {
-  if (!props.item.canEdit) return
-  editing.value = true
-  editContent.value = props.item.content.rendered.replace(/<p>|<\/p>/g, '')
-}
-
-function cancelEdit() {
-  editing.value = false
-  editContent.value = ''
-}
-
-function saveEdit() {
-  if (!editContent.value.trim()) return
-  emit('edit', props.item.id, editContent.value.trim())
-  editing.value = false
-}
-
-async function showHistory() {
-  if (editingHistory.value) {
-    editingHistory.value = false
-    return
-  }
-  try {
-    history.value = await fetchCommentHistory(props.item.id)
-    editingHistory.value = true
-  } catch {
-    history.value = []
-    editingHistory.value = true
   }
 }
 
@@ -205,28 +168,16 @@ function togglePin() {
           <span v-if="item.isPinned" class="comments-item__badge comments-item__badge--pinned">置顶</span>
           <span v-if="item.isPrivate" class="comments-item__badge comments-item__badge--private">私密</span>
           <span v-if="item.status === 'hold'" class="comments-item__badge comments-item__badge--pending">待审核</span>
-
-          <span class="comments-item__time">{{ relativeTime }}</span>
-          <span v-if="item.metaInfo?.browser || item.metaInfo?.os" class="comments-item__meta-info">
-            {{ item.metaInfo.browser }} · {{ item.metaInfo.os }} · {{ item.metaInfo.location }}
-          </span>
-        </div>
-
-        <!-- Edit mode -->
-        <div v-if="editing" class="comments-item__edit">
-          <textarea
-            v-model="editContent"
-            class="comments-item__edit-textarea"
-            rows="3"
-          ></textarea>
-          <div class="comments-item__edit-actions">
-            <button class="comments-item__edit-save" type="button" @click="saveEdit">保存</button>
-            <button class="comments-item__edit-cancel" type="button" @click="cancelEdit">取消</button>
-          </div>
         </div>
 
         <!-- Normal content -->
-        <div v-else class="comments-item__text" v-html="renderedContent"></div>
+        <div class="comments-item__text" v-html="renderedContent"></div>
+
+        <!-- Time + Device info -->
+        <span class="comments-item__time">{{ relativeTime }}</span>
+        <span v-if="item.metaInfo?.browser || item.metaInfo?.os || item.metaInfo?.location" class="comments-item__meta-info">
+          {{ item.metaInfo.browser }}<template v-if="item.metaInfo.os || item.metaInfo.location"> · {{ item.metaInfo.os }}</template><template v-if="item.metaInfo.location"> · {{ item.metaInfo.location }}</template>
+        </span>
 
         <div class="comments-item__actions">
           <button
@@ -234,7 +185,7 @@ function togglePin() {
             class="comments-item__action"
             :class="{ 'comments-item__action--liked': liked }"
             type="button"
-            :disabled="liked || liking"
+            :disabled="liking"
             @click="handleLike"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -250,16 +201,15 @@ function togglePin() {
             回复
           </button>
           <button
-            v-if="item.canEdit"
-            class="comments-item__action"
+            v-if="item.status === 'hold'"
+            class="comments-item__action comments-item__action--delete"
             type="button"
-            @click="startEdit"
+            @click="emit('delete', item.id)"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
-            编辑
+            删除
           </button>
           <button
             v-if="item.canPin"
@@ -271,25 +221,6 @@ function togglePin() {
           </button>
         </div>
 
-        <!-- Edit history -->
-        <div v-if="editingHistory && history.length > 0" class="comments-item__history">
-          <div class="comments-item__history-title">编辑历史</div>
-          <div v-for="(entry, i) in history" :key="i" class="comments-item__history-entry">
-            <div class="comments-item__history-time">{{ entry.time }}</div>
-            <div class="comments-item__history-content">{{ entry.content }}</div>
-          </div>
-        </div>
-        <div v-else-if="editingHistory && history.length === 0" class="comments-item__history">
-          <div class="comments-item__history-title">暂无编辑历史</div>
-        </div>
-        <button
-          v-if="item.canEdit"
-          class="comments-item__action comments-item__action--small"
-          type="button"
-          @click="showHistory"
-        >
-          {{ editingHistory ? '隐藏历史' : '编辑历史' }}
-        </button>
       </div>
     </div>
 
@@ -302,7 +233,7 @@ function togglePin() {
         @reply="emit('reply', $event)"
         @liked="emit('liked', $event)"
         @like-error="emit('like-error', $event)"
-        @edit="(id: number, content: string) => emit('edit', id, content)"
+        @delete="(id: number) => emit('delete', id)"
         @pin-toggle="(id: number, pin: boolean) => emit('pin-toggle', id, pin)"
       />
     </div>
@@ -349,82 +280,4 @@ function togglePin() {
   color: #fff;
 }
 
-.comments-item__edit {
-  margin: 8px 0;
-}
-.comments-item__edit-textarea {
-  width: 100%;
-  padding: 8px;
-  font-size: 13px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--faint);
-  color: var(--foreground);
-  font-family: inherit;
-  resize: vertical;
-}
-.comments-item__edit-textarea:focus {
-  border-color: var(--primary);
-  outline: none;
-}
-.comments-item__edit-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-.comments-item__edit-save,
-.comments-item__edit-cancel {
-  padding: 4px 12px;
-  font-size: 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.comments-item__edit-save {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.comments-item__edit-cancel {
-  background: var(--muted);
-  color: var(--secondary);
-}
-.comments-item__edit-save:hover { opacity: 0.85; }
-.comments-item__edit-cancel:hover { background: var(--border); }
-
-.comments-item__history {
-  margin-top: 8px;
-  padding: 8px;
-  background: var(--faint);
-  border-radius: 4px;
-  font-size: 12px;
-}
-.comments-item__history-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--secondary);
-}
-.comments-item__history-entry {
-  margin-bottom: 4px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-.comments-item__history-entry:last-child {
-  border-bottom: none;
-}
-.comments-item__history-time {
-  font-size: 11px;
-  color: var(--secondary);
-  margin-bottom: 2px;
-}
-.comments-item__history-content {
-  color: var(--foreground);
-  word-break: break-word;
-}
-
-.comments-item__action--small {
-  font-size: 11px;
-  padding: 2px 4px;
-  margin-top: 4px;
-}
 </style>

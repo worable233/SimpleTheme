@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CommentForm — 评论输入表单（含 contenteditable 编辑器和表情面板）
  */
@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
+import { showLoadingToast, dismissToast, showToast, showError } from '@/lib/toast'
 import type { CommentFormSettings, CaptchaData, UserData } from '@/types/wordpress'
 
 defineOptions({ name: 'CommentForm' })
@@ -21,7 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'submit', payload: {
     name: string; email: string; url: string; content: string; cookies: boolean
-    captchaSeed?: string; captchaAnswer?: number
+    captchaPayload?: string
     isPrivate?: boolean; mailNotify?: boolean; useMarkdown?: boolean
   }): void
   (e: 'cancel-reply'): void
@@ -31,13 +32,15 @@ const content = defineModel<string>('content', { default: '' })
 const authorName = defineModel<string>('name', { default: '' })
 const authorEmail = defineModel<string>('email', { default: '' })
 const authorUrl = defineModel<string>('url', { default: '' })
-const cookiesConsent = defineModel<boolean>('cookies', { default: false })
+const cookiesConsent = defineModel<boolean>('cookies', { default: true })
 
 const emojiOpen = ref(false)
 const emojiLeaving = ref(false)
 const emojiTab = ref<'bilibili' | 'tieba' | 'dinosaur' | 'kaomoji'>('bilibili')
 const editorRef = ref<HTMLDivElement | null>(null)
 const emojiPanelRef = ref<HTMLElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
 
 // Mobile bottom-sheet state
 const mobileExpanded = ref(false)
@@ -110,10 +113,10 @@ const isStepValid = computed(() => {
 
 // New form fields
 const captchaData = ref<CaptchaData | null>(null)
-const captchaAnswer = ref('')
+const captchaPayload = ref('')
 const isPrivate = ref(false)
 const mailNotify = ref(false)
-const useMarkdown = ref(true)
+const useMarkdown = ref(false)
 
 // ── CAPTCHA ──
 onMounted(async () => {
@@ -136,7 +139,14 @@ async function loadCaptcha() {
   try {
     captchaData.value = await fetchCaptcha()
   } catch {
-    captchaData.value = { question: '3 + 5 = ?', seed: 'fallback' }
+    captchaData.value = { challenge: '' }
+  }
+}
+
+function onCaptchaStateChange(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail?.payload) {
+    captchaPayload.value = detail.payload
   }
 }
 
@@ -279,6 +289,52 @@ function toggleEmoji() {
   emojiOpen.value = !emojiOpen.value
 }
 
+function openFilePicker() {
+  fileInputRef.value?.click()
+}
+
+async function uploadImage() {
+  const input = fileInputRef.value
+  if (!input || !input.files || !input.files[0]) return
+  const file = input.files[0]
+  if (file.size > 10 * 1024 * 1024) {
+    showError('图片不能超过 10MB')
+    input.value = ''
+    return
+  }
+
+  uploading.value = true
+  const toastEl = showLoadingToast('正在上传图片...', '图片上传中')
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('https://api.xinyew.cn/api/360tc', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const result = await response.json()
+
+    if (result.errno === 0 && result.data?.url) {
+      dismissToast(toastEl)
+      showToast('图片上传成功', '成功', { variant: 'success' })
+      useMarkdown.value = true
+      insertEmoji(`![](${result.data.url})`)
+    } else {
+      dismissToast(toastEl)
+      showError(result.error || '图片上传失败')
+    }
+  } catch (e) {
+    dismissToast(toastEl)
+    showError('图片上传失败: ' + (e instanceof Error ? e.message : '网络异常'))
+  } finally {
+    uploading.value = false
+    input.value = ''
+  }
+}
+
 function onEmojiBeforeLeave() {
   emojiLeaving.value = true
 }
@@ -342,7 +398,7 @@ watch(wizardStep, () => {
 function clearForm() {
   content.value = ''
   if (editorRef.value) editorRef.value.innerHTML = ''
-  captchaAnswer.value = ''
+  captchaPayload.value = ''
   isPrivate.value = false
   mailNotify.value = false
   useMarkdown.value = true
@@ -356,7 +412,7 @@ function clearForm() {
 function handleSubmit() {
   const payload: {
     name: string; email: string; url: string; content: string; cookies: boolean
-    captchaSeed?: string; captchaAnswer?: number
+    captchaPayload?: string
     isPrivate?: boolean; mailNotify?: boolean; useMarkdown?: boolean
   } = {
     name: authorName.value,
@@ -369,8 +425,7 @@ function handleSubmit() {
     useMarkdown: useMarkdown.value,
   }
   if (props.formSettings.captchaEnabled && captchaData.value) {
-    payload.captchaSeed = captchaData.value.seed
-    payload.captchaAnswer = parseInt(captchaAnswer.value, 10)
+    payload.captchaPayload = captchaPayload.value
   }
   emit('submit', payload)
 }
@@ -456,31 +511,28 @@ defineExpose({ clearForm })
       <div class="comments-form__options">
         <label v-if="formSettings.showPrivateOption !== false" class="comments-form__option" title="评论仅博主和你不见">
           <input v-model="isPrivate" type="checkbox" />
-          悄悄话
+          <span>悄悄话</span>
         </label>
         <label v-if="parentCommentId" class="comments-form__option" title="有回复时邮件通知你">
           <input v-model="mailNotify" type="checkbox" />
-          邮件提醒
+          <span>邮件提醒</span>
         </label>
         <label v-if="formSettings.showMarkdownOption !== false && !isMobile" class="comments-form__option" title="启用 Markdown 格式">
           <input v-model="useMarkdown" type="checkbox" />
-          Markdown
+          <span>Markdown</span>
         </label>
         <label v-if="formSettings.showCookiesOptIn" class="comments-form__option" title="记住信息">
           <input v-model="cookiesConsent" type="checkbox" />
-          记住信息
+          <span>记住信息</span>
         </label>
       </div>
 
       <div v-if="formSettings.captchaEnabled" class="comments-form__captcha">
-        <span class="comments-form__captcha-question">{{ captchaData?.question || '加载中...' }}</span>
-        <input
-          v-model="captchaAnswer"
-          type="number"
-          class="comments-form__input comments-form__captcha-input"
-          placeholder="验证码"
-          required
-        />
+        <altcha-widget
+          :challenge="captchaData?.challenge || ''"
+          style="--altcha-max-width: 100%"
+          @statechange="onCaptchaStateChange"
+        ></altcha-widget>
       </div>
 
       <div class="comments-form__footer">
@@ -492,6 +544,14 @@ defineExpose({ clearForm })
               @select="insertEmoji"
             />
           </div>
+          <input ref="fileInputRef" type="file" accept="image/*" hidden @change="uploadImage" />
+          <button v-if="formSettings.showImageUpload" type="button" class="emoji-toggle-btn image-upload-btn" :disabled="uploading" @click="openFilePicker" title="上传图片">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
           <button type="button" class="emoji-toggle-btn" @click="toggleEmoji" title="表情">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
@@ -649,14 +709,11 @@ defineExpose({ clearForm })
                   </label>
                 </div>
                 <div v-if="formSettings.captchaEnabled" class="wizard-step__captcha">
-                  <span class="wizard-step__captcha-question">{{ captchaData?.question || '加载中...' }}</span>
-                  <input
-                    v-model="captchaAnswer"
-                    type="number"
-                    class="wizard-step__input wizard-step__captcha-input"
-                    placeholder="验证码"
-                    required
-                  />
+                  <altcha-widget
+                    :challenge="captchaData?.challenge || ''"
+                    style="--altcha-max-width: 100%"
+                    @statechange="onCaptchaStateChange"
+                  ></altcha-widget>
                 </div>
               </template>
             </div>
@@ -675,7 +732,6 @@ defineExpose({ clearForm })
               </svg>
               上一步
             </button>
-            <div v-else></div>
             <button
               v-if="currentStepIndex < totalWizardSteps - 1"
               type="button"
@@ -921,6 +977,16 @@ defineExpose({ clearForm })
   height: 20px;
 }
 
+.emoji-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.image-upload-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .emoji-toggle-btn:hover {
   background: var(--muted);
   color: var(--foreground);
@@ -937,7 +1003,9 @@ defineExpose({ clearForm })
   left: 0;
   right: 0;
   z-index: 500;
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 14px 14px 0 0;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
   padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px) 0;
@@ -1027,6 +1095,9 @@ defineExpose({ clearForm })
     align-items: center;
     gap: 6px;
     padding: 8px 12px 0;
+    background: color-mix(in srgb, var(--card) 65%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   /* ── Collapsed textarea: compact pill ── */
@@ -1041,26 +1112,23 @@ defineExpose({ clearForm })
     flex: 1;
     border-radius: 18px;
     margin-bottom: 0;
-    border: 1px solid var(--border);
     background: var(--faint);
     line-height: 26px;
     font-size: 14px;
   }
 
-  .comments-form__textarea--collapsed:focus {
-    border-color: var(--primary);
-  }
-
   /* ── Expanded textarea: normal multi-line ── */
   .comments-form--expanded .comments-form__input-row {
     display: block;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   .comments-form--expanded .comments-form__textarea {
     min-height: 80px;
     max-height: 200px;
     white-space: pre-wrap;
     padding: 10px 12px 6px;
-    border-radius: 4px;
     margin: 6px 0 0;
     width: auto;
     flex: none;
@@ -1137,56 +1205,37 @@ defineExpose({ clearForm })
 	  }
 
 	  .comments-form__expandable-inner .comments-form__option {
-	    position: relative;
-	    display: inline-flex;
-	    align-items: center;
-	    gap: 6px;
-	    padding: 6px 14px;
-	    border-radius: 20px;
-	    font-size: 13px;
-	    background: var(--muted);
-	    cursor: pointer;
-	    transition: all 0.15s;
-	    user-select: none;
-	    margin: 0;
-	    min-height: 34px;
-	  }
+	      position: relative;
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 4px;
+	      padding: 4px 10px;
+	      border-radius: 8px;
+	      font-size: 13px;
+	      background: var(--muted);
+	      cursor: pointer;
+	      transition: all 0.15s;
+	      user-select: none;
+	      margin: 0;
+	      min-height: 28px;
+	    }
 
 	  .comments-form__expandable-inner .comments-form__option:has(input:checked) {
-	    background: color-mix(in srgb, var(--primary) 15%, transparent);
-	    color: var(--primary);
-	  }
+	      background: color-mix(in srgb, var(--primary) 15%, transparent);
+	      color: var(--primary);
+	    }
 
 	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"] {
-	    appearance: none;
-	    -webkit-appearance: none;
-	    width: 18px;
-	    height: 18px;
-	    border: 2px solid var(--border);
-	    border-radius: 50%;
-	    margin: 0;
-	    cursor: pointer;
-	    position: relative;
-	    flex-shrink: 0;
-	    transition: all 0.2s;
-	  }
+	      display: none;
+	    }
 
-	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"]:checked {
-	    border-color: var(--primary);
-	    background: var(--primary);
-	  }
+	  .comments-form__expandable-inner .comments-form__option i {
+	      font-size: 15px;
+	    }
 
-	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"]:checked::after {
-	    content: '';
-	    position: absolute;
-	    left: 4.5px;
-	    top: 1.5px;
-	    width: 5px;
-	    height: 9px;
-	    border: solid white;
-	    border-width: 0 2px 2px 0;
-	    transform: rotate(45deg);
-	  }
+	  .comments-form__expandable-inner .comments-form__option span {
+	      font-size: 12px;
+	    }
 
 	  /* ── Captcha ── */
 	  .comments-form__expandable-inner > .comments-form__captcha {
@@ -1275,7 +1324,7 @@ defineExpose({ clearForm })
   transform: translateY(20px);
 }
 
-/* ── Wizard Modal (modern) ── */
+/* ── Wizard Modal (modern, mobile-first) ── */
 
 .wizard-mask {
   position: fixed;
@@ -1289,25 +1338,55 @@ defineExpose({ clearForm })
   padding: 16px;
 }
 
+@media (max-width: 500px) {
+  .wizard-mask {
+    align-items: flex-end;
+    padding: 0;
+    backdrop-filter: blur(4px);
+  }
+}
+
 .wizard-modal {
   position: relative;
   width: 100%;
   max-width: 380px;
   background: var(--card);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  animation: wizard-card-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: wizard-card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 500px) {
+  .wizard-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    animation: wizard-sheet-enter 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
 }
 
 @keyframes wizard-card-enter {
-  from {
+  0% {
     opacity: 0;
-    transform: scale(0.92) translateY(12px);
+    transform: scale(0.9) translateY(16px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes wizard-sheet-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1368,6 +1447,15 @@ defineExpose({ clearForm })
   min-height: 180px;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 500px) {
+  .wizard-step {
+    padding: 24px 20px 16px;
+    min-height: 160px;
+    overflow-y: auto;
+    max-height: 55vh;
+  }
 }
 
 .wizard-step__icon {
@@ -1506,9 +1594,15 @@ defineExpose({ clearForm })
 
 .wizard-nav {
   display: flex;
-  justify-content: space-between;
   padding: 0 24px 20px;
   gap: 12px;
+}
+
+@media (max-width: 500px) {
+  .wizard-nav {
+    padding: 0 20px 16px;
+    gap: 10px;
+  }
 }
 
 .wizard-nav__btn {
@@ -1523,6 +1617,16 @@ defineExpose({ clearForm })
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+@media (max-width: 500px) {
+  .wizard-nav__btn {
+    padding: 12px 18px;
+    min-height: 44px;
+    font-size: 15px;
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .wizard-nav__btn--prev {
@@ -1566,6 +1670,66 @@ defineExpose({ clearForm })
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
+}
+
+@media (max-width: 500px) {
+  .wizard-nav__btn--submit {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 24px;
+    min-height: 44px;
+    font-size: 15px;
+  }
+}
+
+/* ── Dark-mode glass consistency ── */
+
+:global(body.dark) .wizard-modal {
+  background: var(--card);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark) .wizard-modal .wizard-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark) .wizard-step__option {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:global(body.dark) .wizard-step__option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark) .wizard-step__input {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(body.dark) .wizard-step__input:focus {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Dark mode: no border highlight on collapsed empty textarea ── */
+:global(body.dark) .comments-form__textarea--empty.comments-form__textarea--collapsed {
+  border-color: transparent;
+}
+:global(body.dark) .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
+  border-color: transparent;
+  background: var(--faint);
+}
+
+/* ── Dark mode: visible frosted glass on mobile ── */
+:global(body.dark) .comments-form--mobile {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+:global(body.dark) .comments-form--mobile .comments-form__input-row {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ── Transitions ── */

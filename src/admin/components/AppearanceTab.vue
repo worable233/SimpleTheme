@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppCard from './AppCard.vue'
+import AppColorPicker from './AppColorPicker.vue'
+import AppToggle from './AppToggle.vue'
+
 defineProps<{
   settings: Record<string, unknown>
   defaults: Record<string, unknown>
@@ -26,115 +30,77 @@ const darkColors = [
 </script>
 
 <template>
-  <div class="sta-section">
-    <h3 class="sta-section__title">主题主色</h3>
-    <p class="sta-section__desc">主题主色将自动生成完整的 Material Design 3 配色方案。</p>
-    <div class="sta-field sta-field--primary-color">
-      <label class="sta-field__label">主色</label>
-      <div class="sta-color-row">
-        <input
-          type="color"
-          class="sta-input sta-input--color-picker"
-          :value="(settings.primary_color as string) || '#333333'"
-          @input="emit('update', 'primary_color', ($event.target as HTMLInputElement).value)"
-        />
-        <input
-          type="text"
-          class="sta-input sta-input--color-text"
-          :value="(settings.primary_color as string) || ''"
-          placeholder="#333333"
-          maxlength="7"
-          @input="emit('update', 'primary_color', ($event.target as HTMLInputElement).value)"
-        />
-      </div>
+  <!-- Primary Color -->
+  <AppCard title="主题主色" description="主题主色将自动生成完整的 Material Design 3 配色方案。">
+    <div class="xh-field" style="max-width: 280px;">
+      <label class="xh-field__label">主色</label>
+      <AppColorPicker
+        :modelValue="(settings.primary_color as string) || ''"
+        placeholder="#333333"
+        @update:modelValue="emit('update', 'primary_color', $event)"
+      />
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">字体设置</h3>
-    <p class="sta-section__desc">全局字体用于正文和标题，代码字体对代码块、&lt;code&gt; 标签生效。</p>
-    <div class="sta-grid">
-      <div class="sta-field">
-        <label class="sta-field__label">全局字体</label>
+  <!-- Fonts -->
+  <AppCard title="字体设置" description="全局字体用于正文和标题，代码字体对代码块、&lt;code&gt; 标签生效。">
+    <div class="xh-grid">
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">全局字体</label>
         <input
           type="text"
-          class="sta-input"
+          class="xh-input"
           :value="(settings.body_font as string) || ''"
           @input="emit('update', 'body_font', ($event.target as HTMLInputElement).value)"
         />
       </div>
-      <div class="sta-field">
-        <label class="sta-field__label">代码字体</label>
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">代码字体</label>
         <input
           type="text"
-          class="sta-input"
+          class="xh-input xh-input--mono"
           :value="(settings.code_font as string) || ''"
           @input="emit('update', 'code_font', ($event.target as HTMLInputElement).value)"
         />
-        <p class="sta-field__desc">对代码块、&lt;code&gt; 标签生效。</p>
       </div>
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">配色方案（浅色模式）</h3>
-    <p class="sta-section__desc">配置浅色模式下的背景、卡片、文字、强调和边框颜色。</p>
-    <div class="sta-grid">
-      <div v-for="field in lightColors" :key="field.key" class="sta-field">
-        <label class="sta-field__label">{{ field.label }}</label>
-        <div class="sta-color-row">
-          <input
-            type="color"
-            class="sta-input sta-input--color-picker"
-            :value="((settings[field.key] as string) || String(defaults[field.key] || '')) || '#ffffff'"
-            @input="emit('update', field.key, ($event.target as HTMLInputElement).value)"
-          />
-          <input
-            type="text"
-            class="sta-input sta-input--color-text"
-            :value="(settings[field.key] as string) || ''"
-            placeholder="#cccccc"
-            maxlength="7"
-            @input="emit('update', field.key, ($event.target as HTMLInputElement).value)"
-          />
-        </div>
+  <!-- Light Colors -->
+  <AppCard title="配色方案（浅色模式）" description="配置浅色模式下的背景、卡片、文字、强调和边框颜色。">
+    <div class="xh-grid">
+      <div v-for="field in lightColors" :key="field.key" class="xh-field xh-field--compact">
+        <label class="xh-field__label">{{ field.label }}</label>
+        <AppColorPicker
+          :modelValue="(settings[field.key] as string) || ''"
+          :placeholder="(defaults[field.key] as string) || '#cccccc'"
+          @update:modelValue="emit('update', field.key, $event)"
+        />
       </div>
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">配色方案（深色模式）</h3>
-    <p class="sta-section__desc">配置深色模式下的对应颜色。</p>
-    <div class="sta-grid">
-      <div v-for="field in darkColors" :key="field.key" class="sta-field">
-        <label class="sta-field__label">{{ field.label }}</label>
-        <div class="sta-color-row">
-          <input
-            type="color"
-            class="sta-input sta-input--color-picker"
-            :value="((settings[field.key] as string) || String(defaults[field.key] || '')) || '#222222'"
-            @input="emit('update', field.key, ($event.target as HTMLInputElement).value)"
-          />
-          <input
-            type="text"
-            class="sta-input sta-input--color-text"
-            :value="(settings[field.key] as string) || ''"
-            placeholder="#cccccc"
-            maxlength="7"
-            @input="emit('update', field.key, ($event.target as HTMLInputElement).value)"
-          />
-        </div>
+  <!-- Dark Colors -->
+  <AppCard title="配色方案（深色模式）" description="配置深色模式下的对应颜色。">
+    <div class="xh-grid">
+      <div v-for="field in darkColors" :key="field.key" class="xh-field xh-field--compact">
+        <label class="xh-field__label">{{ field.label }}</label>
+        <AppColorPicker
+          :modelValue="(settings[field.key] as string) || ''"
+          :placeholder="(defaults[field.key] as string) || '#cccccc'"
+          @update:modelValue="emit('update', field.key, $event)"
+        />
       </div>
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">圆角与阴影</h3>
-    <div class="sta-grid">
-      <div class="sta-field">
-        <label class="sta-field__label">圆角大小</label>
+  <!-- Radius & Shadow -->
+  <AppCard title="圆角与阴影">
+    <div class="xh-grid">
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">圆角大小</label>
         <select
-          class="sta-select"
+          class="xh-select"
           :value="(settings.radius as string) || 'medium'"
           @change="emit('update', 'radius', ($event.target as HTMLSelectElement).value)"
         >
@@ -143,10 +109,10 @@ const darkColors = [
           <option value="large">大</option>
         </select>
       </div>
-      <div class="sta-field">
-        <label class="sta-field__label">阴影强度</label>
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">阴影强度</label>
         <select
-          class="sta-select"
+          class="xh-select"
           :value="(settings.shadow as string) || 'small'"
           @change="emit('update', 'shadow', ($event.target as HTMLSelectElement).value)"
         >
@@ -157,59 +123,40 @@ const darkColors = [
         </select>
       </div>
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">布局</h3>
-    <div class="sta-grid">
-      <div class="sta-field">
-        <label class="sta-field__label">容器最大宽度 (px)</label>
+  <!-- Layout -->
+  <AppCard title="布局">
+    <div class="xh-grid">
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">容器最大宽度 (px)</label>
         <input
           type="number"
-          class="sta-input sta-input--number"
+          class="xh-input xh-input--number"
           min="960" max="1680" step="10"
           :value="(settings.container_max_width as number) || 1400"
           @input="emit('update', 'container_max_width', Number(($event.target as HTMLInputElement).value))"
         />
       </div>
-      <div class="sta-field">
-        <label class="sta-field__label">文章最大宽度 (px)</label>
+      <div class="xh-field xh-field--compact">
+        <label class="xh-field__label">文章最大宽度 (px)</label>
         <input
           type="number"
-          class="sta-input sta-input--number"
+          class="xh-input xh-input--number"
           min="680" max="1200" step="10"
           :value="(settings.article_max_width as number) || 900"
           @input="emit('update', 'article_max_width', Number(($event.target as HTMLInputElement).value))"
         />
       </div>
     </div>
-  </div>
+  </AppCard>
 
-  <div class="sta-section">
-    <h3 class="sta-section__title">代码高亮</h3>
-    <p class="sta-section__desc">使用 Prism.js 对文章中的代码块和行内代码进行语法高亮。</p>
-    <div class="sta-field">
-      <label class="sta-checkbox">
-        <input
-          type="checkbox"
-          :checked="!!settings.enable_prism_highlight"
-          @change="emit('update', 'enable_prism_highlight', ($event.target as HTMLInputElement).checked)"
-        />
-        <span class="sta-checkbox__label">启用代码高亮</span>
-      </label>
-    </div>
-  </div>
+  <!-- Prism -->
+  <AppCard title="代码高亮" description="使用 Prism.js 对文章中的代码块和行内代码进行语法高亮。">
+    <AppToggle
+      :modelValue="!!settings.enable_prism_highlight"
+      label="启用代码高亮"
+      @update:modelValue="emit('update', 'enable_prism_highlight', $event)"
+    />
+  </AppCard>
 </template>
-
-<style scoped>
-.sta-field--primary-color {
-  max-width: 280px;
-}
-
-/* Dark mode color swatch adjustments */
-@media (prefers-color-scheme: dark) {
-  .sta-field--primary-color :deep(.sta-input--color-picker) {
-    background: var(--sta-card);
-  }
-}
-</style>

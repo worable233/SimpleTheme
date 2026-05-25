@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Simple Theme 的主题引导与 WordPress 集成�? *
  * @package SimpleTheme
@@ -17,6 +17,12 @@ if ( file_exists( __DIR__ . '/inc/blocks/sakurairo.php' ) ) {
 require_once __DIR__ . '/inc/core/setup.php';
 require_once __DIR__ . '/inc/core/helpers.php';
 require_once __DIR__ . '/inc/core/assets.php';
+
+// Global admin 小红书 theme (CSS @layer isolation)
+require_once __DIR__ . '/inc/core/admin-theme.php';
+
+// Auth handler — login/register/password-reset REST API + wp-login.php interception
+require_once __DIR__ . '/inc/core/auth-handler.php';
 
 // SEO / special route safety net (must load after core modules)
 require_once __DIR__ . '/inc/core/seo-handler.php';

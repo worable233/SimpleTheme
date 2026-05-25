@@ -44,6 +44,7 @@ export const mockSiteInfo = {
       showViewCount: true,
       showReadingTime: true,
       showWordCount: false,
+      showAuthor: true,
     },
   },
   stats: {
@@ -67,6 +68,7 @@ export const mockSiteInfo = {
     showEmailField: true,
     showUrlField: true,
     showCookiesOptIn: true,
+    showImageUpload: true,
   },
   collections: {
     homePostCount: 6,

@@ -17,6 +17,32 @@ const fallbackConfig: SimpleThemeConfig = {
     links: `${origin}/wp-json/simple-theme/v1/links`,
 	  settings: `${origin}/wp-json/simple-theme/v1/settings`,
   },
+  features: {
+    prismHighlight: true,
+    showStats: true,
+    showHeatmap: true,
+    showSocial: true,
+    meta: {
+      showCategory: true,
+      showPublishDate: true,
+      showModifiedDate: false,
+      showCommentCount: true,
+      showViewCount: true,
+      showReadingTime: true,
+      showWordCount: true,
+      showAuthor: true,
+    },
+    articleMeta: {
+      showCategory: true,
+      showPublishDate: true,
+      showModifiedDate: false,
+      showCommentCount: true,
+      showViewCount: true,
+      showReadingTime: true,
+      showWordCount: false,
+      showAuthor: true,
+    },
+  },
 }
 
 const injectedConfig = window.SimpleThemeConfig

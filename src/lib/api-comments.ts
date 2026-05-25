@@ -1,29 +1,72 @@
 /**
- * api-comments — 评论相关 API
+ * api-comments — 评论相关 API（基于 WordPress /wp/v2/comments 标准端点）
  */
 import { buildRestUrl } from './api-client'
 import type { WordPressComment, CaptchaData, CommentsResponse } from '@/types/wordpress'
 import { apiClient } from './api-client'
 import axios from 'axios'
 
+/** 将 WP REST API 评论响应映射到前端 WordPressComment 类型 */
+function mapWPComment(item: any): WordPressComment {
+  return {
+    id: item.id,
+    parent: item.parent || 0,
+    date: item.date || '',
+    authorName: item.authorName || item.author_name || '',
+    authorEmail: item.authorEmail || item.author_email || '',
+    authorUrl: item.authorUrl || item.author_url || '',
+    status: item.status || '',
+    avatar: item.avatar || item.author_avatar_urls?.['96'] || '',
+    content: { rendered: item.content?.rendered || '' },
+    likes: item.likes ?? 0,
+    metaInfo: item.metaInfo || { location: '', browser: '', os: '', ipMask: '' },
+    children: item.children || [],
+    isPinned: item.isPinned ?? false,
+    isPrivate: item.isPrivate ?? false,
+    canEdit: false,
+    useMarkdown: item.useMarkdown ?? false,
+    canPin: item.canPin ?? false,
+    qqAvatar: item.qqAvatar || '',
+  }
+}
+
+/** 将扁平评论列表构建为嵌套树 */
+function buildCommentTree(items: WordPressComment[], parentId = 0, maxDepth = 3, currentDepth = 0): WordPressComment[] {
+  const branch: WordPressComment[] = []
+  for (const item of items) {
+    if (item.parent === parentId) {
+      const children = currentDepth < maxDepth
+        ? buildCommentTree(items, item.id, maxDepth, currentDepth + 1)
+        : []
+      branch.push({ ...item, children })
+    }
+  }
+  return branch
+}
+
 export async function fetchComments(
   postId: number,
-  clientId?: string,
+  _clientId?: string,
   page = 1,
   perPage = 50,
 ): Promise<CommentsResponse> {
   try {
-    let url = buildRestUrl(`simple-theme/v1/comments/${postId}`)
-    const params: Record<string, string> = {
-      page: String(page),
-      perPage: String(perPage),
+    const url = buildRestUrl('wp/v2/comments') + `?post=${postId}&page=${page}&per_page=${perPage}&order=asc`
+    const { data, headers } = await apiClient.get<any[]>(url)
+
+    const total = parseInt(headers['x-wp-total'] || '0')
+    const totalPages = parseInt(headers['x-wp-totalpages'] || '1')
+
+    const flat = data.map(mapWPComment)
+    const tree = buildCommentTree(flat)
+
+    return {
+      items: tree,
+      total,
+      page,
+      perPage,
+      totalPages,
     }
-    if (clientId) {
-      params.client_id = clientId
-    }
-    url += '?' + new URLSearchParams(params).toString()
-    const { data } = await apiClient.get<CommentsResponse>(url)
-    return data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       return { items: [], total: 0, page: 1, perPage, totalPages: 0 }
@@ -40,17 +83,16 @@ export async function createComment(payload: {
   author_url?: string
   content: string
   client_id: string
-  captchaSeed?: string
-  captchaAnswer?: number
+  captchaPayload?: string
   isPrivate?: boolean
   mailNotify?: boolean
   useMarkdown?: boolean
-}) {
-  const { data } = await apiClient.post<{ item: WordPressComment }>(
-    buildRestUrl('simple-theme/v1/comments'),
+}): Promise<WordPressComment> {
+  const { data } = await apiClient.post<any>(
+    buildRestUrl('wp/v2/comments'),
     payload,
   )
-  return data.item
+  return mapWPComment(data)
 }
 
 export async function likeComment(commentId: number) {
@@ -75,19 +117,19 @@ export async function fetchCaptcha() {
   return data
 }
 
-export async function editComment(commentId: number, content: string) {
-  const { data } = await apiClient.post<{ item: WordPressComment }>(
-    buildRestUrl('simple-theme/v1/comment-edit'),
-    { commentId, content },
+export async function deleteComment(commentId: number) {
+  const { data } = await apiClient.post<{ deleted: boolean }>(
+    buildRestUrl('simple-theme/v1/comment-delete'),
+    { commentId },
   )
-  return data.item
+  return data.deleted
 }
 
-export async function fetchCommentHistory(commentId: number) {
-  const { data } = await apiClient.get<{ history: Array<{ content: string; time: string }> }>(
-    buildRestUrl(`simple-theme/v1/comment-history/${commentId}`),
+export async function fetchUserPendingComments(postId: number) {
+  const { data } = await apiClient.get<{ items: WordPressComment[] }>(
+    buildRestUrl(`simple-theme/v1/user-pending-comments?post_id=${postId}`),
   )
-  return data.history
+  return data.items
 }
 
 export async function pinComment(commentId: number, pin: boolean) {

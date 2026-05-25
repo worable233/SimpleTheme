@@ -37,6 +37,7 @@
   --code-bgc: rgba(0 0 0 / 0.05);
   --background: #f5f6f7;
   --foreground: #333;
+  --card-highlight: 0 0 0 0 transparent;
   --card: #ffffff;
   --card-foreground: #333;
   --primary: #333;
@@ -70,6 +71,7 @@
   --code-bgc: rgba(255 255 255 / 0.05);
   --background: #1a1a1a;
   --foreground: #e0e0e0;
+  --card-highlight: inset 0 1px 0 0 #fff3;
   --card: #222;
   --card-foreground: #e0e0e0;
   --primary: #e0e0e0;

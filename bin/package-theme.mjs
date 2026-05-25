@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Package Simple Theme as ZIP (cross-platform)
  * Usage: node bin/package-theme.mjs
@@ -60,7 +60,10 @@ const excludedNames = new Set([
   '_check.php', '_fix_admin.py', '_fix_loggedin.py', '_count_large.py',
   '_check-zip.mjs', '_check-zip-contents.ps1',
   'bin/check-zip-contents.ps1',
-  'original_LinksView.vue', 'original_prose.css',
+	  'check_captcha.php', 'debug-lines.cjs', 'debug-resolve.php',
+	  'dist.zip', 'original.css', 'response.txt',
+	  'test_queue.cjs', 'test_queue_behavior.php',
+	  'dist/emojis',  'original_LinksView.vue', 'original_prose.css',
   'Simple-Theme-v1.0.0.zip', 'Simple-Theme-v2.0.0.zip',
   '_zipcheck',
 ]);

@@ -296,6 +296,11 @@ export function useContentEnhancer(
       transformExternalLinks(container)
       // Initialize Fancybox for article images
       initFancyboxImages(container)
+
+      // Lazy load all images — content text renders immediately, images stream in
+      container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+        if (!img.hasAttribute('loading')) img.loading = 'lazy'
+      })
       // Sync TOC from the same container (headings now have IDs)
       const { setTocItems, extractToc } = useToc()
       setTocItems(extractToc(selector))

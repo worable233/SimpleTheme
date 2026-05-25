@@ -45,7 +45,7 @@ const kaomojiList = [
       >
         <img
           class="comments-emoji__tab-icon"
-          :src="emojiBase() + 'bili/emoji_keai.png'"
+          :src="emojiBase() + 'bili/emoji_keai.webp'"
           alt="bilibili"
         />
         bilibili
@@ -58,7 +58,7 @@ const kaomojiList = [
       >
         <img
           class="comments-emoji__tab-icon"
-          :src="emojiBase() + 'tieba/icon_haha.png'"
+          :src="emojiBase() + 'tieba/icon_haha.webp'"
           alt="tieba"
         />
         Tieba

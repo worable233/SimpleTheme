@@ -34,6 +34,7 @@ function hasChildren(item: MenuItem): boolean {
       <li
         v-for="item in menuItems"
         :key="item.id"
+        :data-menu-id="item.id"
         :class="{
           'current-menu-item': !hasChildren(item) && isCurrent(item.path),
           'menu-item-has-children': hasChildren(item),
@@ -65,7 +66,7 @@ function hasChildren(item: MenuItem): boolean {
                   :to="child.path || child.url"
                   :aria-current="isCurrent(child.path) ? 'page' : undefined"
                 >
-                  <span v-html="getItemIcon(child)"></span>
+                  <span v-html="getItemIcon(child, isCurrent(child.path))"></span>
                   <span class="menu-item-title">{{ child.title }}</span>
                 </RouterLink>
                 <RouterLink
@@ -73,7 +74,7 @@ function hasChildren(item: MenuItem): boolean {
                   to="/"
                   :aria-current="isCurrent('/') ? 'page' : undefined"
                 >
-                  <span v-html="getItemIcon(child)"></span>
+                  <span v-html="getItemIcon(child, isCurrent('/'))"></span>
                   <span class="menu-item-title">{{ child.title }}</span>
                 </RouterLink>
                 <a
@@ -96,7 +97,7 @@ function hasChildren(item: MenuItem): boolean {
           :to="item.path || item.url"
           :aria-current="isCurrent(item.path) ? 'page' : undefined"
         >
-          <span v-html="getItemIcon(item)"></span>
+          <span v-html="getItemIcon(item, isCurrent(item.path))"></span>
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <RouterLink
@@ -104,7 +105,7 @@ function hasChildren(item: MenuItem): boolean {
           to="/"
           :aria-current="isCurrent('/') ? 'page' : undefined"
         >
-          <span v-html="getItemIcon(item)"></span>
+          <span v-html="getItemIcon(item, isCurrent('/'))"></span>
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <a
@@ -136,15 +137,8 @@ function hasChildren(item: MenuItem): boolean {
 /* ========== Narrow left-drawer nav (mobile) ========== */
 @media (max-width: 1200px) {
   .left-sidebar__menu {
-    overflow-y: auto;
-    scrollbar-width: none;
-  }
-  .left-sidebar__menu::-webkit-scrollbar {
-    display: none;
-  }
-
-  .left-sidebar__menu {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -192,10 +186,6 @@ function hasChildren(item: MenuItem): boolean {
     padding-bottom: 14px;
   }
 
-  .sub-menu-chevron {
-    display: none;
-  }
-
   .left-sidebar__menu ul li a .menu-item-title,
   .left-sidebar__menu ul li button.menu-toggle .menu-item-title {
     position: absolute;
@@ -230,10 +220,37 @@ function hasChildren(item: MenuItem): boolean {
 
 <!-- ==================== NON-SCOPED: Menu tooltip + sub-menu ==================== -->
 <style>
-/* Tooltip: hidden by default, shown on hover (all screen sizes) */
 .left-sidebar__menu ul li a,
 .left-sidebar__menu ul li button.menu-toggle {
   position: relative;
+}
+
+/* 顶部菜单链接：居中图标（桌面端 + 移动端统一） */
+.left-sidebar__menu ul li a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  line-height: 0;
+}
+
+/* 图标包装 span：居中内部图标（桌面端 + 移动端） */
+.left-sidebar__menu ul li a > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+/* 图标元素自居：让 ::before 伪元素(实际渲染的图标)在盒内垂直居中 */
+.left-sidebar__menu ul li a > span:first-child i.bx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 /* 菜单图标统一尺寸 — 桌面版 24px, 子菜单 16px 由各自选择器覆写 */
@@ -243,32 +260,15 @@ function hasChildren(item: MenuItem): boolean {
   color: var(--foreground);
 }
 
-.left-sidebar__menu ul li a .menu-item-title,
-.left-sidebar__menu ul li button.menu-toggle .menu-item-title {
-  display: block;
-  position: absolute;
-  font-size: 14px;
-  color: #fff;
-  left: calc(100% + 10px);
-  transform: translateX(-5px);
-  opacity: 0;
-  visibility: hidden;
-  white-space: nowrap;
-  padding: 5px 12px;
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  pointer-events: none;
-  z-index: 1;
-  transition: all var(--transition-fast);
+/* 顶部菜单选中态：高亮背景 + 前景色 */
+.left-sidebar__menu ul li.current-menu-item > a {
+  background-color: var(--primary);
+  border-radius: 8px;
+  color: var(--primary-foreground);
 }
 
-.left-sidebar__menu ul li a:hover .menu-item-title,
-.left-sidebar__menu ul li button.menu-toggle:hover .menu-item-title {
-  transform: translateX(0);
-  opacity: 1;
-  visibility: visible;
+.left-sidebar__menu ul li.current-menu-item > a i.bx {
+  color: var(--primary-foreground);
 }
 
 /* Menu toggle button (parent item with children) */
@@ -422,52 +422,9 @@ function hasChildren(item: MenuItem): boolean {
   color: var(--primary-foreground);
 }
 
-/* Mobile: back to inline vertical sub-menu */
-@media (max-width: 1200px) {
-  .left-sidebar__menu ul li.menu-item-has-children {
-    position: static;
-  }
-
-  .sub-menu {
-    position: static;
-    transform: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px !important;
-    padding: 2px 0 4px !important;
-    width: 100%;
-    background: none;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-    min-width: auto;
-    z-index: auto;
-  }
-
-  .sub-menu li a {
-    justify-content: center;
-    width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    padding: 0;
-    gap: 0;
-    color: var(--foreground);
-  }
-
-  .sub-menu li a svg {
-    width: 16px !important;
-    height: 16px !important;
-  }
-
-  .sub-menu li a i.bx {
-    font-size: 16px !important;
-    line-height: 1;
-  }
-
-  .sub-menu li.current-menu-item a {
-    color: var(--primary-foreground);
-    background-color: var(--primary);
-  }
+/* Hide inline sub-menu — LeftSidebar renders floating panels on all screen sizes */
+.left-sidebar__menu .sub-menu {
+  display: none !important;
 }
+
 </style>

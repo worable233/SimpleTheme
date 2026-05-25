@@ -126,6 +126,7 @@ const emit = defineEmits<{
 :global(body.dark) .category-card {
   background: rgba(30,30,30,0.92);
   border-color: #333;
+  box-shadow: inset 0 1px 0 0 #fff3;
 }
 
 :global(body.dark) .category-card:hover {

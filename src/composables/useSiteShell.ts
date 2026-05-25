@@ -36,6 +36,7 @@ const fallbackThemeSettings: ThemeSettings = {
     showViewCount: true,
     showReadingTime: true,
     showWordCount: false,
+    showAuthor: true,
   },
 }
 
@@ -76,6 +77,8 @@ const fallbackSiteInfo: SiteInfo = {
     showEmailField: true,
     showUrlField: true,
     showCookiesOptIn: true,
+    captchaEnabled: false,
+    showImageUpload: true,
   },
   hero: fallbackHeroSettings,
   theme: fallbackThemeSettings,
@@ -134,6 +137,10 @@ export function useSiteShell() {
             nextSiteInfo.comments?.showUrlField ?? fallbackSiteInfo.comments!.showUrlField,
           showCookiesOptIn:
             nextSiteInfo.comments?.showCookiesOptIn ?? fallbackSiteInfo.comments!.showCookiesOptIn,
+          captchaEnabled:
+            nextSiteInfo.comments?.captchaEnabled ?? fallbackSiteInfo.comments!.captchaEnabled,
+          showImageUpload:
+            nextSiteInfo.comments?.showImageUpload ?? fallbackSiteInfo.comments!.showImageUpload,
         },
         stats: {
           ...fallbackSiteStats,
