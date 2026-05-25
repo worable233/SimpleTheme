@@ -82,3 +82,6 @@ test_queue_behavior.php
 emojis/**/*.png
 emojis/**/*.jpg
 emojis/**/*.jpeg
+
+# Reference plugin (third-party, not part of theme)
+uixpress/
