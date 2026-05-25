@@ -1,172 +1,89 @@
 # Simple Theme
 
-**Vue 3 + OAT UI + WordPress REST API 驱动的轻量 WordPress 主题**
+> **v2.0.0 正在开发中** — 从 v1 到 v2 的完整重写，功能逐步完善中，欢迎反馈。
 
-一款基于 Vue 3 单页应用架构的 WordPress 主题，前端渲染完全由 Vue 3 处理，通过 WordPress REST API 获取数据。使用 [OAT UI](https://github.com/knadh/oat.css) 作为 CSS 工具库，支持自定义主题色、明暗切换、响应式布局。
-目前正在开发ver2.0.0版本，待测试完成后再发布。
+Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress 主题。
+
+前端由 Vue 3 完全渲染，数据通过 WordPress REST API 驱动。内置爬虫检测，对搜索引擎输出完整静态 HTML，兼容 Yoast / Rank Math 等 SEO 插件。
 
 ## 特性
 
-- Vue 3 SPA 前端，TypeScript 编写
-- WordPress REST API 数据驱动
-- 自定义主题色
-- 明/暗模式切换，localStorage 持久化
-- 响应式布局，移动端滑动侧栏
-- 自定义文章类型「说说」
-- 文章目录（TOC）自动生成
-- 评论系统（嵌套回复、点赞、IP 归属地显示）
-- SVG 插画（unDraw）
-- 评论 IP 归属地查询：[api2.upk.com.cn](https://api2.upk.com.cn)（回退：[ip-api.com](http://ip-api.com)）
-- 样式参考 [iEmo](https://github.com/kannafay/iEmo)
-- 数据兼容 [Sakurairo](https://github.com/mirai-mamori/Sakurairo)
-- **SEO 兼容** — WordPress 原生模板向爬虫输出静态 HTML，完整兼容 Yoast、Rank Math 等 SEO 插件
+| 类别 | 功能 |
+|------|------|
+| 前端 | Vue 3 + TypeScript + Vue Router，Vite 8 构建 |
+| 布局 | 响应式双栏，移动端滑动侧栏，明/暗模式 |
+| 主题 | Material Design 3 配色，自定义主题色 |
+| 后台美化 | 完整 WordPress 后台 + 登录页 UI 重制，明暗模式与前端同步，边栏品牌标识注入 |
+| 缓存系统 | 双重智能缓存：前端内存 LRU（API 响应纳秒级命中）+ 后端 Transients（站点统计/ALTCHA/IP 归属地），分层 TTL 策略 |
+| SEO | 爬虫检测 → 静态 HTML 回退 |
+| 评论 | 嵌套回复、点赞、Markdown、表情包(Bilibili/恐龙/贴吧)、ALTCHA 验证码、IP 归属地、浏览器信息 |
+| 邮件 | SMTP 配置 + 异步邮件通知 |
+| 公告 | 弹窗/胶囊两种模式，关联页面内容，自定义按钮 |
+| 合规 | Cookie 同意弹窗 |
+| 扩展 | 说说自定义文章类型、SVG 插画(unDraw)、Prism.js 语法高亮、站点统计 |
+| 兼容 | 兼容 Sakurairo 主题数据格式 |
 
-## 构建流程
-
-```bash
-# 1. 安装依赖
-npm install
-
-# 2. 复制插画 SVG 到 public/ 目录
-npm run copy-illustrations    # 仅复制主题实际使用的插画（14个SVG）
-
-# 3. 构建前端资源
-npm run build                 # type-check → vite build
-# 产物输出到 dist/ 目录，包含编译后的 JS/CSS/插画
-
-# 4. 打包为 ZIP（发布用）
-# PowerShell:
-.\bin\package-theme.ps1
-# 或 Node.js:
-node bin\package-theme.mjs
-# 输出: Simple-Theme-v2.0.0.zip（不含开发文件）
-```
-
-`npm run build` 会自动执行 `node bin/copy-illustrations.mjs`，仅复制主题实际使用的 14 个 SVG 插画到 `public/illustrations/`，避免将 undraw-svg 包中全部 1500+ 个 SVGs 打包。
-
-## 开发环境
-
-### Docker（推荐）
-
-一键启动本地 WordPress 开发环境：
+## 快速开始
 
 ```bash
-npm run docker:up       # 启动 WordPress + MySQL + phpMyAdmin
-npm run dev:docker      # 切换到 Docker 环境配置并启动 Vite 开发服务器
-npm run docker:down     # 停止容器
+npm install                # 安装依赖
+npm run dev                # 开发（Vite HMR，需 WordPress 后端）
+set VITE_USE_MOCK=true && npm run dev   # Mock 模式，无需 WordPress
+npm run build              # 构建生产资源 → dist/
+node bin/package-theme.mjs # 打包 ZIP
 ```
 
-- WordPress: http://localhost:8080
-- phpMyAdmin: http://localhost:8081
-- MySQL: 端口 3307（user/pass: `wordpress`）
-- Vite 开发服务器: http://localhost:5173
+## 主题设置
 
-### 纯前端开发（Mock 模式）
+**WordPress 后台 → 设置 → Simple Theme**（Vue 3 管理面板）
 
-```bash
-set VITE_USE_MOCK=true   # 或写入 .env 文件
-npm run dev               # 无需 WordPress，使用 Mock 数据
-```
-
-### Vite 开发代理
-
-Vite 开发模式下自动代理 API 请求：
-
-- `/wp-json/*` → WordPress 后端
-- `/wp-content/uploads/*` → WordPress 上传目录
+- **首页布局** — Hero 区域、文章数、说说数
+- **主题色** — Material Design 3 主色
+- **评论** — Captcha、Markdown、图片上传、隐私选项
+- **邮件** — SMTP 配置、通知开关
+- **公告** — 弹窗/胶囊、关联页面、自定义按钮
+- **Cookie** — 启用/关闭、自定义文案
+- **其他** — 技术栈标签、社交链接、ICP 备案
 
 ## 技术栈
 
-| 层级        | 技术                                                 |
-| ----------- | ---------------------------------------------------- |
-| 前端框架    | Vue 3 + TypeScript + Vue Router                      |
-| 构建工具    | Vite 6                                               |
-| CSS 框架    | [OAT UI](https://github.com/knadh/oat.css)（v0.5.x） |
-| HTTP 客户端 | Axios                                                |
-| 后端        | WordPress REST API + 自定义 REST 路由                |
-| 插画        | [unDraw](https://undraw.co/)（SVG，仅打包使用的）    |
-| 语法高亮    | Prism.js                                             |
-| 包管理      | npm                                                  |
+Vue 3 · TypeScript · Vue Router · Vite 8 · OAT UI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
 
 ## 目录结构
 
 ```
 simple-theme/
-├── src/                  # Vue 3 前端源码
-│   ├── components/       # 组件
-│   ├── composables/      # 组合式函数
-│   ├── lib/              # 工具库（WordPress API 客户端等）
-│   ├── styles/           # 全局样式
-│   ├── types/            # TypeScript 类型
-│   ├── views/            # 页面视图
-│   ├── App.vue           # 根组件
-│   ├── main.ts           # 入口
-│   └── router/           # 路由配置
-├── admin/                # WordPress 后台设置页面
-├── bin/                  # 构建/打包脚本
-├── inc/                  # PHP 功能模块
-├── public/               # 静态资源（插画 SVGs 等）
-├── dist/                 # Vite 构建产物
-├── functions.php         # WordPress 主题功能
-├── style.css             # WordPress 主题标识
-├── theme.json            # WordPress 主题配置
-└── vite.config.ts        # Vite 配置
+├── src/               Vue 3 前端（components / composables / views / styles / types）
+├── inc/               PHP 后端
+│   ├── core/          资产加载、爬虫检测、SEO、SMTP、认证、安装
+│   ├── rest/          REST API 端点（文章/评论/站点信息/导航）
+│   └── admin/         选项注册与校验
+├── admin/             管理面板 SPA（独立构建）
+├── bin/               构建/打包脚本（Node.js + PowerShell）
+├── public/            静态资源（表情包、插画）
+├── docs/              文档
+├── functions.php      主题入口
+├── style.css          主题标识
+├── theme.json         WordPress 配置
+└── vite.config.ts     Vite 配置
 ```
 
 ## 路由架构
 
-主题使用 Vue Router 的 catch-all 路由，所有非首页路径统一由 `ContentView` 处理：
+Vue Router catch-all 路由，统一由 `ContentView` 处理：调用 WordPress REST API 解析当前 URL → 根据返回类型（post/page/term/404）渲染对应视图。特殊页面（`/shuoshuo`、`/about`、`/archives`、`/links`）在 API 返回 404 时自动回退到 Vue 内置页面。
 
-1. `ContentView` 调用 WordPress REST API 解析 URL
-2. 根据返回类型（post/page/term/404）渲染对应模板
-3. 特殊路径（`/shuoshuo`、`/about`、`/archives`、`/links`）在 WordPress 返回 404 时回退到 Vue 内置页面
+## SEO
 
-## SEO 兼容性
+`template_include` 钩子拦截爬虫请求：匹配 User-Agent → 输出 `wp_head` + `the_content` + `wp_footer` 完整 HTML；否则正常加载 SPA。
 
-本主题虽然是 Vue SPA，但通过**爬虫检测 + WordPress 原生模板回退**机制，确保所有主流搜索引擎都能正确索引文章内容。
-
-### 工作原理
-
-```
-爬虫请求 → WordPress 解析 URL
-  ↓
-template_include 钩子（优先级 99）
-  ├─ User-Agent 匹配爬虫 → 输出 templates/crawler-fallback.php
-  │    ├─ wp_head()      ← SEO 插件输出 title/meta/OG/JSON-LD
-  │    ├─ the_content()  ← 文章正文全文
-  │    └─ wp_footer()    ← 插件脚本
-  │
-  └─ User-Agent 非爬虫 → Vue SPA 正常加载
-```
-
-### 支持情况
-
-| 功能                                    | 状态                                 |
-| --------------------------------------- | ------------------------------------ |
-| 搜索引擎索引（Google、Bing、Baidu 等）  | ✅ 全文静态 HTML                     |
-| Yoast SEO / Rank Math / SEOPress 等插件 | ✅ 完整兼容                          |
-| `robots.txt` & `sitemap.xml`            | ✅ WordPress 核心 + SEO 插件原生处理 |
-| Open Graph / Twitter Card               | ✅ 由已安装的 SEO 插件输出           |
-| 结构化数据 (JSON-LD)                    | ✅ 由已安装的 SEO 插件输出           |
-| 页面标题 (`<title>`)                    | ✅ `wp_head()` 传递，SEO 插件控制    |
-| `canonical` URL                         | ✅ 由已安装的 SEO 插件输出           |
-
-### 爬虫识别范围
-
-- **搜索引擎**：Googlebot, Bingbot, Baiduspider, YandexBot, DuckDuckBot, Yahoo Slurp, Sogou, 360Spider, Bytespider (字节跳动), PetalBot (华为), CocCocBot, SeznamBot
-- **社交/工具**：Facebot, Twitterbot, Applebot, DiscordBot, SlackBot, TelegramBot, WhatsApp, Prerender
-- **SEO 分析**：AhrefsBot, SemrushBot, Majestic-12, RogerBot (Moz), Semantic Scholar
-
-可通过 `simple_theme_crawler_patterns` filter 扩展爬虫列表。
+支持的爬虫：Googlebot · Bingbot · Baiduspider · YandexBot · DuckDuckBot · Sogou · 360Spider · Bytespider · PetalBot · Facebot · Twitterbot · Applebot · DiscordBot · SlackBot · TelegramBot · AhrefsBot · SemrushBot。可通过 `simple_theme_crawler_patterns` filter 扩展。
 
 ## 文档
 
-- [配置文档 & 错误排查](docs/config-and-troubleshooting.md) — IP 归属地、首页文章数量、常见错误排查等
+- [配置 & 错误排查](docs/config-and-troubleshooting.md)
 
 ## 许可证
 
-[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
-
-**署名-非商业性使用-禁止演绎** — 您可以复制、分发本主题，但不得修改或用于商业用途。
+[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名-非商业使用-禁止演绎。
 
 Copyright © 2026 [worable](https://github.com/worable233)

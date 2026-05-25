@@ -192,3 +192,33 @@ add_action( 'rest_api_init', function () {
 		),
 	) );
 } );
+
+// ========== Pages List (for admin dropdown) ==========
+
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'simple-theme/v1', '/pages', array(
+		'methods'             => WP_REST_Server::READABLE,
+		'callback'            => 'simple_theme_get_pages_list',
+		'permission_callback' => '__return_true',
+	) );
+} );
+
+function simple_theme_get_pages_list() {
+	$pages = get_posts( array(
+		'post_type'      => 'page',
+		'post_status'    => 'publish',
+		'posts_per_page' => -1,
+		'orderby'        => 'title',
+		'order'          => 'ASC',
+	) );
+
+	$items = array();
+	foreach ( $pages as $page ) {
+		$items[] = array(
+			'id'    => $page->ID,
+			'title' => get_the_title( $page ),
+		);
+	}
+
+	return new WP_REST_Response( $items, 200 );
+}

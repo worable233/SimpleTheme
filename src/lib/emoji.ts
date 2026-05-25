@@ -7,7 +7,6 @@
  *   3. 表情 shortcodes（{{name}} / ::name:: / #name#）→ <img>
  */
 
-import { marked } from 'marked'
 import { getThemeConfig } from '@/lib/theme-config'
 
 export function emojiBase(): string {
@@ -116,24 +115,12 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * 渲染评论内容：HTML 转义 → 可选 Markdown → 表情替换
+ * 渲染评论内容：直接替换表情 shortcodes（内容已由服务端渲染为 HTML）
  *
- * @param content 原始评论内容（纯文本）
- * @param useMarkdown 是否解析 Markdown 语法
+ * @param content 评论内容（纯文本或 HTML，服务端已过滤）
  */
-export function renderCommentContent(content: string, useMarkdown?: boolean): string {
-  let html: string
-
-  if (useMarkdown) {
-    // Markdown mode: marked parses markdown, then replace emoji shortcodes
-    html = marked.parse(content, { breaks: true }) as string
-  } else {
-    // Plain text mode: WordPress already filtered HTML on save, just replace emoji shortcodes
-    html = content
-  }
-
-  // Replace emoji shortcodes (on markdown output or raw content)
-  return replaceEmoji(html)
+export function renderCommentContent(content: string): string {
+  return replaceEmoji(content)
 }
 
 /**

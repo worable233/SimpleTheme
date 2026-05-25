@@ -71,6 +71,8 @@ function simple_theme_get_frontend_config() {
 			'about'      => esc_url_raw( rest_url( 'simple-theme/v1/about' ) ),
 			'links'      => esc_url_raw( rest_url( 'simple-theme/v1/links' ) ),
 			'settings'   => esc_url_raw( rest_url( 'simple-theme/v1/settings' ) ),
+			'smtp_test'  => esc_url_raw( rest_url( 'simple-theme/v1/smtp-test' ) ),
+			'mail_queue' => esc_url_raw( rest_url( 'simple-theme/v1/mail-queue' ) ),
 		),
 		'currentUser' => $current_user,
 		'restNonce'  => wp_create_nonce( 'wp_rest' ),

@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/../lib/Parsedown.php';
+
 // ========== Format / Helpers ==========
 
 function simple_theme_format_comment_item( WP_Comment $comment ) {
@@ -343,10 +345,19 @@ function simple_theme_create_comment( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'message' => '评论已关闭' ), 403 );
 	}
 
+	$use_markdown_req = ! empty( $params['useMarkdown'] );
+
+	$raw_content = $params['content'] ?? '';
+
+	if ( $use_markdown_req ) {
+		$parsedown = new Parsedown();
+		$raw_content = $parsedown->text( $raw_content );
+	}
+
 	$comment_data = array(
 		'comment_post_ID'      => $post_id,
 		'comment_parent'       => max( 0, (int) ( $params['parent'] ?? 0 ) ),
-		'comment_content'      => wp_kses_post( $params['content'] ?? '' ),
+		'comment_content'      => wp_kses_post( $raw_content ),
 		'comment_author'       => sanitize_text_field( $params['author_name'] ?? '' ),
 		'comment_author_email'  => sanitize_email( $params['author_email'] ?? '' ),
 		'comment_author_url'   => esc_url_raw( $params['author_url'] ?? '' ),
@@ -414,7 +425,7 @@ function simple_theme_like_comment( WP_REST_Request $request ) {
 
 	if ( in_array( $ip, $liked, true ) ) {
 		// Unlike — remove IP, decrement
-		$liked = array_values( array_filter( $liked, fn( $v ) => $v !== $ip ) );
+		$liked = array_values( array_filter( $liked, function( $v ) use ( $ip ) { return $v !== $ip; } ) );
 		$count = max( 0, $count - 1 );
 	} else {
 		// Like — add IP, increment
@@ -745,12 +756,20 @@ add_filter( 'comments_clauses', function( $clauses ) {
  * Verify CAPTCHA before creating a comment via WP REST API.
  */
 add_filter( 'rest_pre_insert_comment', function( $prepared_comment, $request ) {
+	// CAPTCHA check
 	if ( simple_theme_option( 'comment_captcha_enabled', false ) && ! is_user_logged_in() ) {
 		$captcha_payload = sanitize_text_field( $request->get_param( 'captchaPayload' ) ?? '' );
 		if ( ! $captcha_payload || ! simple_theme_verify_altcha( $captcha_payload ) ) {
 			return new WP_Error( 'captcha_failed', '验证码错误', array( 'status' => 400 ) );
 		}
 	}
+
+	// Markdown→HTML conversion (before KSES in wp_new_comment)
+	if ( ! empty( $request->get_param( 'useMarkdown' ) ) && isset( $prepared_comment['comment_content'] ) ) {
+		$parsedown = new Parsedown();
+		$prepared_comment['comment_content'] = $parsedown->text( $prepared_comment['comment_content'] );
+	}
+
 	return $prepared_comment;
 }, 10, 2 );
 

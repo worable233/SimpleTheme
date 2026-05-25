@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // eslint-disable-next-line n/no-process-env
 const WP_URL = process.env.WP_URL || 'http://localhost'
@@ -10,7 +11,60 @@ export default defineConfig(({ command }) => ({
   base: command === 'serve'
     ? '/wp-content/themes/simple-theme/dist/'
     : './',
-  plugins: [vue(), vueDevTools()],
+  plugins: [
+    vue(),
+    vueDevTools(),
+    VitePWA({
+      strategies: 'generateSW',
+      swDest: 'sw.js',
+      registerType: 'autoUpdate',
+      workbox: {
+        // Don't precache — cache only what the current UI actually loads
+        globPatterns: [],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            // Theme built assets (hashed URLs = naturally versioned)
+            urlPattern: /\/wp-content\/themes\/simple-theme\/dist\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'st-assets',
+              expiration: { maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            // Theme REST API — NetworkFirst (fresh when online, cache when offline)
+            urlPattern: /\/wp-json\/simple-theme\/v1\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'st-api',
+              expiration: { maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 },
+              networkTimeoutSeconds: 4,
+            },
+          },
+          {
+            // Uploaded images — CacheFirst
+            urlPattern: /\/wp-content\/uploads\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'st-uploads',
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            // Emoji images — CacheFirst
+            // Note: path varies; match both dev (/emojis/) and prod (/wp-content/.../emojis/)
+            urlPattern: /\/(?:wp-content\/[^/]+\/)?emojis\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'st-emojis',
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   define: {
     '__BUILD_TIME__': JSON.stringify(new Date().toISOString()),
   },

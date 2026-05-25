@@ -24,6 +24,25 @@ function simple_theme_get_site_info() {
 	}
 	$icp_text     = ! empty( $theme_options['icp_text'] ) ? $theme_options['icp_text'] : '';
 	$icp_gov_text = ! empty( $theme_options['icp_gov_text'] ) ? $theme_options['icp_gov_text'] : '';
+	// ---- Announcement Page Lookup (publish status only) ----
+	$page_id    = (int) ( $theme_options['announcement_page_id'] ?? 0 );
+	$page_title = '';
+	$page_content = '';
+	$page       = null;
+	if ( $page_id > 0 ) {
+		$page = get_post( $page_id );
+	}
+	if ( $page && 'publish' === $page->post_status ) {
+		$page_title   = get_the_title( $page );
+		$page_content = apply_filters( 'the_content', $page->post_content );
+	}
+
+	// ---- Announcement Buttons (decode, always array) ----
+	$buttons_raw = isset( $theme_options['announcement_buttons'] )
+		? json_decode( $theme_options['announcement_buttons'], true )
+		: array();
+	$buttons     = is_array( $buttons_raw ) ? $buttons_raw : array();
+
 	$stats          = simple_theme_compute_site_stats();
 	$theme_version  = wp_get_theme()->get( 'Version' ) ?: '';
 	$tech_info_items = array();
@@ -123,6 +142,21 @@ function simple_theme_get_site_info() {
 			'currentUser'     => simple_theme_get_current_commenter(),
 			'themeVersion'    => $theme_version,
 			'techInfoItems'   => $tech_info_items,
+			'page_id'       => $page_id,
+			'announcement'    => array(
+				'enabled'       => (bool) ( $theme_options['announcement_enabled'] ?? false ),
+				'mode'          => (string) ( $theme_options['announcement_mode'] ?? 'modal' ),
+				'pageId'        => $page_id,
+				'pageTitle'     => $page_title,
+				'pageContent'   => $page_content,
+				'buttons'       => $buttons,
+				'capsuleTitle'  => (string) ( $theme_options['announcement_capsule_title'] ?? '' ),
+				'icon'          => (string) ( $theme_options['announcement_icon'] ?? '' ),
+			),
+			'cookieConsent'   => array(
+				'enabled' => (bool) ( $theme_options['cookie_consent_enabled'] ?? false ),
+				'message' => (string) ( $theme_options['cookie_consent_message'] ?? '本站使用 Cookie 以改善您的访问体验。继续浏览即表示您同意我们的 Cookie 使用政策。' ),
+			),
 		),
 		200
 	);

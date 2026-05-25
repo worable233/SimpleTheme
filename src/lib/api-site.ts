@@ -14,6 +14,14 @@ import type {
   WordPressPost,
 } from '@/types/wordpress'
 
+/** 轻量端点：只获取服务端缓存版本号 */
+export async function fetchCacheVersion(): Promise<number> {
+  const { data } = await apiClient.get<{ version: number }>(
+    buildRestUrl('cache-version'),
+  )
+  return data.version
+}
+
 export async function fetchSiteInfo() {
   const siteInfoUrl = getThemeConfig().routes.siteInfo
   try {

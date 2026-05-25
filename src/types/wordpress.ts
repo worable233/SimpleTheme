@@ -12,6 +12,8 @@ export interface SimpleThemeConfig {
     about: string
     links: string
     settings: string
+    smtp_test?: string
+    mail_queue?: string
   }
   currentUser?: CurrentUser | null
   restNonce?: string
@@ -139,10 +141,30 @@ export interface CommentFormSettings {
   showPrivateOption?: boolean
   showMarkdownOption?: boolean
   showImageUpload?: boolean
+  showMailNotifyOption?: boolean
 }
 
+export interface AnnouncementButton {
+  text: string
+  url?: string
+  action?: 'close' | 'link'
+}
 
+export interface AnnouncementSettings {
+  enabled: boolean
+  mode: 'modal' | 'capsule'
+  pageId: number
+  pageTitle?: string
+  pageContent?: string
+  buttons: AnnouncementButton[]
+  capsuleTitle: string
+  icon: string
+}
 
+export interface CookieConsentSettings {
+  enabled: boolean
+  message: string
+}
 export interface HeatmapEntry {
   day: string
   count: number
@@ -217,6 +239,8 @@ export interface SiteInfo {
   icpGov?: string
   endNote?: string
   collections?: CollectionsSettings
+  announcement?: AnnouncementSettings
+  cookieConsent?: CookieConsentSettings
 }
 
 export interface RenderedText {
@@ -225,12 +249,6 @@ export interface RenderedText {
 
 export interface WordPressPost {
   id: number
-  slug?: string
-  date: string
-  modified?: string
-  link: string
-  type: string
-  comment_status?: 'open' | 'closed'
   categories?: string[]
   tags?: string[]
   featuredImage?: string

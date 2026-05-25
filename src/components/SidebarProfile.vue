@@ -34,12 +34,28 @@ const heatmapData = computed<HeatmapEntry[]>(() => {
 
 const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+/** 获取某日期所在的周一（或更早最近的周一） */
+function getMonday(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay() // 0=Sun…6=Sat
+  const diff = day === 0 ? -6 : 1 - day // 回退到周一
+  d.setDate(d.getDate() + diff)
+  return d
+}
+
+/** 计算某日期基于周一锚点的周列索引 (0-based) */
+function weekCol(date: Date, mondayRef: Date): number {
+  const ms = date.getTime() - mondayRef.getTime()
+  return Math.floor(Math.round(ms / 86400000) / 7)
+}
+
 // 从两个月前的 1 号开始，正好覆盖最近三个完整月份
 const heatmapCells = computed(() => {
   const data = heatmapData.value
   const dataMap = new Map(data.map(d => [d.day, d.count]))
   const now = new Date()
   const startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+  const mondayRef = getMonday(startDate)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const DAYS = Math.round((today.getTime() - startDate.getTime()) / 86400000) + 1
   const maxCount = Math.max(...dataMap.values(), 1)
@@ -49,7 +65,6 @@ const heatmapCells = computed(() => {
   for (let i = 0; i < DAYS; i++) {
     const date = new Date(startDate)
     date.setDate(startDate.getDate() + i)
-    const col = Math.floor(i / 7)
     const dayStr = ldate(date)
     const count = dataMap.get(dayStr) || 0
     const level = count === 0 ? 0 : Math.min(Math.ceil(count / step), 4)
@@ -57,8 +72,8 @@ const heatmapCells = computed(() => {
       day: dayStr,
       count,
       level,
-      col: Math.floor(i / 7),
-      row: (i + startDate.getDay() + 6) % 7,
+      col: weekCol(date, mondayRef),
+      row: (date.getDay() + 6) % 7, // 0=Mon…6=Sun
     })
   }
   return cells
@@ -68,6 +83,7 @@ const monthLabels = computed(() => {
   const labels: { name: string; col: number }[] = []
   const now = new Date()
   const startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+  const mondayRef = getMonday(startDate)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const DAYS = Math.round((today.getTime() - startDate.getTime()) / 86400000) + 1
   let currentMonth = -1
@@ -75,7 +91,7 @@ const monthLabels = computed(() => {
     const date = new Date(startDate)
     date.setDate(startDate.getDate() + i)
     const month = date.getMonth()
-    const col = Math.floor(i / 7)
+    const col = weekCol(date, mondayRef)
     if (month !== currentMonth) {
       labels.push({ name: monthNames[month] ?? '', col })
       currentMonth = month

@@ -9,6 +9,15 @@ import 'boxicons/css/boxicons.min.css'
 // ALTCHA Proof-of-Work CAPTCHA Web Component
 import 'altcha'
 
+// Register Service Worker for full caching (production only)
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      // SW registration failed — app works without it
+    })
+  })
+}
+
 const app = createApp(App)
 
 // ALTCHA is a native web component, not a Vue component

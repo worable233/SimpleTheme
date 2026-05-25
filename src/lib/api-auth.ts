@@ -6,7 +6,7 @@ import { getThemeConfig } from './theme-config'
 
 /** 登录 */
 export async function apiLogin(log: string, pwd: string, rememberme = false) {
-  const { data } = await apiClient.post(buildRestUrl('auth/login'), { log, pwd, rememberme })
+  const { data } = await apiClient.post(buildRestUrl('simple-theme/v1/auth/login'), { log, pwd, rememberme })
   return data as {
     success: boolean
     user?: { id: number; display_name: string; avatar: string; email: string }
@@ -19,7 +19,7 @@ export async function apiLogin(log: string, pwd: string, rememberme = false) {
 
 /** 注册 */
 export async function apiRegister(user_login: string, user_email: string) {
-  const { data } = await apiClient.post(buildRestUrl('auth/register'), { user_login, user_email })
+  const { data } = await apiClient.post(buildRestUrl('simple-theme/v1/auth/register'), { user_login, user_email })
   return data as {
     success: boolean
     message?: string
@@ -29,7 +29,7 @@ export async function apiRegister(user_login: string, user_email: string) {
 
 /** 忘记密码 */
 export async function apiLostPassword(user_login: string) {
-  const { data } = await apiClient.post(buildRestUrl('auth/lost-password'), { user_login })
+  const { data } = await apiClient.post(buildRestUrl('simple-theme/v1/auth/lost-password'), { user_login })
   return data as {
     success: boolean
     message?: string
@@ -39,7 +39,7 @@ export async function apiLostPassword(user_login: string) {
 
 /** 验证重置密钥 */
 export async function apiValidateResetKey(key: string, login: string) {
-  const { data } = await apiClient.get(buildRestUrl('auth/validate-reset-key'), {
+  const { data } = await apiClient.get(buildRestUrl('simple-theme/v1/auth/validate-reset-key'), {
     params: { key, login },
   })
   return data as {
@@ -52,7 +52,7 @@ export async function apiValidateResetKey(key: string, login: string) {
 
 /** 重置密码 */
 export async function apiResetPassword(key: string, login: string, pass1: string, pass2: string) {
-  const { data } = await apiClient.post(buildRestUrl('auth/reset-password'), { key, login, pass1, pass2 })
+  const { data } = await apiClient.post(buildRestUrl('simple-theme/v1/auth/reset-password'), { key, login, pass1, pass2 })
   return data as {
     success: boolean
     message?: string
@@ -62,7 +62,7 @@ export async function apiResetPassword(key: string, login: string, pass1: string
 
 /** 获取当前用户信息 */
 export async function apiFetchMe() {
-  const { data } = await apiClient.get(buildRestUrl('auth/me'))
+  const { data } = await apiClient.get(buildRestUrl('simple-theme/v1/auth/me'))
   return data as {
     logged_in: boolean
     user?: { id: number; display_name: string; avatar: string; email: string }

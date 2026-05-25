@@ -99,6 +99,22 @@ function simple_theme_get_default_options() {
 
 			// ---- Admin Bar ----
 			'hide_admin_bar'          => false,
+
+			// ---- SMTP ----
+			'smtp_enabled'             => false,
+			'smtp_host'                => '',
+			'smtp_port'                => 587,
+			'smtp_encryption'          => 'tls',
+			'smtp_auth'                => true,
+			'smtp_username'            => '',
+			'smtp_password'            => '',
+			'smtp_from_email'          => '',
+			'smtp_from_name'           => '',
+
+			// ---- SMTP Queue ----
+			'smtp_queue_enabled'       => true,
+			'smtp_queue_retry_count'    => 3,
+			'smtp_queue_retry_interval' => 300,
 	);
 }
 
@@ -216,6 +232,26 @@ function simple_theme_sanitize_options( $input ) {
 		} elseif ( 'tech_info_items' === $key ) {
 			$decoded = json_decode( $value, true );
 			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;
+		} elseif ( 'smtp_host' === $key ) {
+			$output[ $key ] = sanitize_text_field( (string) $value );
+		} elseif ( 'smtp_port' === $key ) {
+			$output[ $key ] = min( 65535, max( 1, (int) $value ) );
+		} elseif ( 'smtp_encryption' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'none', 'ssl', 'tls' ), true ) ? (string) $value : $defaults[ $key ];
+		} elseif ( 'smtp_username' === $key ) {
+			$output[ $key ] = sanitize_text_field( (string) $value );
+		} elseif ( 'smtp_password' === $key ) {
+			$output[ $key ] = $value;
+		} elseif ( 'smtp_from_email' === $key ) {
+			$output[ $key ] = is_email( (string) $value ) ? sanitize_email( (string) $value ) : '';
+		} elseif ( 'smtp_from_name' === $key ) {
+			$output[ $key ] = sanitize_text_field( (string) $value );
+		} elseif ( 'smtp_queue_enabled' === $key ) {
+			$output[ $key ] = (bool) $value;
+		} elseif ( 'smtp_queue_retry_count' === $key ) {
+			$output[ $key ] = max( 0, min( 20, (int) $value ) );
+		} elseif ( 'smtp_queue_retry_interval' === $key ) {
+			$output[ $key ] = max( 60, min( 3600, (int) $value ) );
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		}
@@ -229,6 +265,7 @@ function simple_theme_sanitize_options( $input ) {
 function simple_theme_get_settings() {
 	$options = get_option( 'simple_theme_options', array() );
 	$defaults = function_exists( 'simple_theme_get_default_options' ) ? simple_theme_get_default_options() : array();
+	$options = apply_filters( 'simple_theme_after_get_settings', $options );
 	return new WP_REST_Response(
 		array(
 			'settings' => $options,
@@ -244,6 +281,7 @@ function simple_theme_save_settings( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'error' => 'Invalid data' ), 400 );
 	}
 	$existing = get_option( 'simple_theme_options', array() );
+	$new_options = apply_filters( 'simple_theme_pre_save_settings', $new_options, $existing );
 	$merged = array_merge( $existing, $new_options );
 	update_option( 'simple_theme_options', $merged, false );
 	return new WP_REST_Response( $merged, 200 );

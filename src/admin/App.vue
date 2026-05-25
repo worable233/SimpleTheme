@@ -7,6 +7,7 @@ import HomeTab from './components/HomeTab.vue'
 import SidebarTab from './components/SidebarTab.vue'
 import AdvancedTab from './components/AdvancedTab.vue'
 import AdminThemeTab from './components/AdminThemeTab.vue'
+import SmtpTab from './components/SmtpTab.vue'
 import AppToast from './components/AppToast.vue'
 import './styles/layers.css'
 
@@ -28,6 +29,7 @@ const tabs = [
   { key: 'sidebar', label: '侧边栏' },
   { key: 'admin_theme', label: '后台样式' },
   { key: 'advanced', label: '高级' },
+  { key: 'smtp', label: 'SMTP' },
 ]
 
 const currentSettings = ref<AdminSettings>({})
@@ -105,6 +107,7 @@ const activeComponent = computed(() => {
     sidebar: SidebarTab,
     admin_theme: AdminThemeTab,
     advanced: AdvancedTab,
+    smtp: SmtpTab,
   }
   return map[activeTab.value]
 })

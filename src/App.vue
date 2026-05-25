@@ -7,6 +7,9 @@ import SidebarProfile from '@/components/SidebarProfile.vue'
 import TechInfo from '@/components/sidebar/TechInfo.vue'
 import TocWidget from '@/components/TocWidget.vue'
 import AuthModal from '@/components/AuthModal.vue'
+import AnnouncementModal from '@/components/AnnouncementModal.vue'
+import AnnouncementCapsule from '@/components/AnnouncementCapsule.vue'
+import CookieConsent from '@/components/CookieConsent.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
@@ -185,4 +188,22 @@ watch(
   </div>
 
   <AuthModal v-if="authModalVisible" @close="useAuthModal().close()" />
+
+  <!-- Announcement Modal (only when mode === 'modal') -->
+  <AnnouncementModal
+    v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'modal'"
+    :announcement="siteInfo.announcement"
+  />
+
+  <!-- Announcement Capsule (only when mode === 'capsule') -->
+  <AnnouncementCapsule
+    v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'capsule'"
+    :announcement="siteInfo.announcement"
+  />
+
+  <!-- Cookie Consent Toast -->
+  <CookieConsent
+    v-if="siteInfo.cookieConsent?.enabled"
+    :message="siteInfo.cookieConsent.message"
+  />
 </template>

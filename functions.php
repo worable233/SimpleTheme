@@ -34,6 +34,9 @@ require_once __DIR__ . '/inc/core/crawler-handler.php';
 require_once __DIR__ . '/inc/admin/options.php';
 require_once __DIR__ . '/inc/admin/menu.php';
 
+// SMTP Mail handler — configures PHPMailer from theme settings (must load after options.php)
+require_once __DIR__ . '/inc/core/smtp-handler.php';
+
 // REST API modules
 require_once __DIR__ . '/inc/rest/site-info.php';
 require_once __DIR__ . '/inc/rest/posts.php';
@@ -42,6 +45,9 @@ require_once __DIR__ . '/inc/rest/navigation.php';
 require_once __DIR__ . '/inc/rest/misc.php';
 require_once __DIR__ . '/inc/rest/about.php';
 require_once __DIR__ . '/inc/rest/register.php';
+
+// Cache version — server-controlled version number for frontend cache invalidation
+require_once __DIR__ . '/inc/core/cache-version.php';
 
 // ============================================================
 // 2. Old comment-extras.php �?ONLY for external plugin/child-theme
@@ -58,3 +64,24 @@ require_once __DIR__ . '/inc/rest/register.php';
 // ============================================================
 // (handled in inc/core/setup.php via init hook)
 
+
+
+// ============================================================
+// 5. Service Worker - serve with root scope
+// ============================================================
+add_action( 'init', function () {
+    $request_path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+    if ( $request_path === '/sw.js' ) {
+        $sw_path = __DIR__ . '/dist/sw.js';
+        if ( file_exists( $sw_path ) ) {
+            header( 'Service-Worker-Allowed: /' );
+            header( 'Content-Type: application/javascript' );
+            header( 'Cache-Control: no-cache, max-age=0' );
+            readfile( $sw_path );
+        } else {
+            header( 'HTTP/1.1 404 Not Found' );
+            echo '/* Service Worker not found */';
+        }
+        exit;
+    }
+} );

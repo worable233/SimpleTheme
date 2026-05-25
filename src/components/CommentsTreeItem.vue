@@ -88,7 +88,7 @@ const goUrl = computed(() => {
 
 const hasChildren = computed(() => !!(props.item.children && props.item.children.length > 0))
 
-const renderedContent = computed(() => renderCommentContent(props.item.content.rendered, props.item.useMarkdown))
+const renderedContent = computed(() => renderCommentContent(props.item.content.rendered))
 
 async function handleLike() {
   if (liking.value) return
