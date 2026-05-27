@@ -27,7 +27,7 @@ Vue 3 · TypeScript · Vue Router · Vite 8 · OAT UI · Axios · Parsedown · A
 
 | 类别     | 功能                                                                                                          |
 | -------- | ------------------------------------------------------------------------------------------------------------- |
-| 前端     | Vue 3 + TypeScript + Vue Router                                                                               |
+| 前端     | Vue 3 + OatUI + TypeScript + Vue Router                                                                       |
 | 布局     | 响应式双栏，移动端滑动侧栏，浅色/深色模式                                                                     |
 | 主题     | 参考[iEmo](https://github.com/kannafay/iEmo)，自定义主题色                                                    |
 | 后台美化 | 完整 WordPress 后台 + 登录页 UI 重制，明暗模式与前端同步，边栏标识注入                                        |
