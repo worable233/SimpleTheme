@@ -9,6 +9,18 @@ Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress �
 
 前端由 Vue 3 完全渲染，数据通过 WordPress REST API 驱动。内置后台美化，爬虫检测，对搜索引擎输出完整静态 HTML，兼容 Yoast / Rank Math 等 SEO 插件。
 
+## 文档&预览
+
+> 其实文档还没写()再等等吧
+
+- [配置 & 错误排查](docs/config-and-troubleshooting.md)
+
+- [主题预览](https://www.worable.top/)
+
+## 技术栈
+
+Vue 3 · TypeScript · Vue Router · Vite 8 · OAT UI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
+
 ## 特性
 
 > 其中大部分功能已开发完善，但仍有部分功能还在开发中...
@@ -28,7 +40,7 @@ Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress �
 | 其他     | unDraw 插画、Prism.js 语法高亮、站点统计、一言等                                                              |
 | 兼容     | 无缝兼容 Sakurairo 主题的区块及数据                                                                           |
 
-## 快速开始
+## 开发
 
 ```bash
 npm install                # 安装依赖
@@ -40,10 +52,6 @@ npm run package            # 打包 ZIP
 ## 主题设置
 
 **WordPress 后台 → 设置 → Simple Theme**（也是 Vue 3 开发的管理面板）
-
-## 技术栈
-
-Vue 3 · TypeScript · Vue Router · Vite 8 · OAT UI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
 
 ## 目录结构
 
@@ -73,13 +81,6 @@ Vue Router catch-all 路由，统一由 `ContentView` 处理：调用 WordPress 
 `template_include` 钩子拦截爬虫请求：匹配 User-Agent → 输出 `wp_head` + `the_content` + `wp_footer` 完整 HTML；否则正常加载 SPA。
 
 支持的爬虫：Googlebot · Bingbot · Baiduspider · YandexBot · DuckDuckBot · Sogou · 360Spider · Bytespider · PetalBot · Facebot · Twitterbot · Applebot · DiscordBot · SlackBot · TelegramBot · AhrefsBot · SemrushBot。可通过 `simple_theme_crawler_patterns` filter 扩展。
-
-## 文档&预览
-
-> 其实文档还没写()再等等吧
-
-- [配置 & 错误排查](docs/config-and-troubleshooting.md)
-- [主题预览](https://www.worable.top/)
 
 ## 致谢
 
