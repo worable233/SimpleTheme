@@ -85,6 +85,30 @@ export default defineConfig(({ command }) => ({
         changeOrigin: true,
       },
     },
+    // SPA fallback: redirect unmatched paths to the app's base URL so
+    // client-side routes like /shuoshuo work on page refresh in dev mode.
+    configureServer(server) {
+      // Pre-middleware: rewrite before Vite's static file handler runs.
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url ?? ''
+        // Let Vite internals, API, and uploads pass through.
+        if (
+          url.startsWith('/@') ||
+          url.startsWith('/wp-json') ||
+          url.startsWith('/wp-content/uploads') ||
+          url.startsWith('/node_modules') ||
+          url.startsWith('/src/') ||
+          url === '/favicon.ico'
+        ) {
+          return next()
+        }
+        // For any path that is not under the base, serve the SPA entry.
+        if (!url.startsWith('/wp-content/themes/simple-theme/dist/')) {
+          req.url = '/wp-content/themes/simple-theme/dist/index.html'
+        }
+        next()
+      })
+    },
   },
   build: {
     // 生成 manifest 交给 WordPress 读取实际产物文件名。

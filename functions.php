@@ -21,6 +21,9 @@ require_once __DIR__ . '/inc/core/assets.php';
 // Global admin 小红书 theme (CSS @layer isolation)
 require_once __DIR__ . '/inc/core/admin-theme.php';
 
+// Enable WordPress Link Manager (disabled by default since WP 3.5)
+add_filter( 'pre_option_link_manager_enabled', '__return_true' );
+
 // Auth handler — login/register/password-reset REST API + wp-login.php interception
 require_once __DIR__ . '/inc/core/auth-handler.php';
 
@@ -46,8 +49,8 @@ require_once __DIR__ . '/inc/rest/misc.php';
 require_once __DIR__ . '/inc/rest/about.php';
 require_once __DIR__ . '/inc/rest/register.php';
 
-// Cache version — server-controlled version number for frontend cache invalidation
-require_once __DIR__ . '/inc/core/cache-version.php';
+// Email templates — HTML email formatting with multiple styles
+require_once __DIR__ . '/inc/core/email-templates.php';
 
 // ============================================================
 // 2. Old comment-extras.php �?ONLY for external plugin/child-theme

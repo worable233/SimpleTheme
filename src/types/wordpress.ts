@@ -14,6 +14,8 @@ export interface SimpleThemeConfig {
     settings: string
     smtp_test?: string
     mail_queue?: string
+    email_templates?: string
+    email_preview?: string
   }
   currentUser?: CurrentUser | null
   restNonce?: string

@@ -1,48 +1,64 @@
-﻿/* ================================================================
- * Simple Theme Admin - Frontend Design Language
+/* ================================================================
+ * Simple Theme Admin — WordPress 后台样式（完整替换 WP 核心 CSS）
  *
- * Complete WordPress admin redesign matching the frontend theme's
- * minimal, clean aesthetic. Uses the same CSS custom properties
- * as the frontend for perfect visual consistency.
+ * 完全替换 WordPress 原生后台样式，使用与主题前端一致的
+ * CSS 自定义属性和设计语言。
  *
- * Strategy:
- *   - Hides WP's native sidebar (#adminmenu) and topbar (#wpadminbar)
- *   - Vue components render the new sidebar (100px icon-bar) and topbar
- *   - Content area restyled with frontend design tokens
- *   - Loaded after WP stylesheets (source-order wins for same specificity)
+ * 策略:
+ *   - 隐藏 WP 原生侧边栏 (#adminmenu) 和顶栏 (#wpadminbar)
+ *   - Vue 组件渲染新的侧边栏和顶栏
+ *   - 此文件在 WP 原生样式之后加载，通过注销 WP 核心样式的
+ *     方式代替（见 inc/core/admin-theme.php）
+ *   - 由于 WP 核心样式被完全移除，此文件必须为所有 HTML
+ *     元素提供兜底样式
  * ================================================================ */
 
 
 /* =================================================================
- *  1. DESIGN TOKENS
- *  Matches frontend src/styles/variables.css exactly.
- *  Uses [data-theme] selectors (same as frontend), not light-dark().
+ *  1. 设计令牌
+ *  与前端 src/styles/variables.css 完全一致。
+ *  使用 [data-theme] 选择器（同前端），不使用 light-dark()。
  * ================================================================= */
 
 :root {
-  /* -- Layout constants (not in OAT) ---------------------------------- */
+  /* ── 布局常量 ────────────────────────────────── */
   --sidebar-width: 100px;
   --topbar-height: 48px;
 
-  /* -- Font stack (Chinese-friendly) ---------------------------------- */
+  /* ── 字体（中文字体优先）────────────────── */
   --font-sans:
     'MiSans VF', 'OPPO Sans', 'SF Pro SC', HarmonyOS_Regular, ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Noto Sans', 'Microsoft Yahei',
     Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
 
-  /* -- Shadows -------------------------------------------------------- */
+  /* ── 阴影（匹配前台）─────────────────────── */
   --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
   --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
   --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
+  --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.12);
 
-  /* -- WordPress admin theme color (matches frontend primary) --------- */
+  /* ── 圆角（匹配前台）─────────────────────── */
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-full: 9999px;
+
+  /* ── 过渡时间 & 缓动 ─────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: 0.15s var(--ease-out);
+  --transition-normal: 0.2s var(--ease-out);
+
+  /* ── WordPress 主题色 ──────────────────────── */
   --wp-admin-theme-color: #333;
   --wp-admin-theme-color-darker-10: #2a2a2a;
   --wp-admin-theme-color-darker-20: #222;
   --wp-admin-theme-color-rgb: 51, 51, 51;
 }
 
-/* Light mode — matches frontend [data-theme='light'] exactly */
+/* 亮色模式 — 与前端 [data-theme='light'] 一致 */
 [data-theme='light'] {
   color-scheme: light;
   --background: #f5f6f7;
@@ -63,11 +79,16 @@
   --input: #e2e2e2;
   --ring: #333;
   --danger: #dd2424;
+  --danger-hover: #c62828;
+  --danger-bg: #fef0f0;
   --success: #67c23a;
+  --success-bg: #f0f9eb;
   --warning: #e6a23c;
+  --warning-bg: #fdf6ec;
+  --card-highlight: 0 0 0 0 transparent;
 }
 
-/* Dark mode — matches frontend [data-theme='dark'] exactly */
+/* 暗色模式 — 与前端 [data-theme='dark'] 一致 */
 [data-theme='dark'] {
   color-scheme: dark;
   --background: #1a1a1a;
@@ -88,63 +109,35 @@
   --input: #333;
   --ring: #e0e0e0;
   --danger: #dd2424;
+  --danger-hover: #ef5350;
+  --danger-bg: #3a1b1b;
   --success: #67c23a;
+  --success-bg: #1b3a1b;
   --warning: #e6a23c;
-
-  /* Login dark background */
-  --login-bg: #131315;
+  --warning-bg: #3a2e1b;
+  --card-highlight: inset 0 1px 0 0 #fff3;
 }
 
 
 /* =================================================================
- *  2. LAYOUT RESET
- *  Hide WP's native nav shell, adjust layout for our components.
+ *  2. 全局重置 & 基础元素兜底
+ *  覆盖所有 HTML 元素，确保在 WP 核心样式被移除后页面不崩坏。
  * ================================================================= */
 
-/* Hide WP's native sidebar */
-#adminmenuwrap,
-#adminmenuback,
-#adminmenu {
-  display: none !important;
-  width: 0 !important;
+/* ── 盒模型全局重置 ──────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Hide WP's native toolbar */
-#wpadminbar {
-  display: none !important;
-}
-
-/* Reset WP toolbar padding since our shell uses fixed positioning */
+/* ── HTML 根元素 ──────────────────────────────── */
 html.wp-toolbar {
   padding-top: 0 !important;
+  scroll-behavior: smooth;
 }
 
-/* Adjust content area for our 100px sidebar + 48px topbar */
-#wpcontent {
-  margin-left: 100px !important;
-  padding-top: 48px !important;
-  padding-left: 0 !important;
-}
-
-#wpfooter {
-  margin-left: 100px !important;
-}
-
-#wpbody {
-  display: flow-root;
-  min-height: calc(100vh - var(--topbar-height, 48px));
-}
-
-#wpbody-content {
-  padding-bottom: 48px;
-}
-
-
-/* =================================================================
- *  3. BASE & RESET
- *  Global background, body typography, scrollbars, footer.
- * ================================================================= */
-
+/* ── Body ─────────────────────────────────────── */
 html.wp-toolbar,
 body,
 #wpcontent {
@@ -158,31 +151,16 @@ body {
   color: var(--foreground, #333);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+/* ── 选中文字 ──────────────────────────────────── */
 ::selection {
   background: var(--primary);
   color: var(--primary-foreground);
 }
 
-a {
-  color: var(--primary);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-a:hover {
-  color: var(--foreground, #333);
-}
-
-/* Footer */
-#wpfooter {
-  background: var(--card, #ffffff);
-  border-top: 1px solid var(--border, #e2e2e2);
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  padding: 12px 24px;
-}
-
-/* Scrollbar */
+/* ── 滚动条 ────────────────────────────────────── */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border, #e2e2e2) transparent;
@@ -203,10 +181,381 @@ a:hover {
   background: var(--muted-foreground, #999);
 }
 
+/* ── 链接 ──────────────────────────────────────── */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+a:hover {
+  color: var(--foreground, #333);
+  text-decoration: underline;
+}
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-small);
+}
+
+/* ── 标题（全局兜底）────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--foreground, #333);
+  text-wrap: pretty;
+}
+h1 { font-size: 24px; letter-spacing: -0.3px; font-weight: 650; }
+h2 { font-size: 20px; letter-spacing: -0.2px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+h5 { font-size: 13px; }
+h6 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ── 段落 ──────────────────────────────────────── */
+p {
+  margin: 0 0 1em;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── 列表（全局兜底）───────────────────────────── */
+ul, ol {
+  margin: 0 0 1em 1.5em;
+  padding: 0;
+}
+ul { list-style: disc; }
+ol { list-style: decimal; }
+li {
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+li:last-child {
+  margin-bottom: 0;
+}
+ul ul, ol ul, ul ol, ol ol {
+  margin-bottom: 0;
+}
+
+/* ── 定义列表 ──────────────────────────────────── */
+dl { margin: 0 0 1em; }
+dt {
+  font-weight: 600;
+  color: var(--foreground, #333);
+  margin-bottom: 0.25em;
+}
+dd {
+  margin: 0 0 0.5em 1.5em;
+  color: var(--muted-foreground, #999);
+}
+
+/* ── 图片 ──────────────────────────────────────── */
+img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+  border-style: none;
+}
+figure {
+  margin: 0 0 1em;
+  display: inline-block;
+}
+figcaption {
+  font-size: 12px;
+  color: var(--muted-foreground, #999);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* ── 引用 ──────────────────────────────────────── */
+blockquote {
+  margin: 0 0 1em;
+  padding: 8px 16px;
+  border-left: 3px solid var(--border, #e2e2e2);
+  color: var(--muted-foreground, #999);
+  font-style: italic;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+cite {
+  font-style: italic;
+  color: var(--muted-foreground, #999);
+}
+
+/* ── 行内代码 / 代码块 ─────────────────────── */
+code, kbd, samp {
+  font-family: var(--font-mono, Consolas, Monaco, monospace);
+  background: var(--muted, #f5f5f5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.875em;
+  color: var(--foreground, #333);
+}
+pre {
+  margin: 0 0 1em;
+  padding: 14px 18px;
+  background: var(--muted, #f5f5f5);
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: var(--font-mono, Consolas, Monaco, monospace);
+}
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+kbd {
+  border: 1px solid var(--border, #e2e2e2);
+  border-bottom-width: 2px;
+  padding: 1px 5px;
+  background: var(--card, #fff);
+}
+
+/* ── 行内语义元素 ────────────────────────────── */
+strong, b { font-weight: 600; }
+em, i { font-style: italic; }
+small { font-size: 0.85em; }
+mark {
+  background: var(--warning-bg, #fdf6ec);
+  color: var(--foreground, #333);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+ins {
+  background: var(--success-bg, #f0f9eb);
+  text-decoration: none;
+  padding: 0 3px;
+  border-radius: 2px;
+}
+del {
+  color: var(--muted-foreground, #999);
+}
+sub, sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+sup { top: -0.5em; }
+sub { bottom: -0.25em; }
+
+/* ── 缩写 ──────────────────────────────────────── */
+abbr[title], acronym[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+  border-bottom: 1px dotted var(--border, #e2e2e2);
+}
+
+/* ── 地址 ──────────────────────────────────────── */
+address {
+  font-style: normal;
+  line-height: 1.6;
+  margin: 0 0 1em;
+  color: var(--muted-foreground, #999);
+}
+
+/* ── 水平分割线 ──────────────────────────────── */
+hr {
+  border: none;
+  border-top: 1px solid var(--border, #e2e2e2);
+  margin: 1.5em 0;
+  height: 0;
+  clear: both;
+}
+
+/* ── Details / Summary ─────────────────────────── */
+details {
+  margin: 0 0 1em;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  background: var(--card, #fff);
+  overflow: hidden;
+}
+summary {
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--faint, #fafafa);
+  transition: background var(--transition-fast, 0.15s ease);
+  user-select: none;
+}
+summary:hover {
+  background: var(--muted, #f5f5f5);
+}
+details[open] summary {
+  border-bottom: 1px solid var(--border, #e2e2e2);
+}
+details > :not(summary) {
+  padding: 12px 14px;
+}
+
+/* ── 表格（全局兜底）────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1em;
+}
+caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 6px 0;
+  color: var(--muted-foreground, #999);
+  font-size: 13px;
+}
+th, td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+  color: var(--foreground, #333);
+  font-size: 13px;
+}
+th {
+  font-weight: 600;
+  background: var(--faint, #fafafa);
+}
+tfoot th, tfoot td {
+  border-top: 1px solid var(--border, #e2e2e2);
+  border-bottom: none;
+}
+
+/* ── Progress ────────────────────────────────────── */
+progress {
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--muted, #f5f5f5);
+  overflow: hidden;
+}
+progress::-webkit-progress-bar {
+  background: var(--muted, #f5f5f5);
+  border-radius: var(--radius-full);
+}
+progress::-webkit-progress-value {
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-fast, 0.15s ease);
+}
+progress::-moz-progress-bar {
+  background: var(--primary);
+  border-radius: var(--radius-full);
+}
+
+/* ── 变量 / 等宽行内元素 ────────────────────── */
+var {
+  font-family: var(--font-mono, Consolas, Monaco, monospace);
+  font-style: italic;
+  color: var(--primary);
+}
+
+/* ── 隐藏 / 可见性工具 ───────────────────────── */
+.hidden,
+[hidden] {
+  display: none !important;
+}
+.sr-only,
+.screen-reader-text {
+  border: 0 !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  width: 1px !important;
+  word-wrap: normal !important;
+}
+
 
 /* =================================================================
- *  4. PAGE LAYOUT & HEADINGS
- *  Content wrapper spacing, page titles, filter links.
+ *  3. 布局重置 — CSS Grid 并列布局
+ *  body 设为 CSS Grid，侧边栏、顶栏、内容区各自占据一个 grid cell，
+ *  彼此并列，不再使用 fixed 悬浮。
+ * ================================================================= */
+
+/* Body 作为 Grid 容器 */
+body {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  grid-template-rows: 48px 1fr;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* 隐藏 WP 原生侧边栏 */
+#adminmenuwrap,
+#adminmenuback,
+#adminmenu,
+#adminmenumain {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* 隐藏 WP 原生顶栏 */
+#wpadminbar {
+  display: none !important;
+}
+
+/* Admin Shell 侧边栏 — 占据 grid 第一列整列高度 */
+#simple-theme-admin-sidebar {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Admin Shell 顶栏 — 占据 grid 第一行第二列 */
+#simple-theme-admin-topbar {
+  grid-column: 2;
+  grid-row: 1;
+  z-index: 30;
+}
+
+/* WP 内容包装器 — 占据 grid 右下角 */
+#wpwrap {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 0;
+  position: relative;
+  overflow-y: auto;
+}
+
+/* 内容区域 — 由 Grid 处理定位，不需要 margin/padding */
+#wpcontent {
+  margin-left: 0 !important;
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+}
+
+#wpfooter {
+  margin-left: 0 !important;
+  background: var(--card, #ffffff);
+  border-top: 1px solid var(--border, #e2e2e2);
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  padding: 12px 24px;
+}
+
+#wpbody {
+  display: flow-root;
+  min-height: auto;
+}
+
+#wpbody-content {
+  padding-bottom: 48px;
+}
+
+
+/* =================================================================
+ *  4. 页面布局 & 标题区域
  * ================================================================= */
 
 .wrap {
@@ -230,7 +579,7 @@ a:hover {
   margin-top: 0;
 }
 
-/* Page title action button */
+/* ── 页面标题操作按钮 ─────────────────────────── */
 .page-title-action {
   top: -2px;
   margin-left: 12px;
@@ -245,19 +594,22 @@ a:hover {
   line-height: 2;
   min-height: 0;
   box-shadow: none;
+  text-decoration: none;
+  display: inline-block;
 }
 .page-title-action:hover {
   border-color: var(--primary);
   color: var(--primary);
   background: var(--muted, #f5f5f5);
+  text-decoration: none;
 }
-.page-title-action:focus {
+.page-title-action:focus-visible {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
   outline: none;
 }
 
-/* Subsubsub filter links */
+/* ── filter 导航链接 ────────────────────────── */
 .subsubsub {
   font-size: 13px;
   color: var(--muted-foreground, #999);
@@ -266,6 +618,13 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0 8px;
+  list-style: none;
+}
+
+.subsubsub li {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .subsubsub a {
@@ -286,6 +645,7 @@ a:hover {
 .subsubsub a:hover {
   color: var(--primary);
   background: var(--muted, #f5f5f5);
+  text-decoration: none;
 }
 
 .subsubsub .count {
@@ -297,7 +657,7 @@ a:hover {
   color: var(--primary);
 }
 
-/* Screen options & help tabs */
+/* ── 显示选项 & 帮助选项卡 ───────────────────── */
 #screen-meta {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
@@ -340,27 +700,40 @@ a:hover {
   font-weight: 600;
 }
 
+#contextual-help-back {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e2e2);
+}
+#contextual-help-columns {
+  display: flex;
+}
+.help-tab-content {
+  padding: 12px 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 
 /* =================================================================
- *  5. CARDS & POSTBOXES
- *  Dashboard widgets with card styling, meta boxes.
+ *  5. 卡片 & 文章盒子
  * ================================================================= */
 
-/* Dashboard widgets */
 #dashboard-widgets .postbox {
   border: 1px solid var(--border, #e2e2e2);
   border-top: 3px solid var(--primary);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   background: var(--card, #ffffff);
   overflow: hidden;
-  transition: box-shadow var(--transition, 0.3s ease);
+  transition: box-shadow var(--transition-normal, 0.2s ease),
+              transform var(--transition-normal, 0.2s ease),
+              border-color var(--transition-fast, 0.15s ease);
 }
-
 #dashboard-widgets .postbox:hover {
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
+  transform: translateY(-2px);
+  border-color: var(--primary);
 }
-
 #dashboard-widgets .postbox .hndle {
   border-bottom: 1px solid var(--border, #e2e2e2);
   padding: 16px 20px;
@@ -370,7 +743,6 @@ a:hover {
   background: var(--card, #ffffff);
   cursor: move;
 }
-
 #dashboard-widgets .postbox .handlediv {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -378,45 +750,39 @@ a:hover {
 #dashboard-widgets .postbox .handlediv:hover {
   color: var(--primary);
 }
-
 #dashboard-widgets .postbox .inside {
   padding: 16px 20px;
 }
-
 #dashboard-widgets .postbox .inside table {
   border: none;
   box-shadow: none;
   border-radius: 0;
 }
-
 #dashboard-widgets .postbox.closed .hndle {
   border-bottom: none;
 }
-
 #dashboard-widgets .meta-box-sortables {
   margin-top: 20px;
 }
 
-/* Postboxes (meta boxes) */
 .postbox {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   background: var(--card, #ffffff);
   overflow: hidden;
-  transition: box-shadow var(--transition, 0.3s ease);
+  transition: box-shadow var(--transition-normal, 0.2s ease),
+              border-color var(--transition-fast, 0.15s ease);
 }
-
 .postbox .hndle {
   border-bottom: 1px solid var(--border, #e2e2e2);
-  padding: 14px 18px;
+  padding: 16px 20px;
   font-size: 14px;
   font-weight: 600;
   color: var(--foreground, #333);
   background: var(--card, #ffffff);
   cursor: move;
 }
-
 .postbox .handlediv {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -424,19 +790,12 @@ a:hover {
 .postbox .handlediv:hover {
   color: var(--primary);
 }
-
 .postbox .inside {
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
-
 .postbox.closed .hndle {
   border-bottom: none;
 }
-
-.meta-box-sortables {
-  margin-top: 16px;
-}
-
 .postbox .toggle-indicator {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -445,26 +804,27 @@ a:hover {
   color: var(--primary);
 }
 
-/* Welcome panel */
+.meta-box-sortables {
+  margin-top: 16px;
+}
+
+/* ── Welcome 面板 ──────────────────────────────── */
 .welcome-panel {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  padding: 24px;
+  box-shadow: var(--shadow-small), var(--card-highlight);
+  padding: 28px;
   margin: 0 0 20px;
 }
-
 .welcome-panel h2 {
   font-size: 22px;
   font-weight: 650;
   color: var(--foreground, #333);
 }
-
 .welcome-panel .welcome-panel-column p {
   color: var(--muted-foreground, #999);
 }
-
 .welcome-panel .welcome-panel-dismiss {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -475,8 +835,7 @@ a:hover {
 
 
 /* =================================================================
- *  6. FORMS & INPUTS
- *  Clean rounded inputs with primary focus ring.
+ *  6. 表单 & 输入
  * ================================================================= */
 
 input[type="text"],
@@ -494,19 +853,37 @@ input[type="week"],
 input[type="month"],
 select,
 textarea {
-  border: 1px solid var(--input, #e2e2e2);
+  border: 1px solid var(--border, #d0d0d0);
   border-radius: var(--radius-medium);
-  padding: 8px 14px;
+  padding: 4px 11px;
   font-size: 13px;
   font-family: var(--font-sans, system-ui, sans-serif);
   color: var(--foreground, #333);
-  background: var(--card, #ffffff);
-  box-shadow: none;
-  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+  background: var(--card, #fff);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
   line-height: 1.5;
-  min-height: 40px;
+  min-height: 32px;
+  box-sizing: border-box;
 }
-
+input[type="text"]:hover,
+input[type="search"]:hover,
+input[type="email"]:hover,
+input[type="url"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover,
+input[type="datetime"]:hover,
+input[type="datetime-local"]:hover,
+input[type="tel"]:hover,
+input[type="time"]:hover,
+input[type="week"]:hover,
+input[type="month"]:hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--border) 80%, var(--foreground));
+}
 input[type="text"]:focus,
 input[type="search"]:focus,
 input[type="email"]:focus,
@@ -523,10 +900,15 @@ input[type="month"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
   outline: none;
 }
-
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
 input[type="text"]:disabled,
 input[type="search"]:disabled,
 input[type="email"]:disabled,
@@ -537,9 +919,8 @@ textarea:disabled {
   background: var(--background, #f5f6f7);
   color: var(--muted-foreground, #999);
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
 }
-
 input[type="text"][readonly],
 input[type="email"][readonly],
 input[type="url"][readonly],
@@ -557,42 +938,144 @@ select {
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  margin: 0 4px 0 0;
 }
-
-input[type="checkbox"]:checked {
-  background: var(--primary);
-  border-color: var(--primary);
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 input[type="search"] {
   -webkit-appearance: textfield;
 }
 
-.search-box {
-  margin-bottom: 12px;
+/* ── 文件输入 ──────────────────────────────────── */
+input[type="file"] {
+  padding: 6px 11px;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--foreground, #333);
+  border: 1px solid var(--border, #d0d0d0);
+  border-radius: var(--radius-medium);
+  background: var(--card, #fff);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+input[type="file"]:hover {
+  border-color: var(--primary);
+}
+input[type="file"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
+/* ── 通用按钮元素 ──────────────────────────────── */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: var(--radius-medium);
+  transition: all var(--transition-fast, 0.15s ease);
+}
+input[type="submit"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--primary);
+  padding: 4px 20px;
+  min-height: 32px;
+  font-weight: 500;
+}
+input[type="submit"]:hover {
+  background: color-mix(in srgb, var(--primary) 85%, #000);
+  border-color: color-mix(in srgb, var(--primary) 85%, #000);
+}
+input[type="submit"]:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+  outline: none;
+}
+input[type="reset"] {
+  background: var(--card, #fff);
+  color: var(--foreground, #333);
+  border: 1px solid var(--border, #d0d0d0);
+  padding: 4px 16px;
+  min-height: 32px;
+}
+input[type="reset"]:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+input[type="reset"]:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
+  outline: none;
+}
+
+/* ── Label ──────────────────────────────────────── */
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground, #333);
+  line-height: 1.5;
+  display: inline-block;
+}
+
+/* ── Fieldset / Legend ──────────────────────────── */
+fieldset {
+  border: 1px solid var(--border, #d0d0d0);
+  border-radius: 8px;
+  padding: 16px 20px 20px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground, #333);
+  padding: 0 8px;
+  width: auto;
+}
+
+/* ── 搜索框 ────────────────────────────────────── */
+.search-box {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: stretch;
+}
 .search-box input[name="s"],
 .search-box .search-input {
   border-radius: var(--radius-medium) 0 0 var(--radius-medium);
   border-right: none;
+  min-height: 32px;
 }
-
 .search-box .button {
   border-radius: 0 var(--radius-medium) var(--radius-medium) 0;
   margin-left: -1px;
+  min-height: 32px;
+  line-height: 1;
 }
 
+/* ── Form Table ──────────────────────────────────── */
+.form-table {
+  border-collapse: collapse;
+  margin-top: 8px;
+  width: 100%;
+}
 .form-table th {
   color: var(--foreground, #333);
   font-weight: 600;
-  padding: 16px 12px 16px 0;
+  padding: 12px 12px 12px 0;
+  vertical-align: top;
+  background: none;
 }
-
 .form-table td {
-  padding: 16px 0;
+  padding: 12px 0;
 }
-
 .form-table .description {
   color: var(--muted-foreground, #999);
   font-size: 12px;
@@ -605,93 +1088,106 @@ input[type="search"] {
   font-size: 12px;
 }
 
+/* ── Tagify / 多选标签 ────────────────────────── */
+.tagify,
+.wp-tag-editor {
+  min-height: 32px;
+  border-radius: var(--radius-medium);
+}
+
 
 /* =================================================================
- *  7. BUTTONS
- *  Pill-shaped primary buttons, clean secondary buttons.
+ *  7. 按钮
  * ================================================================= */
 
 .wp-core-ui .button,
 .wp-core-ui .button-secondary {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-full);
-  padding: 6px 20px;
+  border: 1px solid var(--border, #d0d0d0);
+  border-radius: var(--radius-medium);
+  padding: 4px 16px;
   font-size: 13px;
   font-family: var(--font-sans, system-ui, sans-serif);
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--foreground, #333);
-  background: var(--card, #ffffff);
+  background: var(--card, #fff);
   cursor: pointer;
   transition: all var(--transition-fast, 0.15s ease);
   box-shadow: none;
-  min-height: 0;
+  min-height: 32px;
   font-weight: 450;
+  box-sizing: border-box;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
-
 .wp-core-ui .button:hover,
 .wp-core-ui .button-secondary:hover {
   border-color: var(--primary);
   color: var(--primary);
   background: var(--muted, #f5f5f5);
+  text-decoration: none;
+  transform: translateY(-0.5px);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.06);
 }
-
-.wp-core-ui .button:focus,
-.wp-core-ui .button-secondary:focus {
+.wp-core-ui .button:focus-visible,
+.wp-core-ui .button-secondary:focus-visible {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
   outline: none;
 }
-
 .wp-core-ui .button:active,
 .wp-core-ui .button-secondary:active {
-  transform: scale(0.97);
+  transform: scale(0.97) translateY(0);
+  box-shadow: none;
 }
 
 .wp-core-ui .button-primary {
   background: var(--primary);
   border: 1px solid var(--primary);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-medium);
   color: var(--primary-foreground);
-  padding: 6px 24px;
+  padding: 4px 20px;
   font-size: 13px;
   font-family: var(--font-sans, system-ui, sans-serif);
-  line-height: 1.4;
+  line-height: 1.5;
+  min-height: 32px;
   box-shadow: none;
   text-shadow: none;
   font-weight: 500;
   transition: all var(--transition-fast, 0.15s ease);
   cursor: pointer;
+  box-sizing: border-box;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
-
 .wp-core-ui .button-primary:hover {
   background: color-mix(in srgb, var(--primary) 85%, #000);
   border-color: color-mix(in srgb, var(--primary) 85%, #000);
   color: var(--primary-foreground);
   box-shadow: none;
-  transform: translateY(-1px);
+  transform: none;
+  text-decoration: none;
 }
-
-.wp-core-ui .button-primary:focus {
+.wp-core-ui .button-primary:focus-visible {
   background: color-mix(in srgb, var(--primary) 85%, #000);
   border-color: color-mix(in srgb, var(--primary) 85%, #000);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
   outline: none;
 }
-
 .wp-core-ui .button-primary:active {
   background: color-mix(in srgb, var(--primary) 70%, #000);
   border-color: color-mix(in srgb, var(--primary) 70%, #000);
   transform: scale(0.97);
   box-shadow: none;
 }
-
 .wp-core-ui .button-primary[disabled],
 .wp-core-ui .button-primary:disabled {
   background: var(--muted-foreground, #999);
-  border-color: var(--border, #e2e2e2);
+  border-color: var(--border, #d0d0d0);
   color: var(--primary-foreground);
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.4;
   transform: none;
 }
 
@@ -705,61 +1201,67 @@ input[type="search"] {
   transition: color var(--transition-fast, 0.15s ease);
   cursor: pointer;
   box-shadow: none;
+  text-decoration: none;
 }
-
 .wp-core-ui .button-link:hover {
   color: var(--foreground, #333);
   text-decoration: underline;
 }
-
-.wp-core-ui .button-link:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+.wp-core-ui .button-link:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
   outline: none;
-  border-radius: var(--radius-medium);
+  border-radius: var(--radius-small);
 }
 
 .wp-core-ui .button-danger {
   background: var(--danger);
   border: 1px solid var(--danger);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-medium);
   color: #fff;
-  padding: 6px 20px;
+  padding: 4px 16px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
+  min-height: 32px;
   box-shadow: none;
   text-shadow: none;
   font-weight: 500;
   transition: all var(--transition-fast, 0.15s ease);
   cursor: pointer;
+  box-sizing: border-box;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 .wp-core-ui .button-danger:hover {
-  background: #c62828;
-  border-color: #c62828;
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
   color: #fff;
-  transform: translateY(-1px);
+  transform: none;
+  text-decoration: none;
 }
 
 .wp-core-ui .button-small {
-  padding: 4px 14px;
+  padding: 2px 12px;
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.5;
+  min-height: 26px;
 }
 
 
 /* =================================================================
- *  8. LIST TABLES
- *  Modern rounded data tables with clean styling.
+ *  8. 列表表格
  * ================================================================= */
 
 .wp-list-table,
 .widefat {
   border: none;
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   background: var(--card, #ffffff);
   overflow: hidden;
   border-collapse: separate;
   border-spacing: 0;
+  margin-bottom: 0;
 }
 
 .wp-list-table thead th,
@@ -787,7 +1289,7 @@ input[type="search"] {
 
 .wp-list-table tbody td,
 .widefat tbody td {
-  padding: 13px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border, #e2e2e2);
   color: var(--foreground, #333);
   font-size: 13px;
@@ -819,7 +1321,6 @@ input[type="search"] {
   font-size: 12px;
   margin-top: 2px;
 }
-
 .wp-list-table .row-actions span a {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -833,7 +1334,7 @@ input[type="search"] {
   color: var(--danger);
 }
 .wp-list-table .row-actions .trash a:hover {
-  color: #c62828;
+  color: var(--danger-hover);
 }
 
 .wp-list-table th.check-column,
@@ -843,7 +1344,7 @@ input[type="search"] {
   padding-left: 12px;
 }
 
-/* Table navigation (pagination + filters) */
+/* ── 表格导航（分页 + 筛选）─────────────────── */
 .tablenav {
   margin: 16px 0;
   color: var(--muted-foreground, #999);
@@ -851,24 +1352,20 @@ input[type="search"] {
   padding: 0;
   min-height: 36px;
 }
-
 .tablenav-pages {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
 .tablenav-pages .displaying-num {
   color: var(--muted-foreground, #999);
   margin-right: 8px;
 }
-
 .tablenav-pages .pagination-links {
   display: flex;
   align-items: center;
   gap: 2px;
 }
-
 .tablenav-pages .pagination-links > span,
 .tablenav-pages .pagination-links > a {
   display: inline-flex;
@@ -885,13 +1382,11 @@ input[type="search"] {
   transition: all var(--transition-fast, 0.15s ease);
   text-decoration: none;
 }
-
 .tablenav-pages .pagination-links a:hover {
   border-color: var(--primary);
   color: var(--primary);
   background: var(--muted, #f5f5f5);
 }
-
 .tablenav-pages .pagination-links .current-page {
   border-radius: var(--radius-medium);
   border: 1px solid var(--border, #e2e2e2);
@@ -902,12 +1397,10 @@ input[type="search"] {
   font-size: 13px;
   color: var(--foreground, #333);
 }
-
 .tablenav-pages .pagination-links .tablenav-pages-navspan {
   color: var(--muted-foreground, #999);
   border-color: var(--border, #e2e2e2);
 }
-
 .tablenav .actions {
   overflow: visible;
   display: flex;
@@ -915,13 +1408,11 @@ input[type="search"] {
   gap: 6px;
   flex-wrap: wrap;
 }
-
 .tablenav .bulkactions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
 .tablenav .alignleft.actions select {
   min-width: 140px;
 }
@@ -931,21 +1422,19 @@ input[type="search"] {
   margin-left: 4px;
 }
 
-/* Inline edit */
+/* ── 快速编辑 ──────────────────────────────────── */
 #inline-edit-wrapper {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-medium);
-  padding: 16px;
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+  padding: 20px;
 }
-
 #inline-edit-wrapper fieldset {
   border: none;
   padding: 0;
   margin: 0;
 }
-
 #bulk-edit-wrapper {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
@@ -954,42 +1443,30 @@ input[type="search"] {
   padding: 16px;
 }
 
-
-/* --- Comment tables (dashboard widget + list table) --- */
-
-/* Activity block */
+/* ── 评论表格 ──────────────────────────────────── */
 .activity-block {
   border-bottom-color: var(--border, #e2e2e2);
 }
 .activity-block .subsubsub li {
   color: var(--muted-foreground, #999);
 }
-
-/* Dashboard widget: each comment item is a card */
 #activity-widget #the-comment-list .comment-item {
   background: var(--card, #ffffff);
 }
-
-/* Unapproved comments — yellow tint in light, dark brown in dark */
 #activity-widget #the-comment-list .unapproved,
 #the-comment-list .unapproved th,
 #the-comment-list .unapproved td {
-  background-color: light-dark(#fcf9e8, #2a2010);
+  background: var(--warning-bg, #fdf6ec);
 }
-
 #activity-widget #the-comment-list .unapproved::before,
 #the-comment-list .unapproved th.check-column {
   background: var(--warning, #e6a23c);
   border-left-color: var(--warning, #e6a23c);
 }
-
-/* Undo row */
 #the-comment-list tr.undo,
 #the-comment-list div.undo {
   background-color: var(--background, #f5f6f7);
 }
-
-/* Vim current highlight */
 .vim-current,
 .vim-current th,
 .vim-current td {
@@ -998,8 +1475,7 @@ input[type="search"] {
 
 
 /* =================================================================
- *  9. NOTICES & ALERTS
- *  Card-style notices with left border accent.
+ *  9. 通知 & 警告
  * ================================================================= */
 
 .notice,
@@ -1014,20 +1490,18 @@ input[type="search"] {
   background: var(--card, #ffffff);
   position: relative;
 }
-
 .notice p,
 .updated p,
 .error p {
   margin: 4px 0;
   color: var(--foreground, #333);
+  font-size: 13px;
 }
-
 .notice a,
 .updated a,
 .error a {
   font-weight: 500;
 }
-
 .notice .notice-dismiss,
 .updated .notice-dismiss,
 .error .notice-dismiss {
@@ -1043,37 +1517,32 @@ input[type="search"] {
   color: var(--primary);
 }
 
-/* Success */
 .updated,
 .notice-success {
   border-left-color: var(--success, #67c23a);
-  background: light-dark(#f0f9eb, #1b3a1b);
+  background: var(--success-bg, #f0f9eb);
 }
 
-/* Error */
 .error,
 .notice-error {
   border-left-color: var(--danger, #dd2424);
-  background: light-dark(#fef0f0, #3a1b1b);
+  background: var(--danger-bg, #fef0f0);
 }
 
-/* Warning */
 .notice-warning {
   border-left-color: var(--warning, #e6a23c);
-  background: light-dark(#fdf6ec, #3a2e1b);
+  background: var(--warning-bg, #fdf6ec);
 }
 
-/* Info (primary) */
 .notice-info {
   border-left-color: var(--primary, #333);
-  background: light-dark(#fff0f2, #2a1520);
+  background: var(--card, #ffffff);
 }
 
-/* Update nag */
 .update-nag {
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-small);
-  background: #fdf6ec;
+  background: var(--warning-bg, #fdf6ec);
   border: 1px solid var(--warning);
   border-left: 4px solid var(--warning);
   color: var(--foreground, #333);
@@ -1083,7 +1552,6 @@ input[type="search"] {
   display: inline-block;
 }
 
-/* Inline notice */
 .notice.inline {
   border-radius: var(--radius-medium);
   box-shadow: none;
@@ -1095,8 +1563,7 @@ input[type="search"] {
 
 
 /* =================================================================
- *  10. LOGIN PAGE
- *  Centered card design matching frontend aesthetic.
+ *  10. 登录页面
  * ================================================================= */
 
 body.login {
@@ -1107,34 +1574,31 @@ body.login {
   min-height: 100vh;
   padding: 24px 16px;
 }
-
 body.login::before {
   content: "";
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--muted-foreground, #999), var(--primary));
+  height: 3px;
+  background: var(--primary);
   z-index: 1;
 }
 
 .login #login {
   background: var(--card, #ffffff);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-large);
-  padding: 44px 40px 36px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-elevated);
+  padding: 48px 44px 40px;
   max-width: 400px;
   width: 100%;
   position: relative;
   border: 1px solid var(--border, #e2e2e2);
 }
-
 .login #login h1 {
   text-align: center;
   margin-bottom: 28px;
 }
-
 .login #login h1 a {
   background-size: contain;
   background-position: center;
@@ -1152,7 +1616,6 @@ body.login::before {
   padding: 0;
   margin: 0;
 }
-
 .login form label {
   color: var(--foreground, #333);
   font-size: 13px;
@@ -1160,7 +1623,6 @@ body.login::before {
   margin-bottom: 4px;
   display: block;
 }
-
 .login form .input,
 .login input[type="text"],
 .login input[type="password"],
@@ -1173,9 +1635,15 @@ body.login::before {
   width: 100%;
   margin: 4px 0 16px;
   box-sizing: border-box;
-  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+  transition: border-color var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
 }
-
+.login form .input:hover,
+.login input[type="text"]:hover,
+.login input[type="password"]:hover,
+.login input[type="email"]:hover {
+  border-color: color-mix(in srgb, var(--border) 80%, var(--foreground));
+}
 .login form .input:focus,
 .login input[type="text"]:focus,
 .login input[type="password"]:focus,
@@ -1198,13 +1666,11 @@ body.login::before {
   color: var(--primary-foreground);
   cursor: pointer;
 }
-
 .login .button-primary:hover {
   background: color-mix(in srgb, var(--primary) 85%, #000);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
 }
-
 .login .button-primary:active {
   transform: scale(0.98);
   background: color-mix(in srgb, var(--primary) 70%, #000);
@@ -1218,14 +1684,12 @@ body.login::before {
   margin: 20px 0 0;
   text-align: center;
 }
-
 .login #backtoblog a,
 .login #nav a {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
   text-decoration: none;
 }
-
 .login #backtoblog a:hover,
 .login #nav a:hover {
   color: var(--primary);
@@ -1236,27 +1700,24 @@ body.login::before {
 .login .success {
   border-radius: var(--radius-medium);
   border-left: 4px solid var(--success);
-  background: #f0f9eb;
+  background: var(--success-bg, #f0f9eb);
   box-shadow: var(--shadow-small);
   padding: 12px 16px;
   margin: 0 0 16px;
   font-size: 13px;
 }
-
 .login #login_error {
   border-radius: var(--radius-medium);
   border-left: 4px solid var(--danger);
-  background: #fef0f0;
+  background: var(--danger-bg, #fef0f0);
   box-shadow: var(--shadow-small);
   padding: 12px 16px;
   margin: 0 0 16px;
   font-size: 13px;
 }
-
 .login .forgetmenot {
   margin: 0 0 16px;
 }
-
 .login .forgetmenot label {
   font-weight: 400;
   font-size: 13px;
@@ -1264,26 +1725,23 @@ body.login::before {
   align-items: center;
   gap: 6px;
 }
-
 .login .forgetmenot input[type="checkbox"] {
   margin: 0;
 }
 
 
 /* =================================================================
- *  11. CLASSIC EDITOR
- *  Clean content area with card styling.
+ *  11. 经典编辑器
  * ================================================================= */
 
 #post-body-content {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  padding: 20px 24px;
-  box-shadow: var(--shadow-small);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-small), var(--card-highlight);
   margin-bottom: 20px;
 }
-
 #post-body-content textarea#content {
   border: none;
   box-shadow: none;
@@ -1301,11 +1759,9 @@ body.login::before {
   padding-left: 24px;
   padding-right: 24px;
 }
-
 #wp-content-editor-container {
   border: none;
 }
-
 #wp-content-editor-tools .wp-editor-tabs button {
   border: 1px solid var(--border, #e2e2e2);
   border-bottom: none;
@@ -1317,12 +1773,10 @@ body.login::before {
   cursor: pointer;
   transition: all var(--transition-fast, 0.15s ease);
 }
-
 #wp-content-editor-tools .wp-editor-tabs button:hover {
   color: var(--primary);
   background: var(--muted, #f5f5f5);
 }
-
 #wp-content-editor-tools .wp-editor-tabs .active {
   background: var(--card, #ffffff);
   color: var(--foreground, #333);
@@ -1335,9 +1789,8 @@ body.login::before {
 }
 
 #submitdiv .inside {
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
-
 #submitdiv #major-publishing-actions {
   background: transparent;
   border-top: 1px solid var(--border, #e2e2e2);
@@ -1347,11 +1800,9 @@ body.login::before {
   justify-content: flex-end;
   gap: 8px;
 }
-
 #submitdiv #delete-action {
   margin-right: auto;
 }
-
 #submitdiv #publishing-action {
   display: flex;
   gap: 8px;
@@ -1359,9 +1810,8 @@ body.login::before {
 
 #poststuff .postbox .inside {
   margin: 0;
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
-
 #poststuff h2 {
   color: var(--foreground, #333);
   font-size: 14px;
@@ -1377,24 +1827,24 @@ body.login::before {
 
 
 /* =================================================================
- *  12. MISC COMPONENTS
- *  Taxonomy panels, nav menus, widgets, color picker, media, etc.
+ *  12. 杂项组件
  * ================================================================= */
 
-/* Category / taxonomy panels */
+/* ── 分类 / 标签面板 ────────────────────────────── */
 .categorydiv div.tabs-panel {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-medium);
   background: var(--card, #ffffff);
   padding: 8px;
 }
-
 .categorydiv ul.category-tabs {
   border-bottom: 1px solid var(--border, #e2e2e2);
   margin: 0 0 12px;
   padding: 0;
 }
-
+.categorydiv ul.category-tabs li {
+  margin: 0;
+}
 .categorydiv ul.category-tabs li a {
   color: var(--muted-foreground, #999);
   padding: 8px 16px;
@@ -1402,36 +1852,34 @@ body.login::before {
   transition: all var(--transition-fast, 0.15s ease);
   text-decoration: none;
 }
-
 .categorydiv ul.category-tabs li a:hover {
   color: var(--primary);
   background: var(--muted, #f5f5f5);
 }
-
 .categorydiv ul.category-tabs li.tabs a {
   color: var(--primary);
   font-weight: 600;
   border-bottom: 2px solid var(--primary);
 }
 
-/* Nav menu editor */
+/* ── 导航菜单编辑器 ──────────────────────────── */
 .menu-item-handle {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-medium);
   background: var(--card, #ffffff);
-  box-shadow: var(--shadow-small);
-  padding: 10px 14px;
-  transition: box-shadow var(--transition-fast, 0.15s ease);
+  box-shadow: var(--shadow-small), var(--card-highlight);
+  padding: 12px 16px;
+  transition: box-shadow var(--transition-fast, 0.15s ease),
+              border-color var(--transition-fast, 0.15s ease);
 }
 .menu-item-handle:hover {
-  box-shadow: var(--shadow-medium);
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+  border-color: var(--primary);
 }
-
 .menu-item-handle .item-title {
   font-weight: 600;
   color: var(--foreground, #333);
 }
-
 .menu-item-handle .item-controls a {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -1447,16 +1895,15 @@ body.login::before {
   padding: 16px;
 }
 
-/* Widgets */
+/* ── 小工具 ────────────────────────────────────── */
 .widgets-holder-wrap {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   background: var(--card, #ffffff);
   overflow: hidden;
   margin-bottom: 20px;
 }
-
 .widget-title {
   border-radius: 0;
   border: none;
@@ -1471,26 +1918,24 @@ body.login::before {
 .widget-title:hover {
   background: var(--muted, #f5f5f5);
 }
-
 .widget-title h4 {
   font-size: 14px;
   font-weight: 600;
   color: var(--foreground, #333);
+  margin: 0;
 }
-
 .widget-inside {
   padding: 16px;
   border: none;
   background: var(--card, #ffffff);
 }
-
 .widget-control-actions {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border, #e2e2e2);
 }
 
-/* Color picker */
+/* ── 颜色选择器 ──────────────────────────────── */
 .wp-picker-container .wp-color-result {
   border-radius: var(--radius-full);
   border: 1px solid var(--border, #e2e2e2);
@@ -1503,21 +1948,19 @@ body.login::before {
 .wp-picker-container .wp-color-result:hover {
   border-color: var(--primary);
 }
-
 .wp-picker-container .iris-picker {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-medium);
   box-shadow: var(--shadow-small);
 }
 
-/* Progress bar */
+/* ── 上传进度 ──────────────────────────────────── */
 .upload-progress .upload-progress-bar {
   background: var(--muted, #f5f5f5);
   border-radius: var(--radius-full);
   height: 6px;
   overflow: hidden;
 }
-
 .upload-progress .upload-progress-bar .progress {
   background: var(--primary);
   border-radius: var(--radius-full);
@@ -1525,131 +1968,120 @@ body.login::before {
   transition: width var(--transition-fast, 0.15s ease);
 }
 
-/* Plugin cards */
+/* ── 插件卡片 ──────────────────────────────────── */
 .plugin-card {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   background: var(--card, #ffffff);
-  transition: box-shadow var(--transition, 0.3s ease), transform var(--transition, 0.3s ease);
+  transition: box-shadow var(--transition-normal, 0.2s ease),
+              transform var(--transition-normal, 0.2s ease),
+              border-color var(--transition-fast, 0.15s ease);
 }
-
 .plugin-card:hover {
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
   transform: translateY(-2px);
+  border-color: var(--primary);
 }
-
 .plugin-card .plugin-card-top {
   padding: 24px;
 }
-
 .plugin-card .name h3 {
   font-size: 16px;
   font-weight: 600;
   color: var(--foreground, #333);
   margin: 0 0 8px;
 }
-
 .plugin-card .desc p {
   color: var(--muted-foreground, #999);
   font-size: 13px;
   line-height: 1.6;
 }
-
 .plugin-card .plugin-icon {
   border-radius: var(--radius-large);
 }
-
 .plugin-card .column-rating .star-rating {
   color: var(--warning);
 }
 
-/* Theme browser */
+/* ── 主题浏览器 ────────────────────────────────── */
 .theme-browser .theme {
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small), var(--card-highlight);
   overflow: hidden;
-  transition: box-shadow var(--transition, 0.3s ease), transform var(--transition, 0.3s ease);
+  transition: box-shadow var(--transition-normal, 0.2s ease),
+              transform var(--transition-normal, 0.2s ease),
+              border-color var(--transition-fast, 0.15s ease);
   background: var(--card, #ffffff);
 }
-
 .theme-browser .theme:hover {
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
   transform: translateY(-2px);
+  border-color: var(--primary);
 }
-
 .theme-browser .theme .theme-screenshot {
   border-radius: var(--radius-large) var(--radius-large) 0 0;
 }
-
 .theme-browser .theme .theme-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--foreground, #333);
+  margin: 0;
+  padding: 12px 16px;
 }
-
 .theme-browser .theme.active .theme-name {
   color: var(--primary);
   font-weight: 700;
 }
-
 .theme-browser .theme.active .theme-actions {
   background: var(--muted, #f5f5f5);
 }
-
 .theme-browser .theme .theme-actions {
   background: var(--background, #f5f6f7);
   border-top: 1px solid var(--border, #e2e2e2);
   padding: 8px 12px;
 }
-
 .theme-browser .theme .more-details {
   background: rgba(0, 0, 0, 0.65);
   border-radius: var(--radius-medium);
   backdrop-filter: blur(4px);
 }
 
-/* Media library */
+/* ── 媒体库 ────────────────────────────────────── */
 .attachments-browser .attachments {
   background: var(--card, #ffffff);
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-medium);
   padding: 8px;
 }
-
 .attachments-browser .media-toolbar {
   background: var(--background, #f5f6f7);
   border: 1px solid var(--border, #e2e2e2);
   border-radius: var(--radius-medium);
   padding: 8px 12px;
 }
-
 .media-frame {
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-large);
   overflow: hidden;
   border: 1px solid var(--border, #e2e2e2);
 }
-
 .media-frame-title {
   background: var(--card, #ffffff);
   padding: 12px 16px;
   font-size: 15px;
   font-weight: 600;
 }
-
 .media-frame-title,
 .media-frame-router,
 .media-frame-content,
 .media-frame-toolbar {
   border-color: var(--border, #e2e2e2);
 }
-
 .media-frame-router {
   background: var(--background, #f5f6f7);
 }
-
 .media-router .media-menu-item {
   color: var(--muted-foreground, #999);
   transition: color var(--transition-fast, 0.15s ease);
@@ -1658,20 +2090,18 @@ body.login::before {
 .media-router .media-menu-item.active {
   color: var(--primary);
 }
-
 .media-frame-toolbar {
   background: var(--card, #ffffff);
   border-top: 1px solid var(--border, #e2e2e2);
   padding: 12px 16px;
 }
-
 .media-frame-content {
   background: var(--background, #f5f6f7);
 }
-
 .attachment {
   border-radius: var(--radius-medium);
-  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+  transition: border-color var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
 }
 .attachment:hover {
   border-color: var(--primary);
@@ -1681,7 +2111,7 @@ body.login::before {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
-/* Admin pointers */
+/* ── 管理指针 ──────────────────────────────────── */
 .wp-pointer .wp-pointer-content {
   border: none;
   border-radius: var(--radius-large);
@@ -1689,7 +2119,6 @@ body.login::before {
   padding: 0;
   overflow: hidden;
 }
-
 .wp-pointer .wp-pointer-content h3 {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -1699,21 +2128,19 @@ body.login::before {
   margin: 0;
   border: none;
 }
-
 .wp-pointer .wp-pointer-content p {
   padding: 14px 18px;
   margin: 0;
   color: var(--foreground, #333);
   font-size: 13px;
 }
-
 .wp-pointer .wp-pointer-buttons {
   padding: 10px 18px 14px;
   border-top: 1px solid var(--border, #e2e2e2);
   margin: 0;
 }
 
-/* Export / Import */
+/* ── 导出 / 导入 ────────────────────────────── */
 .export-filters {
   background: var(--background, #f5f6f7);
   border: 1px solid var(--border, #e2e2e2);
@@ -1724,152 +2151,123 @@ body.login::before {
 
 
 /* =================================================================
- *  13. DARK MODE
- *  Already handled by [data-theme='dark'] selector block (Section 1).
- *  OAT's CSS variables are overridden by our [data-theme] selectors,
- *  same as the frontend. The JS in admin_head sets both data-theme
- *  and color-scheme on <html> before first paint.
+ *  13. 暗色模式
+ *  已通过 [data-theme='dark'] 选择器处理（第 1 节）。
+ *  无需额外样式。
  * ================================================================= */
 
 
 /* =================================================================
- *  14. RESPONSIVE
+ *  14. 响应式
  * ================================================================= */
 
-/* 鈮?960px 鈥?fold sidebar to narrow */
 @media (max-width: 960px) {
-  #wpcontent {
-    margin-left: 0 !important;
-  }
-
-  #wpfooter {
-    margin-left: 0 !important;
-  }
-
   .wrap {
     padding: 20px 16px 0;
   }
 }
 
-/* 鈮?782px 鈥?WP mobile breakpoint */
 @media (max-width: 782px) {
-  html.wp-toolbar {
-    padding-top: 0 !important;
-  }
-
-  #wpcontent {
-    padding-top: 0 !important;
-  }
-
   #wpbody-content {
     padding-bottom: 48px;
   }
-
   .wrap {
     padding: 16px 16px 0;
   }
-
   .wrap > h1,
   .wrap > h2 {
     font-size: 20px;
   }
-
   .wp-list-table thead th {
     padding: 10px 12px;
     font-size: 10px;
   }
-
   .wp-list-table tbody td {
     padding: 10px 12px;
   }
-
   .wp-list-table,
   .widefat {
     border-radius: var(--radius-large);
   }
-
-  #dashboard-widgets .postbox {
-    border-radius: var(--radius-large);
-  }
-
+  #dashboard-widgets .postbox,
   .postbox {
     border-radius: var(--radius-large);
   }
-
   .login #login {
     padding: 32px 24px 28px;
     border-radius: var(--radius-large);
     margin: 0;
     box-shadow: var(--shadow-medium);
   }
-
   .plugin-card .plugin-card-top {
     padding: 16px;
   }
-
   .form-table th,
   .form-table td {
     display: block;
     padding: 8px 0;
     width: 100%;
   }
-
   .form-table th {
     padding-top: 16px;
   }
-
   .tablenav {
     min-height: 48px;
   }
-
   .notice,
   .updated,
   .error {
     margin: 16px 0;
     padding: 12px 14px;
   }
-
   .tablenav-pages .displaying-num {
     display: none;
   }
-
   .search-box {
     width: 100%;
     margin-bottom: 12px;
   }
 }
 
-/* 鈮?600px 鈥?extra small screens */
 @media (max-width: 600px) {
   .wrap {
     padding: 12px 12px 0;
   }
-
   .wrap > h1,
   .wrap > h2 {
     font-size: 18px;
   }
-
   .login #login {
     padding: 24px 16px 20px;
     border-radius: var(--radius-medium);
     box-shadow: var(--shadow-small);
   }
-
   .page-title-action {
     display: inline-block;
     margin: 8px 0 0;
   }
-
   .theme-browser .theme {
     border-radius: var(--radius-large);
   }
 }
 
+/* ── 减少动画（可访问性）─────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html.wp-toolbar {
+    scroll-behavior: auto;
+  }
+}
+
 
 /* =================================================================
- *  15. PRINT
- *  Clean print styles.
+ *  15. 打印
  * ================================================================= */
 
 @media print {
@@ -1888,27 +2286,22 @@ body.login::before {
   .row-actions {
     display: none !important;
   }
-
   #wpcontent {
     margin-left: 0 !important;
     padding-top: 0 !important;
   }
-
   .wrap {
     padding: 0 !important;
   }
-
   body {
     background: #fff;
     color: #000;
     font-size: 12pt;
   }
-
   a {
     color: #000 !important;
     text-decoration: underline;
   }
-
   .wp-list-table,
   .widefat {
     box-shadow: none;
@@ -1916,3 +2309,205 @@ body.login::before {
   }
 }
 
+
+/* =================================================================
+ *  16. WP 核心工具样式
+ *  提供 WordPress 在移除原生样式后仍然需要的基础 CSS 类。
+ * ================================================================= */
+
+/* ── 输入尺寸类 ──────────────────────────────── */
+.regular-text {
+  width: 25em;
+}
+.small-text {
+  width: 50px;
+  padding: 4px 8px;
+}
+
+/* ── 提交按钮区域 ────────────────────────────── */
+p.submit,
+.submit {
+  padding-bottom: 8px;
+}
+#submit {
+  min-width: 120px;
+}
+
+/* ── 旋转加载 ──────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 4px 10px 0;
+  vertical-align: middle;
+  border: 2px solid var(--border, #e2e2e2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: admin-spin 0.6s linear infinite;
+  visibility: hidden;
+}
+.spinner.is-active {
+  visibility: visible;
+}
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── 浮动工具 ────────────────────────────────── */
+.alignleft {
+  float: left;
+}
+.alignright {
+  float: right;
+}
+.aligncenter {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.clear {
+  clear: both;
+}
+
+/* ── 独立描述文本 ────────────────────────────── */
+p.description,
+.description {
+  color: var(--muted-foreground, #999);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+/* ── 上下文帮助侧边栏 ──────────────────────── */
+.contextual-help-sidebar {
+  float: right;
+  width: 150px;
+  padding: 0 12px;
+  overflow: auto;
+}
+
+/* ── 站点图标预览 ────────────────────────────── */
+.site-icon-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.site-icon-preview .direction-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.site-icon-preview-browser {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: var(--radius-medium);
+  padding: 12px;
+  background: var(--card, #ffffff);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+.site-icon-preview-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground, #999);
+}
+.site-icon-action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.app-icon-preview {
+  width: 256px;
+  height: 256px;
+  object-fit: contain;
+  border-radius: var(--radius-small, 4px);
+  flex-shrink: 0;
+}
+.browser-icon-preview {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* ── 屏幕阅读器快捷键 ────────────────────────── */
+.screen-reader-shortcut {
+  position: absolute;
+  left: -1000em;
+}
+.screen-reader-shortcut:focus {
+  left: 6px;
+  top: -25px;
+  height: auto;
+  width: auto;
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 15px 23px 14px;
+  background: var(--card, #ffffff);
+  color: var(--foreground, #333);
+  z-index: 100000;
+  line-height: normal;
+  text-decoration: none;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ── 等宽字体工具 ────────────────────────────── */
+.code {
+  font-family: var(--font-mono, Consolas, Monaco, monospace);
+}
+input.regular-text.code {
+  font-family: var(--font-mono, Consolas, Monaco, monospace);
+}
+
+/* ── 文字对齐 ────────────────────────────────── */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+
+/* =================================================================
+ *  17. Body Grid 布局 — Vue Shell + WP 原生内容并列
+ *  通过 PHP admin_body_class filter 添加 sta-theme-active 类来激活。
+ *  外部 Grid 控制整体布局，组件内不设 grid-area/position。
+ * ================================================================= */
+
+body.sta-theme-active {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  grid-template-rows: 48px 1fr;
+  min-height: 100vh;
+  margin: 0 !important;
+}
+
+#simple-theme-admin-sidebar {
+  grid-row: 1 / -1;
+  grid-column: 1;
+}
+
+#simple-theme-admin-topbar {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+#wpwrap {
+  grid-row: 2;
+  grid-column: 2;
+  min-height: 0;
+  padding-top: 0 !important;
+}
+
+#wpcontent {
+  margin-left: 0 !important;
+  padding-top: 0 !important;
+}
+
+#wpfooter {
+  margin-left: 0 !important;
+}
+
+html.wp-toolbar {
+  padding-top: 0 !important;
+}

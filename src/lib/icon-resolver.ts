@@ -727,6 +727,13 @@ const ICON_MAP: Record<string, string> = {
   'postman': '<i class="bx bxl-postman"></i>',
 }
 
+// 所有已存在的 bxs- 图标名（用于判断 filled 变体是否存在）
+const EXISTING_FILLED_ICONS = new Set<string>()
+for (const val of Object.values(ICON_MAP)) {
+  const m = val.match(/class="[^"]*\bbxs-([\w-]+)/)
+  if (m) EXISTING_FILLED_ICONS.add(m[1])
+}
+
 // ============================================================
 // 2. 中文标题 → 图标名称（向后兼容旧菜单项）
 // ============================================================
@@ -1245,8 +1252,10 @@ function faToBx(icon: string): string | undefined {
  */
 function toggleIconVariant(html: string, filled: boolean): string {
   if (filled) {
-    // outline → filled: bx-name → bxs-name
-    return html.replace(/\bbx-(?![\w-]*s)([\w-]+)/g, 'bxs-$1')
+    // outline → filled: bx-name → bxs-name（仅当 bxs- 变体存在时）
+    return html.replace(/\bbx-(?![\w-]*s)([\w-]+)/g, (match, name) => {
+      return EXISTING_FILLED_ICONS.has(name) ? `bxs-${name}` : match
+    })
   } else {
     // filled → outline: bxs-name → bx-name
     return html.replace(/\bbxs-([\w-]+)/g, 'bx-$1')

@@ -262,7 +262,7 @@ async function handleFormSubmit(payload: {
     formRef.value?.clearForm()
 
     // createComment already returns a fully mapped WordPressComment via mapWPComment
-    newComment.status = 'hold'
+    const isApproved = newComment.status === 'approved'
     newComment.children = []
 
     if (newComment.parent > 0) {
@@ -276,7 +276,11 @@ async function handleFormSubmit(payload: {
       comments.value = [newComment, ...comments.value]
     }
 
-    showToast('评论提交成功，等待审核。', '成功', { variant: 'success', duration: 3200 })
+    showToast(
+      isApproved ? '评论已发布。' : '评论提交成功，等待审核。',
+      '成功',
+      { variant: 'success', duration: 3200 },
+    )
   } catch (error) {
     dismissToast(loadingToast)
     showError(getErrorMessage(error, '评论提交失败，请稍后重试。'))

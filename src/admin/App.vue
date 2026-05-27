@@ -8,6 +8,7 @@ import SidebarTab from './components/SidebarTab.vue'
 import AdvancedTab from './components/AdvancedTab.vue'
 import AdminThemeTab from './components/AdminThemeTab.vue'
 import SmtpTab from './components/SmtpTab.vue'
+import EmailTemplateTab from './components/EmailTemplateTab.vue'
 import AppToast from './components/AppToast.vue'
 import './styles/layers.css'
 
@@ -15,12 +16,13 @@ const settings = ref<AdminSettings>({})
 const defaults = ref<AdminSettings>({})
 const activeTab = ref('appearance')
 const saving = ref(false)
+const saved = ref(false)
 const loading = ref(true)
 const error = ref('')
 const isDirty = ref(false)
 const mobileMenuOpen = ref(false)
 const toastMessage = ref('')
-const toastType = ref<'success' | 'error'>('success')
+const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastVisible = ref(false)
 
 const tabs = [
@@ -84,7 +86,9 @@ async function handleSave() {
     settings.value = result
     currentSettings.value = JSON.parse(JSON.stringify(result))
     isDirty.value = false
-    toastMessage.value = '设置已保存'
+    saved.value = true
+    setTimeout(() => { saved.value = false }, 2000)
+    toastMessage.value = `「${activeTabLabel.value}」设置已保存`
     toastType.value = 'success'
     toastVisible.value = true
   } catch (e) {
@@ -170,13 +174,21 @@ const activeTabLabel = computed(() => {
           <h2 class="xh-topbar__title">{{ activeTabLabel }}</h2>
         </div>
         <div class="xh-topbar__actions">
-          <span v-if="isDirty" class="xh-toast xh-toast--warn" style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--xh-warning-bg); color: var(--xh-warning); border: 1px solid var(--xh-warning);">未保存</span>
+          <span v-if="isDirty" class="xh-dirty-badge">未保存</span>
           <button
-            class="xh-btn xh-btn--primary"
+            class="xh-btn"
+            :class="{ 'xh-btn--primary': !saved, 'xh-btn--success': saved }"
             :disabled="saving || !isDirty"
             @click="handleSave"
           >
-            <template v-if="saving">保存中...</template>
+            <template v-if="saving">
+              <svg class="xh-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+              保存中...
+            </template>
+            <template v-else-if="saved">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+              已保存
+            </template>
             <template v-else>保存设置</template>
           </button>
         </div>
@@ -188,6 +200,7 @@ const activeTabLabel = computed(() => {
           :settings="currentSettings"
           :defaults="defaults"
           @update="updateSetting"
+          @toast="(msg: string, type: 'success' | 'error' | 'warning') => { toastMessage = msg; toastType = type; toastVisible = true }"
         />
       </div>
     </main>

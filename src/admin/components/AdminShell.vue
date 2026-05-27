@@ -143,28 +143,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="admin-shell">
+  <Teleport to="#simple-theme-admin-sidebar">
     <AdminSidebar
       :menu-items="menuItems"
       :current-url="currentUrl"
       @navigate="navigate"
     />
+  </Teleport>
+  <Teleport to="#simple-theme-admin-topbar">
     <AdminTopbar
       :site-name="siteName"
       :user-name="userName"
       :user-avatar="userAvatar"
     />
-    <!-- Spacer for fixed elements -->
-    <div class="admin-shell__spacer"></div>
-  </div>
+  </Teleport>
 </template>
 
-<style scoped>
-.admin-shell {
-  display: contents;
-}
-
-.admin-shell__spacer {
-  display: none;
-}
-</style>

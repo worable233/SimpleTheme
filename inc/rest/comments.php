@@ -351,7 +351,10 @@ function simple_theme_create_comment( WP_REST_Request $request ) {
 
 	if ( $use_markdown_req ) {
 		$parsedown = new Parsedown();
+		$parsedown->setSafeMode( true );
 		$raw_content = $parsedown->text( $raw_content );
+	} else {
+		$raw_content = htmlspecialchars( $raw_content, ENT_NOQUOTES, 'UTF-8' );
 	}
 
 	$comment_data = array(
@@ -767,6 +770,7 @@ add_filter( 'rest_pre_insert_comment', function( $prepared_comment, $request ) {
 	// Markdown→HTML conversion (before KSES in wp_new_comment)
 	if ( ! empty( $request->get_param( 'useMarkdown' ) ) && isset( $prepared_comment['comment_content'] ) ) {
 		$parsedown = new Parsedown();
+		$parsedown->setSafeMode( true );
 		$prepared_comment['comment_content'] = $parsedown->text( $prepared_comment['comment_content'] );
 	}
 

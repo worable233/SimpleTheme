@@ -23,11 +23,24 @@ export interface AdminMenuItem {
   children: { title: string; url: string }[]
 }
 
-// Create mount point
+// Find #wpwrap — insert Teleport targets and mount point before it
+const wpwrap = document.getElementById('wpwrap')
+
+// Sidebar Teleport target (first in body, before wpwrap)
+const sidebarTarget = document.createElement('div')
+sidebarTarget.id = 'simple-theme-admin-sidebar'
+document.body.insertBefore(sidebarTarget, wpwrap)
+
+// Topbar Teleport target (second, after sidebar, before wpwrap)
+const topbarTarget = document.createElement('div')
+topbarTarget.id = 'simple-theme-admin-topbar'
+document.body.insertBefore(topbarTarget, wpwrap)
+
+// Vue mount point (third, after topbar, before wpwrap)
 const container = document.createElement('div')
 container.id = 'simple-theme-admin-shell'
 container.style.display = 'contents'
-document.body.appendChild(container)
+document.body.insertBefore(container, wpwrap)
 
 const app = createApp(AdminShell)
 app.mount('#simple-theme-admin-shell')

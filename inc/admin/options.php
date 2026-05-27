@@ -110,6 +110,7 @@ function simple_theme_get_default_options() {
 			'smtp_password'            => '',
 			'smtp_from_email'          => '',
 			'smtp_from_name'           => '',
+			'smtp_timeout'             => 6,
 
 			// ---- SMTP Queue ----
 			'smtp_queue_enabled'       => true,
@@ -246,6 +247,8 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = is_email( (string) $value ) ? sanitize_email( (string) $value ) : '';
 		} elseif ( 'smtp_from_name' === $key ) {
 			$output[ $key ] = sanitize_text_field( (string) $value );
+		} elseif ( 'smtp_timeout' === $key ) {
+			$output[ $key ] = max( 1, min( 60, (int) $value ) );
 		} elseif ( 'smtp_queue_enabled' === $key ) {
 			$output[ $key ] = (bool) $value;
 		} elseif ( 'smtp_queue_retry_count' === $key ) {

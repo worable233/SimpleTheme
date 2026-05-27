@@ -24,6 +24,7 @@
     "docker:reset": "docker compose down -v && docker compose up -d",
     "dev:docker": "npm run env:docker && vite",
     "env:docker": "node -e \"require('fs').copyFileSync('.env.docker', '.env')\"",
+    "prepackage": "npm run build-only",
     "package": "node bin/package-theme.mjs"
   },
   "dependencies": {

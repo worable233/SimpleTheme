@@ -15,7 +15,7 @@ function mapWPComment(item: any): WordPressComment {
     authorName: item.authorName || item.author_name || '',
     authorEmail: item.authorEmail || item.author_email || '',
     authorUrl: item.authorUrl || item.author_url || '',
-    status: item.status || '',
+    status: item.status === '0' ? 'hold' : item.status === '1' ? 'approved' : item.status || '',
     avatar: item.avatar || item.author_avatar_urls?.['96'] || '',
     content: { rendered: item.content?.rendered || '' },
     likes: item.likes ?? 0,

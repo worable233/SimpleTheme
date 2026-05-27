@@ -40,8 +40,11 @@ function simple_theme_register_settings() {
 
 // ========== Admin Page Render ==========
 
-// Auto-migrate on theme activation
+// Auto-migrate + cleanup on theme activation
 add_action( 'after_switch_theme', 'simple_theme_migrate_from_customizer' );
+add_action( 'after_switch_theme', function () {
+	delete_option( 'simple_theme_cache_version' );
+} );
 
 // Hide WordPress admin chrome on the theme settings page via admin_head.
 add_action( 'admin_head', 'simple_theme_hide_admin_chrome' );

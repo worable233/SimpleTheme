@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update', key: string, value: unknown): void
+  (e: 'toast', message: string, type: 'success' | 'error' | 'warning'): void
 }>()
 
 const smtpEnabled = computed(() => !!props.settings.smtp_enabled)
@@ -41,14 +42,20 @@ async function sendTest() {
     const data = await res.json()
     if (data.success) {
       testStatus.value = 'success'
-      testMessage.value = data.message || '测试邮件已发送，请检查收件箱。'
+      emit('toast', data.message || '测试邮件已发送，请检查收件箱。', 'success')
     } else {
       testStatus.value = 'error'
-      testMessage.value = (data.message || '发送失败') + (data.debug ? ` (${data.debug})` : '')
+      const debug = data.debug ? ` (${data.debug})` : ''
+      testMessage.value = debug
+      emit('toast', (data.message || '发送失败') + debug, 'error')
+      if (data.ssl_ca_hint) {
+        emit('toast', data.ssl_ca_hint, 'warning')
+      }
     }
   } catch (e) {
     testStatus.value = 'error'
-    testMessage.value = '请求失败: ' + (e instanceof Error ? e.message : String(e))
+    testMessage.value = ''
+    emit('toast', '请求失败: ' + (e instanceof Error ? e.message : String(e)), 'error')
   }
 }
 
@@ -73,7 +80,7 @@ async function fetchQueue() {
       queueItems.value = data.items || []
     }
   } catch {
-    // silent
+    emit('toast', '获取队列数据失败', 'error')
   } finally {
     queueLoading.value = false
   }
@@ -90,10 +97,15 @@ async function retryMail(id: number) {
   if (nonce) headers['X-WP-Nonce'] = nonce
 
   try {
-    await fetch(`${url}/retry/${id}`, { method: 'POST', credentials: 'same-origin', headers })
-    await fetchQueue()
+    const res = await fetch(`${url}/retry/${id}`, { method: 'POST', credentials: 'same-origin', headers })
+    if (res.ok) {
+      emit('toast', '已加入重试队列', 'success')
+      await fetchQueue()
+    } else {
+      emit('toast', '重试失败', 'error')
+    }
   } catch {
-    // silent
+    emit('toast', '重试请求失败', 'error')
   }
 }
 
@@ -113,9 +125,12 @@ async function clearQueue() {
       const data = await res.json()
       queueStats.value = data.stats || {}
       queueItems.value = []
+      emit('toast', '已完成记录已清空', 'success')
+    } else {
+      emit('toast', '清空失败', 'error')
     }
   } catch {
-    // silent
+    emit('toast', '清空请求失败', 'error')
   }
 }
 
@@ -185,6 +200,17 @@ const statusColors: Record<string, string> = {
             <option value="ssl">SSL</option>
             <option value="tls">TLS</option>
           </select>
+        </div>
+        <div class="xh-field xh-field--compact">
+          <label class="xh-field__label">连接超时（秒）</label>
+          <input
+            type="number"
+            class="xh-input xh-input--number"
+            min="1" max="60"
+            :value="(settings.smtp_timeout as number) ?? 6"
+            @input="emit('update', 'smtp_timeout', Number(($event.target as HTMLInputElement).value))"
+          />
+          <p class="xh-field__desc">PHPMailer 等待服务器响应的最大秒数，范围 1-60。</p>
         </div>
       </div>
     </AppCard>
@@ -273,11 +299,11 @@ const statusColors: Record<string, string> = {
           </button>
         </div>
         <p
-          v-if="testMessage"
+          v-if="testMessage && testStatus === 'error'"
           class="xh-field__desc"
-          :style="{ color: testStatus === 'success' ? 'var(--xh-success, #16a34a)' : 'var(--xh-error, #dc2626)', marginTop: 8 }"
+          style="color: var(--xh-error, #dc2626); margin-top: 8px; word-break: break-word;"
         >
-          {{ testMessage }}
+          错误详情: {{ testMessage }}
         </p>
       </div>
     </AppCard>

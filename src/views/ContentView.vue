@@ -10,7 +10,7 @@ import {
   trackPostView,
 } from '@/lib/wordpress'
 import { mockResolveThemePath, mockFetchContentByRestUrl, shouldUseMock } from '@/lib/mock-api'
-import { withCache, clearAllCache } from '@/lib/api-cache'
+import { withCache } from '@/lib/api-cache'
 import { showError } from '@/lib/toast'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'

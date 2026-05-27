@@ -309,6 +309,51 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  .xh-btn--success {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+  }
+  .xh-btn--success:hover {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+  }
+
+  /* ── Spinning animation ── */
+  .xh-spin {
+    animation: xh-spin 1s linear infinite;
+  }
+  @keyframes xh-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Dirty badge ── */
+  .xh-dirty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px 4px 10px;
+    border-radius: 20px;
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+  .xh-dirty-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d97706;
+    animation: xh-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes xh-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
 
   /* ── Skeleton ── */
   .xh-skeleton {
@@ -485,7 +530,8 @@
     .xh-body {
       padding: 12px;
     }
-    .xh-topbar__actions .xh-toast {
+    .xh-topbar__actions .xh-toast,
+    .xh-topbar__actions .xh-dirty-badge {
       display: none;
     }
   }

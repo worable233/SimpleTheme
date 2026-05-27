@@ -19,23 +19,40 @@ function simple_theme_is_admin_theme_enabled(): bool {
 }
 
 /**
- * 鍒ゆ柇褰撳墠椤甸潰鏄惁搴旇烦杩囩編鍖? */
+ * 判断当前页面是否应跳过美化
+ */
 function simple_theme_should_skip_admin_theme(): bool {
 	$screen = get_current_screen();
 	if (!$screen) return false;
 
-	// 璺宠繃鍧楃紪杈戝櫒銆佽嚜瀹氫箟鍣ㄣ€佺珯鐐圭紪杈戝櫒
+	// 跳过块编辑器、自定义器、站点编辑器
 	if ($screen->is_block_editor() || $screen->id === 'customize' || $screen->id === 'site-editor') {
-		return true;
-	}
-
-	// 璺宠繃涓婚鑷韩 Vue SPA 璁剧疆椤碉紙鍏?UI 宸茬嫭绔嬭璁★級
-	if ($screen->id === 'toplevel_page_simple-theme') {
 		return true;
 	}
 
 	return false;
 }
+
+/**
+ * 后台美化模式：不注销任何核心 CSS（避免破坏依赖链导致 WP 6.9+ _doing_it_wrong），
+ * 而是靠 admin-theme.css 的 CSS 规则（display:none）隐藏原生侧边栏和顶栏。
+ * 所有核心样式正常加载，浏览器的 HTTP 缓存确保几乎无额外开销。
+ *
+ * 注意：必须确保 dashicons 等被依赖的样式仍然注册，否则 WP 6.9+ 会发出
+ * _doing_it_wrong 警告（thickbox 依赖 dashicons 等）。
+ */
+add_action('admin_enqueue_scripts', function () {
+	if (!simple_theme_is_admin_theme_enabled()) return;
+	if (simple_theme_should_skip_admin_theme()) return;
+
+	// 不注销任何 handle —— 保持核心样式注册状态，避免依赖报错
+	// 原生 admin menu + admin bar 由 CSS display:none 隐藏
+
+	// 显式注册 dashicons——某些 WP 构建/环境可能未预注册，导致 thickbox 等依赖报错
+	if (!wp_style_is('dashicons', 'registered')) {
+		wp_register_style('dashicons', includes_url('/css/dashicons.min.css'), [], '6.9.1');
+	}
+}, 1);
 
 /**
  * 鍏ラ槦缇庡寲 CSS锛坅dmin + login锛? */
@@ -50,6 +67,15 @@ add_action('admin_enqueue_scripts', function () {
 		[],
 		$version
 	);
+});
+
+/**
+ * 缁檅ody 娣诲姞 sta-theme-active class锛屼緤 CSS Grid 甯冨眬浣跨敤
+ */
+add_filter('admin_body_class', function (string $classes): string {
+	if (!simple_theme_is_admin_theme_enabled()) return $classes;
+	if (simple_theme_should_skip_admin_theme()) return $classes;
+	return trim($classes . ' sta-theme-active');
 });
 
 add_action('login_enqueue_scripts', function () {

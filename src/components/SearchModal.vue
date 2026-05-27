@@ -2,7 +2,7 @@
 /**
  * SearchModal — 搜索弹窗（含输入框、模态遮罩、按键导航）
  */
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { buildRestUrl, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath } from '@/lib/theme-config'
@@ -39,11 +39,7 @@ watch(() => props.modelValue, (open) => {
   }
 })
 
-const contentVisible = ref(false)
-
-watch([isSearching, hasSearched, errorMessage], () => {
-  contentVisible.value = isSearching.value || hasSearched.value || !!errorMessage.value
-})
+const contentVisible = computed(() => searchQuery.value.length >= 2 || isSearching.value || hasSearched.value || !!errorMessage.value)
 
 function doSearch(query: string) {
   if (query.length < 2) {
@@ -214,18 +210,25 @@ onUnmounted(() => {
           </div>
 
           <!-- Results area -->
-          <SearchResultList
-            ref="resultsContainer"
-            :results="searchResults"
-            :query="searchQuery"
-            :is-searching="isSearching"
-            :has-searched="hasSearched"
-            :error-message="errorMessage"
-            :active-index="activeIndex"
-            @navigate="navigateToResult"
-            @retry="doSearch(searchQuery)"
-            @update:active-index="activeIndex = $event"
-          />
+          <div
+            class="search-modal__results-wrap"
+            :class="{ 'search-modal__results-wrap--open': contentVisible }"
+          >
+            <div class="search-modal__results-inner">
+              <SearchResultList
+                ref="resultsContainer"
+                :results="searchResults"
+                :query="searchQuery"
+                :is-searching="isSearching"
+                :has-searched="hasSearched"
+                :error-message="errorMessage"
+                :active-index="activeIndex"
+                @navigate="navigateToResult"
+                @retry="doSearch(searchQuery)"
+                @update:active-index="activeIndex = $event"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -339,7 +342,7 @@ onUnmounted(() => {
   transform: translateY(0.05em);
 }
 
-/* ==================== Transitions ==================== */
+/* ==================== Transitions — panel fade/slide with smooth bezier ==================== */
 .search-modal-enter-active,
 .search-modal-leave-active {
   transition: opacity 0.2s ease;
@@ -352,13 +355,38 @@ onUnmounted(() => {
 
 .search-modal-enter-active .search-modal__panel,
 .search-modal-leave-active .search-modal__panel {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .search-modal-enter-from .search-modal__panel,
 .search-modal-leave-to .search-modal__panel {
   transform: translateY(-16px) scale(0.98);
   opacity: 0;
+}
+
+/* ==================== Results wrap — expand/collapse accordion ==================== */
+.search-modal__results-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.search-modal__results-wrap--open {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.search-modal__results-inner {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 350ms cubic-bezier(0.4, 0, 0.2, 1), transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: 150ms;
+}
+
+.search-modal__results-wrap--open .search-modal__results-inner {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ==================== Mobile ==================== */
@@ -378,13 +406,17 @@ onUnmounted(() => {
 
   .search-modal-enter-active .search-modal__panel,
   .search-modal-leave-active .search-modal__panel {
-    transition: transform 0.25s ease;
+    transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .search-modal-enter-from .search-modal__panel,
   .search-modal-leave-to .search-modal__panel {
     transform: translateY(100%);
     opacity: 1;
+  }
+
+  .search-modal__results-wrap--open {
+    max-height: 70vh;
   }
 
   .search-modal__input {

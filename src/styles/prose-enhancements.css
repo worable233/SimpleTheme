@@ -296,3 +296,279 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* =========================================================
+   Sakurairo 区块兼容样式 — 重新设计
+   为已保存的 Sakurairo 区块提供风格统一的兜底样式
+   ========================================================= */
+
+/* ---------- 通知块入口动画 ---------- */
+@keyframes notice-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 通知块（task / warning / noway / buy） ---------- */
+.oat-prose .shortcodestyle {
+  display: block;
+  margin: 28px 0;
+  padding: 10px 14px 10px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--foreground);
+  position: relative;
+  animation: notice-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: box-shadow 0.2s ease;
+}
+.oat-prose .shortcodestyle:hover {
+  box-shadow: var(--shadow-medium);
+}
+/* WP 块编辑器容器自带阴影重现，这里去掉 */
+.wp-block-sakurairo-notice-block .shortcodestyle,
+.wp-block-sakurairo-notice-block .shortcodestyle:hover,
+.wp-block-sakurairo-notice-block .showcard,
+.wp-block-sakurairo-notice-block .showcard:hover {
+  box-shadow: none !important;
+}
+.oat-prose .shortcodestyle::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.oat-prose .shortcodestyle .sc-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+  color: var(--border);
+}
+.oat-prose .shortcodestyle .sc-content {
+  display: block;
+}
+.oat-prose .shortcodestyle p {
+  margin: 0.4em 0;
+}
+.oat-prose .shortcodestyle p:first-of-type {
+  margin-top: 0;
+}
+.oat-prose .shortcodestyle p:last-of-type {
+  margin-bottom: 0;
+}
+
+/* Per-type: ::before bar color + icon color + subtle background */
+.oat-prose .task {
+  background: color-mix(in srgb, var(--card) 98%, var(--muted-foreground));
+}
+.oat-prose .task::before {
+  background: var(--muted-foreground);
+}
+.oat-prose .task .sc-title {
+  color: var(--muted-foreground);
+}
+.oat-prose .task svg {
+  color: var(--muted-foreground);
+}
+
+.oat-prose .warning {
+  background: color-mix(in srgb, var(--card) 96%, var(--warning));
+}
+.oat-prose .warning::before {
+  background: var(--warning);
+}
+.oat-prose .warning .sc-title {
+  color: var(--warning);
+}
+.oat-prose .warning svg {
+  color: var(--warning);
+}
+
+.oat-prose .noway {
+  background: color-mix(in srgb, var(--card) 96%, var(--danger));
+}
+.oat-prose .noway::before {
+  background: var(--danger);
+}
+.oat-prose .noway .sc-title {
+  color: var(--danger);
+}
+.oat-prose .noway svg {
+  color: var(--danger);
+}
+
+.oat-prose .buy {
+  background: color-mix(in srgb, var(--card) 96%, var(--success));
+}
+.oat-prose .buy::before {
+  background: var(--success);
+}
+.oat-prose .buy .sc-title {
+  color: var(--success);
+}
+.oat-prose .buy svg {
+  color: var(--success);
+}
+
+/* Dark mode: card-highlight + adjusted tints */
+[data-theme='dark'] .oat-prose .shortcodestyle {
+  box-shadow: var(--shadow-small), var(--card-highlight);
+}
+[data-theme='dark'] .oat-prose .shortcodestyle:hover {
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+}
+[data-theme='dark'] .oat-prose .task {
+  background: color-mix(in srgb, var(--card) 95%, var(--muted-foreground));
+}
+[data-theme='dark'] .oat-prose .warning {
+  background: color-mix(in srgb, var(--card) 92%, var(--warning));
+}
+[data-theme='dark'] .oat-prose .noway {
+  background: color-mix(in srgb, var(--card) 92%, var(--danger));
+}
+[data-theme='dark'] .oat-prose .buy {
+  background: color-mix(in srgb, var(--card) 92%, var(--success));
+}
+[data-theme='dark'] .wp-block-sakurairo-notice-block .shortcodestyle,
+[data-theme='dark'] .wp-block-sakurairo-notice-block .shortcodestyle:hover,
+[data-theme='dark'] .wp-block-sakurairo-notice-block .showcard,
+[data-theme='dark'] .wp-block-sakurairo-notice-block .showcard:hover {
+  box-shadow: none !important;
+}
+
+/* ---------- Showcard 展示卡片 ---------- */
+/* WP 块容器：让多个卡片从左到右排列，超出换行 */
+.wp-block-sakurairo-showcard-block {
+  display: inline-flex;
+  vertical-align: top;
+}
+
+/* 保证外层容器阴影不复现 */
+.wp-block-sakurairo-showcard-block .showcard,
+.wp-block-sakurairo-showcard-block .showcard:hover {
+  box-shadow: none !important;
+}
+
+/* 卡片主体 — 每个卡片固定尺寸一致 */
+.oat-prose .wp-block-sakurairo-showcard-block .showcard {
+  display: flex;
+  flex-direction: column;
+  width: 192px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px;
+  animation: notice-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  box-shadow: var(--shadow-small);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard:hover {
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .img {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover {
+  opacity: 0.92;
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .showcard-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .showcard-button i {
+  font-size: 24px;
+  color: var(--foreground);
+  transition: transform 0.3s ease;
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button {
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button i {
+  transform: translateX(2px);
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title i {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
+  color: var(--foreground);
+  font-weight: 500;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dark mode: showcard — 完整适配 */
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-small), var(--card-highlight);
+}
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard:hover {
+  box-shadow: var(--shadow-medium), var(--card-highlight);
+  border-color: var(--accent);
+}
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title i,
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title {
+  color: var(--muted-foreground);
+}
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
+  color: var(--foreground);
+}
+[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .img {
+  background: var(--muted);
+}

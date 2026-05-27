@@ -235,23 +235,21 @@ function handleSubClick(child: { title: string; url: string }) {
 <style scoped>
 .admin-sidebar {
   width: 100px;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
+  height: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
   border-right: 1px solid var(--border, #e2e2e2);
   background-color: var(--card, #ffffff);
-  z-index: 9999;
+  z-index: auto;
   padding-top: 0;
 }
 
 .admin-sidebar__logo {
   width: 100%;
-  height: 100px;
+  height: 72px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -295,7 +293,7 @@ function handleSubClick(child: { title: string; url: string }) {
   overflow-y: auto;
   overflow-x: clip;
   width: 100%;
-  padding: 12px 0;
+  padding: 8px 0;
   scrollbar-width: thin;
 }
 
@@ -312,7 +310,7 @@ function handleSubClick(child: { title: string; url: string }) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin-top: auto;
   margin-bottom: auto;
 }
@@ -323,9 +321,9 @@ function handleSubClick(child: { title: string; url: string }) {
 }
 
 .admin-sidebar__item a {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-large);
   color: var(--foreground, #333);
   position: relative;
   transition: background-color var(--transition-fast, 0.15s ease);
@@ -362,37 +360,38 @@ function handleSubClick(child: { title: string; url: string }) {
 }
 
 .admin-sidebar__item a :deep(.dashicons) {
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
   line-height: 1;
   color: var(--foreground, #333);
 }
 
 .admin-sidebar__item a :deep(svg) {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: block;
 }
 
 .admin-sidebar__item a :deep(img) {
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
+  object-fit: contain;
 }
 
 /* Chevron for items with children */
 .admin-sidebar__item--has-sub a::after {
   content: '';
   position: absolute;
-  right: 6px;
+  right: -12px;
   top: 50%;
-  transform: translateY(-50%);
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid var(--foreground, #333);
-  border-top: 2px solid var(--foreground, #333);
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--foreground, #333);
+  border-top: 1.5px solid var(--foreground, #333);
   transform: translateY(-50%) rotate(45deg);
-  opacity: 0.4;
-  transition: transform 0.25s ease;
+  opacity: 0.3;
 }
 
 .admin-sidebar__item--active a {
@@ -443,7 +442,7 @@ function handleSubClick(child: { title: string; url: string }) {
   z-index: 10000;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-large);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 6px;
   margin: 0;
@@ -532,7 +531,7 @@ function handleSubClick(child: { title: string; url: string }) {
 
 .admin-sidebar__spacer {
   width: 100%;
-  height: 20px;
+  height: 12px;
 }
 
 @keyframes pulse {

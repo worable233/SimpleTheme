@@ -521,7 +521,7 @@ defineExpose({ clearForm })
           <input v-model="useMarkdown" type="checkbox" />
           <span>Markdown</span>
         </label>
-        <label v-if="formSettings.showCookiesOptIn" class="comments-form__option" title="记住信息">
+        <label v-if="formSettings.showCookiesOptIn && !currentUser" class="comments-form__option" title="记住信息">
           <input v-model="cookiesConsent" type="checkbox" />
           <span>记住信息</span>
         </label>
@@ -700,7 +700,7 @@ defineExpose({ clearForm })
                       <span class="wizard-step__option-hint">使用 Markdown 格式</span>
                     </span>
                   </label>
-                  <label v-if="formSettings.showCookiesOptIn" class="wizard-step__option">
+                  <label v-if="formSettings.showCookiesOptIn && !currentUser" class="wizard-step__option">
                     <input v-model="cookiesConsent" type="checkbox" class="wizard-step__checkbox" />
                     <span class="wizard-step__option-text">
                       <span class="wizard-step__option-label">记住信息</span>

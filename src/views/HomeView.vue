@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, fetchCategories, getErrorMessage, resolveThemePath, fetchContentByRestUrl } from '@/lib/wordpress'
@@ -27,7 +27,6 @@ const errorMessage = ref('')
 /** Local category slug; '' means 'all'. Initialized from route param on mount. */
 const categorySlug = ref((route.params.slug as string) || '')
 
-const SENTINEL_MARGIN = 400
 const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ?? 6)
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
@@ -49,39 +48,45 @@ const formatWordCount = (count?: number) => {
   return count >= 1000 ? `${(count / 1000).toFixed(1)}k 字` : `${count} 字`
 }
 
-let observer: IntersectionObserver | null = null
-const sentinelRef = ref<HTMLElement | null>(null)
+// ----- 无限滚动（基于 scroll + requestAnimationFrame）-----
+let scrollRafId: number | null = null
 
-function setupObserver() {
-  observer?.disconnect()
-  prefetchTimers.forEach((t) => clearTimeout(t))
-  prefetchTimers.clear()
-  prefetchTimers.forEach((t) => clearTimeout(t))
-  prefetchTimers.clear()
-  prefetchTimers.forEach((t) => clearTimeout(t))
-  prefetchTimers.clear()
-  prefetchTimers.forEach((t) => clearTimeout(t))
-  prefetchTimers.clear()
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
-        loadMorePosts()
-      }
-    },
-    { rootMargin: `${SENTINEL_MARGIN}px` },
-  )
-  if (sentinelRef.value) {
-    observer.observe(sentinelRef.value)
+function checkScrollAndLoad() {
+  scrollRafId = null
+  if (!hasMore.value || loadingMore.value) return
+  const distFromBottom = document.documentElement.scrollHeight - (window.innerHeight + window.scrollY)
+  // 距离底部 1200px 内触发加载，给足够余量应对快速滚动
+  if (distFromBottom < 1200) {
+    loadMorePosts()
+  }
+}
+
+function onScroll() {
+  if (scrollRafId !== null) return
+  scrollRafId = requestAnimationFrame(checkScrollAndLoad)
+}
+
+function startInfiniteScroll() {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  // 初始检查：如果页面已滚动过底部则立即触发
+  checkScrollAndLoad()
+}
+
+function stopInfiniteScroll() {
+  window.removeEventListener('scroll', onScroll)
+  if (scrollRafId !== null) {
+    cancelAnimationFrame(scrollRafId)
+    scrollRafId = null
   }
 }
 
 onMounted(async () => {
   await loadHomepageData()
-  setupObserver()
+  nextTick(() => startInfiniteScroll())
 })
 
 onBeforeUnmount(() => {
-  observer?.disconnect()
+  stopInfiniteScroll()
   prefetchTimers.forEach((t) => clearTimeout(t))
   prefetchTimers.clear()
 })
@@ -127,7 +132,9 @@ function onCategoryClick(slug: string) {
     })
     .finally(() => {
       categoryLoading.value = false
-    })
+      // 切换分类后检查是否需要立即加载更多
+      requestAnimationFrame(checkScrollAndLoad)
+    }
 }
 
 async function loadHomepageData() {
@@ -138,8 +145,10 @@ async function loadHomepageData() {
 
   try {
     await ensureLoaded()
-    await loadCategories()
+    // Fire categories in parallel with first page — they don't block post rendering
+    const catPromise = loadCategories()
     await loadPage(1)
+    await catPromise
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '首页内容加载失败，请稍后再试。')
     showError(errorMessage.value)
@@ -158,6 +167,9 @@ async function loadMorePosts() {
     showError(getErrorMessage(error, '加载更多文章失败，请稍后再试。'))
   } finally {
     loadingMore.value = false
+    requestAnimationFrame(checkScrollAndLoad)
+  }
+}
   }
 }
 
@@ -192,14 +204,7 @@ async function loadPage(pageNum: number) {
   if (pageNum === 1) {
     // Stale check: if user clicked another category while we were fetching, discard
     if (capturedSlug !== categorySlug.value) return
-
-    // Progressive render: add cards one at a time so users see first card ASAP
-    latestPosts.value = newItems.length ? newItems.slice(0, 1) : []
-    for (let i = 1; i < newItems.length; i++) {
-      if (capturedSlug !== categorySlug.value) return // category changed, stop adding
-      await new Promise((r) => setTimeout(r, 60))
-      latestPosts.value = newItems.slice(0, i + 1)
-    }
+    latestPosts.value = newItems
   } else {
     latestPosts.value = [...latestPosts.value, ...newItems]
   }
@@ -352,12 +357,6 @@ function cancelPrefetch(post: WordPressPost) {
           </div>
         </div>
 
-        <!-- Intersection sentinel -->
-        <div
-          v-if="hasMore && latestPosts.length > 0"
-          ref="sentinelRef"
-          class="scroll-sentinel"
-        ></div>
       </template>
     </section>
 

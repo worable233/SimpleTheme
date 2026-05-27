@@ -25,6 +25,6 @@ export function withCache<T, A extends unknown[]>(
   }
 }
 
-export function clearAllCache(): void {
+export function clearApiCache(): void {
   store.clear()
 }

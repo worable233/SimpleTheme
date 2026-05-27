@@ -32,7 +32,7 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
+*.txt
 *.tsbuildinfo
 
 .eslintcache
@@ -46,10 +46,6 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
-# Reference themes (for study only)
-参考主题/
-参考Sakurairo/
-参考iEmo/
 
 # Env files
 .env.docker
@@ -62,6 +58,7 @@ vendor/
 
 # AI configurations and local context
 /.*/
+/skills/
 !.vscode/
 CLAUDE.md
 .atomcode.md
@@ -83,5 +80,5 @@ emojis/**/*.png
 emojis/**/*.jpg
 emojis/**/*.jpeg
 
-# Reference plugin (third-party, not part of theme)
-uixpress/
+# AtomCode local-scope configs (machine-specific)
+.atomcode/local/

@@ -44,20 +44,39 @@ add_filter(
 
 /**
  * Render a sakurairo/notice-block (callout).
- * Saved HTML: <div class="shortcodestyle task|warning|noway|buy"><i …></i><span>…</span></div>
+ * Saved HTML: <div class="shortcodestyle task|warning|noway|buy"><i …></i><span class="sc-title">TITLE</span><span class="sc-content">…</span></div>
  */
 function simple_theme_render_notice_block( $attributes, $content ) {
 	if ( empty( $content ) ) {
 		return '';
 	}
-	$type = ! empty( $attributes['type'] ) ? sanitize_html_class( $attributes['type'] ) : 'task';
-	// Ensure the class is present — if the content already has it, we just return as-is.
-	if ( false !== strpos( $content, 'shortcodestyle' ) ) {
+
+	// Modern block — already has the full structure (icon + sc-title + sc-content).
+	if ( false !== strpos( $content, 'sc-title' ) ) {
 		return $content;
 	}
+
+	$type = ! empty( $attributes['type'] ) ? sanitize_html_class( $attributes['type'] ) : 'task';
+
+	$titles = array(
+		'task'    => 'TASK',
+		'warning' => 'WARNING',
+		'noway'   => 'DIAALLOWED',
+		'buy'     => 'ALLOWED',
+	);
+
+	$title = isset( $titles[ $type ] ) ? $titles[ $type ] : $titles['task'];
+
+	// Old block format or plain text — rebuild with title + content.
+	// Strip any existing wrapper/icon from old format, keep inner text.
+	if ( false !== strpos( $content, 'shortcodestyle' ) ) {
+		$content = wp_strip_all_tags( $content );
+	}
+
 	return sprintf(
-		'<div class="shortcodestyle %s">%s</div>',
+		'<div class="shortcodestyle %s"><span class="sc-title">%s</span><span class="sc-content">%s</span></div>',
 		esc_attr( $type ),
+		esc_html( $title ),
 		wp_kses_post( $content )
 	);
 }
@@ -219,7 +238,7 @@ add_action( 'enqueue_block_editor_assets', 'simple_theme_sakurairo_editor_assets
 function simple_theme_sakurairo_editor_assets() {
 	$asset_file = __DIR__ . '/sakurairo-editor.asset.php';
 	$deps       = array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-hooks', 'wp-dom-ready' );
-	$version    = '3.0.10';
+	$version    = '3.0.12';
 
 	if ( file_exists( $asset_file ) ) {
 		$asset  = include $asset_file;
@@ -272,7 +291,7 @@ function simple_theme_sakurairo_frontend_assets() {
 		'simple-theme-sakurairo-blocks',
 		get_theme_file_uri( '/inc/blocks/notice-block.css' ),
 		array(),
-		'3.0.10'
+		'3.0.12'
 	);
 }
 

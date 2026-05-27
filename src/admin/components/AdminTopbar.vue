@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import UserDropdown from './UserDropdown.vue'
 
 const props = defineProps<{
   siteName: string
@@ -9,6 +10,7 @@ const props = defineProps<{
 
 const userOpen = ref(false)
 const currentTheme = ref('light')
+const userBtnRef = ref<HTMLElement | null>(null)
 
 function toggleUser() {
   userOpen.value = !userOpen.value
@@ -52,37 +54,26 @@ onMounted(() => {
 
     <div class="admin-topbar__right">
       <!-- User dropdown -->
-      <div class="admin-topbar__user-wrap" @mouseenter="userOpen = true" @mouseleave="closeUser">
-        <button class="admin-topbar__user-btn" @click="toggleUser" :title="userName">
+      <div class="admin-topbar__user-wrap">
+        <button
+          ref="userBtnRef"
+          class="admin-topbar__user-btn"
+          @click="toggleUser"
+          :title="userName"
+        >
           <img v-if="userAvatar" :src="userAvatar" alt="" class="admin-topbar__avatar" />
           <span v-else class="admin-topbar__avatar admin-topbar__avatar--placeholder">{{ avatarLetter }}</span>
         </button>
 
-        <Transition name="topbar-fade">
-          <div v-if="userOpen" class="admin-topbar__dropdown">
-            <div class="admin-topbar__dropdown-header">
-              <img v-if="userAvatar" :src="userAvatar" alt="" class="admin-topbar__dropdown-avatar" />
-              <span v-else class="admin-topbar__dropdown-avatar admin-topbar__dropdown-avatar--placeholder">{{ avatarLetter }}</span>
-              <div class="admin-topbar__dropdown-info">
-                <span class="admin-topbar__dropdown-name">{{ userName }}</span>
-              </div>
-            </div>
-            <div class="admin-topbar__dropdown-body">
-              <a :href="'profile.php'" class="admin-topbar__dropdown-item">个人资料</a>
-              <a :href="'profile.php'">编辑个人资料</a>
-            </div>
-            <div class="admin-topbar__dropdown-body">
-              <button class="admin-topbar__theme-btn" @click="toggleTheme">
-                <svg v-if="currentTheme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                <span>{{ currentTheme === 'dark' ? '浅色模式' : '深色模式' }}</span>
-              </button>
-            </div>
-            <div class="admin-topbar__dropdown-footer">
-              <a :href="'logout'">退出登录</a>
-            </div>
-          </div>
-        </Transition>
+        <UserDropdown
+          :visible="userOpen"
+          :user-name="userName"
+          :user-avatar="userAvatar"
+          :current-theme="currentTheme"
+          :anchor-el="userBtnRef"
+          @close="closeUser"
+          @toggle-theme="toggleTheme"
+        />
       </div>
     </div>
   </header>
@@ -90,18 +81,15 @@ onMounted(() => {
 
 <style scoped>
 .admin-topbar {
-  position: fixed;
-  top: 0;
-  left: 100px;
-  right: 0;
   height: 48px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--card, #ffffff);
   border-bottom: 1px solid var(--border, #e2e2e2);
   padding: 0 24px;
-  z-index: 9998;
+  z-index: auto;
 }
 
 .admin-topbar__left {

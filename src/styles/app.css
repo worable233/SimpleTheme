@@ -96,16 +96,11 @@
   flex-direction: column;
   width: 100%;
   padding: 20px 0;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .left-sidebar__menu::-webkit-scrollbar {
-  width: 4px;
-}
-
-.left-sidebar__menu::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
+  display: none;
 }
 
 .left-sidebar__menu ul {

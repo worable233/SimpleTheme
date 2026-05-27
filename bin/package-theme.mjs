@@ -55,22 +55,25 @@ const excludedNames = new Set([
   'CLAUDE.md', 'AGENTS.md', 'README.md', 'LICENSE',
   'UI-DESIGN-ANALYSIS.md', 'MATERIAL_DESIGN_GUIDE.md',
   '参考主题', '参考iEmo', '参考Sakurairo', 'iEmo-master.zip',
-  'vendor',
   '.vscode', '.idea', '.deepseek', '.learnings', '.atomcode', 'includes', '.atomcode.md',
   '_check.php', '_fix_admin.py', '_fix_loggedin.py', '_count_large.py',
   '_check-zip.mjs', '_check-zip-contents.ps1',
   'bin/check-zip-contents.ps1',
-	  'check_captcha.php', 'debug-lines.cjs', 'debug-resolve.php',
-	  'dist.zip', 'original.css', 'response.txt',
-	  'test_queue.cjs', 'test_queue_behavior.php',
-	  'dist/emojis',  'original_LinksView.vue', 'original_prose.css',
+  'check_captcha.php', 'debug-lines.cjs', 'debug-resolve.php',
+  'dist.zip', 'original.css', 'response.txt',
+  'test_queue.cjs', 'test_queue_behavior.php',
+  'dist/emojis',  'original_LinksView.vue', 'original_prose.css',
   'Simple-Theme-v1.0.0.zip', 'Simple-Theme-v2.0.0.zip',
+  'deploy-temp.zip',
+  'vendor', 'uixpress',
+  'build-errors.txt', 'errors.txt', 'tmp_homeview_diff.txt',
   '_zipcheck',
 ]);
 
 const alwaysExcludeDirs = new Set([
   'node_modules', '.git', '.claude', '.vscode', '.idea',
   '.deepseek', '.learnings', '.atomcode', 'includes',
+  'vendor', 'uixpress',
 ]);
 
 let fileCount = 0;
@@ -135,7 +138,7 @@ function walkDir(dir) {
     } else if (stat.isFile()) {
       // File extension filter
       const ext = entry.substring(entry.lastIndexOf('.')).toLowerCase();
-      if (ext === '.ps1' || ext === '.mjs' || ext === '.py' || ext === '.md' || ext === '.log') continue;
+      if (ext === '.ps1' || ext === '.mjs' || ext === '.py' || ext === '.md' || ext === '.log' || ext === '.zip' || ext === '.txt') continue;
       if (entry.startsWith('composer.')) continue;
 
       if (shouldExclude(entry, relPath)) continue;
