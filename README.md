@@ -1,5 +1,13 @@
 # Simple Theme
 
+[![GitHub release](https://img.shields.io/github/v/release/worable233/SimpleTheme?include_prereleases&style=flat-square)](https://github.com/worable233/SimpleTheme/releases)
+[![GitHub stars](https://img.shields.io/github/stars/worable233/SimpleTheme?style=flat-square)](https://github.com/worable233/SimpleTheme/stargazers)
+[![GitHub license](https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-red?style=flat-square)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+[![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![WordPress](https://img.shields.io/badge/WordPress-REST%20API-21759B?style=flat-square&logo=wordpress&logoColor=white)](https://developer.wordpress.org/rest-api/)
+[![PHP](https://img.shields.io/badge/PHP-7.3%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![GitHub stars](https://img.shields.io/github/stars/worable233/SimpleTheme?style=social)](https://github.com/worable233/SimpleTheme)
 
 > **v2.0.0 正在开发中** — 从 v1 到 v2 的完整重写，功能逐步完善中，欢迎测试反馈。
@@ -8,6 +16,11 @@
 Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress 主题。
 
 前端由 Vue 3 完全渲染，数据通过 WordPress REST API 驱动。内置后台美化，爬虫检测，对搜索引擎输出完整静态 HTML，兼容 Yoast / Rank Math 等 SEO 插件。
+
+## 环境要求
+
+- WordPress：`>= 6.0`
+- PHP：`>= 7.3`
 
 ## 文档&预览
 
@@ -19,7 +32,7 @@ Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress �
 
 ## 技术栈
 
-Vue 3 · TypeScript · Vue Router · Vite 8 · OAT UI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
+Vue 3 · TypeScript · Vue Router · Vite 8 · OatUI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
 
 ## 特性
 
@@ -85,13 +98,11 @@ Vue Router catch-all 路由，统一由 `ContentView` 处理：调用 WordPress 
 ## 致谢
 
 - [Sakurairo](https://github.com/mirai-mamori/Sakurairo) - GPL-2.0 license - 参考其代码以实现对Sakurairo区块及数据的完整兼容
-- [iEmo](https://github.com/kannafay/iEmo) - MIT license - v2设计大幅借鉴此主题
+- [iEmo](https://github.com/kannafay/iEmo) - MIT license - v2设计大幅借鉴此主题设计，未使用其代码
 
 ## 许可证
 
 [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名-非商业使用-禁止演绎。
-
-Copyright © 2026 [worable](https://github.com/worable233)
 
 ## Star History
 
