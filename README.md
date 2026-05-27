@@ -8,7 +8,6 @@
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![WordPress](https://img.shields.io/badge/WordPress-REST%20API-21759B?style=flat-square&logo=wordpress&logoColor=white)](https://developer.wordpress.org/rest-api/)
 [![PHP](https://img.shields.io/badge/PHP-7.3%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
-[![GitHub stars](https://img.shields.io/github/stars/worable233/SimpleTheme?style=social)](https://github.com/worable233/SimpleTheme)
 
 > **v2.0.0 正在开发中** — 从 v1 到 v2 的完整重写，功能逐步完善中，欢迎测试反馈。
 > 预览版请前往 [releases](https://github.com/worable233/SimpleTheme/releases)下载。
