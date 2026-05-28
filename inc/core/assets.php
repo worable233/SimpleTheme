@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Asset Enqueuing (Frontend + Admin)
  *
@@ -72,7 +72,9 @@ function simple_theme_get_frontend_config() {
 			'links'      => esc_url_raw( rest_url( 'simple-theme/v1/links' ) ),
 			'settings'   => esc_url_raw( rest_url( 'simple-theme/v1/settings' ) ),
 			'smtp_test'  => esc_url_raw( rest_url( 'simple-theme/v1/smtp-test' ) ),
-			'mail_queue' => esc_url_raw( rest_url( 'simple-theme/v1/mail-queue' ) ),
+					'mail_queue'      => esc_url_raw( rest_url( 'simple-theme/v1/mail-queue' ) ),
+					'email_templates' => esc_url_raw( rest_url( 'simple-theme/v1/email-templates' ) ),
+					'email_preview'   => esc_url_raw( rest_url( 'simple-theme/v1/email-template-preview' ) ),
 		),
 		'currentUser' => $current_user,
 		'restNonce'  => wp_create_nonce( 'wp_rest' ),

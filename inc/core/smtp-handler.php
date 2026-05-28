@@ -22,7 +22,7 @@ function simple_theme_smtp_phpmailer( $phpmailer ) {
 	$phpmailer->isSMTP();
 	$phpmailer->Host = $options['smtp_host'];
 	$phpmailer->Port = ! empty( $options['smtp_port'] ) ? min( 65535, max( 1, (int) $options['smtp_port'] ) ) : 587;
-	$phpmailer->Timeout = ! empty( $options['smtp_timeout'] ) ? max( 1, min( 60, (int) $options['smtp_timeout'] ) ) : 6;
+	$phpmailer->Timeout = ! empty( $options['smtp_timeout'] ) ? max( 1, min( 120, (int) $options['smtp_timeout'] ) ) : 30;
 
 	// Encryption
 	$encryption = ! empty( $options['smtp_encryption'] ) ? $options['smtp_encryption'] : 'tls';
@@ -171,12 +171,21 @@ function simple_theme_smtp_test( WP_REST_Request $request ) {
 	$subject = 'SMTP Test — ' . get_bloginfo( 'name' );
 	$message = 'This is a test email sent from your WordPress site via the Simple Theme SMTP configuration.';
 	$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+	$options = get_option( 'simple_theme_options', array() );
 
 	// Test emails bypass the queue — send immediately
 	if ( ! defined( 'SIMPLE_THEME_MAIL_QUEUE_PROCESSING' ) ) {
 		define( 'SIMPLE_THEME_MAIL_QUEUE_PROCESSING', true );
 	}
 	$sent = wp_mail( $to, $subject, $message, $headers );
+
+	// Record test email in queue history
+	simple_theme_insert_mail_queue_record( array(
+		'to'      => $to,
+		'subject' => $subject,
+		'message' => $message,
+		'headers' => $headers,
+	), $sent ? 'sent' : 'failed' );
 
 	if ( $sent ) {
 		return new WP_REST_Response( array(
@@ -199,19 +208,44 @@ function simple_theme_smtp_test( WP_REST_Request $request ) {
 		}
 	}
 
+	// Fix garbled Chinese characters from SMTP server responses (GBK/GB2312 → UTF-8)
+	if ( '' !== $debug_info && function_exists( 'mb_detect_encoding' ) ) {
+		$detected = mb_detect_encoding( $debug_info, array( 'UTF-8', 'GBK', 'GB2312', 'ISO-8859-1', 'Windows-1252' ), true );
+		if ( $detected && 'UTF-8' !== $detected ) {
+			$converted = mb_convert_encoding( $debug_info, 'UTF-8', $detected );
+			if ( false !== $converted ) {
+				$debug_info = $converted;
+			}
+		}
+	}
+
+	// Detect connection timeout
+	$timeout_hint = '';
+	if (
+		false !== stripos( $debug_info, '10060' ) ||
+		false !== stripos( $debug_info, 'timed out' ) ||
+		false !== stripos( $debug_info, 'timeout' ) ||
+		false !== stripos( $debug_info, '连接超时' ) ||
+		false !== stripos( $debug_info, '超时' )
+	) {
+		$timeout_hint = '连接超时：服务器无法连接到 SMTP 主机 ' . $options['smtp_host'] . ':' . $options['smtp_port'] . '。请检查：1) 服务器防火墙是否阻止了出站 SMTP 连接；2) 云厂商是否封锁了 SMTP 端口（常见于阿里云/腾讯云/AWS）；3) SMTP 主机地址是否正确；4) 可尝试增加连接超时时间。';
+	}
+
 	// Detect SSL CA certificate issue (common on Windows PHP)
 	$ssl_ca_hint = '';
-	if ( false !== stripos( $debug_info, 'ssl' ) ) {
+	if ( false !== stripos( $debug_info, 'ssl' ) && ! $timeout_hint ) {
 		$ssl_ca_hint = '当前服务器（Windows）缺少 CA 证书包，导致 SSL 握手失败。请在 wp-config.php 中添加 define(\'SIMPLE_THEME_SMTP_DEBUG_SSL\', true); 以临时跳过 SSL 验证（仅开发/测试环境使用，生产环境请配置 CA 证书）。';
 	}
 
 	return new WP_REST_Response( array(
-		'success'     => false,
-		'message'     => __( 'Failed to send test email.' ),
-		'debug'       => $debug_info,
-		'ssl_ca_hint' => $ssl_ca_hint,
+		'success'      => false,
+		'message'      => __( 'Failed to send test email.' ),
+		'debug'        => $debug_info,
+		'ssl_ca_hint'  => $ssl_ca_hint,
+		'timeout_hint' => $timeout_hint,
 	), 500 );
 }
+
 
 // ============================================================
 // 6. Mail Queue — table, override, cron, REST
@@ -305,6 +339,41 @@ function simple_theme_insert_mail_queue( $atts ) {
 			'max_retries'   => $max_retries,
 			'retry_interval' => $retry_interval,
 			'next_retry_at' => current_time( 'mysql' ),
+		),
+		array( '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s' )
+	);
+}
+
+/**
+ * Insert a mail record directly with a given status (for test emails).
+ */
+function simple_theme_insert_mail_queue_record( $atts, $status = 'sent' ) {
+	global $wpdb;
+
+	$defaults = array(
+		'to'          => '',
+		'subject'     => '',
+		'message'     => '',
+		'headers'     => '',
+		'attachments' => array(),
+	);
+	$atts = wp_parse_args( $atts, $defaults );
+
+	$options       = get_option( 'simple_theme_options', array() );
+	$max_retries    = ! empty( $options['smtp_queue_retry_count'] ) ? min( 20, max( 0, (int) $options['smtp_queue_retry_count'] ) ) : 3;
+	$retry_interval = ! empty( $options['smtp_queue_retry_interval'] ) ? min( 3600, max( 60, (int) $options['smtp_queue_retry_interval'] ) ) : 300;
+
+	$wpdb->insert(
+		$wpdb->prefix . 'simple_theme_mail_queue',
+		array(
+			'to_email'       => is_array( $atts['to'] ) ? implode( ',', $atts['to'] ) : $atts['to'],
+			'subject'        => $atts['subject'],
+			'message'        => $atts['message'],
+			'headers'        => is_array( $atts['headers'] ) ? maybe_serialize( $atts['headers'] ) : $atts['headers'],
+			'attachments'    => is_array( $atts['attachments'] ) ? maybe_serialize( $atts['attachments'] ) : $atts['attachments'],
+			'max_retries'    => $max_retries,
+			'retry_interval' => $retry_interval,
+			'status'         => $status,
 		),
 		array( '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s' )
 	);

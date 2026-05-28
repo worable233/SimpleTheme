@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import type { AnnouncementSettings } from '@/types/wordpress'
 
 const props = defineProps<{
@@ -14,6 +14,20 @@ function handleButtonClick(button: { action?: 'close' | 'link'; url?: string }) 
   }
   visible.value = false
 }
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') visible.value = false
+}
+
+onMounted(() => {
+  document.body.style.overflow = 'hidden'
+  document.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  document.body.style.overflow = ''
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>

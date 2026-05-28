@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
@@ -134,7 +134,7 @@ function onCategoryClick(slug: string) {
       categoryLoading.value = false
       // 切换分类后检查是否需要立即加载更多
       requestAnimationFrame(checkScrollAndLoad)
-    }
+    })
 }
 
 async function loadHomepageData() {
@@ -168,8 +168,6 @@ async function loadMorePosts() {
   } finally {
     loadingMore.value = false
     requestAnimationFrame(checkScrollAndLoad)
-  }
-}
   }
 }
 
@@ -392,12 +390,6 @@ function cancelPrefetch(post: WordPressPost) {
 /* Top gap for loading-more skeleton */
 .post-list--append {
   margin-top: 1.5rem;
-}
-
-/* Sentinel — invisible trigger for IntersectionObserver */
-.scroll-sentinel {
-  height: 1px;
-  pointer-events: none;
 }
 
 /* Responsive skeleton — stack vertically on mobile */

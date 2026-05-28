@@ -110,7 +110,7 @@ function simple_theme_get_default_options() {
 			'smtp_password'            => '',
 			'smtp_from_email'          => '',
 			'smtp_from_name'           => '',
-			'smtp_timeout'             => 6,
+			'smtp_timeout'             => 30,
 
 			// ---- SMTP Queue ----
 			'smtp_queue_enabled'       => true,
@@ -248,13 +248,15 @@ function simple_theme_sanitize_options( $input ) {
 		} elseif ( 'smtp_from_name' === $key ) {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		} elseif ( 'smtp_timeout' === $key ) {
-			$output[ $key ] = max( 1, min( 60, (int) $value ) );
+			$output[ $key ] = max( 1, min( 120, (int) $value ) );
 		} elseif ( 'smtp_queue_enabled' === $key ) {
 			$output[ $key ] = (bool) $value;
 		} elseif ( 'smtp_queue_retry_count' === $key ) {
 			$output[ $key ] = max( 0, min( 20, (int) $value ) );
 		} elseif ( 'smtp_queue_retry_interval' === $key ) {
 			$output[ $key ] = max( 60, min( 3600, (int) $value ) );
+		} elseif ( 'email_template' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'simple', 'card', 'professional' ), true ) ? (string) $value : 'simple';
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		}
@@ -285,6 +287,7 @@ function simple_theme_save_settings( WP_REST_Request $request ) {
 	}
 	$existing = get_option( 'simple_theme_options', array() );
 	$new_options = apply_filters( 'simple_theme_pre_save_settings', $new_options, $existing );
+	$new_options = simple_theme_sanitize_options( $new_options );
 	$merged = array_merge( $existing, $new_options );
 	update_option( 'simple_theme_options', $merged, false );
 	return new WP_REST_Response( $merged, 200 );

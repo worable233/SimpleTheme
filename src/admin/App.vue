@@ -32,6 +32,7 @@ const tabs = [
   { key: 'admin_theme', label: '后台样式' },
   { key: 'advanced', label: '高级' },
   { key: 'smtp', label: 'SMTP' },
+  { key: 'email_template', label: '邮件模板' },
 ]
 
 const currentSettings = ref<AdminSettings>({})
@@ -112,6 +113,7 @@ const activeComponent = computed(() => {
     admin_theme: AdminThemeTab,
     advanced: AdvancedTab,
     smtp: SmtpTab,
+    email_template: EmailTemplateTab,
   }
   return map[activeTab.value]
 })

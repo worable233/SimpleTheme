@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import AppCard from './AppCard.vue'
 import AppToggle from './AppToggle.vue'
@@ -48,7 +48,9 @@ async function sendTest() {
       const debug = data.debug ? ` (${data.debug})` : ''
       testMessage.value = debug
       emit('toast', (data.message || '发送失败') + debug, 'error')
-      if (data.ssl_ca_hint) {
+      if (data.timeout_hint) {
+        emit('toast', data.timeout_hint, 'warning')
+      } else if (data.ssl_ca_hint) {
         emit('toast', data.ssl_ca_hint, 'warning')
       }
     }
@@ -206,11 +208,11 @@ const statusColors: Record<string, string> = {
           <input
             type="number"
             class="xh-input xh-input--number"
-            min="1" max="60"
-            :value="(settings.smtp_timeout as number) ?? 6"
+            min="1" max="120"
+            :value="(settings.smtp_timeout as number) ?? 30"
             @input="emit('update', 'smtp_timeout', Number(($event.target as HTMLInputElement).value))"
           />
-          <p class="xh-field__desc">PHPMailer 等待服务器响应的最大秒数，范围 1-60。</p>
+          <p class="xh-field__desc">PHPMailer 等待服务器响应的最大秒数，范围 1-120，SSL 连接建议 30 秒以上。</p>
         </div>
       </div>
     </AppCard>
