@@ -767,6 +767,12 @@ add_filter( 'rest_pre_insert_comment', function( $prepared_comment, $request ) {
 		}
 	}
 
+	// QQ number → qq.com email conversion
+	// sanitize_email() strips pure-digit strings, so append @qq.com first
+	if ( ! empty( $prepared_comment['comment_author_email'] ) && preg_match( '/^\d{5,}$/', $prepared_comment['comment_author_email'] ) ) {
+		$prepared_comment['comment_author_email'] = $prepared_comment['comment_author_email'] . '@qq.com';
+	}
+
 	// Markdown→HTML conversion (before KSES in wp_new_comment)
 	if ( ! empty( $request->get_param( 'useMarkdown' ) ) && isset( $prepared_comment['comment_content'] ) ) {
 		$parsedown = new Parsedown();
@@ -826,3 +832,4 @@ add_filter( 'rest_prepare_comment', function( $response, $comment ) {
 	$response->set_data( $data );
 	return $response;
 }, 10, 2 );
+

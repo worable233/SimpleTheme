@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Asset Enqueuing (Frontend + Admin)
  *
@@ -77,7 +77,7 @@ function simple_theme_get_frontend_config() {
 					'email_preview'   => esc_url_raw( rest_url( 'simple-theme/v1/email-template-preview' ) ),
 		),
 		'currentUser' => $current_user,
-		'restNonce'  => wp_create_nonce( 'wp_rest' ),
+		'restNonce'  => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 		'logoutUrl'  => wp_logout_url( home_url( '/' ) ),
 		'features'   => array(
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),

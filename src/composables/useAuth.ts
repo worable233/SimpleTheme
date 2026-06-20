@@ -83,6 +83,9 @@ export function useAuth() {
     state.restNonce = null
     state.adminUrl = null
 
+    // 清除 axios 的 nonce header，防止过期 nonce 污染后续请求
+    delete apiClient.defaults.headers.common['X-WP-Nonce']
+
     // 使用 PHP 生成的 logout URL（包含 nonce）
     const config = getThemeConfig()
     if (config?.logoutUrl) {

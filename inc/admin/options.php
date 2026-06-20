@@ -94,11 +94,25 @@ function simple_theme_get_default_options() {
 		'shuoshuo_subtitle'        => '',
 			'suppress_console_warnings' => false,
 
+			// ---- Announcement ----
+			'announcement_enabled'        => false,
+			'announcement_mode'           => 'modal',
+			'announcement_page_id'        => 0,
+			'announcement_buttons'        => '',
+			'announcement_capsule_title'  => '',
+			'announcement_icon'           => '',
+
+			// ---- Cookie Consent ----
+			'cookie_consent_enabled'      => false,
+			'cookie_consent_message'      => '本站使用 Cookie 以改善您的访问体验。继续浏览即表示您同意我们的 Cookie 使用政策。',
+
 			// ---- Admin Theme ----
 			'admin_theme_enabled'     => false,
 
 			// ---- Admin Bar ----
 			'hide_admin_bar'          => false,
+				// ---- Local Avatars ----
+				'local_avatars_enabled'   => false,
 
 			// ---- SMTP ----
 			'smtp_enabled'             => false,
@@ -257,12 +271,17 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = max( 60, min( 3600, (int) $value ) );
 		} elseif ( 'email_template' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'simple', 'card', 'professional' ), true ) ? (string) $value : 'simple';
+		} elseif ( 'announcement_mode' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'modal', 'capsule' ), true ) ? (string) $value : $defaults[ $key ];
+		} elseif ( 'announcement_buttons' === $key ) {
+			$decoded = json_decode( $value, true );
+			$output[ $key ] = is_array( $decoded ) ? $value : $defaults[ $key ];
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		}
-	}
+		}
 
-	return $output;
+		return $output;
 }
 
 // ========== Settings REST Endpoints ==========

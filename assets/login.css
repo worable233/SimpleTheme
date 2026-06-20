@@ -1,0 +1,204 @@
+/* ================================================================
+ * Simple Theme Login — Apple HIG 设计语言
+ * ================================================================ */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'PingFang SC',
+    'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+  --apple-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s var(--apple-ease);
+  --radius-small: 5px;
+  --radius-medium: 7px;
+  --radius-large: 10px;
+  --radius-full: 9999px;
+  --shadow-small: 0 1px 3px rgb(0 0 0 / 0.04);
+  --shadow-medium: 0 4px 12px rgb(0 0 0 / 0.05);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
+  --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.1);
+}
+
+[data-theme='light'], :root {
+  color-scheme: light;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --primary: #1d1d1f;
+  --primary-foreground: #ffffff;
+  --secondary: #86868b;
+  --muted: #f5f5f5;
+  --muted-foreground: #86868b;
+  --border: rgba(0, 0, 0, 0.06);
+  --input-border: #d2d2d7;
+  --danger: #ff3b30;
+  --danger-bg: #fff2f0;
+  --success: #34c759;
+  --success-bg: #f0faf3;
+  --warning: #ff9f0a;
+  --warning-bg: #fff8f0;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #1c1c1e;
+  --foreground: #f5f5f7;
+  --card: #2c2c2e;
+  --card-foreground: #f5f5f7;
+  --primary: #f5f5f7;
+  --primary-foreground: #1c1c1e;
+  --secondary: #98989d;
+  --muted: #2c2c2e;
+  --muted-foreground: #98989d;
+  --border: rgba(255, 255, 255, 0.08);
+  --input-border: #48484a;
+  --danger: #ff453a;
+  --danger-bg: rgba(255, 69, 58, 0.12);
+  --success: #30d158;
+  --success-bg: rgba(48, 209, 88, 0.12);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255, 159, 10, 0.12);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Login ──────────────────────────────────── */
+body.login {
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+body.login::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0.2;
+  z-index: 1;
+}
+
+.login #login {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-elevated);
+  padding: 48px 44px 40px;
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+}
+.login #login h1 { text-align: center; margin-bottom: 32px; }
+.login #login h1 a {
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: auto; height: 64px;
+  margin: 0 auto 8px;
+  display: block;
+}
+
+.login form { border: none; box-shadow: none; background: transparent; padding: 0; margin: 0; }
+.login form label {
+  color: var(--foreground); font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;
+}
+.login form .input,
+.login input[type="text"],
+.login input[type="password"],
+.login input[type="email"] {
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-medium);
+  padding: 14px 16px;
+  font-size: 15px;
+  min-height: 48px;
+  width: 100%;
+  margin: 4px 0 20px;
+  box-sizing: border-box;
+  background: var(--card);
+  color: var(--foreground);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.login form .input:focus,
+.login input[type="text"]:focus,
+.login input[type="password"]:focus,
+.login input[type="email"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+  outline: none;
+}
+
+.login .button-primary {
+  width: 100%; padding: 14px 24px; font-size: 15px; font-weight: 600;
+  border-radius: var(--radius-medium); height: auto; margin-top: 4px;
+  transition: all var(--transition-fast);
+  background: var(--primary); border: none; color: var(--primary-foreground);
+  cursor: pointer;
+}
+.login .button-primary:hover {
+  opacity: 0.85;
+}
+.login .button-primary:active {
+  transform: scale(0.98);
+}
+
+.login #backtoblog,
+.login #nav {
+  color: var(--secondary); font-size: 13px; padding: 0; margin: 24px 0 0; text-align: center;
+}
+.login #backtoblog a,
+.login #nav a {
+  color: var(--secondary); transition: color var(--transition-fast); text-decoration: none;
+}
+.login #backtoblog a:hover,
+.login #nav a:hover { color: var(--foreground); text-decoration: none; }
+
+.login .message,
+.login .success {
+  border-radius: var(--radius-medium);
+  border-left: none;
+  background: var(--success-bg);
+  box-shadow: none;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--foreground);
+}
+.login #login_error {
+  border-radius: var(--radius-medium);
+  border-left: none;
+  background: var(--danger-bg);
+  box-shadow: none;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--foreground);
+}
+.login .forgetmenot { margin: 0 0 20px; }
+.login .forgetmenot label { font-weight: 400; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.login .forgetmenot input[type="checkbox"] { margin: 0; }
+.login .button { border-radius: var(--radius-medium); }
+
+@media (max-width: 782px) {
+  .login #login { padding: 36px 28px 32px; }
+}
+@media (max-width: 600px) {
+  .login #login { padding: 28px 20px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

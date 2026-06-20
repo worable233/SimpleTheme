@@ -40,6 +40,9 @@ require_once __DIR__ . '/inc/admin/menu.php';
 // SMTP Mail handler — configures PHPMailer from theme settings (must load after options.php)
 require_once __DIR__ . '/inc/core/smtp-handler.php';
 
+// Local Avatars — user-uploaded custom avatars (loads conditionally based on setting)
+require_once __DIR__ . '/inc/core/local-avatars.php';
+
 // REST API modules
 require_once __DIR__ . '/inc/rest/site-info.php';
 require_once __DIR__ . '/inc/rest/posts.php';
@@ -74,6 +77,7 @@ require_once __DIR__ . '/inc/core/email-templates.php';
 // ============================================================
 add_action( 'init', function () {
     $request_path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+
     if ( $request_path === '/sw.js' ) {
         $sw_path = __DIR__ . '/dist/sw.js';
         if ( file_exists( $sw_path ) ) {
@@ -84,6 +88,35 @@ add_action( 'init', function () {
         } else {
             header( 'HTTP/1.1 404 Not Found' );
             echo '/* Service Worker not found */';
+        }
+        exit;
+    }
+
+    // Serve workbox dependency at root scope (imported by sw.js via importScripts)
+    if ( preg_match( '#^/workbox-\w+\.js$#', $request_path ) ) {
+        $filename = basename( $request_path );
+        $wb_path  = __DIR__ . '/dist/' . $filename;
+        if ( file_exists( $wb_path ) ) {
+            header( 'Content-Type: application/javascript' );
+            header( 'Cache-Control: max-age=86400' );
+            readfile( $wb_path );
+        } else {
+            header( 'HTTP/1.1 404 Not Found' );
+            echo '/* Workbox script not found */';
+        }
+        exit;
+    }
+
+    // Serve manifest.webmanifest at root scope (precached by sw.js)
+    if ( $request_path === '/manifest.webmanifest' ) {
+        $mf_path = __DIR__ . '/dist/manifest.webmanifest';
+        if ( file_exists( $mf_path ) ) {
+            header( 'Content-Type: application/manifest+json' );
+            header( 'Cache-Control: max-age=86400' );
+            readfile( $mf_path );
+        } else {
+            header( 'HTTP/1.1 404 Not Found' );
+            echo '{}';
         }
         exit;
     }

@@ -400,7 +400,6 @@ function hasChildren(item: MenuItem): boolean {
   background: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  pointer-events: auto;
   padding: 0;
   color: inherit;
   font-size: 13px;

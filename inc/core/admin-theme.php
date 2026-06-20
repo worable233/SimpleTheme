@@ -148,6 +148,7 @@ add_action('admin_head', function () {
 		if (!simple_theme_is_admin_theme_enabled()) return;
 		if (simple_theme_should_skip_admin_theme()) return;
 	?>
+		<style>#wpfooter{display:none!important}</style>
 	<script>
 	(function() {
 		var theme = localStorage.getItem('theme');

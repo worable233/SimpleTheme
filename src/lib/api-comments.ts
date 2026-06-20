@@ -23,7 +23,7 @@ function mapWPComment(item: any): WordPressComment {
     children: item.children || [],
     isPinned: item.isPinned ?? false,
     isPrivate: item.isPrivate ?? false,
-    canEdit: false,
+    canEdit: item.canEdit ?? false,
     useMarkdown: item.useMarkdown ?? false,
     canPin: item.canPin ?? false,
     qqAvatar: item.qqAvatar || '',

@@ -234,15 +234,14 @@ function handleSubClick(child: { title: string; url: string }) {
 
 <style scoped>
 .admin-sidebar {
-  width: 100px;
+  width: 100%;
   height: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  border-right: 1px solid var(--border, #e2e2e2);
-  background-color: var(--card, #ffffff);
+  background-color: var(--card);
   z-index: auto;
   padding-top: 0;
 }
@@ -551,32 +550,32 @@ function handleSubClick(child: { title: string; url: string }) {
 <style>
 :root,
 [data-theme="light"] {
-  --foreground: #333;
-  --secondary: #666;
-  --background: #f5f5f5;
+  --foreground: #1d1d1f;
+  --secondary: #86868b;
+  --background: #f5f5f7;
   --card: #ffffff;
-  --border: #e2e2e2;
+  --border: rgba(0, 0, 0, 0.06);
   --muted: #f5f5f5;
-  --menu-hover: #f0f0f0;
-  --primary: #333;
+  --menu-hover: rgba(0, 0, 0, 0.05);
+  --primary: #1d1d1f;
   --primary-foreground: #ffffff;
-  --transition-fast: 0.15s ease;
-  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
   --radius-full: 9999px;
 }
 
 [data-theme="dark"] {
-  --foreground: #e0e0e0;
-  --secondary: #999;
-  --background: #1a1a1a;
-  --card: #252525;
-  --border: #333;
-  --muted: #2a2a2a;
-  --menu-hover: #333;
-  --primary: #e0e0e0;
-  --primary-foreground: #1a1a1a;
-  --transition-fast: 0.15s ease;
-  --shadow-large: 0 6px 20px rgb(0 0 0 / 0.5);
+  --foreground: #f5f5f7;
+  --secondary: #98989d;
+  --background: #1c1c1e;
+  --card: #2c2c2e;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #2c2c2e;
+  --menu-hover: rgba(255, 255, 255, 0.08);
+  --primary: #f5f5f7;
+  --primary-foreground: #1c1c1e;
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
   --radius-full: 9999px;
 }
 </style>

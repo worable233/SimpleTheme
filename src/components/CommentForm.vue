@@ -124,7 +124,7 @@ onMounted(async () => {
   window.addEventListener('resize', checkMobile)
   document.addEventListener('keydown', onWizardKeydown)
   document.addEventListener('click', onDocumentClick, true)
-  if (props.formSettings.captchaEnabled) {
+  if (props.formSettings.captchaEnabled && !props.currentUser) {
     await loadCaptcha()
   }
 })
@@ -404,7 +404,7 @@ function clearForm() {
   useMarkdown.value = true
   closeWizard()
   collapseMobile()
-  if (props.formSettings.captchaEnabled) {
+  if (props.formSettings.captchaEnabled && !props.currentUser) {
     void loadCaptcha()
   }
 }
@@ -527,7 +527,7 @@ defineExpose({ clearForm })
         </label>
       </div>
 
-      <div v-if="formSettings.captchaEnabled" class="comments-form__captcha">
+      <div v-if="formSettings.captchaEnabled && !currentUser" class="comments-form__captcha">
         <altcha-widget
           :challenge="captchaData?.challenge || ''"
           style="--altcha-max-width: 100%"
@@ -708,7 +708,7 @@ defineExpose({ clearForm })
                     </span>
                   </label>
                 </div>
-                <div v-if="formSettings.captchaEnabled" class="wizard-step__captcha">
+                <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
                   <altcha-widget
                     :challenge="captchaData?.challenge || ''"
                     style="--altcha-max-width: 100%"
@@ -1825,3 +1825,4 @@ defineExpose({ clearForm })
 }
 
 </style>
+

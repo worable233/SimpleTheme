@@ -22,100 +22,96 @@
 
 :root {
   /* ── 布局常量 ────────────────────────────────── */
-  --sidebar-width: 100px;
+  --sidebar-width: 68px;
   --topbar-height: 48px;
 
-  /* ── 字体（中文字体优先）────────────────── */
-  --font-sans:
-    'MiSans VF', 'OPPO Sans', 'SF Pro SC', HarmonyOS_Regular, ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Noto Sans', 'Microsoft Yahei',
-    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
+  /* ── 字体 ─────────────────────────────────── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'PingFang SC', 'MiSans VF',
+    'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
 
-  /* ── 阴影（匹配前台）─────────────────────── */
-  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
-  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
-  --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.12);
+  /* ── 阴影（Apple 风格 — 极柔和）─────────────── */
+  --shadow-small: 0 1px 3px rgb(0 0 0 / 0.04);
+  --shadow-medium: 0 4px 12px rgb(0 0 0 / 0.05);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
+  --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.1);
 
-  /* ── 圆角（匹配前台）─────────────────────── */
-  --radius-small: 4px;
-  --radius-medium: 6px;
-  --radius-large: 8px;
+  /* ── 圆角（Apple 风格 — 更圆润）───────────── */
+  --radius-small: 5px;
+  --radius-medium: 7px;
+  --radius-large: 10px;
   --radius-full: 9999px;
 
-  /* ── 过渡时间 & 缓动 ─────────────────────────── */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition-fast: 0.15s var(--ease-out);
-  --transition-normal: 0.2s var(--ease-out);
+  /* ── 过渡（Apple 系统缓动）─────────────────── */
+  --apple-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s var(--apple-ease);
+  --transition-normal: 0.25s var(--apple-ease);
 
   /* ── WordPress 主题色 ──────────────────────── */
-  --wp-admin-theme-color: #333;
-  --wp-admin-theme-color-darker-10: #2a2a2a;
-  --wp-admin-theme-color-darker-20: #222;
-  --wp-admin-theme-color-rgb: 51, 51, 51;
+  --wp-admin-theme-color: #1d1d1f;
+  --wp-admin-theme-color-darker-10: #000;
+  --wp-admin-theme-color-darker-20: #000;
+  --wp-admin-theme-color-rgb: 29, 29, 31;
 }
 
-/* 亮色模式 — 与前端 [data-theme='light'] 一致 */
+/* Apple HIG — 亮色 */
 [data-theme='light'] {
   color-scheme: light;
-  --background: #f5f6f7;
-  --foreground: #333;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
   --card: #ffffff;
-  --card-foreground: #333;
-  --primary: #333;
-  --primary-foreground: #fff;
-  --secondary: #999;
-  --secondary-foreground: #333;
+  --card-foreground: #1d1d1f;
+  --primary: #1d1d1f;
+  --primary-foreground: #ffffff;
+  --secondary: #86868b;
+  --secondary-foreground: #1d1d1f;
   --muted: #f5f5f5;
-  --muted-foreground: #999;
+  --muted-foreground: #86868b;
   --faint: #fafafa;
-  --faint-foreground: #999;
-  --accent: #f5f5f5;
-  --accent-foreground: #333;
-  --border: #e2e2e2;
-  --input: #e2e2e2;
-  --ring: #333;
-  --danger: #dd2424;
-  --danger-hover: #c62828;
-  --danger-bg: #fef0f0;
-  --success: #67c23a;
-  --success-bg: #f0f9eb;
-  --warning: #e6a23c;
-  --warning-bg: #fdf6ec;
+  --faint-foreground: #86868b;
+  --accent: #e8e8ed;
+  --accent-foreground: #1d1d1f;
+  --border: rgba(0, 0, 0, 0.06);
+  --input-border: #d2d2d7;
+  --ring: rgba(0, 0, 0, 0.12);
+  --danger: #ff3b30;
+  --danger-hover: #d70015;
+  --danger-bg: #fff2f0;
+  --success: #34c759;
+  --success-bg: #f0faf3;
+  --warning: #ff9f0a;
+  --warning-bg: #fff8f0;
   --card-highlight: 0 0 0 0 transparent;
 }
 
-/* 暗色模式 — 与前端 [data-theme='dark'] 一致 */
+/* Apple HIG — 暗色 */
 [data-theme='dark'] {
   color-scheme: dark;
-  --background: #1a1a1a;
-  --foreground: #e0e0e0;
-  --card: #222;
-  --card-foreground: #e0e0e0;
-  --primary: #e0e0e0;
-  --primary-foreground: #1a1a1a;
-  --secondary: #999;
-  --secondary-foreground: #e0e0e0;
-  --muted: #2a2a2a;
-  --muted-foreground: #999;
-  --faint: #252525;
-  --faint-foreground: #999;
-  --accent: #2a2a2a;
-  --accent-foreground: #e0e0e0;
-  --border: #333;
-  --input: #333;
-  --ring: #e0e0e0;
-  --danger: #dd2424;
-  --danger-hover: #ef5350;
-  --danger-bg: #3a1b1b;
-  --success: #67c23a;
-  --success-bg: #1b3a1b;
-  --warning: #e6a23c;
-  --warning-bg: #3a2e1b;
-  --card-highlight: inset 0 1px 0 0 #fff3;
+  --background: #1c1c1e;
+  --foreground: #f5f5f7;
+  --card: #2c2c2e;
+  --card-foreground: #f5f5f7;
+  --primary: #f5f5f7;
+  --primary-foreground: #1c1c1e;
+  --secondary: #98989d;
+  --secondary-foreground: #f5f5f7;
+  --muted: #2c2c2e;
+  --muted-foreground: #98989d;
+  --faint: #3a3a3c;
+  --faint-foreground: #98989d;
+  --accent: #3a3a3c;
+  --accent-foreground: #f5f5f7;
+  --border: rgba(255, 255, 255, 0.08);
+  --input-border: #48484a;
+  --ring: rgba(255, 255, 255, 0.12);
+  --danger: #ff453a;
+  --danger-hover: #ff6b5e;
+  --danger-bg: rgba(255, 69, 58, 0.12);
+  --success: #30d158;
+  --success-bg: rgba(48, 209, 88, 0.12);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255, 159, 10, 0.12);
+  --card-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 
@@ -132,7 +128,7 @@
 }
 
 /* ── HTML 根元素 ──────────────────────────────── */
-html.wp-toolbar {
+html.wp-toolbar.sta-theme-active {
   padding-top: 0 !important;
   scroll-behavior: smooth;
 }
@@ -145,10 +141,10 @@ body,
 }
 
 body {
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: var(--font-sans);
   font-size: 13px;
-  line-height: 1.5;
-  color: var(--foreground, #333);
+  line-height: 1.6;
+  color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -481,54 +477,63 @@ var {
  *  彼此并列，不再使用 fixed 悬浮。
  * ================================================================= */
 
-/* Body 作为 Grid 容器 */
-body {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  grid-template-rows: 48px 1fr;
-  min-height: 100vh;
-  margin: 0;
-}
-
-/* 隐藏 WP 原生侧边栏 */
-#adminmenuwrap,
-#adminmenuback,
-#adminmenu,
-#adminmenumain {
+/* 隐藏 WP 原生侧边栏（sta-theme-active 时） */
+body.sta-theme-active #adminmenuwrap,
+body.sta-theme-active #adminmenuback,
+body.sta-theme-active #adminmenu,
+body.sta-theme-active #adminmenumain {
   display: none !important;
-  width: 0 !important;
 }
 
 /* 隐藏 WP 原生顶栏 */
-#wpadminbar {
+body.sta-theme-active #wpadminbar {
   display: none !important;
 }
 
-/* Admin Shell 侧边栏 — 占据 grid 第一列整列高度 */
+/* body 自然滚动，fixed 侧边栏/顶栏用 padding 腾出空间 */
+body.sta-theme-active {
+  padding: 48px 0 24px 68px;
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Admin Shell 侧边栏 — fixed 在左侧 */
 #simple-theme-admin-sidebar {
-  grid-column: 1;
-  grid-row: 1 / -1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: 48px;
+  z-index: 90;
+  border-right: 1px solid var(--border);
+  background: var(--card);
 }
 
-/* Admin Shell 顶栏 — 占据 grid 第一行第二列 */
+/* Admin Shell 顶栏 — fixed 在顶部 */
 #simple-theme-admin-topbar {
-  grid-column: 2;
-  grid-row: 1;
-  z-index: 30;
+  position: fixed;
+  top: 0;
+  left: 68px;
+  right: 0;
+  height: 48px;
+  z-index: 100;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--border);
 }
 
-/* WP 内容包装器 — 占据 grid 右下角 */
+/* WP 内容包装器 — 自然流，不限制滚动 */
 #wpwrap {
-  grid-column: 2;
-  grid-row: 2;
-  min-height: 0;
-  position: relative;
-  overflow-y: auto;
+  position: static;
+  overflow: visible;
+  min-height: auto;
 }
 
-/* 内容区域 — 由 Grid 处理定位，不需要 margin/padding */
+/* 内容区域 — body padding 已腾位 */
 #wpcontent {
   margin-left: 0 !important;
   padding-top: 0 !important;
@@ -560,7 +565,7 @@ body {
 
 .wrap {
   margin: 0;
-  padding: 28px 28px 0;
+  padding: 32px 32px 0;
 }
 
 .wrap > h1,
@@ -719,20 +724,16 @@ body {
  * ================================================================= */
 
 #dashboard-widgets .postbox {
-  border: 1px solid var(--border, #e2e2e2);
-  border-top: 3px solid var(--primary);
+  border: none;
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  background: var(--card, #ffffff);
+  box-shadow: var(--shadow-medium);
+  background: var(--card);
   overflow: hidden;
-  transition: box-shadow var(--transition-normal, 0.2s ease),
-              transform var(--transition-normal, 0.2s ease),
-              border-color var(--transition-fast, 0.15s ease);
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 #dashboard-widgets .postbox:hover {
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
-  transform: translateY(-2px);
-  border-color: var(--primary);
+  box-shadow: var(--shadow-large);
+  transform: translateY(-1px);
 }
 #dashboard-widgets .postbox .hndle {
   border-bottom: 1px solid var(--border, #e2e2e2);
@@ -766,13 +767,12 @@ body {
 }
 
 .postbox {
-  border: 1px solid var(--border, #e2e2e2);
+  border: none;
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  background: var(--card, #ffffff);
+  box-shadow: var(--shadow-medium);
+  background: var(--card);
   overflow: hidden;
-  transition: box-shadow var(--transition-normal, 0.2s ease),
-              border-color var(--transition-fast, 0.15s ease);
+  transition: box-shadow var(--transition-normal);
 }
 .postbox .hndle {
   border-bottom: 1px solid var(--border, #e2e2e2);
@@ -1266,13 +1266,13 @@ legend {
 
 .wp-list-table thead th,
 .widefat thead th {
-  background: var(--background, #f5f6f7);
-  color: var(--muted-foreground, #999);
+  background: transparent;
+  color: var(--secondary);
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border, #e2e2e2);
+  letter-spacing: 0.06em;
+  padding: 16px 16px 10px;
+  border-bottom: 1px solid var(--border);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -2162,17 +2162,35 @@ body.login::before {
  * ================================================================= */
 
 @media (max-width: 960px) {
+  body.sta-theme-active {
+    padding-left: 68px;
+  }
+  #simple-theme-admin-sidebar {
+    width: 68px;
+  }
+  #simple-theme-admin-topbar {
+    left: 68px;
+  }
   .wrap {
-    padding: 20px 16px 0;
+    padding: 24px 20px 0;
   }
 }
 
 @media (max-width: 782px) {
+  body.sta-theme-active {
+    padding: 48px 0 20px 0;
+  }
+  #simple-theme-admin-sidebar {
+    display: none !important;
+  }
+  #simple-theme-admin-topbar {
+    left: 0;
+  }
   #wpbody-content {
     padding-bottom: 48px;
   }
   .wrap {
-    padding: 16px 16px 0;
+    padding: 20px 16px 0;
   }
   .wrap > h1,
   .wrap > h2 {
@@ -2230,6 +2248,15 @@ body.login::before {
 }
 
 @media (max-width: 600px) {
+  body.sta-theme-active {
+    padding: 48px 0 0 0;
+  }
+  #simple-theme-admin-sidebar {
+    display: none !important;
+  }
+  #simple-theme-admin-topbar {
+    left: 0;
+  }
   .wrap {
     padding: 12px 12px 0;
   }
@@ -2467,47 +2494,3 @@ input.regular-text.code {
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 
-
-/* =================================================================
- *  17. Body Grid 布局 — Vue Shell + WP 原生内容并列
- *  通过 PHP admin_body_class filter 添加 sta-theme-active 类来激活。
- *  外部 Grid 控制整体布局，组件内不设 grid-area/position。
- * ================================================================= */
-
-body.sta-theme-active {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  grid-template-rows: 48px 1fr;
-  min-height: 100vh;
-  margin: 0 !important;
-}
-
-#simple-theme-admin-sidebar {
-  grid-row: 1 / -1;
-  grid-column: 1;
-}
-
-#simple-theme-admin-topbar {
-  grid-row: 1;
-  grid-column: 2;
-}
-
-#wpwrap {
-  grid-row: 2;
-  grid-column: 2;
-  min-height: 0;
-  padding-top: 0 !important;
-}
-
-#wpcontent {
-  margin-left: 0 !important;
-  padding-top: 0 !important;
-}
-
-#wpfooter {
-  margin-left: 0 !important;
-}
-
-html.wp-toolbar {
-  padding-top: 0 !important;
-}

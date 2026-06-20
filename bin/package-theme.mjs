@@ -24,6 +24,9 @@ const version = versionMatch ? versionMatch[1] : '1.0.0';
 const themeNameMatch = styleCss.match(/Theme Name:\s*(.+)/);
 const themeName = themeNameMatch ? themeNameMatch[1].trim().replace(/\s+/g, '-') : 'simple-theme';
 
+// Theme slug for ZIP root directory (matches directory name WordPress expects)
+const themeSlug = 'simple-theme';
+
 const zipName = `${themeName}-v${version}.zip`;
 const zipPath = join(root, zipName);
 
@@ -143,7 +146,7 @@ function walkDir(dir) {
 
       if (shouldExclude(entry, relPath)) continue;
 
-      archive.file(fullPath, { name: relPath });
+      archive.file(fullPath, { name: `${themeSlug}/${relPath}` });
       fileCount++;
     }
   }

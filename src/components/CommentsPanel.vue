@@ -209,6 +209,10 @@ async function handleFormSubmit(payload: {
     payload.name = currentUser.value.displayName
     payload.email = currentUser.value.email ?? ''
     payload.url = currentUser.value.url ?? ''
+    if (!payload.content.trim()) {
+      showToast('请填写评论内容。', '提示', { variant: 'warning' })
+      return
+    }
   } else {
     if (!payload.name.trim() || !payload.content.trim()) {
       showToast('请填写必填项后再提交。', '提示', { variant: 'warning' })
@@ -356,8 +360,8 @@ watch(
       <p class="comments-empty__desc">当前文章未开启评论。</p>
     </div>
 
-    <!-- Disabled: registration only -->
-    <div v-else-if="formSettings.registrationOnly" class="comments-empty">
+    <!-- Disabled: registration only (anonymous users only) -->
+    <div v-else-if="formSettings.registrationOnly && !currentUser" class="comments-empty">
       <div class="comments-empty__illustration">
         <UndrawIllustration name="access-denied" width="200" height="150" class="comments-empty__svg" />
       </div>
