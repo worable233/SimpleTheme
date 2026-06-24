@@ -54,8 +54,9 @@ function simple_theme_render_email_template( $message, $subject, $template = 'si
 }
 
 function simple_theme_email_format_text( $text ) {
+	$text = esc_html( $text );
 	$text = make_clickable( $text );
-	$text = nl2br( esc_html( $text ) );
+	$text = nl2br( $text );
 	return $text;
 }
 
