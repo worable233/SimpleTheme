@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, type Component } from 'vue'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
 import AppearanceTab from './components/AppearanceTab.vue'
@@ -106,7 +106,7 @@ function onToastClose() {
 }
 
 const activeComponent = computed(() => {
-  const map: Record<string, any> = {
+  const map: Record<string, Component> = {
     appearance: AppearanceTab,
     home: HomeTab,
     sidebar: SidebarTab,

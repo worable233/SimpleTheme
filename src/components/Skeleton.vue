@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ name: 'BaseSkeleton' })
+
 defineProps<{
   variant?: 'text' | 'circular' | 'rectangular' | 'rounded'
   width?: string
@@ -26,7 +28,7 @@ defineProps<{
     }"
   />
 
-  <div v-else :style="{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }">
+  <div v-else :style="{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }">
     <div
       v-for="i in lines || 3"
       :key="i"
@@ -34,7 +36,7 @@ defineProps<{
       class="skeleton line"
       :style="{
         width: i === (lines || 3) && lines !== 1 ? '60%' : undefined,
-        marginTop: i === (lines || 3) && lines !== 1 ? 'var(--space-1)' : undefined,
+        marginTop: i === (lines || 3) && lines !== 1 ? '0.25rem' : undefined,
       }"
     />
   </div>

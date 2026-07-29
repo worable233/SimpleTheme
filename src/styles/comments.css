@@ -1,0 +1,426 @@
+/* Comments & emoji panel */
+@layer components {
+/* ==================== Comments ==================== */
+.comments-panel {
+  padding: 30px 25px 25px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+/* Header — follows section-header pattern */
+.comments-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comments-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.comments-header__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--secondary);
+}
+
+/* Loading */
+.comments-loading {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+/* 输入框及评论内容中的表情图片 */
+.emoji-inline {
+  display: inline;
+  width: 1.4em;
+  height: 1.4em;
+  vertical-align: -0.3em;
+  object-fit: contain;
+  margin: 0 1px;
+}
+
+.comments-form__row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Comment Item */
+.comments-item {
+  padding: 16px 0;
+}
+
+.comments-item__main {
+  display: flex;
+  gap: 12px;
+}
+
+.comments-item__avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.comments-item__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comments-item__avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--secondary);
+  background: var(--muted);
+}
+
+.comments-item__avatar-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.comments-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comments-item__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.comments-item__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.comments-item__name:hover {
+  color: var(--primary);
+}
+
+.comments-item__time {
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.comments-item__meta-info {
+  font-size: 12px;
+  color: var(--secondary);
+  opacity: 0.75;
+  display: inline;
+  word-break: break-word;
+}
+
+.comments-item__time + .comments-item__meta-info::before {
+  content: '·';
+  margin: 0 4px;
+}
+
+.comments-item__text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--foreground);
+  word-break: break-word;
+}
+
+.comments-item__text p {
+  margin: 0.3em 0;
+}
+
+.comments-item__text p:first-child {
+  margin-top: 0;
+}
+
+.comments-item__text p:last-child {
+  margin-bottom: 0;
+}
+
+.comments-item__actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.comments-item__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--secondary);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.comments-item__action:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.comments-item__action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.comments-item__action--liked {
+  color: var(--danger) !important;
+}
+
+/* Nested comments */
+.comments-nested {
+  padding-left: 50px;
+  margin-top: 0;
+}
+
+.comments-nested .comments-item {
+  border-bottom: none;
+  position: relative;
+  padding-left: 14px;
+}
+
+.comments-nested .comments-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+
+.comments-nested .comments-item:last-child::before {
+  height: calc(100% - 24px);
+}
+
+.comments-nested .comments-item__avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.comments-nested .comments-nested {
+  padding-left: 40px;
+}
+
+/* ==================== Emoji Panel ==================== */
+.comments-emoji {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+
+  /* Animation states */
+  transform: translateY(10px) scale(0.95);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease,
+    visibility 0.2s;
+}
+
+.comments-emoji--open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.comments-emoji__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+.comments-emoji__tab {
+  /* 显式 flex 单行布局 — Tailwind preflight 将 img 重置为 display:block，
+     不能再依赖图标的 inline 默认行为 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  color: var(--secondary);
+  transition:
+    background 0.15s,
+    color 0.15s;
+  user-select: none;
+}
+.comments-emoji__tab:hover {
+  background: var(--card);
+}
+.comments-emoji__tab--active {
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* Tab icon (tiny emoji preview in tab header) */
+.comments-emoji__tab-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.comments-emoji__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #e0e0e0) transparent;
+}
+.comments-emoji__grid::-webkit-scrollbar {
+  width: 6px;
+}
+.comments-emoji__grid::-webkit-scrollbar-thumb {
+  background: var(--border, #e0e0e0);
+  border-radius: 3px;
+}
+
+.comments-emoji__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  padding: 0;
+  transition: background 0.1s;
+  user-select: none;
+}
+.comments-emoji__item:hover {
+  background: var(--muted, #f0f0f0);
+}
+.comments-emoji__item--kaomoji {
+  width: auto;
+  min-width: 36px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  padding: 0 6px;
+  color: var(--foreground);
+}
+
+/* Desktop dropdown emoji panel — v-if controls visibility, not --open class */
+.emoji-panel-wrapper--dropdown > .comments-emoji {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* Image-based emoji items (EmojiPicker.vue) */
+.comments-emoji__item--img {
+  padding: 2px;
+}
+.comments-emoji__item--img img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  max-width: 28px;
+  max-height: 28px;
+}
+
+@media (max-width: 600px) {
+  .comments-panel {
+    padding-bottom: calc(45vh + 30px);
+  }
+  .emoji-panel-wrapper--inline > .comments-emoji {
+    position: relative;
+    width: 100%;
+    height: auto;
+    flex: 1;
+    bottom: auto;
+    right: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+  .emoji-panel-wrapper--inline > .comments-emoji .comments-emoji__tabs {
+    background: transparent;
+    border-bottom-color: var(--border);
+    flex-shrink: 0;
+  }
+  .emoji-panel-wrapper--inline > .comments-emoji .comments-emoji__tab {
+    color: var(--secondary);
+  }
+  .emoji-panel-wrapper--inline > .comments-emoji .comments-emoji__tab--active {
+    background: transparent;
+    color: var(--foreground);
+  }
+  .emoji-panel-wrapper--inline > .comments-emoji .comments-emoji__grid {
+    padding: 6px 4px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: flex-start;
+  }
+}
+}

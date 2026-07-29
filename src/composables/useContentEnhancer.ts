@@ -3,7 +3,7 @@ import { useToc } from '@/composables/useToc'
 import { isExternalUrl } from '@/lib/theme-config'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
-declare var Prism: { highlightElement: (el: HTMLElement) => void } | undefined
+declare const Prism: { highlightElement: (el: HTMLElement) => void } | undefined
 import { Fancybox } from '@fancyapps/ui'
 import '@fancyapps/ui/dist/fancybox/fancybox.css'
 import { showToast } from '@/lib/toast'
@@ -271,13 +271,13 @@ function initFancyboxImages(container: Element) {
           right: ['zoomIn', 'zoomOut', 'toggle1to1', 'slideshow', 'fullscreen', 'thumbs', 'close'],
         },
       },
-    } as any)
+    } as Parameters<typeof Fancybox.bind>[2])
   }
 }
 
 export function useContentEnhancer(
   content?: Ref<string | null | undefined>,
-  selector = '.oat-prose',
+  selector = '.prose-content',
 ) {
   const { clearToc } = useToc()
   let observer: MutationObserver | null = null

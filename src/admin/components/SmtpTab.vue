@@ -63,7 +63,17 @@ async function sendTest() {
 
 // Queue state
 const queueStats = ref<Record<string, number>>({ pending: 0, processing: 0, sent: 0, failed: 0 })
-const queueItems = ref<any[]>([])
+interface QueueItem {
+  id: number
+  to_email: string
+  subject: string
+  status: string
+  retry_count: number
+  max_retries: number
+  created_at: string
+  error_message?: string
+}
+const queueItems = ref<QueueItem[]>([])
 const queueLoading = ref(false)
 
 async function fetchQueue() {
@@ -350,7 +360,7 @@ const statusColors: Record<string, string> = {
   <AppCard title="邮件队列" description="查看邮件队列中的发送状态和记录。">
     <div class="queue-stats">
       <div class="queue-stat" v-for="(label, key) in { pending: '待发送', processing: '发送中', sent: '已发送', failed: '失败' }" :key="key">
-        <span class="queue-stat__value" :style="{ color: (statusColors as any)[key] }">{{ (queueStats as any)[key] ?? 0 }}</span>
+        <span class="queue-stat__value" :style="{ color: statusColors[key] }">{{ queueStats[key] ?? 0 }}</span>
         <span class="queue-stat__label">{{ label }}</span>
       </div>
     </div>
@@ -370,8 +380,8 @@ const statusColors: Record<string, string> = {
           <div class="queue-item__to">{{ item.to_email }}</div>
           <div class="queue-item__subject">{{ item.subject }}</div>
           <div class="queue-item__meta">
-            <span class="queue-item__status" :style="{ background: (statusColors as any)[item.status] || '#999' }">
-              {{ (statusLabels as any)[item.status] || item.status }}
+            <span class="queue-item__status" :style="{ background: statusColors[item.status] || '#999' }">
+              {{ statusLabels[item.status] || item.status }}
             </span>
             <span v-if="item.retry_count > 0">重试 {{ item.retry_count }}/{{ item.max_retries }}</span>
             <span>{{ item.created_at }}</span>
@@ -407,7 +417,7 @@ const statusColors: Record<string, string> = {
 .queue-stat {
   text-align: center;
   padding: 16px 8px;
-  background: var(--xh-accent, #f5f5f5);
+  background: var(--xh-primary-light, #f5f5f5);
   border-radius: var(--xh-radius-sm, 8px);
 }
 
@@ -452,7 +462,7 @@ const statusColors: Record<string, string> = {
   justify-content: space-between;
   gap: 8px;
   padding: 12px;
-  background: var(--xh-accent, #f9f9f9);
+  background: var(--xh-primary-light, #f9f9f9);
   border-radius: var(--xh-radius-sm, 6px);
 }
 

@@ -731,7 +731,7 @@ const ICON_MAP: Record<string, string> = {
 const EXISTING_FILLED_ICONS = new Set<string>()
 for (const val of Object.values(ICON_MAP)) {
   const m = val.match(/class="[^"]*\bbxs-([\w-]+)/)
-  if (m) EXISTING_FILLED_ICONS.add(m[1])
+  if (m?.[1]) EXISTING_FILLED_ICONS.add(m[1])
 }
 
 // ============================================================

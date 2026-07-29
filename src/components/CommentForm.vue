@@ -4,6 +4,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
+import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
 import { showLoadingToast, dismissToast, showToast, showError } from '@/lib/toast'
@@ -194,7 +195,6 @@ function rawOffsetUpToIndex(el: HTMLElement, index: number): number {
     if (node.nodeType === Node.TEXT_NODE) {
       pos += node.textContent?.length ?? 0
     } else if (node instanceof HTMLImageElement) {
-      const type = node.dataset.type
       const name = node.dataset.name
       const mlen = name ? name.length + 4 : 0
       pos += mlen
@@ -210,7 +210,6 @@ function rawOffsetUpToNode(el: HTMLElement, target: Node): number {
     if (node.nodeType === Node.TEXT_NODE) {
       pos += node.textContent?.length ?? 0
     } else if (node instanceof HTMLImageElement) {
-      const type = node.dataset.type
       const name = node.dataset.name
       const mlen = name ? name.length + 4 : 0
       pos += mlen
@@ -590,11 +589,7 @@ defineExpose({ clearForm })
           </div>
 
           <!-- Close button -->
-          <button type="button" class="wizard-close" @click="closeWizard" aria-label="关闭">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <ModalCloseButton class="wizard-close" @click="closeWizard" />
 
           <!-- Step content with directional slide -->
           <Transition
@@ -860,21 +855,6 @@ defineExpose({ clearForm })
   margin-top: 8px;
 }
 
-.comments-form__captcha-question {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-  white-space: nowrap;
-  padding: 5px 10px;
-  background: var(--muted);
-  border-radius: 4px;
-  user-select: none;
-}
-
-.comments-form__captcha-input {
-  max-width: 100px;
-}
-
 .comments-replying {
   display: flex;
   align-items: center;
@@ -914,26 +894,12 @@ defineExpose({ clearForm })
   margin-top: 8px;
 }
 
-.comments-form__footer-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .comments-form__footer-right {
+  /* 表情弹窗（.comments-emoji absolute）的定位锚点 — 悬浮在按钮组上方右对齐 */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.comments-form__remember {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--secondary);
-  cursor: pointer;
-  margin: 0;
 }
 
 .comments-form__submit {
@@ -992,9 +958,8 @@ defineExpose({ clearForm })
   color: var(--foreground);
 }
 
-.emoji-panel-wrapper {
-  position: relative;
-}
+/* 桌面 dropdown 包装器保持 static，避免成为零尺寸锚点；
+   面板实际锚到 .comments-form__footer-right */
 
 /* ── Mobile layout (fixed bottom) ── */
 .comments-form--mobile {
@@ -1409,35 +1374,13 @@ defineExpose({ clearForm })
   border-radius: 0 2px 2px 0;
 }
 
-/* ── Close button ── */
+/* ── Close button（外观由 ModalCloseButton 统一，此处仅定位） ── */
 
 .wizard-close {
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: var(--muted);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--secondary);
-  transition: all 0.2s;
   z-index: 2;
-}
-
-.wizard-close svg {
-  width: 16px;
-  height: 16px;
-}
-
-.wizard-close:hover {
-  background: var(--border);
-  color: var(--foreground);
-  transform: rotate(90deg);
 }
 
 /* ── Step content ── */
@@ -1684,49 +1627,49 @@ defineExpose({ clearForm })
 
 /* ── Dark-mode glass consistency ── */
 
-:global(body.dark) .wizard-modal {
+:global(body[data-theme='dark']) .wizard-modal {
   background: var(--card);
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
-:global(body.dark) .wizard-modal .wizard-progress-bar {
+:global(body[data-theme='dark']) .wizard-modal .wizard-progress-bar {
   background: rgba(255, 255, 255, 0.08);
 }
 
-:global(body.dark) .wizard-step__option {
+:global(body[data-theme='dark']) .wizard-step__option {
   background: rgba(255, 255, 255, 0.04);
 }
 
-:global(body.dark) .wizard-step__option:hover {
+:global(body[data-theme='dark']) .wizard-step__option:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-:global(body.dark) .wizard-step__input {
+:global(body[data-theme='dark']) .wizard-step__input {
   background: rgba(255, 255, 255, 0.05);
 }
 
-:global(body.dark) .wizard-step__input:focus {
+:global(body[data-theme='dark']) .wizard-step__input:focus {
   background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Dark mode: no border highlight on collapsed empty textarea ── */
-:global(body.dark) .comments-form__textarea--empty.comments-form__textarea--collapsed {
+:global(body[data-theme='dark']) .comments-form__textarea--empty.comments-form__textarea--collapsed {
   border-color: transparent;
 }
-:global(body.dark) .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
+:global(body[data-theme='dark']) .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
   border-color: transparent;
   background: var(--faint);
 }
 
 /* ── Dark mode: visible frosted glass on mobile ── */
-:global(body.dark) .comments-form--mobile {
+:global(body[data-theme='dark']) .comments-form--mobile {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
-:global(body.dark) .comments-form--mobile .comments-form__input-row {
+:global(body[data-theme='dark']) .comments-form--mobile .comments-form__input-row {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1788,41 +1731,12 @@ defineExpose({ clearForm })
 
 /* ── Dark mode ── */
 
-:global(body.dark) .wizard-mask {
+:global(body[data-theme='dark']) .wizard-mask {
   background: rgba(0, 0, 0, 0.7);
 }
 
-:global(body.dark) .wizard-modal {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-}
-
-:global(body.dark) .wizard-close {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-:global(body.dark) .wizard-close:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-:global(body.dark) .wizard-step__option {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-:global(body.dark) .wizard-step__option:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-:global(body.dark) .wizard-step__input:focus {
+:global(body[data-theme='dark']) .wizard-step__input:focus {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
-.toast-spinner {
-  animation: comment-spin 1s linear infinite;
-}
-
-@keyframes comment-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 </style>
 

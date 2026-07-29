@@ -18,40 +18,15 @@ function dismiss() {
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="announcement-capsule" @click="dismiss">
-      <span v-if="announcement.icon" class="announcement-capsule__icon">{{ announcement.icon }}</span>
-      <span class="announcement-capsule__text">{{ announcement.capsuleTitle }}</span>
+    <div
+      v-if="visible"
+      class="fixed bottom-6 left-1/2 z-[99999] flex max-w-[90vw] -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full bg-card px-6 py-2.5 text-sm text-foreground shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+      @click="dismiss"
+    >
+      <span v-if="announcement.icon" class="text-lg">{{ announcement.icon }}</span>
+      <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{
+        announcement.capsuleTitle
+      }}</span>
     </div>
   </Teleport>
 </template>
-
-<style scoped>
-.announcement-capsule {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99999;
-  background: var(--theme-card-light, #fff);
-  color: var(--theme-fg-light, #333);
-  padding: 10px 24px;
-  border-radius: 100px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  max-width: 90vw;
-}
-
-.announcement-capsule__icon {
-  font-size: 18px;
-}
-
-.announcement-capsule__text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-</style>

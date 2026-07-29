@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { SocialLink, SiteStats, SimpleThemeConfig } from '@/types/wordpress'
@@ -29,7 +29,7 @@ interface HeatmapEntry {
 }
 
 const heatmapData = computed<HeatmapEntry[]>(() => {
-  return (stats.value as any)?.heatmapData ?? []
+  return stats.value?.heatmapData ?? []
 })
 
 const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -115,6 +115,15 @@ const dayLabels = [
   { text: 'Sun', row: 6 },
 ]
 
+// GitHub 风格热力图色阶（light / dark）
+const HEATMAP_LEVEL_CLASSES = [
+  'bg-[#ebedf0] dark:bg-[#2a2a2a]',
+  'bg-[#9be9a8] dark:bg-[#0d4429]',
+  'bg-[#40c463] dark:bg-[#006d32]',
+  'bg-[#30a14e] dark:bg-[#26a641]',
+  'bg-[#216e39] dark:bg-[#39d353]',
+]
+
 function formatWordCount(count: number | undefined | null): string {
   if (!count) return '0'
   if (count >= 10000) {
@@ -190,7 +199,7 @@ function socialIconHtml(icon: string): string {
         <div v-if="siteName" class="aside-author__name">{{ siteName }}</div>
         <div v-if="motto" class="aside-author__des">“{{ motto }}”</div>
 
-        <div v-if="!noToggle" class="aside-btn-open" @click="$emit('toggle-sub')">
+        <div v-if="!noToggle" class="aside-btn-open absolute top-2.5 right-2.5 inline-flex cursor-pointer items-center gap-1 rounded-[5px] border-none bg-white/50 py-1 pr-2 pl-3.5 text-sm text-foreground shadow-[0_0_10px_rgba(0,0,0,0.1)] backdrop-blur-[10px] transition-colors duration-200 hover:bg-white/70 hover:shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:bg-black/35 dark:hover:bg-black/50" @click="$emit('toggle-sub')">
           查看更多
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
@@ -214,39 +223,40 @@ function socialIconHtml(icon: string): string {
   <!-- ======== Card 3: 贡献热力图 ======== -->
   <div v-if="features.showHeatmap !== false && heatmapData.length > 0" class="aside-card aside-card--heatmap">
     <h3 class="aside-card__title">贡献 <span>Heatmap.</span></h3>
-    <div class="heatmap-wrap">
-      <div class="heatmap-month-labels">
+    <div class="mx-auto max-w-[200px]">
+      <div class="mb-0.5 grid grid-cols-[22px_repeat(13,1fr)] gap-0.5 text-[9px] text-muted-foreground">
         <span
           v-for="m in monthLabels"
           :key="m.name"
-          class="heatmap-month-label"
+          class="text-[9px] leading-none"
           :style="{ gridColumn: m.col + 2 }"
         >{{ m.name }}</span>
       </div>
-      <div class="heatmap-body">
+      <div class="grid grid-cols-[22px_repeat(13,1fr)] grid-rows-[repeat(7,auto)] gap-[3px]">
         <span
           v-for="d in dayLabels"
           :key="d.text"
-          class="heatmap-day-label"
+          class="flex items-center justify-end pr-0.5 text-[8px] leading-none text-muted-foreground"
           :style="{ gridColumn: 1, gridRow: d.row + 1 }"
         >{{ d.text }}</span>
         <div
           v-for="cell in heatmapCells"
           :key="cell.day"
-          class="heatmap-cell"
-          :class="`level-${cell.level}`"
+          class="aspect-square cursor-default rounded-[2px]"
+          :class="HEATMAP_LEVEL_CLASSES[cell.level]"
           :title="`${cell.day}: ${cell.count} 篇`"
           :style="{ gridColumn: cell.col + 2, gridRow: cell.row + 1 }"
         ></div>
       </div>
-      <div class="heatmap-legend">
-        <span class="legend-label">Less</span>
-        <span class="legend-cell level-0"></span>
-        <span class="legend-cell level-1"></span>
-        <span class="legend-cell level-2"></span>
-        <span class="legend-cell level-3"></span>
-        <span class="legend-cell level-4"></span>
-        <span class="legend-label">More</span>
+      <div class="mt-1.5 flex items-center justify-end gap-[3px] pr-0.5">
+        <span class="text-[9px] leading-none text-muted-foreground">Less</span>
+        <span
+          v-for="(cls, level) in HEATMAP_LEVEL_CLASSES"
+          :key="level"
+          class="inline-block h-2.5 w-2.5 rounded-[2px]"
+          :class="cls"
+        ></span>
+        <span class="text-[9px] leading-none text-muted-foreground">More</span>
       </div>
     </div>
   </div>
@@ -261,139 +271,3 @@ function socialIconHtml(icon: string): string {
     </div>
   </div>
 </template>
-
-<style scoped>
-.aside-btn-open {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 8px 4px 14px;
-  border-radius: 5px;
-  font-size: 14px;
-  color: var(--foreground);
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-}
-
-.aside-btn-open:hover {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .aside-btn-open {
-  background: rgba(0, 0, 0, 0.35);
-}
-
-[data-theme="dark"] .aside-btn-open:hover {
-  background: rgba(0, 0, 0, 0.5);
-}
-
-/* ----- GitHub 风格贡献热力图 ----- */
-.heatmap-wrap {
-  padding: 0;
-  max-width: 200px;
-  margin: 0 auto;
-}
-
-.heatmap-month-labels {
-  display: grid;
-  grid-template-columns: 22px repeat(13, 1fr);
-  gap: 2px;
-  font-size: 9px;
-  color: var(--muted-foreground, #888);
-  margin-bottom: 2px;
-}
-
-.heatmap-month-label {
-  font-size: 9px;
-  line-height: 1;
-}
-
-.heatmap-body {
-  display: grid;
-  grid-template-columns: 22px repeat(13, 1fr);
-  grid-template-rows: repeat(7, auto);
-  gap: 3px;
-}
-
-.heatmap-day-label {
-  font-size: 8px;
-  color: var(--muted-foreground, #888);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 2px;
-  line-height: 1;
-}
-
-.heatmap-cell {
-  aspect-ratio: 1;
-  border-radius: 2px;
-  background: var(--heatmap-0, #ebedf0);
-  cursor: default;
-}
-
-.heatmap-cell.level-1 { background: var(--heatmap-1, #9be9a8); }
-.heatmap-cell.level-2 { background: var(--heatmap-2, #40c463); }
-.heatmap-cell.level-3 { background: var(--heatmap-3, #30a14e); }
-.heatmap-cell.level-4 { background: var(--heatmap-4, #216e39); }
-
-/* 暗色模式：空单元格变暗，高等级略微提亮对比 */
-[data-theme="dark"] .heatmap-cell {
-  background: var(--heatmap-0, #2a2a2a);
-}
-[data-theme="dark"] .heatmap-cell.level-1 {
-  background: var(--heatmap-1, #0d4429);
-}
-[data-theme="dark"] .heatmap-cell.level-2 {
-  background: var(--heatmap-2, #006d32);
-}
-[data-theme="dark"] .heatmap-cell.level-3 {
-  background: var(--heatmap-3, #26a641);
-}
-[data-theme="dark"] .heatmap-cell.level-4 {
-  background: var(--heatmap-4, #39d353);
-}
-[data-theme="dark"] .heatmap-day-label,
-[data-theme="dark"] .heatmap-month-label {
-  color: var(--muted-foreground, #666);
-}
-
-/* 图例：少→多色块提示 */
-.heatmap-legend {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 3px;
-  margin-top: 6px;
-  padding-right: 2px;
-}
-.legend-label {
-  font-size: 9px;
-  color: var(--muted-foreground, #888);
-  line-height: 1;
-}
-.legend-cell {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  display: inline-block;
-}
-.legend-cell.level-0 { background: var(--heatmap-0, #ebedf0); }
-.legend-cell.level-1 { background: var(--heatmap-1, #9be9a8); }
-.legend-cell.level-2 { background: var(--heatmap-2, #40c463); }
-.legend-cell.level-3 { background: var(--heatmap-3, #30a14e); }
-.legend-cell.level-4 { background: var(--heatmap-4, #216e39); }
-[data-theme="dark"] .legend-cell.level-0 { background: var(--heatmap-0, #2a2a2a); }
-[data-theme="dark"] .legend-cell.level-1 { background: var(--heatmap-1, #0d4429); }
-[data-theme="dark"] .legend-cell.level-2 { background: var(--heatmap-2, #006d32); }
-[data-theme="dark"] .legend-cell.level-3 { background: var(--heatmap-3, #26a641); }
-[data-theme="dark"] .legend-cell.level-4 { background: var(--heatmap-4, #39d353); }
-</style>

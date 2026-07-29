@@ -4,6 +4,15 @@
 import axios from 'axios'
 import { getThemeConfig, toResolvablePath } from '@/lib/theme-config'
 import { apiClient, buildRestUrl } from './api-client'
+import {
+  shouldUseMock,
+  mockFetchSiteInfo,
+  mockFetchNavigation,
+  mockFetchCategories,
+  mockFetchLinks,
+  mockFetchAboutInfo,
+  mockResolveThemePath,
+} from './mock-api'
 import type {
   AboutInfo,
   MenuCollectionResponse,
@@ -16,6 +25,7 @@ import type {
 
 /** 轻量端点：只获取服务端缓存版本号 */
 export async function fetchCacheVersion(): Promise<number> {
+  if (shouldUseMock()) return 1
   const { data } = await apiClient.get<{ version: number }>(
     buildRestUrl('cache-version'),
   )
@@ -23,6 +33,7 @@ export async function fetchCacheVersion(): Promise<number> {
 }
 
 export async function fetchSiteInfo() {
+  if (shouldUseMock()) return mockFetchSiteInfo()
   const siteInfoUrl = getThemeConfig().routes.siteInfo
   try {
     const { data } = await apiClient.get<SiteInfo>(siteInfoUrl)
@@ -46,6 +57,11 @@ async function withSiteIconFallback(data: Partial<SiteInfo>): Promise<SiteInfo> 
     return { ...data, siteIcon: existingIcon.href } as SiteInfo
   }
 
+  // wp/v2/settings 需要 manage_options 权限，匿名访客请求必定 401 — 仅登录态（有 nonce）尝试
+  if (!getThemeConfig().restNonce) {
+    return data as SiteInfo
+  }
+
   try {
     const { data: settings } = await apiClient.get<{ site_icon_url?: string }>(
       buildRestUrl('wp/v2/settings'),
@@ -61,6 +77,7 @@ async function withSiteIconFallback(data: Partial<SiteInfo>): Promise<SiteInfo> 
 }
 
 export async function fetchAboutInfo(): Promise<AboutInfo> {
+  if (shouldUseMock()) return mockFetchAboutInfo()
   const aboutUrl = buildRestUrl('simple-theme/v1/about')
   try {
     const { data } = await apiClient.get<AboutInfo>(aboutUrl)
@@ -74,6 +91,7 @@ export async function fetchAboutInfo(): Promise<AboutInfo> {
 }
 
 export async function fetchNavigation(location: string) {
+  if (shouldUseMock()) return mockFetchNavigation(location)
   const baseUrl = getThemeConfig().routes.menusBase.replace(/\/+$/, '')
   const { data } = await apiClient.get<MenuCollectionResponse>(
     `${baseUrl}/${encodeURIComponent(location)}`,
@@ -83,6 +101,7 @@ export async function fetchNavigation(location: string) {
 }
 
 export async function fetchCategories(): Promise<WordPressCategory[]> {
+  if (shouldUseMock()) return mockFetchCategories()
   try {
     const { data } = await apiClient.get<(Omit<WordPressCategory, 'slug'> & { slug: string })[]>(
       buildRestUrl('wp/v2/categories'),
@@ -98,6 +117,7 @@ export async function fetchCategories(): Promise<WordPressCategory[]> {
 }
 
 export async function fetchLinks(): Promise<WordPressLinkCategory[]> {
+  if (shouldUseMock()) return mockFetchLinks()
   const linksUrl = buildRestUrl('simple-theme/v1/links')
   try {
     const { data } = await apiClient.get<WordPressLinkCategory[]>(linksUrl)
@@ -112,6 +132,8 @@ export async function fetchLinks(): Promise<WordPressLinkCategory[]> {
 
 export async function resolveThemePath(path: string): Promise<ResolveResponse> {
   const resolvablePath = toResolvablePath(path)
+
+  if (shouldUseMock()) return mockResolveThemePath(resolvablePath)
 
   const slug = resolvablePath.split('/').filter(Boolean).pop() || ''
 

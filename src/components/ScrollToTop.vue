@@ -31,10 +31,9 @@ onUnmounted(() => {
   <Transition name="fab-fade">
     <button
       v-if="isVisible"
-      class="button ghost"
+      class="fixed right-6 bottom-6 z-[9998] flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-border bg-card p-0 text-foreground shadow-medium transition-colors hover:bg-muted"
       @click="scrollToTop"
       aria-label="回到顶部"
-      style="position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9998; width: 3rem; height: 3rem; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
     >
       <i class="bx bx-chevron-up" style="font-size: 20px;"></i>
     </button>

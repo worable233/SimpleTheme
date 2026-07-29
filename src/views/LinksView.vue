@@ -99,7 +99,7 @@ onMounted(async () => {
         </section>
 
         <!-- 友链页面内容 -->
-        <section v-if="linksPage" class="links-content oat-prose">
+        <section v-if="linksPage" class="links-content prose-content">
           <div v-html="linksPage.content?.rendered"></div>
         </section>
 

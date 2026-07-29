@@ -62,16 +62,24 @@ function applyThemeSettings(theme?: ThemeSettings) {
   root.style.setProperty('--shadow-small', shadow.small)
   root.style.setProperty('--shadow-medium', shadow.medium)
   root.style.setProperty('--shadow-large', shadow.large)
-  root.style.setProperty('--theme-bg-light', theme.backgroundLight)
-  root.style.setProperty('--theme-bg-dark', theme.backgroundDark)
-  root.style.setProperty('--theme-card-light', theme.cardLight)
-  root.style.setProperty('--theme-card-dark', theme.cardDark)
-  root.style.setProperty('--theme-fg-light', theme.foregroundLight)
-  root.style.setProperty('--theme-fg-dark', theme.foregroundDark)
-  root.style.setProperty('--theme-accent-light', theme.accentLight)
-  root.style.setProperty('--theme-accent-dark', theme.accentDark)
-  root.style.setProperty('--theme-border-light', theme.borderLight)
-  root.style.setProperty('--theme-border-dark', theme.borderDark)
+  // Palette overrides consumed by variables.css semantic tokens
+  // (skip empty values so var(--theme-*, fallback) keeps its default)
+  const palette: Record<string, string | undefined> = {
+    '--theme-bg-light': theme.backgroundLight,
+    '--theme-bg-dark': theme.backgroundDark,
+    '--theme-card-light': theme.cardLight,
+    '--theme-card-dark': theme.cardDark,
+    '--theme-fg-light': theme.foregroundLight,
+    '--theme-fg-dark': theme.foregroundDark,
+    '--theme-accent-light': theme.accentLight,
+    '--theme-accent-dark': theme.accentDark,
+    '--theme-border-light': theme.borderLight,
+    '--theme-border-dark': theme.borderDark,
+  }
+  for (const [name, value] of Object.entries(palette)) {
+    if (value) root.style.setProperty(name, value)
+    else root.style.removeProperty(name)
+  }
   root.style.setProperty('--container-max', `${theme.containerMaxWidth}px`)
   root.style.setProperty('--article-max-width', `${theme.articleMaxWidth}px`)
 }
@@ -139,12 +147,14 @@ watch(
 </script>
 
 <template>
-  <div class="app-container">
+  <div
+    class="app-container mx-auto flex min-h-screen max-w-(--container-max) border-x border-border bg-card max-xl:border-none"
+  >
     <LeftSidebar />
 
-    <div class="app-main">
-      <div class="app-content">
-        <main id="main-content">
+    <div class="app-main min-w-0 flex-1 max-xl:pt-14">
+      <div class="app-content flex">
+        <main id="main-content" class="min-w-0 flex-1 bg-card">
           <router-view v-slot="{ Component }">
             <transition name="page" mode="out-in">
               <component :is="Component" :key="route.path" />
@@ -152,33 +162,38 @@ watch(
           </router-view>
         </main>
 
-        <aside class="right-sidebar">
-          <div class="aside-slide-wrap">
-            <div class="aside-content" :class="{ active: showSubPage }">
+        <aside
+          class="right-sidebar flex min-h-dvh w-[300px] shrink-0 flex-col border-l border-border bg-card max-lg:hidden"
+        >
+          <div class="w-full shrink-0 overflow-x-hidden">
+            <div
+              class="relative flex w-[200%] flex-none overflow-clip transition-transform duration-300 ease-[ease]"
+              :class="{ '-translate-x-1/2': showSubPage }"
+            >
               <!-- Main page: profile + social -->
-              <div class="aside-page main-page">
+              <div class="main-page h-full w-1/2 shrink-0">
                 <SidebarProfile @toggle-sub="showSubPage = !showSubPage" />
                 <TechInfo />
               </div>
               <!-- Sub page: menu -->
-              <div class="aside-page sub-page">
-              <div class="sub-page__header">
-                <div class="aside-btn-close" @click="showSubPage = false">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
-                  返回
+              <div class="sub-page flex h-full w-1/2 shrink-0 flex-col">
+                <div class="sub-page__header">
+                  <div class="aside-btn-close" @click="showSubPage = false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                    返回
+                  </div>
                 </div>
+                <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
+                  <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
+                  <ul class="sub-page__menu-list">
+                    <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
+                      <router-link :to="item.path || item.url" @click="showSubPage = false">{{ item.title }}</router-link>
+                    </li>
+                  </ul>
+                </div>
+                <p v-else class="sub-page__empty">暂无菜单</p>
               </div>
-              <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
-                <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
-                <ul class="sub-page__menu-list">
-                  <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
-                    <router-link :to="item.path || item.url" @click="showSubPage = false">{{ item.title }}</router-link>
-                  </li>
-                </ul>
-              </div>
-              <p v-else class="sub-page__empty">暂无菜单</p>
             </div>
-          </div>
           </div>
           <TocWidget />
           <SiteFooter :site-info="siteInfo" />

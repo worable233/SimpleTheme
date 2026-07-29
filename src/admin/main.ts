@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import 'boxicons/css/boxicons.min.css'
-import '@knadh/oat/oat.min.css'
+import './styles/admin-tailwind.css'
 import App from './App.vue'
 
 const app = createApp(App)

@@ -1,13 +1,281 @@
 /* =========================================================
-   Fumadocs-inspired prose + Prism.js theme
-   Applies to .oat-prose content area
+   Prose (WordPress rendered content) — Fumadocs-inspired
+   Applies to .prose-content (v-html containers)
+   Merged from: app.css prose section + prose-enhancements.css
    ========================================================= */
 
 @import './prism.css';
 
 @import './code-blocks.css';
 
-/* ---------- 4. Heading anchors (Fumadocs-style) ---------- */
+/* ==================== Root typography ==================== */
+.prose-content {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--foreground);
+}
+
+.prose-content > *:first-child {
+  margin-top: 0;
+}
+.prose-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraphs */
+.prose-content p {
+  margin: 1.25em 0;
+}
+
+/* Headings (Fumadocs-inspired) */
+.prose-content h1,
+.prose-content h2,
+.prose-content h3,
+.prose-content h4,
+.prose-content h5,
+.prose-content h6 {
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.prose-content h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  margin: 0 0 0.888889em;
+  line-height: 1.11111;
+}
+
+.prose-content h2 {
+  font-size: 1.5rem;
+  margin: 2em 0 1em;
+  line-height: 1.33333;
+}
+
+.prose-content h3 {
+  font-size: 1.25rem;
+  margin: 1.6em 0 0.6em;
+  line-height: 1.6;
+}
+
+.prose-content h4 {
+  font-size: 1.1rem;
+  margin: 1.5em 0 0.5em;
+  line-height: 1.5;
+}
+
+.prose-content h5,
+.prose-content h6 {
+  font-size: 1rem;
+  margin: 1.5em 0 0.5em;
+  line-height: 1.5;
+}
+
+/* Lists — restore markers removed by preflight */
+.prose-content ul,
+.prose-content ol {
+  margin: 1.25em 0;
+  padding-left: 1.625em;
+}
+
+.prose-content ul {
+  list-style-type: disc;
+}
+
+.prose-content ol {
+  list-style-type: decimal;
+}
+
+.prose-content li {
+  list-style: revert;
+  margin: 0.5em 0;
+}
+
+.prose-content li > ul,
+.prose-content li > ol {
+  margin: 0.5em 0;
+}
+
+/* Links (base — [data-card] anchors keep this styling) */
+.prose-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--primary);
+  transition: opacity var(--transition-fast);
+}
+
+.prose-content a:hover {
+  opacity: 0.75;
+}
+
+.prose-content a:visited {
+  opacity: 0.85;
+}
+
+/* Inline code (base) */
+.prose-content code {
+  font-family: var(--font-code);
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  color: var(--foreground);
+}
+
+/* Code blocks */
+.prose-content pre {
+  font-family: var(--font-code);
+  margin: 1.5em 0;
+  padding: 1.25em 1.5em;
+  border-radius: var(--radius-medium, 6px);
+  background: var(--muted);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  font-size: 0.875em;
+  line-height: 1.6;
+}
+
+.prose-content pre code {
+  font-family: var(--font-code);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Highlighted text */
+.prose-content mark {
+  background-color: rgb(from var(--warning) r g b / 0.3);
+  padding: 0.125em 0.25em;
+  border-radius: var(--radius-small, 4px);
+}
+
+/* Horizontal rule */
+.prose-content hr {
+  margin: 2.5em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Tables scroll horizontally inside figure on mobile */
+.prose-content figure.wp-block-table {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose-content tbody tr:hover {
+  background: var(--muted);
+  opacity: 0.8;
+}
+
+/* Figures & images */
+.prose-content figure {
+  margin: 1.5em 0;
+}
+
+.prose-content figcaption {
+  margin-top: 0.6em;
+  color: var(--secondary);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.prose-content img {
+  border-radius: var(--radius-medium, 6px);
+  max-width: 100%;
+  height: auto;
+}
+
+/* Overflow protection for embeds, iframes, videos — scroll instead of breaking layout */
+.prose-content iframe,
+.prose-content embed,
+.prose-content object,
+.prose-content video {
+  max-width: 100%;
+  border: 0;
+}
+
+.prose-content .wp-block-embed__wrapper,
+.prose-content .wp-block-video,
+.prose-content .wp-block-audio {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* WordPress blocks */
+.prose-content .wp-block-image img,
+.prose-content .wp-block-cover,
+.prose-content .wp-block-gallery,
+.prose-content .wp-block-media-text {
+  border-radius: var(--radius-medium, 6px);
+  overflow: hidden;
+}
+
+.prose-content .wp-block-columns {
+  gap: 1rem;
+}
+
+.prose-content .wp-block-separator {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.5em 0;
+}
+
+.prose-content .wp-block-button__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.4rem;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-medium, 6px);
+  border: 1px solid transparent;
+  text-decoration: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.prose-content .wp-block-button.is-style-outline .wp-block-button__link {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.prose-content .alignleft {
+  float: left;
+  margin: 0 1.25em 0.75em 0;
+}
+
+.prose-content .alignright {
+  float: right;
+  margin: 0 0 0.75em 1.25em;
+}
+
+.prose-content .aligncenter {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose-content::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.prose-content .wp-caption {
+  max-width: 100%;
+}
+
+/* ==================== Heading anchors (Fumadocs-style) ==================== */
 /* .fh marks headings that have been enhanced by useContentEnhancer */
 .fh {
   scroll-margin-top: 7rem;
@@ -42,7 +310,10 @@
   color: var(--secondary);
   flex-shrink: 0;
   opacity: 0.25;
-  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
   line-height: 1;
 }
 
@@ -69,8 +340,10 @@
   }
 }
 
-/* ---------- 5. Inline code (Fumadocs-style) ---------- */
-.oat-prose code:not(pre code):not(.code-block-body code) {
+/* ==================== Enhancement overrides (Fumadocs-style) ==================== */
+
+/* Inline code */
+.prose-content code:not(pre code):not(.code-block-body code) {
   background: var(--muted);
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -80,8 +353,8 @@
   color: var(--foreground);
 }
 
-/* ---------- 6. Blockquote (Fumadocs-style) ---------- */
-.oat-prose blockquote {
+/* Blockquote */
+.prose-content blockquote {
   font-style: italic;
   font-weight: 500;
   border-left: 0.25rem solid var(--border);
@@ -92,20 +365,20 @@
   border-radius: 0;
 }
 
-.oat-prose blockquote p {
+.prose-content blockquote p {
   margin: 0.75em 0;
 }
 
-.oat-prose blockquote p:first-child {
+.prose-content blockquote p:first-child {
   margin-top: 0;
 }
 
-.oat-prose blockquote p:last-child {
+.prose-content blockquote p:last-child {
   margin-bottom: 0;
 }
 
-/* ---------- 7. Table (Fumadocs-style) ---------- */
-.oat-prose table {
+/* Table */
+.prose-content table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -118,7 +391,7 @@
   overflow: hidden;
 }
 
-.oat-prose th {
+.prose-content th {
   text-align: left;
   padding: 0.75rem;
   background: var(--muted);
@@ -127,33 +400,34 @@
   border-left: 1px solid transparent;
 }
 
-.oat-prose th:first-child {
+.prose-content th:first-child {
   border-left: none;
 }
 
-.oat-prose td {
+.prose-content td {
   text-align: left;
   padding: 0.75rem;
   border-bottom: 1px solid var(--border);
   border-left: 1px solid transparent;
+  vertical-align: top;
 }
 
-.oat-prose td:first-child {
+.prose-content td:first-child {
   border-left: none;
 }
 
-.oat-prose tbody tr:last-child td {
+.prose-content tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* ---------- 8. Strong (Fumadocs-style: 500 weight) ---------- */
-.oat-prose strong {
+/* Strong (Fumadocs-style: 500 weight) */
+.prose-content strong {
   font-weight: 500;
   color: var(--foreground);
 }
 
-/* ---------- 9. Link underline (Fumadocs-style) ---------- */
-.oat-prose a:not([data-card]) {
+/* Link underline (Fumadocs-style) */
+.prose-content a:not([data-card]) {
   color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: 3.5px;
@@ -163,11 +437,11 @@
   transition: opacity 0.2s;
 }
 
-.oat-prose a:not([data-card]):hover {
+.prose-content a:not([data-card]):hover {
   opacity: 0.8;
 }
 
-/* ---------- 10. Fancybox lightbox — theme customization ---------- */
+/* ==================== Fancybox lightbox — theme customization ==================== */
 /* Dark backdrop with subtle blur for depth */
 .fancybox__container {
   --fancybox-bg: rgba(24, 24, 27, 0.9);
@@ -282,18 +556,40 @@
   transform: scale(1.05);
 }
 
-/* ---------- 11. Mobile overflow protection ---------- */
+/* ==================== Mobile overflow & font scaling ==================== */
 @media (max-width: 600px) {
-  .oat-prose table {
+  .prose-content {
+    overflow-x: hidden;
+    font-size: 0.9375rem;
+  }
+  .prose-content h1 {
+    font-size: 1.6rem;
+  }
+  .prose-content h2 {
+    font-size: 1.35rem;
+  }
+  .prose-content h3 {
+    font-size: 1.1rem;
+  }
+  .prose-content table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
   }
-  .oat-prose figure.wp-block-table {
+  .prose-content pre {
+    max-width: 100%;
+  }
+  .prose-content figure.wp-block-table {
     overflow-x: auto;
     max-width: 100%;
     -webkit-overflow-scrolling: touch;
+  }
+  .prose-content iframe,
+  .prose-content embed,
+  .prose-content object,
+  .prose-content video {
+    max-width: 100%;
   }
 }
 
@@ -315,7 +611,7 @@
 }
 
 /* ---------- 通知块（task / warning / noway / buy） ---------- */
-.oat-prose .shortcodestyle {
+.prose-content .shortcodestyle {
   display: block;
   margin: 28px 0;
   padding: 10px 14px 10px 24px;
@@ -330,7 +626,7 @@
   animation: notice-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition: box-shadow 0.2s ease;
 }
-.oat-prose .shortcodestyle:hover {
+.prose-content .shortcodestyle:hover {
   box-shadow: var(--shadow-medium);
 }
 /* WP 块编辑器容器自带阴影重现，这里去掉 */
@@ -340,7 +636,7 @@
 .wp-block-sakurairo-notice-block .showcard:hover {
   box-shadow: none !important;
 }
-.oat-prose .shortcodestyle::before {
+.prose-content .shortcodestyle::before {
   content: '';
   position: absolute;
   left: 6px;
@@ -350,7 +646,7 @@
   border-radius: 2px;
   background: var(--border);
 }
-.oat-prose .shortcodestyle .sc-title {
+.prose-content .shortcodestyle .sc-title {
   display: block;
   font-weight: 600;
   font-size: 0.8125rem;
@@ -359,89 +655,89 @@
   margin-bottom: 4px;
   color: var(--border);
 }
-.oat-prose .shortcodestyle .sc-content {
+.prose-content .shortcodestyle .sc-content {
   display: block;
 }
-.oat-prose .shortcodestyle p {
+.prose-content .shortcodestyle p {
   margin: 0.4em 0;
 }
-.oat-prose .shortcodestyle p:first-of-type {
+.prose-content .shortcodestyle p:first-of-type {
   margin-top: 0;
 }
-.oat-prose .shortcodestyle p:last-of-type {
+.prose-content .shortcodestyle p:last-of-type {
   margin-bottom: 0;
 }
 
 /* Per-type: ::before bar color + icon color + subtle background */
-.oat-prose .task {
+.prose-content .task {
   background: color-mix(in srgb, var(--card) 98%, var(--muted-foreground));
 }
-.oat-prose .task::before {
+.prose-content .task::before {
   background: var(--muted-foreground);
 }
-.oat-prose .task .sc-title {
+.prose-content .task .sc-title {
   color: var(--muted-foreground);
 }
-.oat-prose .task svg {
+.prose-content .task svg {
   color: var(--muted-foreground);
 }
 
-.oat-prose .warning {
+.prose-content .warning {
   background: color-mix(in srgb, var(--card) 96%, var(--warning));
 }
-.oat-prose .warning::before {
+.prose-content .warning::before {
   background: var(--warning);
 }
-.oat-prose .warning .sc-title {
+.prose-content .warning .sc-title {
   color: var(--warning);
 }
-.oat-prose .warning svg {
+.prose-content .warning svg {
   color: var(--warning);
 }
 
-.oat-prose .noway {
+.prose-content .noway {
   background: color-mix(in srgb, var(--card) 96%, var(--danger));
 }
-.oat-prose .noway::before {
+.prose-content .noway::before {
   background: var(--danger);
 }
-.oat-prose .noway .sc-title {
+.prose-content .noway .sc-title {
   color: var(--danger);
 }
-.oat-prose .noway svg {
+.prose-content .noway svg {
   color: var(--danger);
 }
 
-.oat-prose .buy {
+.prose-content .buy {
   background: color-mix(in srgb, var(--card) 96%, var(--success));
 }
-.oat-prose .buy::before {
+.prose-content .buy::before {
   background: var(--success);
 }
-.oat-prose .buy .sc-title {
+.prose-content .buy .sc-title {
   color: var(--success);
 }
-.oat-prose .buy svg {
+.prose-content .buy svg {
   color: var(--success);
 }
 
 /* Dark mode: card-highlight + adjusted tints */
-[data-theme='dark'] .oat-prose .shortcodestyle {
+[data-theme='dark'] .prose-content .shortcodestyle {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .shortcodestyle:hover {
+[data-theme='dark'] .prose-content .shortcodestyle:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .task {
+[data-theme='dark'] .prose-content .task {
   background: color-mix(in srgb, var(--card) 95%, var(--muted-foreground));
 }
-[data-theme='dark'] .oat-prose .warning {
+[data-theme='dark'] .prose-content .warning {
   background: color-mix(in srgb, var(--card) 92%, var(--warning));
 }
-[data-theme='dark'] .oat-prose .noway {
+[data-theme='dark'] .prose-content .noway {
   background: color-mix(in srgb, var(--card) 92%, var(--danger));
 }
-[data-theme='dark'] .oat-prose .buy {
+[data-theme='dark'] .prose-content .buy {
   background: color-mix(in srgb, var(--card) 92%, var(--success));
 }
 [data-theme='dark'] .wp-block-sakurairo-notice-block .shortcodestyle,
@@ -465,7 +761,7 @@
 }
 
 /* 卡片主体 — 每个卡片固定尺寸一致 */
-.oat-prose .wp-block-sakurairo-showcard-block .showcard {
+.prose-content .wp-block-sakurairo-showcard-block .showcard {
   display: flex;
   flex-direction: column;
   width: 192px;
@@ -475,15 +771,18 @@
   padding: 12px;
   margin: 8px;
   animation: notice-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
   box-shadow: var(--shadow-small);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard:hover {
+.prose-content .wp-block-sakurairo-showcard-block .showcard:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
   transform: translateY(-2px);
   border-color: var(--accent);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .img {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .img {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
@@ -494,10 +793,10 @@
   justify-content: center;
   background: var(--muted);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .img:hover {
   opacity: 0.92;
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .showcard-button {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .showcard-button {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -516,21 +815,21 @@
   justify-content: center;
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .showcard-button i {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .showcard-button i {
   font-size: 24px;
   color: var(--foreground);
   transition: transform 0.3s ease;
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button {
   width: 48px;
   height: 48px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   background: rgba(255, 255, 255, 0.9);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button i {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .img:hover .showcard-button i {
   transform: translateX(2px);
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -539,11 +838,11 @@
   color: var(--muted-foreground);
   line-height: 1.4;
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title i {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title i {
   font-size: 14px;
   flex-shrink: 0;
 }
-.oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
+.prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
   color: var(--foreground);
   font-weight: 500;
   font-size: 13px;
@@ -553,22 +852,22 @@
 }
 
 /* Dark mode: showcard — 完整适配 */
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard {
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard {
   background: var(--card);
   border-color: var(--border);
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard:hover {
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
   border-color: var(--accent);
 }
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title i,
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title {
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title i,
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title {
   color: var(--muted-foreground);
 }
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard .icon-title .title {
   color: var(--foreground);
 }
-[data-theme='dark'] .oat-prose .wp-block-sakurairo-showcard-block .showcard .img {
+[data-theme='dark'] .prose-content .wp-block-sakurairo-showcard-block .showcard .img {
   background: var(--muted);
 }

@@ -1,22 +1,61 @@
-﻿import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// eslint-disable-next-line n/no-process-env
 const WP_URL = process.env.WP_URL || 'http://localhost'
+
+// SPA fallback: redirect unmatched paths to the app's base URL so
+// client-side routes like /shuoshuo work on page refresh in dev mode.
+// (Must be a plugin — `configureServer` is a plugin hook, not a server option.)
+function spaFallback(): Plugin {
+  return {
+    name: 'simple-theme:spa-fallback',
+    configureServer(server) {
+      // Pre-middleware: rewrite before Vite's static file handler runs.
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url ?? ''
+        // Let Vite internals, API, and uploads pass through.
+        if (
+          url.startsWith('/@') ||
+          url.startsWith('/wp-json') ||
+          url.startsWith('/wp-content/uploads') ||
+          url.startsWith('/node_modules') ||
+          url.startsWith('/src/') ||
+          url === '/favicon.ico'
+        ) {
+          return next()
+        }
+        // For any path that is not under the base, serve the SPA entry.
+        if (!url.startsWith('/wp-content/themes/simple-theme/dist/')) {
+          req.url = '/wp-content/themes/simple-theme/dist/index.html'
+        }
+        next()
+      })
+    },
+  }
+}
 
 export default defineConfig(({ command }) => ({
   base: command === 'serve'
     ? '/wp-content/themes/simple-theme/dist/'
     : './',
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          // ALTCHA is a native web component, not a Vue component
+          isCustomElement: (tag) => tag.startsWith('altcha-'),
+        },
+      },
+    }),
     vueDevTools(),
+    tailwindcss(),
+    spaFallback(),
     VitePWA({
       strategies: 'generateSW',
-      swDest: 'sw.js',
       registerType: 'autoUpdate',
       workbox: {
         // Don't precache — cache only what the current UI actually loads
@@ -84,30 +123,6 @@ export default defineConfig(({ command }) => ({
         target: WP_URL,
         changeOrigin: true,
       },
-    },
-    // SPA fallback: redirect unmatched paths to the app's base URL so
-    // client-side routes like /shuoshuo work on page refresh in dev mode.
-    configureServer(server) {
-      // Pre-middleware: rewrite before Vite's static file handler runs.
-      server.middlewares.use((req, _res, next) => {
-        const url = req.url ?? ''
-        // Let Vite internals, API, and uploads pass through.
-        if (
-          url.startsWith('/@') ||
-          url.startsWith('/wp-json') ||
-          url.startsWith('/wp-content/uploads') ||
-          url.startsWith('/node_modules') ||
-          url.startsWith('/src/') ||
-          url === '/favicon.ico'
-        ) {
-          return next()
-        }
-        // For any path that is not under the base, serve the SPA entry.
-        if (!url.startsWith('/wp-content/themes/simple-theme/dist/')) {
-          req.url = '/wp-content/themes/simple-theme/dist/index.html'
-        }
-        next()
-      })
     },
   },
   build: {

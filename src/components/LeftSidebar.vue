@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted, watch } from 'vue'
+import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isExternalUrl } from '@/lib/theme-config'
@@ -54,6 +54,8 @@ function toggleMenu() {
   if (window.innerWidth < 1000) {
     rightOpen.value = next
   }
+  // 收起抽屉时同步关闭浮动子菜单，避免面板脱离抽屉残留
+  if (!next) closeAllSubMenus()
 }
 
 function closeAll() {
@@ -76,10 +78,14 @@ const openMenus = ref<Set<number>>(new Set())
 const closeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 function toggleSubMenu(id: number) {
+  // 窄屏下抽屉收起时菜单不可见，忽略切换（防止脚本/焊点触发导致面板脱离抽屉残留）
+  if (window.innerWidth < 1200 && !leftOpen.value) return
   const next = new Set(openMenus.value)
   if (next.has(id)) {
     next.delete(id)
   } else {
+    // 同一时刻只展开一个子菜单 — 多个浮动面板会在相近坐标叠加
+    next.clear()
     next.add(id)
     const li = document.querySelector<HTMLElement>(`[data-menu-id="${id}"]`)
     if (li && leftSidebarRef.value) {
@@ -97,6 +103,17 @@ function toggleSubMenu(id: number) {
 function closeAllSubMenus() {
   openMenus.value = new Set()
 }
+
+/** 点击菜单外部关闭浮动子菜单 — mouseleave 在触屏设备上不触发，必须有 click 兑底 */
+function onDocumentClick(e: MouseEvent) {
+  if (openMenus.value.size === 0) return
+  const target = e.target as HTMLElement
+  if (target.closest('.menu-toggle') || target.closest('.sub-menu--floating')) return
+  closeAllSubMenus()
+}
+
+onMounted(() => document.addEventListener('click', onDocumentClick))
+onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 function onSidebarMouseLeave() {
   tooltip.visible = false
@@ -173,7 +190,7 @@ function onRootTooltipHover(e: MouseEvent) {
 
 <template>
   <div
-    class="sidebar-root"
+    class="sidebar-root flex w-[100px] shrink-0 max-xl:w-0"
     @mouseleave="onSidebarMouseLeave"
     @mouseenter="onSidebarMouseEnter"
     @mouseover="onRootTooltipHover"
@@ -189,19 +206,23 @@ function onRootTooltipHover(e: MouseEvent) {
 
     <!-- Left drawer backdrop -->
     <Transition name="drawer-fade">
-      <div v-if="leftOpen" class="drawer-overlay" @click="closeAll" />
+      <div v-if="leftOpen" class="fixed inset-0 z-[998] bg-black/50" @click="closeAll" />
     </Transition>
 
     <!-- Right panel backdrop -->
     <Transition name="drawer-fade">
-      <div v-if="rightOpen" class="drawer-overlay drawer-overlay--right" @click="closeAll" />
+      <div v-if="rightOpen" class="fixed inset-0 z-[998] bg-black/50" @click="closeAll" />
     </Transition>
 
     <!-- Desktop sidebar / Mobile narrow left drawer -->
     <aside ref="leftSidebarRef" class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
       <!-- Search button -->
-      <div class="left-sidebar__search">
-        <button class="sidebar-search-btn" @click="searchOpen = true" aria-label="搜索">
+      <div class="flex w-full items-center justify-center border-b border-border px-2.5 py-3 max-xl:hidden">
+        <button
+          class="flex h-[50px] w-[50px] cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-foreground transition-colors duration-150 hover:bg-menu-hover"
+          @click="searchOpen = true"
+          aria-label="搜索"
+        >
           <i class="bx bx-search" style="font-size: 20px;"></i>
         </button>
       </div>
@@ -221,12 +242,20 @@ function onRootTooltipHover(e: MouseEvent) {
     </aside>
 
     <!-- Mobile right profile panel -->
-    <aside class="right-panel" :class="{ 'right-panel--open': rightOpen }">
-      <div class="right-panel__scroll">
-        <div class="right-panel__slide-wrap">
-          <div class="right-panel__content" :class="{ active: showRightSubPage }">
+    <aside
+      class="hidden max-lg:fixed max-lg:top-14 max-lg:bottom-0 max-lg:right-0 max-lg:z-[999] max-lg:block max-lg:h-[calc(100dvh-3.5rem)] max-lg:w-[260px] max-lg:translate-x-full max-lg:overflow-y-auto max-lg:border-l max-lg:border-border max-lg:bg-card max-lg:transition-transform max-lg:duration-[250ms]"
+      :class="{ 'max-lg:translate-x-0! max-lg:shadow-[-4px_0_24px_rgba(0,0,0,0.15)]': rightOpen }"
+    >
+      <div class="flex h-full flex-col">
+        <div
+          class="min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div
+            class="relative flex w-[200%] flex-none overflow-clip transition-transform duration-300"
+            :class="{ '-translate-x-1/2': showRightSubPage }"
+          >
             <!-- Main page: profile + tech info -->
-            <div class="right-panel__page main-page">
+            <div class="main-page w-1/2 shrink-0">
               <template v-if="shellLoading">
                 <div class="aside-author__cover" style="background:var(--muted);"></div>
                 <div class="aside-author__info">
@@ -256,7 +285,7 @@ function onRootTooltipHover(e: MouseEvent) {
             </div>
 
             <!-- Sub page: menu / links -->
-            <div class="right-panel__page sub-page">
+            <div class="sub-page flex w-1/2 shrink-0 flex-col">
               <div class="sub-page__header">
                 <div class="aside-btn-close" @click="showRightSubPage = false">
                   <i class="bx bx-chevron-left" style="font-size: 14px;"></i>
@@ -338,16 +367,8 @@ function onRootTooltipHover(e: MouseEvent) {
   </div>
 </template>
 
-<!-- ==================== SCOPLED STYLES ==================== -->
 <style scoped>
-/* ========== Drawer Overlay ========== */
-.drawer-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 998;
-  background: rgba(0, 0, 0, 0.5);
-}
-
+/* Vue <Transition> classes for drawer backdrops */
 .drawer-fade-enter-active,
 .drawer-fade-leave-active {
   transition: opacity 0.25s ease;
@@ -355,243 +376,5 @@ function onRootTooltipHover(e: MouseEvent) {
 .drawer-fade-enter-from,
 .drawer-fade-leave-to {
   opacity: 0;
-}
-
-/* ========== Left Sidebar Search ========== */
-.left-sidebar__search {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px 10px;
-  border-bottom: 1px solid var(--border);
-  width: 100%;
-}
-
-.sidebar-search-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--foreground);
-  transition: background-color var(--transition-fast);
-}
-
-.sidebar-search-btn:hover {
-  background-color: var(--menu-hover);
-}
-
-.sidebar-search-btn svg {
-  width: 24px;
-  height: 24px;
-}
-
-/* ========== Right profile panel (hidden on desktop, drawer on < 1000px) ========== */
-.right-panel {
-  display: none;
-}
-
-/* ========== Responsive < 1200px ========== */
-@media (max-width: 1200px) {
-  .sidebar-root {
-    width: 0;
-    flex-shrink: 0;
-  }
-
-  .left-sidebar__search {
-    display: none;
-  }
-
-  /* Narrow left drawer */
-  .left-sidebar {
-    position: fixed !important;
-    top: 56px !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 90px !important;
-    height: calc(100vh - 56px);
-    height: calc(100dvh - 56px) !important;
-    z-index: 999 !important;
-    background: var(--card);
-    border-right: 1px solid var(--border);
-    border-left: none !important;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 12px !important;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
-    box-shadow: none;
-  }
-
-  .left-sidebar--open {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .left-sidebar__logo {
-    display: none !important;
-  }
-
-  .left-sidebar__actions {
-    flex-direction: column;
-    justify-content: center;
-    padding: 12px 0;
-    gap: 4px;
-    width: 100%;
-    border-top: 1px solid var(--border);
-  }
-
-  .left-sidebar__actions .sidebar-action-btn {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-/* ========== Responsive < 1000px ========== */
-@media (max-width: 1000px) {
-  .right-panel {
-    display: block;
-    position: fixed;
-    top: 56px;
-    right: 0;
-    bottom: 0;
-    width: 260px;
-    height: calc(100vh - 56px);
-    height: calc(100dvh - 56px);
-    z-index: 999;
-    background: var(--card);
-    border-left: 1px solid var(--border);
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
-    overflow-y: auto;
-    box-shadow: none;
-  }
-
-  .right-panel--open {
-    transform: translateX(0);
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .right-panel__scroll {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .right-panel__slide-wrap {
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    width: 100%;
-    flex-shrink: 0;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .right-panel__slide-wrap::-webkit-scrollbar {
-    display: none;
-  }
-
-  .right-panel__content {
-    flex: none;
-    width: 200%;
-    display: flex;
-    position: relative;
-    transition: transform 0.3s ease;
-    transform: translateX(0);
-    overflow: clip;
-  }
-
-  .right-panel__content.active {
-    transform: translateX(-50%);
-  }
-
-  .right-panel__page {
-    width: 50%;
-    flex-shrink: 0;
-  }
-
-  .right-panel__page.sub-page {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .drawer-overlay--right {
-    z-index: 998;
-  }
-}
-</style>
-
-<!-- ==================== Global sidebar tooltip (escapes overflow clip) ==================== -->
-<style>
-.sidebar-global-tooltip {
-  position: fixed;
-  z-index: 9999;
-  transform: translateY(-50%) translateX(-4px);
-  opacity: 0;
-  pointer-events: none;
-  font-size: 14px;
-  line-height: 1.4;
-  color: #fff;
-  white-space: nowrap;
-  padding: 5px 12px;
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.sidebar-global-tooltip.is-visible {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
-
-/* Floating sub-menu panel — position:fixed escapes scroll container clipping */
-.sub-menu--floating {
-  position: fixed !important;
-  transform: translateY(-50%) translateX(-8px) !important;
-  left: 0;
-  top: 0;
-  z-index: 100;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-/* Mobile: floating panel above drawer (z-index: 999) */
-@media (max-width: 1200px) {
-  .sub-menu--floating {
-    z-index: 1000 !important;
-  }
-}
-
-.sub-menu--floating.is-open {
-  transform: translateY(-50%) translateX(0) !important;
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Always show floating sub-menu panels (desktop + mobile) */
-.sidebar-sub-menu-desktop {
-  display: block;
-}
-</style>
-
-<!-- ==================== NON-SCOPED: Root layout ==================== -->
-<style>
-.sidebar-root {
-  display: flex;
-  flex-shrink: 0;
-  width: 100px;
 }
 </style>

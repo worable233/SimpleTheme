@@ -1,14 +1,11 @@
 <script setup lang="ts">
 /**
  * TimelineModal — 年份详情弹窗（含统计卡片、月度分组）
+ *
+ * 数据由父组件预先加载后通过 props 传入，弹窗直接渲染内容，无需骨架。
  */
-import { ref, watch, nextTick } from 'vue'
 import type { RenderedText } from '@/types/wordpress'
-
-interface MonthEntry {
-  label: string
-  posts: PostWithMeta[]
-}
+import ModalCloseButton from '@/components/ModalCloseButton.vue'
 
 interface PostWithMeta {
   id: number
@@ -25,7 +22,7 @@ interface TimelineData {
   months: [string, PostWithMeta[]][]
 }
 
-const props = defineProps<{
+defineProps<{
   show: boolean
   data: TimelineData | null
 }>()
@@ -33,15 +30,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
-
-const modalLoading = ref(false)
-
-watch(() => props.show, (val) => {
-  if (val) {
-    modalLoading.value = true
-    nextTick(() => setTimeout(() => { modalLoading.value = false }, 350))
-  }
-})
 
 function onMaskClick(e: MouseEvent) {
   if ((e.target as HTMLElement).classList.contains('modal-mask')) {
@@ -59,19 +47,9 @@ function onMaskClick(e: MouseEvent) {
         @click="onMaskClick"
       >
         <div class="timeline-modal" @click.stop>
-          <button class="modal-close" @click="emit('close')" aria-label="按 ESC 关闭">ESC</button>
+          <ModalCloseButton class="modal-close" @click="emit('close')" />
           <div class="modal-content">
-            <div v-if="modalLoading" class="modal-skeleton">
-              <div class="skeleton-title"></div>
-              <div class="skeleton-stats">
-                <div class="skeleton-stat-box" v-for="n in 3" :key="n"></div>
-              </div>
-              <div class="skeleton-month" v-for="n in 3" :key="n">
-                <div class="skeleton-month-label"></div>
-                <div class="skeleton-post" v-for="m in 2" :key="m"></div>
-              </div>
-            </div>
-            <div v-else class="modal-content-inner">
+            <div class="modal-content-inner">
               <h2 class="modal-title">{{ data.year }} 年</h2>
               <div class="modal-stats-grid">
                 <div class="modal-statbox">
@@ -184,40 +162,12 @@ function onMaskClick(e: MouseEvent) {
   border-radius: 3px;
 }
 
+/* 关闭按钮定位（外观由 ModalCloseButton 统一） */
 .modal-close {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  min-width: 3rem;
-  height: 1.8rem;
-  padding: 0 0.5rem;
-  border-radius: var(--radius-small, 4px);
-  border: 1px solid var(--border, rgba(0,0,0,0.15));
-  background: var(--surface, rgba(0,0,0,0.03));
-  color: var(--foreground, #666);
-  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  box-shadow: 0 2px 0 var(--border, rgba(0,0,0,0.12));
-  user-select: none;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.modal-close:hover {
-  transform: translateY(1px);
-  box-shadow: 0 1px 0 var(--border, rgba(0,0,0,0.12));
-  background: var(--border, rgba(0,0,0,0.06));
-  color: var(--foreground, #222);
-}
-
-.modal-close:active {
-  transform: translateY(2px) scale(0.96);
-  box-shadow: none;
+  z-index: 2;
 }
 
 .modal-title {
@@ -420,57 +370,6 @@ function onMaskClick(e: MouseEvent) {
   flex-shrink: 0;
 }
 
-/* ===== Modal Skeleton ===== */
-.modal-skeleton {
-  padding: 2rem;
-  animation: skeletonPulse 2.2s ease-in-out infinite;
-}
-
-.skeleton-title {
-  height: 32px;
-  width: 200px;
-  background: var(--skeleton-bg, rgba(128,128,128,0.15));
-  border-radius: var(--radius-sm, 6px);
-  margin-bottom: 1.5rem;
-}
-
-.skeleton-stats {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.skeleton-stat-box {
-  flex: 1;
-  height: 96px;
-  background: var(--skeleton-bg, rgba(128,128,128,0.15));
-  border-radius: var(--radius-md, 12px);
-}
-
-.skeleton-month {
-  margin-bottom: 1.5rem;
-}
-
-.skeleton-month-label {
-  height: 24px;
-  width: 120px;
-  background: var(--skeleton-bg, rgba(128,128,128,0.15));
-  border-radius: var(--radius-sm, 6px);
-  margin-bottom: 0.75rem;
-}
-
-.skeleton-post {
-  height: 20px;
-  width: 100%;
-  background: var(--skeleton-bg, rgba(128,128,128,0.15));
-  border-radius: var(--radius-xs, 4px);
-  margin-bottom: 0.5rem;
-}
-
-.skeleton-post:last-child {
-  width: 75%;
-}
-
 /* ===== Slide In Animation ===== */
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-24px); }
@@ -490,52 +389,52 @@ function onMaskClick(e: MouseEvent) {
 }
 
 /* ===== Dark Mode ===== */
-:global(body.dark) .timeline-modal {
+:global([data-theme='dark']) .timeline-modal {
   background: rgba(25,25,25,0.98);
   border-color: rgba(255,255,255,0.08);
   box-shadow: inset 0 1px 0 0 #fff3;
 }
 
-:global(body.dark) .modal-title {
+:global([data-theme='dark']) .modal-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global(body.dark) .modal-statbox {
+:global([data-theme='dark']) .modal-statbox {
   background: rgba(255,255,255,0.04);
   border-color: rgba(255,255,255,0.08);
 }
 
-:global(body.dark) .stat-label {
+:global([data-theme='dark']) .stat-label {
   color: rgba(255,255,255,0.5);
 }
 
-:global(body.dark) .stat-value {
+:global([data-theme='dark']) .stat-value {
   color: rgba(255,255,255,0.95);
 }
 
-:global(body.dark) .modal-month-title {
+:global([data-theme='dark']) .modal-month-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global(body.dark) .modal-month-title::before {
+:global([data-theme='dark']) .modal-month-title::before {
   background: var(--primary, rgba(255,255,255,0.8));
 }
 
-:global(body.dark) .modal-post-item {
+:global([data-theme='dark']) .modal-post-item {
   background: rgba(255,255,255,0.03);
   border-color: rgba(255,255,255,0.06);
 }
 
-:global(body.dark) .modal-post-item:hover {
+:global([data-theme='dark']) .modal-post-item:hover {
   background: rgba(255,255,255,0.05);
   border-color: rgba(255,255,255,0.1);
 }
 
-:global(body.dark) .modal-post-title {
+:global([data-theme='dark']) .modal-post-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global(body.dark) .modal-post-date {
+:global([data-theme='dark']) .modal-post-date {
   color: rgba(255,255,255,0.5);
   background: rgba(255,255,255,0.08);
 }

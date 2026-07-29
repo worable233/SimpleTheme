@@ -37,7 +37,9 @@
   position: relative;
 }
 
-.code-block-body pre {
+/* 特异性 0,2,1 — 必须压过 prose.css 中的 .prose-content pre（0,1,1），
+   否则 pre 在 wrapper 内保留自身卡片样式，出现双层边框/阴影 */
+.code-block-wrapper .code-block-body pre {
   font-family: var(--font-code);
   margin: 0;
   padding: 1.25em 1.5em;
@@ -49,7 +51,7 @@
   -webkit-font-smoothing: auto;
 }
 
-.code-block-body pre code {
+.code-block-wrapper .code-block-body pre code {
   background: transparent;
   border: none;
   padding: 0;

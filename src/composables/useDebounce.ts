@@ -1,4 +1,4 @@
-export function useDebounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+export function useDebounce<T extends (...args: never[]) => unknown>(fn: T, delay: number) {
   let timer: ReturnType<typeof setTimeout> | null = null
 
   const debounced = (...args: Parameters<T>) => {

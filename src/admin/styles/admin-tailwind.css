@@ -1,0 +1,66 @@
+/* ==================== Admin Tailwind Entry ====================
+ * Embedded inside wp-admin pages — deliberately NO preflight import,
+ * so WordPress admin chrome outside our mount points stays untouched.
+ * Utilities are class-based and safe to include globally.
+ * ================================================================ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Semantic tokens formerly provided by oat.min.css (:root, light-dark based).
+ * Values preserved 1:1 so admin visuals stay identical after removing oat. */
+:root {
+  color-scheme: light dark;
+  --background: light-dark(#fff, #09090b);
+  --foreground: light-dark(#09090b, #fafafa);
+  --card: light-dark(#fff, #18181b);
+  --card-foreground: light-dark(#09090b, #fafafa);
+  --primary: light-dark(#574747, #fafafa);
+  --primary-foreground: light-dark(#fafafa, #18181b);
+  --secondary: light-dark(#f4f4f5, #27272a);
+  --secondary-foreground: light-dark(#574747, #fafafa);
+  --muted: light-dark(#f4f4f5, #27272a);
+  --muted-foreground: light-dark(#71717a, #a1a1aa);
+  --faint: light-dark(#fafafa, #1e1e21);
+  --faint-foreground: light-dark(#a1a1aa, #71717a);
+  --accent: light-dark(#f4f4f5, #27272a);
+  --border: light-dark(#d4d4d8, #52525b);
+  --input: light-dark(#d4d4d8, #52525b);
+  --ring: light-dark(#574747, #d4d4d8);
+  --danger: light-dark(#d32f2f, #f4807b);
+  --success: light-dark(#008032, #6cc070);
+  --warning: light-dark(#a65b00, #f0a030);
+  --menu-hover: light-dark(#f5f5f5, #2a2a2a);
+  --radius-small: 0.125rem;
+  --radius-medium: 0.375rem;
+  --radius-large: 0.75rem;
+  --radius-full: 9999px;
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-medium: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-large: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --transition-fast: 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Map runtime tokens into Tailwind so utilities (bg-card, text-foreground …)
+ * resolve the light-dark values above. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+}

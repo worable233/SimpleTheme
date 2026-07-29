@@ -1,18 +1,23 @@
-﻿<?php
+<?php
 /**
- * 鍏ㄥ眬鍚庡彴灏忕孩涔︾編鍖?鈥?Vue Admin Shell
+ * 全局后台美化 — Vue Admin Shell
  *
- * 閫氳繃 Vue 缁勪欢瀹屽叏鏇挎崲 WP 鍚庡彴鐨勫乏渚ц彍鍗曟爮鍜岄《閮ㄥ鑸爮锛? * 鏍峰紡涓庝富棰樺墠绔畬鍏ㄤ竴鑷达紙鐩稿悓鐨?CSS 鑷畾涔夊睘鎬э級銆? *
- * CSS 鍔犺浇绛栫暐锛? *   - 閫氳繃 admin_enqueue_scripts 鍔犺浇锛屾帓鍦?WP 鍘熺敓鏍峰紡涔嬪悗
- *   - source-order 鑳滃嚭锛堢浉鍚岀壒寮傛€т笅锛屽悗鍔犺浇鐨勬牱寮忕敓鏁堬級
- *   - CSS 鑷畾涔夊睘鎬?--wp-admin-theme-color 瑕嗙洊 WP 鎸夐挳鑹? *
+ * 通过 Vue 组件完全替换 WP 后台的左侧菜单栏和顶部导航栏，
+ * 样式与主题前端完全一致（相同的 CSS 自定义属性）。
+ *
+ * CSS 加载策略：
+ *   - 通过 admin_enqueue_scripts 加载，排在 WP 原生样式之后
+ *   - source-order 胜出（相同特异性下，后加载的样式生效）
+ *   - CSS 自定义属性 --wp-admin-theme-color 覆盖 WP 按钮色
+ *
  * @package SimpleTheme
  */
 
 defined('ABSPATH') || exit;
 
 /**
- * 妫€鏌ュ悗鍙扮編鍖栨槸鍚﹀惎鐢? */
+ * 检查后台美化是否启用
+ */
 function simple_theme_is_admin_theme_enabled(): bool {
 	$options = get_option('simple_theme_options', []);
 	return !empty($options['admin_theme_enabled']);
@@ -55,7 +60,8 @@ add_action('admin_enqueue_scripts', function () {
 }, 1);
 
 /**
- * 鍏ラ槦缇庡寲 CSS锛坅dmin + login锛? */
+ * 入队美化 CSS（admin + login）
+ */
 add_action('admin_enqueue_scripts', function () {
 	if (!simple_theme_is_admin_theme_enabled()) return;
 	if (simple_theme_should_skip_admin_theme()) return;
@@ -70,7 +76,7 @@ add_action('admin_enqueue_scripts', function () {
 });
 
 /**
- * 缁檅ody 娣诲姞 sta-theme-active class锛屼緤 CSS Grid 甯冨眬浣跨敤
+ * 给 body 添加 sta-theme-active class，供 CSS Grid 布局使用
  */
 add_filter('admin_body_class', function (string $classes): string {
 	if (!simple_theme_is_admin_theme_enabled()) return $classes;
@@ -90,13 +96,13 @@ add_action('login_enqueue_scripts', function () {
 });
 
 /**
- * 鍏ラ槦 Admin Shell Vue App + 鏆楄壊妯″紡鍚屾
+ * 入队 Admin Shell Vue App + 暗色模式同步
  */
 add_action('admin_enqueue_scripts', function () {
 	if (!simple_theme_is_admin_theme_enabled()) return;
 	if (simple_theme_should_skip_admin_theme()) return;
 
-	// 璇诲彇 manifest 鑾峰彇 admin-shell 浜х墿鐨勫疄闄呮枃浠跺悕
+	// 读取 manifest 获取 admin-shell 产物的实际文件名
 	$manifest_file = get_theme_file_path('dist/.vite/manifest.json');
 	if (!file_exists($manifest_file)) return;
 	$manifest = json_decode(file_get_contents($manifest_file), true);
@@ -104,7 +110,7 @@ add_action('admin_enqueue_scripts', function () {
 
 	$entry = $manifest['src/admin/shell-entry.ts'];
 
-	// 鍏ラ槦 CSS
+	// 入队 CSS
 	if (!empty($entry['css']) && is_array($entry['css'])) {
 		foreach ($entry['css'] as $index => $css_file) {
 			$url = get_template_directory_uri() . '/dist/' . ltrim($css_file, '/');
@@ -118,7 +124,7 @@ add_action('admin_enqueue_scripts', function () {
 		}
 	}
 
-	// 鍏ラ槦 JS
+	// 入队 JS
 	if (!empty($entry['file'])) {
 		$script_uri = get_template_directory_uri() . '/dist/' . ltrim($entry['file'], '/');
 		$script_ver = filemtime(get_theme_file_path('dist/' . ltrim($entry['file'], '/')));
@@ -142,8 +148,9 @@ add_action('admin_enqueue_scripts', function () {
 });
 
 /**
- * 鏆楄壊妯″紡鍚屾锛氳鍙栧墠绔?localStorage 鐨?theme 璁剧疆
- * 鍦?admin_head 涓敞鍏ュ唴鑱旇剼鏈? */
+ * 暗色模式同步：读取前端 localStorage 的 theme 设置，
+ * 在 admin_head 中注入内联脚本
+ */
 add_action('admin_head', function () {
 		if (!simple_theme_is_admin_theme_enabled()) return;
 		if (simple_theme_should_skip_admin_theme()) return;
@@ -165,7 +172,8 @@ add_action('admin_head', function () {
 });
 
 /**
- * 渚ц竟鏍忓搧鐗屾爣璇?鈥?閫氳繃 JS 灏嗙珯鐐瑰悕绉版敞鍏?#adminmenu 鐨?data-xhs-title 灞炴€? */
+ * 侧边栏品牌标识 — 通过 JS 将站点名称注入 #adminmenu 的 data-xhs-title 属性
+ */
 add_action('admin_head', function () {
 	if (!simple_theme_is_admin_theme_enabled()) return;
 	if (simple_theme_should_skip_admin_theme()) return;
@@ -178,4 +186,3 @@ add_action('admin_head', function () {
 	</script>
 	<?php
 });
-

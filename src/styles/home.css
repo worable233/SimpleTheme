@@ -1,0 +1,274 @@
+/* Home / archive listings: section header, filter bar, post cards */
+@layer components {
+/* ==================== Home Page ==================== */
+.term-archive {
+  padding: 25px;
+}
+
+.section-header {
+  margin-bottom: 25px;
+}
+
+.section-header h1 {
+  margin: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.section-header__title {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.section-header__subtitle {
+  color: var(--secondary);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Post list - horizontal cards */
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.post-list__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Loading skeleton — horizontal layout matching post-card */
+.post-card-skeleton {
+  display: flex;
+  background: var(--card);
+  box-shadow: var(--card-highlight);
+  border-radius: var(--radius-large, 12px);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  min-height: 130px;
+}
+
+.post-card-skeleton__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1.75rem;
+}
+
+.post-card-skeleton__cover {
+  width: 320px;
+  min-height: 130px;
+  flex-shrink: 0;
+  background: var(--muted);
+  animation: card-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 0.75rem;
+  border-radius: var(--radius-small, 4px);
+  background: var(--muted);
+  animation: card-pulse 1.5s ease-in-out infinite;
+}
+
+
+/* Post card — absolute positioned image overlay on right, body ~60% width */
+.post-card {
+  position: relative;
+  container-type: inline-size;
+  background: var(--card);
+  box-shadow: var(--card-highlight);
+  border-radius: var(--radius-large, 12px);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+/* Stretched link: make the entire card clickable via the title link's pseudo-element */
+.post-card__title a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.post-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), var(--card-highlight);
+  transform: translateY(-2px);
+}
+
+body[data-theme='dark'] .post-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), var(--card-highlight);
+}
+
+/* Cover image — absolute positioned right overlay with mask gradient */
+.post-card__cover {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  width: calc(40% + 2em);
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  opacity: 0.8;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.post-card:hover .post-card__cover {
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+/* Body — text content fills ~60% of card width */
+.post-card__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem 1.75rem;
+  width: 60%;
+  min-height: 130px;
+  z-index: 1;
+}
+
+.post-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-card__title a {
+  color: var(--foreground);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.post-card__title a:hover {
+  color: var(--primary);
+}
+
+.post-card__excerpt {
+  color: var(--secondary);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  margin: 0.5rem 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Meta badge — top-right overlay on card */
+.post-card__meta {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
+  border-radius: var(--radius-medium, 8px);
+  font-size: 0.6875rem;
+  color: var(--foreground);
+  line-height: 1.6;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Plain text meta when card has no cover image — keep same position, no background */
+.post-card:not(:has(.post-card__cover)) .post-card__meta {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border: none;
+}
+
+.post-card__meta-item {
+  white-space: nowrap;
+}
+
+/* Container query: narrow card — keep meta floating on cover */
+@container (max-width: 528px) {
+  .post-card__cover {
+    position: revert;
+    width: 100%;
+    max-height: 256px;
+    aspect-ratio: 2.4;
+    mask-image: none;
+    -webkit-mask-image: none;
+    opacity: 1;
+  }
+
+  .post-card__body {
+    width: auto;
+    padding: 1rem 1.25rem;
+    min-height: auto;
+  }
+
+  .post-card__title {
+    font-size: 1rem;
+  }
+
+  .post-card__excerpt {
+    -webkit-line-clamp: 2;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .link-box ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .post-card__title {
+    font-size: 0.9375rem;
+    -webkit-line-clamp: 2;
+  }
+  .post-card__excerpt {
+    -webkit-line-clamp: 2;
+    font-size: 0.8125rem;
+    margin-top: 0.375rem;
+  }
+  .section-header__title {
+    font-size: 24px;
+  }
+  .section-header__subtitle {
+    font-size: 12px;
+  }
+}
+
+/* Tiny screens: stack card vertically */
+@media (max-width: 480px) {
+  .post-card__body {
+    padding: 0.75rem 1rem;
+  }
+  .post-card__title {
+    font-size: 0.9375rem;
+  }
+}
+}

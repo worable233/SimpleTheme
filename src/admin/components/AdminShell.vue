@@ -98,7 +98,7 @@ function getMenuItemIcon(iconEl: Element | null): string {
       const match = computedBg.match(/url\(['"]?([^'")\s]+)['"]?\)/)
       if (match) return match[1] || ''
     }
-  } catch (_) { /* noop */ }
+  } catch { /* noop */ }
 
   return ''
 }

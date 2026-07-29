@@ -38,7 +38,6 @@ const bilibiliNames = Object.freeze([
   'tuxue', 'weiqu', 'weixiao', 'wunai', 'xiaoku', 'xieyanxiao',
   'yiwen', 'yun', 'zaijian', 'zhoumei', 'zhuakuang',
 ])
-const biliSet = Object.freeze(new Set(bilibiliNames))
 
 // 小恐龙表情 (16个) — 来自 Argon Theme
 const dinosaurNames = Object.freeze([
@@ -47,7 +46,6 @@ const dinosaurNames = Object.freeze([
   'dinosaur-doubt', 'dinosaur-depressed', 'dinosaur-close-eyes', 'dinosaur-sleeping',
   'dinosaur-puzzled', 'dinosaur-agree', 'dinosaur-crazy', 'dinosaur-angry',
 ])
-const dinoSet = Object.freeze(new Set(dinosaurNames))
 
 // 贴吧表情 (32个)
 const tiebaNames = Object.freeze([
@@ -57,7 +55,6 @@ const tiebaNames = Object.freeze([
   'bbd', 'hu', 'shame', 'naive', 'rbq', 'britan', 'aa', 'niconiconi',
   'niconiconi_t', 'niconiconit', 'awesome',
   ])
-const tiebaSet = Object.freeze(new Set(tiebaNames))
 
 function biliImg(name: string) {
   return `${emojiBase()}bili/emoji_${name}.webp`

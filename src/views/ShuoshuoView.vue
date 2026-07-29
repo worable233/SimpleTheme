@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
+import { rememberPreviews } from '@/lib/content-preview'
+import { useSkeletonSize } from '@/composables/useSkeletonSize'
 import { showError } from '@/lib/toast'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
@@ -19,6 +21,12 @@ const metaConfig = computed(() => getThemeConfig().features?.meta)
 const items = ref<WordPressPost[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
+
+// 骨架尺寸记忆：复用上次真实卡片的高度/形态
+const { size: cardSize, measure: measureCard } = useSkeletonSize('st_sk_shuoshuo_card')
+const skeletonStyle = computed(() =>
+  cardSize.value ? { height: cardSize.value.h + 'px', minHeight: cardSize.value.h + 'px' } : undefined,
+)
 
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -37,6 +45,9 @@ async function loadShuoshuo() {
       limit: pageSize.value,
     })
     items.value = response.items
+    // 预览缓存 + 骨架尺寸测量
+    rememberPreviews(response.items)
+    void measureCard('.shuoshuo-card', '.shuoshuo-card__cover')
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '说说内容加载失败，请稍后重试。')
     showError(errorMessage.value)
@@ -61,13 +72,13 @@ onMounted(() => {
 
     <!-- Loading skeleton -->
     <div v-if="loading" class="shuoshuo-list">
-      <div v-for="i in Math.min(pageSize, 8)" :key="'sk-' + i" class="shuoshuo-card-skeleton">
+      <div v-for="i in Math.min(pageSize, 8)" :key="'sk-' + i" class="shuoshuo-card-skeleton" :style="skeletonStyle">
         <div class="shuoshuo-card-skeleton__text">
           <div class="sk-line" style="height: 1.125rem; width: 70%;"></div>
           <div class="sk-line" style="height: 0.75rem; width: 100%;"></div>
           <div class="sk-line" style="height: 0.75rem; width: 65%;"></div>
         </div>
-        <div class="shuoshuo-card-skeleton__cover"></div>
+        <div v-if="cardSize?.cover !== false" class="shuoshuo-card-skeleton__cover"></div>
       </div>
     </div>
 
@@ -105,7 +116,7 @@ onMounted(() => {
         <!-- Text content -->
         <div class="shuoshuo-card__body">
           <h2 class="shuoshuo-card__title">
-            <RouterLink :to="toInternalPath(post.link)" v-html="post.title.rendered" />
+            <RouterLink :to="toInternalPath(post.link)"><span v-html="post.title.rendered" /></RouterLink>
           </h2>
           <!-- Smooth expand content on hover -->
           <div class="shuoshuo-card__expand">

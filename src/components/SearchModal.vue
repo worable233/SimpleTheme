@@ -10,6 +10,7 @@ import { showError } from '@/lib/toast'
 import { useDebounce } from '@/composables/useDebounce'
 import type { WordPressPost } from '@/types/wordpress'
 import SearchResultList from '@/components/search/SearchResultList.vue'
+import ModalCloseButton from '@/components/ModalCloseButton.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -206,7 +207,7 @@ onUnmounted(() => {
             >
               <i class="bx bx-x" style="font-size: 18px;"></i>
             </button>
-            <kbd class="search-modal__shortcut" @click="closeSearch" aria-label="关闭搜索">ESC</kbd>
+            <ModalCloseButton class="search-modal__close" @click="closeSearch" />
           </div>
 
           <!-- Results area -->
@@ -318,28 +319,8 @@ onUnmounted(() => {
   background-color: var(--muted);
 }
 
-.search-modal__shortcut {
-  display: inline-block;
-  font-family: inherit;
-  font-size: 0.8em;
-  line-height: 1.4;
-  padding: 0.15em 0.4em 0.1em;
-  margin: 0.1em;
-  background-color: var(--muted, rgba(128,128,128,0.1));
-  color: var(--secondary);
-  border-radius: 0.2em;
-  box-shadow: inset 0 -0.15em 0 var(--muted, rgba(128,128,128,0.1));
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.1s;
-  border: none;
-}
-
-.search-modal__shortcut:active {
-  background-color: var(--accent, rgba(99,102,241,0.15));
-  box-shadow: inset 0 -0.1em 0 var(--primary, #6366f1);
-  color: var(--primary, #6366f1);
-  transform: translateY(0.05em);
+.search-modal__close {
+  margin-left: 0.35rem;
 }
 
 /* ==================== Transitions — panel fade/slide with smooth bezier ==================== */
@@ -426,19 +407,6 @@ onUnmounted(() => {
   .search-modal__field {
     font-size: 1rem;
     padding: 0.25rem 0;
-  }
-
-  .search-modal__shortcut {
-    display: none;
-  }
-
-  .search-modal__result {
-    padding: 0.75rem 1rem;
-  }
-
-  .search-modal__empty,
-  .search-modal__error {
-    padding: 2rem 1rem;
   }
 }
 

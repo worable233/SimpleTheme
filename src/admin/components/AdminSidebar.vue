@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { ref, reactive } from 'vue'
 import type { AdminMenuItem } from '../shell-entry'
 
 const props = defineProps<{
@@ -118,7 +118,7 @@ function decodeSvgDataUrl(url: string): string {
     // Force currentColor
     svgContent = normalizeSvgToCurrentColor(svgContent)
     return svgContent
-  } catch (_) {
+  } catch {
     return ''
   }
 }

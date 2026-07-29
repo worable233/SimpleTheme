@@ -9,14 +9,13 @@ import {
   resolveThemePath,
   trackPostView,
 } from '@/lib/wordpress'
-import { mockResolveThemePath, mockFetchContentByRestUrl, shouldUseMock } from '@/lib/mock-api'
 import { withCache } from '@/lib/api-cache'
+import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
 import { showError } from '@/lib/toast'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
-import TocWidget from '@/components/TocWidget.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import ErrorView from '@/components/ErrorView.vue'
 
@@ -52,6 +51,10 @@ const loading = ref(false)
 const postData = ref<WordPressPost | null>(null)
 const postContent = computed(() => postData.value?.content?.rendered ?? null)
 useContentEnhancer(postContent)
+
+// 列表页写入的预览信息（标题/特色图）— 加载期间精准渲染骨架：
+// 有特色图直接展示真图+真标题，无特色图则不渲染 cover 骨架
+const preview = computed(() => (loading.value ? getContentPreview(route.path) : undefined))
 
 const termName = ref('')
 const termTaxonomy = ref('')
@@ -117,6 +120,7 @@ const loadTermPosts = async (taxonomy: string, id: number) => {
   termPosts.value = []
   try {
     termPosts.value = await fetchPostCollectionByTaxonomy(taxonomy, id)
+    rememberPreviews(termPosts.value)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '归档内容加载失败，请稍后重试。')
     showError(errorMessage.value)
@@ -134,21 +138,14 @@ const loadCurrentContent = async () => {
   loading.value = true
 
   try {
-    const useMock = shouldUseMock()
-    const cachedResolve = useMock
-      ? mockResolveThemePath
-      : withCache(resolveThemePath, `resolve:${normalizedPath.value}`, 30_000)
-    const resolved = await cachedResolve(route.path)
+    const resolved = await withCache(resolveThemePath, `resolve:${normalizedPath.value}`, 30_000)(route.path)
     contentType.value = resolved.type
 
     if (
       ('post' === resolved.type || 'page' === resolved.type || 'shuoshuo' === resolved.type) &&
       resolved.restUrl
     ) {
-      const fetchPost = useMock
-        ? mockFetchContentByRestUrl
-        : withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)
-      postData.value = await fetchPost(resolved.restUrl)
+      postData.value = await withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)(resolved.restUrl)
       if (!postData.value) {
         contentType.value = '404'
         return
@@ -235,7 +232,31 @@ watch(
         description="抱歉，页面暂时无法加载，请稍后重试。"
       />
       <article v-else-if="loading" class="single-post">
-        <div class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
+        <!-- 有预览且含特色图：直接展示真实封面+标题，只骨架化 meta -->
+        <div v-if="preview?.cover" class="single-post__cover">
+          <div class="single-post__cover-img">
+            <img :src="preview.cover" alt="" />
+          </div>
+          <div class="single-post__cover-info">
+            <div class="single-post__cover-title">
+              <h1 v-html="preview.title"></h1>
+            </div>
+            <div class="single-post__cover-meta">
+              <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25); animation: pulse 1.5s ease-in-out infinite;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 有预览但无特色图：不渲染 cover 骨架，直接真标题（与真实渲染同结构，切换无跳动） -->
+        <header v-else-if="preview" class="single-post__header">
+          <h1 class="single-post__header-title" v-html="preview.title"></h1>
+          <div class="single-post__header-meta">
+            <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+          </div>
+        </header>
+        <!-- 无预览（直接进入/刷新）：保留通用 cover 骨架 -->
+        <div v-else class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
           <div class="single-post__cover-info">
             <div class="single-post__cover-title">
               <div style="height: 1.5rem; width: 65%; margin: 0 auto; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
@@ -352,7 +373,7 @@ watch(
             </div>
         </div>
         <div class="single-post__body">
-          <div class="oat-prose" v-html="postData.content?.rendered"></div>
+          <div class="prose-content" v-html="postData.content?.rendered"></div>
           <footer class="single-post__footer">
             <div v-if="postTags.length > 0" class="single-post__tags">
               <span v-for="tag in postTags" :key="tag">#{{ tag }}</span>

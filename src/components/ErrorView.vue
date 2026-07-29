@@ -29,96 +29,30 @@ withDefaults(
 </script>
 
 <template>
-  <section class="ev-root">
-    <div class="ev-container">
+  <section class="flex min-h-screen items-center justify-center px-4 py-8">
+    <div class="flex w-full max-w-[440px] flex-1 flex-col items-center justify-center text-center">
       <!-- 插画 -->
-      <div class="ev-illustration">
-        <UndrawIllustration
-          :name="illustration"
-          width="320"
-          height="240"
-          class="ev-svg"
-        />
+      <div class="mb-6 w-full max-w-[320px]">
+        <UndrawIllustration :name="illustration" width="320" height="240" class="h-auto w-full" />
       </div>
 
       <!-- 标题 -->
-      <h1 class="ev-title">{{ title }}</h1>
+      <h1 class="m-0 mb-2 text-xl leading-[1.4] font-[625] text-foreground">{{ title }}</h1>
 
       <!-- 描述 -->
-      <p v-if="description" class="ev-desc">{{ description }}</p>
+      <p v-if="description" class="m-0 mb-7 text-sm leading-[1.6] text-secondary">
+        {{ description }}
+      </p>
 
       <!-- 操作按钮 -->
-      <div v-if="$slots.actions" class="ev-actions">
+      <div v-if="$slots.actions" class="mb-8 flex flex-wrap justify-center gap-2.5">
         <slot name="actions" />
       </div>
 
       <!-- 额外信息 -->
-      <div v-if="$slots.extra" class="ev-extra">
+      <div v-if="$slots.extra" class="w-full">
         <slot name="extra" />
       </div>
     </div>
   </section>
 </template>
-
-<style scoped>
-.ev-root {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem 1rem;
-}
-
-.ev-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  max-width: 440px;
-  width: 100%;
-  text-align: center;
-}
-
-/* ---- Illustration ---- */
-.ev-illustration {
-  width: 100%;
-  max-width: 320px;
-  margin-bottom: 1.5rem;
-}
-
-.ev-svg {
-  width: 100%;
-  height: auto;
-}
-
-/* ---- Text ---- */
-.ev-title {
-  font-size: 1.25rem;
-  font-weight: 625;
-  color: var(--foreground);
-  margin: 0 0 0.5rem;
-  line-height: 1.4;
-}
-
-.ev-desc {
-  font-size: 0.875rem;
-  color: var(--secondary);
-  margin: 0 0 1.75rem;
-  line-height: 1.6;
-}
-
-/* ---- Actions ---- */
-.ev-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.625rem;
-  justify-content: center;
-  margin-bottom: 2rem;
-}
-
-/* ---- Extra ---- */
-.ev-extra {
-  width: 100%;
-}
-</style>

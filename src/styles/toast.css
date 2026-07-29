@@ -120,6 +120,16 @@
 .toast[data-variant='info'] .toast-icon { color: var(--primary); }
 .toast[data-variant='loading'] .toast-icon { color: var(--primary); }
 
+/* Loading spinner (toast DOM is created dynamically in lib/toast.ts) */
+.toast-spinner {
+  animation: toast-spin 1s linear infinite;
+}
+
+@keyframes toast-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .toast-progress {
   position: absolute;
   bottom: 0;

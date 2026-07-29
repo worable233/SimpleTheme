@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { AnnouncementSettings } from '@/types/wordpress'
+import ModalCloseButton from '@/components/ModalCloseButton.vue'
 
-const props = defineProps<{
+defineProps<{
   announcement: AnnouncementSettings
 }>()
 
@@ -32,18 +33,27 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="announcement-overlay" @click.self="visible = false">
-      <div class="announcement-modal">
-        <div class="announcement-modal__header">
-          <h2>{{ announcement.pageTitle || '公告' }}</h2>
-          <button class="announcement-modal__close" @click="visible = false">&times;</button>
+    <div
+      v-if="visible"
+      class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-5"
+      @click.self="visible = false"
+    >
+      <div
+        class="flex max-h-[80vh] w-full max-w-[560px] flex-col rounded-xl bg-card text-foreground shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
+      >
+        <div class="flex items-center justify-between px-6 pt-5">
+          <h2 class="m-0 text-lg">{{ announcement.pageTitle || '公告' }}</h2>
+          <ModalCloseButton @click="visible = false" />
         </div>
-        <div class="announcement-modal__body" v-html="announcement.pageContent || ''"></div>
-        <div v-if="announcement.buttons?.length" class="announcement-modal__footer">
+        <div
+          class="overflow-y-auto px-6 py-4 text-sm leading-[1.7]"
+          v-html="announcement.pageContent || ''"
+        ></div>
+        <div v-if="announcement.buttons?.length" class="flex justify-end gap-2 px-6 pb-5">
           <button
             v-for="(btn, i) in announcement.buttons"
             :key="i"
-            class="announcement-btn"
+            class="cursor-pointer rounded-lg border-none bg-primary px-5 py-2 text-sm text-primary-foreground"
             @click="handleButtonClick(btn)"
           >
             {{ btn.text }}
@@ -53,74 +63,3 @@ onUnmounted(() => {
     </div>
   </Teleport>
 </template>
-
-<style scoped>
-.announcement-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.announcement-modal {
-  background: var(--theme-card-light, #fff);
-  color: var(--theme-fg-light, #333);
-  border-radius: 12px;
-  max-width: 560px;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-
-.announcement-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 0;
-}
-
-.announcement-modal__header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.announcement-modal__close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: inherit;
-  padding: 4px;
-  line-height: 1;
-}
-
-.announcement-modal__body {
-  padding: 16px 24px;
-  overflow-y: auto;
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.announcement-modal__footer {
-  padding: 0 24px 20px;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.announcement-btn {
-  padding: 8px 20px;
-  border-radius: 8px;
-  border: none;
-  background: var(--primary, #333);
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-}
-</style>

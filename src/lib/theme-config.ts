@@ -1,4 +1,4 @@
-﻿import type { SimpleThemeConfig } from '@/types/wordpress'
+import type { SimpleThemeConfig } from '@/types/wordpress'
 
 const origin = window.location.origin
 
@@ -61,7 +61,7 @@ const normalizeOrigin = (url: string): string => {
   return url
 }
 
-let themeConfig: SimpleThemeConfig = injectedConfig
+const themeConfig: SimpleThemeConfig = injectedConfig
   ? {
       ...fallbackConfig,
       ...injectedConfig,
@@ -80,7 +80,8 @@ if (themeConfig.themeUrl) themeConfig.themeUrl = normalizeOrigin(themeConfig.the
 if (themeConfig.illustrationsUrl) themeConfig.illustrationsUrl = normalizeOrigin(themeConfig.illustrationsUrl)
 if (themeConfig.routes) {
   for (const key of Object.keys(themeConfig.routes) as (keyof typeof themeConfig.routes)[]) {
-    themeConfig.routes[key] = normalizeOrigin(themeConfig.routes[key])
+    const value = themeConfig.routes[key]
+    if (value) themeConfig.routes[key] = normalizeOrigin(value)
   }
 }
 

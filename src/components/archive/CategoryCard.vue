@@ -25,136 +25,29 @@ const emit = defineEmits<{
 
 <template>
   <section
-    class="category-card"
+    class="flex cursor-pointer flex-col rounded-large border-[1.5px] border-border bg-card p-[1.2rem] shadow-[0_4px_24px_0_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:transform-[perspective(800px)_translateY(-5px)_rotateX(2deg)] hover:border-primary hover:shadow-[0_10px_48px_-4px_rgba(0,0,0,0.13)] dark:shadow-[inset_0_1px_0_0_#fff3]"
     @click="emit('select', name)"
   >
-    <div class="category-header">
-      <h3 class="category-name">{{ name }}</h3>
-      <span class="category-count">{{ count }} 篇</span>
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="m-0 text-xl font-bold text-foreground">{{ name }}</h3>
+      <span
+        class="rounded-full bg-border px-3 py-1 text-[0.9rem] whitespace-nowrap text-foreground dark:bg-white/10 dark:text-white/70"
+        >{{ count }} 篇</span
+      >
     </div>
-    <div class="category-posts">
+    <div class="border-t border-dashed border-border pt-3">
       <div
         v-for="post in posts"
         :key="post.id"
-        class="category-post-item"
+        class="flex justify-between py-1 text-[0.9rem]"
       >
-        <a :href="post.link" class="category-post-title">{{ (post.title as RenderedText).rendered }}</a>
-        <span class="category-post-date">{{ post.displayDate }}</span>
+        <a
+          :href="post.link"
+          class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-foreground no-underline transition-colors duration-200 hover:text-primary dark:text-white/70"
+          >{{ (post.title as RenderedText).rendered }}</a
+        >
+        <span class="ml-3 shrink-0 text-[0.8rem] text-secondary">{{ post.displayDate }}</span>
       </div>
     </div>
   </section>
 </template>
-
-<style scoped>
-.category-card {
-  background: var(--card, rgba(255,255,255,0.7));
-  border-radius: var(--radius-large, 8px);
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
-  padding: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  border: 1.5px solid var(--border, #e0e0e0);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.category-card:hover {
-  transform: perspective(800px) translateY(-5px) rotateX(2deg);
-  box-shadow: 0 10px 48px -4px rgba(0,0,0,0.13);
-  border-color: var(--primary, #505050);
-}
-
-.category-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.8rem;
-}
-
-.category-name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--foreground, #222);
-  margin: 0;
-}
-
-.category-count {
-  font-size: 0.9rem;
-  background: var(--border, rgba(0,0,0,0.08));
-  padding: 0.3rem 0.8rem;
-  border-radius: var(--radius-full, 9999px);
-  color: var(--foreground, #666);
-  white-space: nowrap;
-}
-
-.category-posts {
-  padding-top: 0.8rem;
-  border-top: 1px dashed var(--border, #e0e0e0);
-}
-
-.category-post-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  padding: 0.3rem 0;
-}
-
-.category-post-title {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--foreground, #555);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.category-post-title:hover {
-  color: var(--primary, #505050);
-}
-
-.category-post-date {
-  color: var(--foreground, #999);
-  font-size: 0.8rem;
-  margin-left: 0.8rem;
-  flex-shrink: 0;
-}
-
-/* Dark mode */
-:global(body.dark) .category-card {
-  background: rgba(30,30,30,0.92);
-  border-color: #333;
-  box-shadow: inset 0 1px 0 0 #fff3;
-}
-
-:global(body.dark) .category-card:hover {
-  border-color: var(--primary, #fff);
-}
-
-:global(body.dark) .category-name {
-  color: rgba(255,255,255,0.9);
-}
-
-:global(body.dark) .category-count {
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.7);
-}
-
-:global(body.dark) .category-posts {
-  border-top-color: #333;
-}
-
-:global(body.dark) .category-post-title {
-  color: rgba(255,255,255,0.7);
-}
-
-:global(body.dark) .category-post-title:hover {
-  color: var(--primary, #fff);
-}
-
-:global(body.dark) .category-post-date {
-  color: rgba(255,255,255,0.5);
-}
-</style>

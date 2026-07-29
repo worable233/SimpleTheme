@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { fetchNavigation, fetchSiteInfo, getErrorMessage } from '@/lib/wordpress'
-import { mockFetchNavigation, mockFetchSiteInfo, shouldUseMock } from '@/lib/mock-api'
 import { getCached, setCache, computeHash, clearAllCache } from '@/lib/persistent-cache'
 
 import type {
@@ -8,7 +7,6 @@ import type {
   MenuItem,
   SiteInfo,
   SiteStats,
-  SocialLink,
   ThemeSettings,
 } from '@/types/wordpress'
 
@@ -175,14 +173,10 @@ export function useSiteShell() {
 
     // 2. Background refresh — always fetch latest, silently update if changed
     try {
-      const useMock = shouldUseMock()
-
       const [nextSiteInfo, nextPrimaryMenu, nextFooterMenu] = await Promise.all([
-        useMock ? mockFetchSiteInfo() : fetchSiteInfo(),
-        useMock ? mockFetchNavigation('primary')
-          : cached ? fetchNavigation('primary') : fetchNavigation('primary').catch(() => []),
-        useMock ? mockFetchNavigation('footer')
-          : cached ? fetchNavigation('footer') : fetchNavigation('footer').catch(() => []),
+        fetchSiteInfo(),
+        cached ? fetchNavigation('primary') : fetchNavigation('primary').catch(() => []),
+        cached ? fetchNavigation('footer') : fetchNavigation('footer').catch(() => []),
       ])
 
       const merged: CachedShell = {

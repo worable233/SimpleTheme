@@ -145,9 +145,9 @@
   background: color-mix(in srgb, var(--card) 92%, var(--success));
 }
 
-/* --- .oat-prose 作用域（WP 文章内容内使用） --- */
+/* --- .prose-content 作用域（WP 文章内容内使用） --- */
 
-.oat-prose .shortcodestyle {
+.prose-content .shortcodestyle {
   display: block;
   margin: 28px 0;
   padding: 10px 14px 10px 24px;
@@ -163,7 +163,7 @@
   position: relative;
 }
 
-.oat-prose .shortcodestyle::before {
+.prose-content .shortcodestyle::before {
   content: '';
   position: absolute;
   left: 12px;
@@ -173,11 +173,11 @@
   border-radius: 2px;
 }
 
-.oat-prose .shortcodestyle:hover {
+.prose-content .shortcodestyle:hover {
   box-shadow: var(--shadow-medium);
 }
 
-.oat-prose .oat-prose .shortcodestyle .sc-title {
+.prose-content .prose-content .shortcodestyle .sc-title {
   display: block;
   font-weight: 700;
   font-size: 0.9375rem;
@@ -186,78 +186,78 @@
   margin-bottom: 4px;
 }
 
-.oat-prose .shortcodestyle .sc-content {
+.prose-content .shortcodestyle .sc-content {
   display: block;
 }
 
-.oat-prose .shortcodestyle p {
+.prose-content .shortcodestyle p {
   margin: 0.4em 0;
 }
 
-.oat-prose .shortcodestyle p:first-of-type {
+.prose-content .shortcodestyle p:first-of-type {
   margin-top: 0;
 }
 
-.oat-prose .shortcodestyle p:last-of-type {
+.prose-content .shortcodestyle p:last-of-type {
   margin-bottom: 0;
 }
 
-.oat-prose .task {
+.prose-content .task {
   background: color-mix(in srgb, var(--card) 98%, var(--muted-foreground));
 }
-.oat-prose .task::before {
+.prose-content .task::before {
   background: var(--muted-foreground);
 }
-.oat-prose .task .sc-title {
+.prose-content .task .sc-title {
   color: var(--muted-foreground);
 }
 
-.oat-prose .warning {
+.prose-content .warning {
   background: color-mix(in srgb, var(--card) 96%, var(--warning));
 }
-.oat-prose .warning::before {
+.prose-content .warning::before {
   background: var(--warning);
 }
-.oat-prose .warning .sc-title {
+.prose-content .warning .sc-title {
   color: var(--warning);
 }
 
-.oat-prose .noway {
+.prose-content .noway {
   background: color-mix(in srgb, var(--card) 96%, var(--danger));
 }
-.oat-prose .noway::before {
+.prose-content .noway::before {
   background: var(--danger);
 }
-.oat-prose .noway .sc-title {
+.prose-content .noway .sc-title {
   color: var(--danger);
 }
 
-.oat-prose .buy {
+.prose-content .buy {
   background: color-mix(in srgb, var(--card) 96%, var(--success));
 }
-.oat-prose .buy::before {
+.prose-content .buy::before {
   background: var(--success);
 }
-.oat-prose .buy .sc-title {
+.prose-content .buy .sc-title {
   color: var(--success);
 }
 
-[data-theme='dark'] .oat-prose .shortcodestyle {
+[data-theme='dark'] .prose-content .shortcodestyle {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .shortcodestyle:hover {
+[data-theme='dark'] .prose-content .shortcodestyle:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .task {
+[data-theme='dark'] .prose-content .task {
   background: color-mix(in srgb, var(--card) 95%, var(--muted-foreground));
 }
-[data-theme='dark'] .oat-prose .warning {
+[data-theme='dark'] .prose-content .warning {
   background: color-mix(in srgb, var(--card) 92%, var(--warning));
 }
-[data-theme='dark'] .oat-prose .noway {
+[data-theme='dark'] .prose-content .noway {
   background: color-mix(in srgb, var(--card) 92%, var(--danger));
 }
-[data-theme='dark'] .oat-prose .buy {
+[data-theme='dark'] .prose-content .buy {
   background: color-mix(in srgb, var(--card) 92%, var(--success));
 }
 
@@ -381,9 +381,9 @@
   color: #eee;
 }
 
-/* --- .oat-prose 作用域 --- */
+/* --- .prose-content 作用域 --- */
 
-.oat-prose .showcard {
+.prose-content .showcard {
   display: inline-flex;
   flex-direction: column;
   width: 220px;
@@ -397,12 +397,12 @@
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.oat-prose .showcard:hover {
+.prose-content .showcard:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
   transform: translateY(-2px);
 }
 
-.oat-prose .showcard .img {
+.prose-content .showcard .img {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
@@ -414,7 +414,7 @@
   background: var(--muted);
 }
 
-.oat-prose .showcard-button {
+.prose-content .showcard-button {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -434,25 +434,25 @@
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.oat-prose .showcard-button svg {
+.prose-content .showcard-button svg {
   width: 24px;
   height: 24px;
   color: var(--foreground);
   transition: transform 0.3s ease;
 }
 
-.oat-prose .showcard .img:hover .showcard-button {
+.prose-content .showcard .img:hover .showcard-button {
   width: 48px;
   height: 48px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   background: rgba(255, 255, 255, 0.9);
 }
 
-.oat-prose .showcard .img:hover .showcard-button svg {
+.prose-content .showcard .img:hover .showcard-button svg {
   transform: translateX(2px);
 }
 
-.oat-prose .showcard .icon-title {
+.prose-content .showcard .icon-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -462,14 +462,14 @@
   line-height: 1.4;
 }
 
-.oat-prose .showcard .icon-title svg {
+.prose-content .showcard .icon-title svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
   color: var(--muted-foreground);
 }
 
-.oat-prose .showcard .icon-title .title {
+.prose-content .showcard .icon-title .title {
   color: var(--foreground);
   font-weight: 500;
   overflow: hidden;
@@ -477,10 +477,10 @@
   white-space: nowrap;
 }
 
-[data-theme='dark'] .oat-prose .showcard {
+[data-theme='dark'] .prose-content .showcard {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .showcard:hover {
+[data-theme='dark'] .prose-content .showcard:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
 
@@ -550,9 +550,9 @@
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
 
-/* --- .oat-prose 作用域 --- */
+/* --- .prose-content 作用域 --- */
 
-.oat-prose .conversations-code {
+.prose-content .conversations-code {
   display: flex;
   gap: 12px;
   padding: 12px 0;
@@ -560,7 +560,7 @@
   align-items: flex-start;
 }
 
-.oat-prose .conversations-code img {
+.prose-content .conversations-code img {
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -571,7 +571,7 @@
   background: var(--muted);
 }
 
-.oat-prose .conversations-code-text {
+.prose-content .conversations-code-text {
   margin: 0;
   padding: 12px 16px;
   color: var(--foreground);
@@ -586,26 +586,26 @@
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.oat-prose .conversations-code-text:hover {
+.prose-content .conversations-code-text:hover {
   box-shadow: var(--shadow-medium);
 }
 
-.oat-prose .conversations-code-text p {
+.prose-content .conversations-code-text p {
   margin: 0.5em 0;
 }
 
-.oat-prose .conversations-code-text p:first-child {
+.prose-content .conversations-code-text p:first-child {
   margin-top: 0;
 }
 
-.oat-prose .conversations-code-text p:last-child {
+.prose-content .conversations-code-text p:last-child {
   margin-bottom: 0;
 }
 
-[data-theme='dark'] .oat-prose .conversations-code-text {
+[data-theme='dark'] .prose-content .conversations-code-text {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .conversations-code-text:hover {
+[data-theme='dark'] .prose-content .conversations-code-text:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
 
@@ -645,9 +645,9 @@
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }
 
-/* --- .oat-prose 作用域 --- */
+/* --- .prose-content 作用域 --- */
 
-.oat-prose .vbilibili {
+.prose-content .vbilibili {
   position: relative;
   width: 100%;
   margin: 28px 0;
@@ -659,11 +659,11 @@
   transition: box-shadow 0.2s ease;
 }
 
-.oat-prose .vbilibili:hover {
+.prose-content .vbilibili:hover {
   box-shadow: var(--shadow-medium);
 }
 
-.oat-prose .vbilibili iframe {
+.prose-content .vbilibili iframe {
   display: block;
   width: 100%;
   height: 100%;
@@ -673,9 +673,9 @@
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 40px), calc(100% - 40px) calc(100% - 40px), calc(100% - 40px) 100%, 0 100%);
 }
 
-[data-theme='dark'] .oat-prose .vbilibili {
+[data-theme='dark'] .prose-content .vbilibili {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
-[data-theme='dark'] .oat-prose .vbilibili:hover {
+[data-theme='dark'] .prose-content .vbilibili:hover {
   box-shadow: var(--shadow-medium), var(--card-highlight);
 }

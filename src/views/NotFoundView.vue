@@ -27,7 +27,10 @@ onMounted(() => {
     description="该链接可能已失效、被删除，或输入的地址有误。"
   >
     <template #actions>
-      <button class="ev-btn ev-btn--primary" @click="goBack">
+      <button
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border-none bg-primary px-5 py-2 text-sm leading-[1.4] font-medium whitespace-nowrap text-primary-foreground no-underline transition-[background,box-shadow] duration-150 hover:opacity-85 dark:shadow-[inset_0_1px_0_0_#fff3]"
+        @click="goBack"
+      >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 12L10 6M4 12L10 18M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -36,31 +39,3 @@ onMounted(() => {
     </template>
   </ErrorView>
 </template>
-
-<style scoped>
-/* ---- Buttons (match ErrorView style) ---- */
-.ev-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.4;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  border: none;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.ev-btn--primary {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.ev-btn--primary:hover {
-  opacity: 0.85;
-}
-</style>

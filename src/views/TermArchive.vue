@@ -43,8 +43,8 @@ const formatWordCount = (count?: number) => {
     <div v-if="termPostsLoading" class="post-list">
       <div v-for="i in 3" :key="'sk-term-' + i" class="post-card-skeleton">
         <div class="post-card-skeleton__text">
-          <div class="skeleton-line w-70"></div>
-          <div class="skeleton-line w-50"></div>
+          <div class="skeleton-line w-[70%]"></div>
+          <div class="skeleton-line w-1/2"></div>
         </div>
         <div class="post-card-skeleton__cover"></div>
       </div>
@@ -90,10 +90,9 @@ const formatWordCount = (count?: number) => {
         <!-- Body: title, excerpt -->
         <div class="post-card__body">
           <h2 class="post-card__title">
-            <router-link
-              :to="toInternalPath(post.link)"
-              v-html="post.title.rendered"
-            ></router-link>
+            <router-link :to="toInternalPath(post.link)">
+              <span v-html="post.title.rendered"></span>
+            </router-link>
           </h2>
           <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
         </div>

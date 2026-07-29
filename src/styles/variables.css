@@ -1,4 +1,8 @@
-/* ==================== Custom Theme Variables ==================== */
+/* ==================== Custom Theme Variables ====================
+ * Static design tokens (radius / shadow / breakpoints / ease) live in
+ * tailwind.css @theme; this file keeps layout constants and the runtime
+ * [data-theme] light/dark palette consumed by @theme inline mappings.
+ * ================================================================== */
 :root {
   --page-width: 75rem;
   --font-sans-serif:
@@ -10,18 +14,9 @@
   --hero-overlay-opacity: 0.34;
   --container-max: 1400px;
   --container-pad: 2rem;
-  --radius-small: 4px;
-  --radius-medium: 6px;
-  --radius-large: 8px;
-  --radius-full: 9999px;
-  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
-  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
   --blur-lg: 12px;
-  --font-semibold: 600;
   --transition: 0.3s ease;
   --transition-fast: 0.15s ease;
-  --space-12: 3rem;
 }
 
 [data-theme='light'] {
@@ -35,11 +30,11 @@
   --social-hover: #fff;
   --theme-bak: #333;
   --code-bgc: rgba(0 0 0 / 0.05);
-  --background: #f5f6f7;
-  --foreground: #333;
+  --background: var(--theme-bg-light, #f5f6f7);
+  --foreground: var(--theme-fg-light, #333);
   --card-highlight: 0 0 0 0 transparent;
-  --card: #ffffff;
-  --card-foreground: #333;
+  --card: var(--theme-card-light, #ffffff);
+  --card-foreground: var(--theme-fg-light, #333);
   --primary: #333;
   --primary-foreground: #fff;
   --secondary: #999;
@@ -48,10 +43,10 @@
   --muted-foreground: #999;
   --faint: #fafafa;
   --faint-foreground: #999;
-  --accent: #f5f5f5;
+  --accent: var(--theme-accent-light, #f5f5f5);
   --accent-foreground: #333;
-  --border: #e2e2e2;
-  --input: #e2e2e2;
+  --border: var(--theme-border-light, #e2e2e2);
+  --input: var(--theme-border-light, #e2e2e2);
   --ring: #333;
   --danger: #dd2424;
   --success: #67c23a;
@@ -69,11 +64,11 @@
   --social-hover: #1a1a1a;
   --theme-bak: #e0e0e0;
   --code-bgc: rgba(255 255 255 / 0.05);
-  --background: #1a1a1a;
-  --foreground: #e0e0e0;
+  --background: var(--theme-bg-dark, #1a1a1a);
+  --foreground: var(--theme-fg-dark, #e0e0e0);
   --card-highlight: inset 0 1px 0 0 #fff3;
-  --card: #222;
-  --card-foreground: #e0e0e0;
+  --card: var(--theme-card-dark, #222);
+  --card-foreground: var(--theme-fg-dark, #e0e0e0);
   --primary: #e0e0e0;
   --primary-foreground: #1a1a1a;
   --secondary: #999;
@@ -82,10 +77,10 @@
   --muted-foreground: #999;
   --faint: #252525;
   --faint-foreground: #999;
-  --accent: #2a2a2a;
+  --accent: var(--theme-accent-dark, #2a2a2a);
   --accent-foreground: #e0e0e0;
-  --border: #333;
-  --input: #333;
+  --border: var(--theme-border-dark, #333);
+  --input: var(--theme-border-dark, #333);
   --ring: #e0e0e0;
   --danger: #dd2424;
   --success: #67c23a;

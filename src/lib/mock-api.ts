@@ -1,4 +1,3 @@
-import axios from 'axios'
 import {
   mockSiteInfo,
   mockMenuItems,
@@ -30,7 +29,7 @@ export async function mockFetchSiteInfo(): Promise<SiteInfo> {
   return mockSiteInfo
 }
 
-export async function mockFetchNavigation(location: string): Promise<MenuCollectionResponse['items']> {
+export async function mockFetchNavigation(_location: string): Promise<MenuCollectionResponse['items']> {
   await simulateDelay(200)
   return mockMenuItems
 }
@@ -71,11 +70,6 @@ export async function mockFetchCollection(
     page,
     perPage: limit,
   }
-}
-
-export async function mockFetchHomePosts(limit = 6): Promise<WordPressPost[]> {
-  await simulateDelay(300)
-  return mockPosts.slice(0, limit)
 }
 
 export async function mockFetchAboutInfo(): Promise<AboutInfo> {

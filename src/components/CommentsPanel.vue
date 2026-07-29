@@ -352,21 +352,21 @@ watch(
     </header>
 
     <!-- Disabled: comments closed -->
-    <div v-if="!enabled" class="comments-empty">
-      <div class="comments-empty__illustration">
-        <UndrawIllustration name="cancel" width="200" height="150" class="comments-empty__svg" />
+    <div v-if="!enabled" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
+      <div class="mb-5 w-full max-w-[220px]">
+        <UndrawIllustration name="cancel" width="200" height="150" class="h-auto w-full" />
       </div>
-      <h4 class="comments-empty__title">评论未开启</h4>
-      <p class="comments-empty__desc">当前文章未开启评论。</p>
+      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">评论未开启</h4>
+      <p class="text-sm leading-relaxed text-secondary">当前文章未开启评论。</p>
     </div>
 
     <!-- Disabled: registration only (anonymous users only) -->
-    <div v-else-if="formSettings.registrationOnly && !currentUser" class="comments-empty">
-      <div class="comments-empty__illustration">
-        <UndrawIllustration name="access-denied" width="200" height="150" class="comments-empty__svg" />
+    <div v-else-if="formSettings.registrationOnly && !currentUser" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
+      <div class="mb-5 w-full max-w-[220px]">
+        <UndrawIllustration name="access-denied" width="200" height="150" class="h-auto w-full" />
       </div>
-      <h4 class="comments-empty__title">仅注册用户可评论</h4>
-      <p class="comments-empty__desc">站点设置为仅注册用户可评论，请先登录。</p>
+      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">仅注册用户可评论</h4>
+      <p class="text-sm leading-relaxed text-secondary">站点设置为仅注册用户可评论，请先登录。</p>
     </div>
 
     <!-- Comment Form -->
@@ -394,12 +394,12 @@ watch(
     </div>
 
     <!-- Empty -->
-    <div v-else-if="enabled && comments.length === 0" class="comments-empty">
-      <div class="comments-empty__illustration">
-        <UndrawIllustration name="chatting" width="200" height="150" class="comments-empty__svg" />
+    <div v-else-if="enabled && comments.length === 0" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
+      <div class="mb-5 w-full max-w-[220px]">
+        <UndrawIllustration name="chatting" width="200" height="150" class="h-auto w-full" />
       </div>
-      <h4 class="comments-empty__title">还没有评论</h4>
-      <p class="comments-empty__desc">还没有评论，来发第一条吧。</p>
+      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">还没有评论</h4>
+      <p class="text-sm leading-relaxed text-secondary">还没有评论，来发第一条吧。</p>
     </div>
 
     <!-- Comments List -->
@@ -417,9 +417,9 @@ watch(
     </div>
 
     <!-- Load More -->
-    <div v-if="commentsLoaded && !loading && !allLoaded" class="comments-load-more">
+    <div v-if="commentsLoaded && !loading && !allLoaded" class="flex justify-center py-4">
       <button
-        class="comments-load-more__btn"
+        class="cursor-pointer rounded-[20px] border border-border bg-transparent px-6 py-2 font-[inherit] text-[13px] text-primary transition-all duration-150 hover:border-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="loadingMore"
         @click="loadMore"
       >
@@ -428,82 +428,8 @@ watch(
     </div>
 
     <!-- End note -->
-    <p v-if="commentsLoaded && allLoaded && comments.length > 0" class="end-note">
+    <p v-if="commentsLoaded && allLoaded && comments.length > 0" class="end-note m-0 px-0 pt-6 pb-2 text-center text-[0.8125rem] text-secondary">
       {{ siteInfo.endNote || '好像就这么多' }}
     </p>
   </section>
 </template>
-
-<style scoped>
-.comments-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 3rem 1rem;
-  text-align: center;
-}
-
-.comments-empty__illustration {
-  width: 100%;
-  max-width: 220px;
-  margin-bottom: 1.25rem;
-}
-
-.comments-empty__svg {
-  width: 100%;
-  height: auto;
-}
-
-.comments-empty__title {
-  font-size: 1.125rem;
-  font-weight: 625;
-  color: var(--foreground);
-  margin: 0 0 0.375rem;
-  line-height: 1.4;
-}
-
-.comments-empty__desc {
-  font-size: 0.875rem;
-  color: var(--secondary);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.comments-load-more {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0;
-}
-
-.comments-load-more__btn {
-  padding: 8px 24px;
-  font-size: 13px;
-  color: var(--primary);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.comments-load-more__btn:hover {
-  background: var(--muted);
-  border-color: var(--primary);
-}
-
-.comments-load-more__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.end-note {
-  text-align: center;
-  font-size: 0.8125rem;
-  color: var(--secondary);
-  padding: 1.5rem 0 0.5rem;
-  margin: 0;
-}
-</style>

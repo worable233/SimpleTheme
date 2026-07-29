@@ -29,9 +29,9 @@ onMounted(async () => {
 
 <template>
   <div class="about-page">
-    <div v-if="loading" style="display: flex; flex-direction: column; gap: var(--space-3);">
-      <div style="padding: var(--space-6); background: var(--card); border-radius: var(--radius-large, 12px); border: 1px solid var(--border);">
-        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+    <div v-if="loading" class="flex flex-col gap-3">
+      <div class="rounded-large border border-border bg-card p-6">
+        <div class="flex flex-col gap-2">
           <div role="status" class="skeleton line"></div>
           <div role="status" class="skeleton line"></div>
           <div role="status" class="skeleton line" style="width: 60%;"></div>
@@ -41,7 +41,7 @@ onMounted(async () => {
 
     <template v-else-if="aboutPage">
       <div class="content-area">
-        <article class="oat-prose" v-html="aboutPage.content?.rendered"></article>
+        <article class="prose-content" v-html="aboutPage.content?.rendered"></article>
       </div>
     </template>
 
@@ -54,7 +54,7 @@ onMounted(async () => {
 
     <template v-else>
       <div class="content-area">
-        <article class="oat-prose">
+        <article class="prose-content">
           <div class="about-page__fallback">
             <h2>{{ siteInfo.name ? `欢迎来到 ${siteInfo.name}` : '关于本站' }}</h2>
             <p>这是一个基于 WordPress 构建的博客网站。</p>
@@ -76,10 +76,5 @@ onMounted(async () => {
   --anim-duration-enter: 0.5s;
   --anim-duration-hover: 0.35s;
   padding: 25px;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
 }
 </style>

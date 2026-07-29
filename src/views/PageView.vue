@@ -37,21 +37,26 @@ const pageTags = computed(() => {
 <template>
   <article class="single-post">
     <header class="single-post__header">
-      <span style="display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary);">{{ primaryBadge }}</span>
+      <span class="inline-block text-xs font-semibold tracking-[0.05em] text-primary uppercase">{{ primaryBadge }}</span>
       <h1 v-html="pageData.title.rendered"></h1>
 
-      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; color: var(--text-muted, #666);">
+      <div class="flex flex-wrap items-center gap-3 text-muted-foreground">
         <time :datetime="pageData.date">发布 {{ formatDate(pageData.date) }}</time>
         <span v-if="pageData.modified">修改 {{ formatDate(pageData.modified) }}</span>
-        <span v-for="tag in pageTags" :key="tag" style="display: inline-block; font-size: 0.75rem; padding: 0.125rem 0.5rem; border: 1px solid var(--border-color, #ddd); border-radius: 0.25rem;">#{{ tag }}</span>
+        <span
+          v-for="tag in pageTags"
+          :key="tag"
+          class="inline-block rounded border border-border px-2 py-0.5 text-xs"
+          >#{{ tag }}</span
+        >
       </div>
 
-      <p style="color: var(--text-muted, #666); font-size: 0.875rem;">
+      <p class="text-sm text-muted-foreground">
         页面链接：
         <a :href="pageData.link">{{ pageData.link }}</a>
       </p>
     </header>
 
-    <div class="single-post__body oat-prose" v-html="pageData.content?.rendered"></div>
+    <div class="single-post__body prose-content" v-html="pageData.content?.rendered"></div>
   </article>
 </template>

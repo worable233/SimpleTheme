@@ -3,9 +3,10 @@ import { computed, onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, fetchCategories, getErrorMessage, resolveThemePath, fetchContentByRestUrl } from '@/lib/wordpress'
-import { mockFetchCollection, mockFetchCategories, shouldUseMock, mockResolveThemePath, mockFetchContentByRestUrl } from '@/lib/mock-api'
 import { withCache } from '@/lib/api-cache'
 import { toInternalPath } from '@/lib/theme-config'
+import { rememberPreviews } from '@/lib/content-preview'
+import { useSkeletonSize } from '@/composables/useSkeletonSize'
 import { showError } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
@@ -28,6 +29,12 @@ const errorMessage = ref('')
 const categorySlug = ref((route.params.slug as string) || '')
 
 const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ?? 6)
+
+// 骨架尺寸记忆：用上次真实卡片的高度/形态渲染骨架，避免加载完成时跳动
+const { size: cardSize, measure: measureCard } = useSkeletonSize('st_sk_post_card')
+const skeletonStyle = computed(() =>
+  cardSize.value ? { height: cardSize.value.h + 'px', minHeight: cardSize.value.h + 'px' } : undefined,
+)
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
@@ -106,9 +113,7 @@ watch(
 
 async function loadCategories() {
   try {
-    const useMock = shouldUseMock()
-    const cats = useMock ? await mockFetchCategories() : await withCache(fetchCategories, 'categories')()
-    categories.value = cats
+    categories.value = await withCache(fetchCategories, 'categories')()
   } catch {
     // silently fail — categories are optional
   }
@@ -172,7 +177,6 @@ async function loadMorePosts() {
 }
 
 async function loadPage(pageNum: number) {
-  const useMock = shouldUseMock()
   // Capture slug at call time — if it changes mid-fetch, discard results
   const capturedSlug = categorySlug.value
   const slug = capturedSlug || undefined
@@ -183,19 +187,12 @@ async function loadPage(pageNum: number) {
     if (found) termId = found.id
   }
 
-  const postsResponse: PagedPostCollection = await (useMock
-    ? mockFetchCollection('post', {
-        limit: perPageCount.value,
-        page: pageNum,
-        taxonomy: termId ? 'category' : undefined,
-        termId,
-      })
-    : fetchCollection('post', {
-        limit: perPageCount.value,
-        page: pageNum,
-        taxonomy: termId ? 'category' : undefined,
-        termId,
-      }))
+  const postsResponse: PagedPostCollection = await fetchCollection('post', {
+    limit: perPageCount.value,
+    page: pageNum,
+    taxonomy: termId ? 'category' : undefined,
+    termId,
+  })
 
   const newItems = postsResponse.items || []
 
@@ -203,9 +200,14 @@ async function loadPage(pageNum: number) {
     // Stale check: if user clicked another category while we were fetching, discard
     if (capturedSlug !== categorySlug.value) return
     latestPosts.value = newItems
+    // 测量首张真实卡片，供下次骨架使用真实尺寸
+    void measureCard('.post-list__grid .post-card', '.post-card__cover')
   } else {
     latestPosts.value = [...latestPosts.value, ...newItems]
   }
+
+  // 写入详情页预览缓存（标题/特色图），让文章页骨架精准渲染
+  rememberPreviews(newItems)
 
   page.value = pageNum
   totalPages.value = postsResponse.totalPages
@@ -223,14 +225,9 @@ function prefetchPost(post: WordPressPost) {
     setTimeout(async () => {
       try {
         const path = toInternalPath(post.link)
-        const useMock = shouldUseMock()
-        const resolver = useMock ? mockResolveThemePath : withCache(resolveThemePath, `resolve:${path}`, 30_000)
-        const resolved = await resolver(path)
+        const resolved = await withCache(resolveThemePath, `resolve:${path}`, 30_000)(path)
         if (resolved.restUrl) {
-          const fetcher = useMock
-            ? mockFetchContentByRestUrl
-            : withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)
-          await fetcher(resolved.restUrl)
+          await withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)(resolved.restUrl)
         }
       } catch { /* 预取失败静默忽略 */ }
     }, 200),
@@ -242,10 +239,16 @@ function cancelPrefetch(post: WordPressPost) {
   if (t) { clearTimeout(t); prefetchTimers.delete(post.id) }
 }
 
+// ----- 分类筛选按钮样式 -----
+const filterBtnBase =
+  'inline-flex cursor-pointer items-center rounded-full border-none px-3.5 py-[5px] text-[13px] font-medium transition-all duration-200 select-none dark:shadow-[inset_0_1px_0_0_#fff3]'
+const filterBtnInactive = `${filterBtnBase} bg-muted text-secondary hover:bg-[color-mix(in_srgb,var(--muted)_75%,var(--foreground))] hover:text-foreground dark:bg-[#333] dark:text-[#ccc] dark:hover:bg-[#444] dark:hover:text-foreground`
+const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90 dark:text-[#1a1a1a]`
+
 </script>
 
 <template>
-  <div class="home-content">
+  <div class="home-content p-[25px] max-[800px]:p-5 max-sm:p-[15px]">
     <!-- Page Header -->
     <header class="section-header">
       <h1>
@@ -257,9 +260,9 @@ function cancelPrefetch(post: WordPressPost) {
     <!-- Latest Posts -->
     <section>
       <!-- Filter bar -->
-      <div class="filter-bar">
+      <div class="mb-6 flex flex-wrap gap-1.5">
         <button
-          :class="['filter-bar__btn', { 'filter-bar__btn--active': categorySlug === '' }]"
+          :class="categorySlug === '' ? filterBtnActive : filterBtnInactive"
           @click="onCategoryClick('all')"
         >
           全部
@@ -267,7 +270,7 @@ function cancelPrefetch(post: WordPressPost) {
         <button
           v-for="cat in categories"
           :key="cat.id"
-          :class="['filter-bar__btn', { 'filter-bar__btn--active': categorySlug === cat.slug }]"
+          :class="categorySlug === cat.slug ? filterBtnActive : filterBtnInactive"
           @click="onCategoryClick(cat.slug)"
         >
           {{ cat.name }}
@@ -286,12 +289,12 @@ function cancelPrefetch(post: WordPressPost) {
       <template v-else>
         <!-- Skeleton grid (initial load only — category transitions skip skeleton) -->
         <div v-if="initialLoading && latestPosts.length === 0" class="post-list">
-          <div v-for="i in perPageCount" :key="'sk-init-' + i" class="post-card-skeleton">
-            <div class="post-card-skeleton__cover"></div>
+          <div v-for="i in perPageCount" :key="'sk-init-' + i" class="post-card-skeleton" :style="skeletonStyle">
+            <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
             <div class="post-card-skeleton__text">
-              <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-              <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-              <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div class="mb-2 h-[1.125rem] w-[70%] animate-card-pulse rounded-small bg-muted"></div>
+              <div class="mb-2 h-3 w-full animate-card-pulse rounded-small bg-muted"></div>
+              <div class="mb-3 h-3 w-[65%] animate-card-pulse rounded-small bg-muted"></div>
             </div>
           </div>
         </div>
@@ -324,10 +327,9 @@ function cancelPrefetch(post: WordPressPost) {
               </div>
               <div class="post-card__body">
                 <h2 class="post-card__title">
-                  <router-link
-                    :to="toInternalPath(post.link)"
-                    v-html="post.title.rendered"
-                  ></router-link>
+                  <router-link :to="toInternalPath(post.link)">
+                    <span v-html="post.title.rendered"></span>
+                  </router-link>
                 </h2>
                 <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
               </div>
@@ -344,13 +346,13 @@ function cancelPrefetch(post: WordPressPost) {
         />
 
         <!-- Loading more skeleton (appended below existing posts) -->
-        <div v-if="loadingMore" class="post-list post-list--append">
-          <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton">
-            <div class="post-card-skeleton__cover"></div>
+        <div v-if="loadingMore" class="post-list mt-6">
+          <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton" :style="skeletonStyle">
+            <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
             <div class="post-card-skeleton__text">
-              <div style="height: 1.125rem; width: 70%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-              <div style="height: 0.75rem; width: 100%; margin-bottom: 0.5rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-              <div style="height: 0.75rem; width: 65%; margin-bottom: 0.75rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div class="mb-2 h-[1.125rem] w-[70%] animate-card-pulse rounded-small bg-muted"></div>
+              <div class="mb-2 h-3 w-full animate-card-pulse rounded-small bg-muted"></div>
+              <div class="mb-3 h-3 w-[65%] animate-card-pulse rounded-small bg-muted"></div>
             </div>
           </div>
         </div>
@@ -385,11 +387,6 @@ function cancelPrefetch(post: WordPressPost) {
   position: absolute;
   opacity: 0;
   transition: none;
-}
-
-/* Top gap for loading-more skeleton */
-.post-list--append {
-  margin-top: 1.5rem;
 }
 
 /* Responsive skeleton — stack vertically on mobile */

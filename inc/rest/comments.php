@@ -756,6 +756,20 @@ add_filter( 'comments_clauses', function( $clauses ) {
 } );
 
 /**
+ * Allow anonymous comments via WP REST API (wp/v2/comments POST).
+ *
+ * Core rejects anonymous REST comments (rest_comment_login_required) unless a
+ * theme/plugin opts in via this filter. The frontend comment form posts to the
+ * core endpoint, so without this filter guests can never comment.
+ * WP still enforces its own checks afterwards (require_name_email,
+ * comment_registration, moderation, KSES, etc.).
+ */
+add_filter( 'rest_allow_anonymous_comments', function () {
+	// 仍尊重“用户必须注册并登录才可以发表评论”设置
+	return ! get_option( 'comment_registration' );
+} );
+
+/**
  * Verify CAPTCHA before creating a comment via WP REST API.
  */
 add_filter( 'rest_pre_insert_comment', function( $prepared_comment, $request ) {

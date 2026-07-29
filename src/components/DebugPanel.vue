@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const props = defineProps<{
+defineProps<{
   routes: Array<{
     path: string
     name?: string
@@ -25,7 +25,7 @@ function navigate(path: string) {
 
 <template>
   <div class="debug-panel">
-    <button class="debug-panel__toggle button ghost small" @click="toggle" aria-label="调试面板">
+    <button class="debug-panel__toggle" @click="toggle" aria-label="调试面板">
       <svg
         v-if="!isOpen"
         width="16"
@@ -55,7 +55,7 @@ function navigate(path: string) {
     <div v-if="isOpen" class="debug-panel__content">
       <div class="debug-panel__header">
         <h3>调试面板</h3>
-        <button class="debug-panel__close button ghost small" @click="toggle">
+        <button class="debug-panel__close" @click="toggle">
           <svg
             width="16"
             height="16"
@@ -76,7 +76,7 @@ function navigate(path: string) {
           <button
             v-for="route in routes"
             :key="route.path"
-            class="debug-panel__route button ghost small"
+            class="debug-panel__route"
             @click="navigate(route.path)"
           >
             <span class="debug-panel__route-label">{{ route.label }}</span>
@@ -90,7 +90,7 @@ function navigate(path: string) {
         <div class="debug-panel__actions">
           <a
             href="/wp-admin/themes.php?page=simple-theme-options"
-            class="debug-panel__action button ghost small"
+            class="debug-panel__action"
             target="_blank"
           >
             <svg
@@ -166,8 +166,8 @@ function navigate(path: string) {
 
 .debug-panel__header h3 {
   margin: 0;
-  font-size: var(--text-3);
-  font-weight: var(--font-semibold);
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .debug-panel__close {
@@ -181,8 +181,8 @@ function navigate(path: string) {
 
 .debug-panel__section h4 {
   margin: 0 0 0.75rem;
-  font-size: var(--text-2);
-  font-weight: var(--font-medium);
+  font-size: 1.5rem;
+  font-weight: 500;
   color: var(--foreground);
   opacity: 0.8;
 }
@@ -209,7 +209,7 @@ function navigate(path: string) {
 }
 
 .debug-panel__route-label {
-  font-weight: var(--font-medium);
+  font-weight: 500;
 }
 
 .debug-panel__route-path {

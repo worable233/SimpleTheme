@@ -2,12 +2,39 @@
  * api-comments — 评论相关 API（基于 WordPress /wp/v2/comments 标准端点）
  */
 import { buildRestUrl } from './api-client'
+import { shouldUseMock } from './mock-api'
 import type { WordPressComment, CaptchaData, CommentsResponse } from '@/types/wordpress'
 import { apiClient } from './api-client'
 import axios from 'axios'
 
 /** 将 WP REST API 评论响应映射到前端 WordPressComment 类型 */
-function mapWPComment(item: any): WordPressComment {
+interface WPCommentPayload {
+  id: number
+  parent?: number
+  date?: string
+  status?: string
+  content?: { rendered?: string }
+  likes?: number
+  children?: WPCommentPayload[]
+  /* 主题自定义字段（驼峰）与 WP 标准字段（下划线）双命名 */
+  authorName?: string
+  author_name?: string
+  authorEmail?: string
+  author_email?: string
+  authorUrl?: string
+  author_url?: string
+  avatar?: string
+  author_avatar_urls?: Record<string, string>
+  metaInfo?: WordPressComment['metaInfo']
+  isPinned?: boolean
+  isPrivate?: boolean
+  canEdit?: boolean
+  useMarkdown?: boolean
+  canPin?: boolean
+  qqAvatar?: string
+}
+
+function mapWPComment(item: WPCommentPayload): WordPressComment {
   return {
     id: item.id,
     parent: item.parent || 0,
@@ -20,7 +47,7 @@ function mapWPComment(item: any): WordPressComment {
     content: { rendered: item.content?.rendered || '' },
     likes: item.likes ?? 0,
     metaInfo: item.metaInfo || { location: '', browser: '', os: '', ipMask: '' },
-    children: item.children || [],
+    children: (item.children || []).map(mapWPComment),
     isPinned: item.isPinned ?? false,
     isPrivate: item.isPrivate ?? false,
     canEdit: item.canEdit ?? false,
@@ -50,9 +77,10 @@ export async function fetchComments(
   page = 1,
   perPage = 50,
 ): Promise<CommentsResponse> {
+  if (shouldUseMock()) return { items: [], total: 0, page: 1, perPage, totalPages: 0 }
   try {
     const url = buildRestUrl('wp/v2/comments') + `?post=${postId}&page=${page}&per_page=${perPage}&order=asc`
-    const { data, headers } = await apiClient.get<any[]>(url)
+    const { data, headers } = await apiClient.get<WPCommentPayload[]>(url)
 
     const total = parseInt(headers['x-wp-total'] || '0')
     const totalPages = parseInt(headers['x-wp-totalpages'] || '1')
@@ -88,7 +116,7 @@ export async function createComment(payload: {
   mailNotify?: boolean
   useMarkdown?: boolean
 }): Promise<WordPressComment> {
-  const { data } = await apiClient.post<any>(
+  const { data } = await apiClient.post<WPCommentPayload>(
     buildRestUrl('wp/v2/comments'),
     payload,
   )
@@ -126,6 +154,7 @@ export async function deleteComment(commentId: number) {
 }
 
 export async function fetchUserPendingComments(postId: number) {
+  if (shouldUseMock()) return []
   const { data } = await apiClient.get<{ items: WordPressComment[] }>(
     buildRestUrl(`simple-theme/v1/user-pending-comments?post_id=${postId}`),
   )

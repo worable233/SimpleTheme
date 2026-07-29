@@ -1,0 +1,595 @@
+/* Sidebars: left nav rail, right profile/cards/tech-info/footer */
+@layer components {
+/* ==================== Left Sidebar (100px nav rail) ====================
+   Kept as structured CSS: icons come from v-html, selectors are JS hooks
+   (LeftSidebar tooltip), and .sub-menu is shared with floating panels. */
+.left-sidebar {
+  width: 100px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid var(--border);
+  background-color: var(--card);
+  z-index: 99;
+}
+
+/* Menu container */
+.left-sidebar__menu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px 0;
+  scrollbar-width: none;
+}
+
+.left-sidebar__menu::-webkit-scrollbar {
+  display: none;
+}
+
+.left-sidebar__menu ul {
+  margin-block: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+/* Top-level items: 50px icon buttons (links and toggle buttons) */
+.left-sidebar__menu ul li a,
+.left-sidebar__menu ul li button.menu-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 0;
+  color: var(--foreground);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.left-sidebar__menu ul li a:hover,
+.left-sidebar__menu ul li button.menu-toggle:hover {
+  background-color: var(--menu-hover);
+}
+
+.left-sidebar__menu ul li a svg,
+.left-sidebar__menu ul li button.menu-toggle svg {
+  width: 24px;
+  height: 24px;
+  color: var(--foreground);
+}
+
+.left-sidebar__menu ul li a i.bx,
+.left-sidebar__menu ul li button.menu-toggle i.bx {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+/* Icon wrapper span (v-html injected) */
+.left-sidebar__menu ul li a > span:first-child,
+.left-sidebar__menu ul li button.menu-toggle > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.left-sidebar__menu ul li a > span:first-child i.bx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Current item highlight */
+.left-sidebar__menu ul li.current-menu-item > a {
+  color: var(--primary-foreground);
+  background-color: var(--primary);
+  box-shadow: 0 2px 20px 0 rgba(0 0 0 / 0.2);
+}
+
+.left-sidebar__menu ul li.current-menu-item > a svg {
+  color: var(--primary-foreground);
+  filter: drop-shadow(0 0 3px rgba(0 0 0 / 0.2));
+}
+
+.left-sidebar__menu ul li.current-menu-item > a i.bx {
+  color: var(--primary-foreground);
+}
+
+/* Item titles: hidden on desktop, used as tooltip data source */
+.left-sidebar__menu ul li a .menu-item-title,
+.left-sidebar__menu ul li button.menu-toggle .menu-item-title {
+  display: none;
+}
+
+/* Items with children: anchor for the floating panel position */
+.left-sidebar__menu ul li.menu-item-has-children {
+  position: relative;
+}
+
+/* Chevron indicator on toggle buttons — 右下角小角标。
+   特异性必须压过上方 `ul li button.menu-toggle svg` 的 24px 图标规则，
+   否则 chevron 被放大到 24px 叠在主图标上 */
+.left-sidebar__menu ul li button.menu-toggle svg.sub-menu-chevron {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  color: var(--secondary);
+  opacity: 0.7;
+  transition: transform 0.25s ease;
+}
+
+.left-sidebar__menu ul li.menu-item-open button.menu-toggle svg.sub-menu-chevron {
+  transform: rotate(180deg);
+}
+
+/* ===== Sub-menu panel (floating, rendered by LeftSidebar) ===== */
+.sub-menu {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 170px;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.sub-menu li {
+  display: flex;
+}
+
+.sub-menu li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 7px;
+  color: var(--foreground);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 450;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.sub-menu li a:hover {
+  background-color: var(--menu-hover);
+}
+
+.sub-menu li a svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--secondary);
+  transition: color 0.15s;
+}
+
+.sub-menu li a i.bx {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--secondary);
+  transition: color 0.15s;
+}
+
+/* 子菜单图标 span（v-html 注入）— 浮动面板渲染在 .left-sidebar__menu 之外，
+   导航栏的 span 重置规则命中不到它；inline span + preflight 的 display:block svg
+   会产生基线错位，必须显式 flex 居中 */
+.sub-menu li a > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.sub-menu li a:hover svg,
+.sub-menu li a:hover i.bx {
+  color: var(--foreground);
+}
+
+/* Sub-menu items: show icon + title inline */
+.sub-menu li a .menu-item-title {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  padding: 0;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  white-space: nowrap;
+  display: inline;
+}
+
+.sub-menu li.current-menu-item a {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.sub-menu li.current-menu-item a svg,
+.sub-menu li.current-menu-item a i.bx {
+  color: var(--primary-foreground);
+}
+
+/* Floating sub-menu panel: fixed positioning escapes scroll clipping */
+.sub-menu--floating {
+  position: fixed;
+  transform: translateY(-50%) translateX(-8px);
+  left: 0;
+  top: 0;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sub-menu--floating.is-open {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Global tooltip (position: fixed escapes overflow clipping) */
+.sidebar-global-tooltip {
+  position: fixed;
+  z-index: 9999;
+  transform: translateY(-50%) translateX(-4px);
+  opacity: 0;
+  pointer-events: none;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.sidebar-global-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ===== Narrow left drawer (< 1200px) ===== */
+@media (max-width: 1200px) {
+  .left-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 90px;
+    height: calc(100dvh - 56px);
+    z-index: 999;
+    border-left: none;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    padding-top: 12px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: none;
+  }
+
+  .left-sidebar--open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Floating panels above the drawer */
+  .sub-menu--floating {
+    z-index: 1000;
+  }
+
+  .left-sidebar__menu {
+    padding: 4px 0;
+  }
+
+  .left-sidebar__menu ul {
+    gap: 16px;
+    width: 100%;
+  }
+
+  .left-sidebar__menu ul li {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  /* Titles: shown as small captions below icons */
+  .left-sidebar__menu ul li a .menu-item-title,
+  .left-sidebar__menu ul li button.menu-toggle .menu-item-title {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: block;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+    text-align: center;
+    pointer-events: none;
+  }
+}
+
+/* Author Profile */
+.aside-author {
+  position: relative;
+}
+
+.aside-author__cover {
+  width: 100%;
+  height: 170px;
+}
+
+.aside-author__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.aside-author__info {
+  width: 100%;
+  margin-top: -40px;
+  padding: 0 20px 20px;
+  text-align: center;
+}
+
+.aside-author__avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 10px;
+  box-shadow:
+    0 0 8px rgb(28 31 35 / 4%),
+    0 0 24px 8px rgb(28 31 35 / 6%);
+}
+
+.aside-author__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--card);
+}
+
+.aside-author__avatar abbr {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  background: var(--muted);
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--foreground);
+  border: 2px solid var(--card);
+  text-decoration: none;
+}
+
+.aside-author__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 5px;
+}
+
+.aside-author__des {
+  font-size: 13px;
+  color: var(--secondary);
+  margin-bottom: 20px;
+}
+
+.aside-author__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  background-color: var(--accent);
+  border-radius: 8px;
+}
+
+.aside-author__stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px 12px;
+}
+
+/* Loading skeleton: remove borders and card backgrounds */
+.aside-author__stats.is-loading {
+  border: none;
+  background: transparent;
+  gap: 4px;
+}
+
+.aside-author__stats.is-loading div {
+  background: transparent;
+  padding: 10px 8px;
+}
+
+.aside-author__stats i {
+  font-style: normal;
+  color: var(--secondary);
+  font-size: 11px;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+  order: 1;
+}
+
+.aside-author__stats span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.3;
+}
+
+.aside-author__view-more {
+  display: block;
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+  margin-top: 15px;
+  transition: color var(--transition-fast);
+}
+
+.aside-author__view-more:hover {
+  color: var(--foreground);
+}
+
+/* ===== Unified Cards in right sidebar ===== */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.aside-card {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0 20px 20px;
+  animation: card-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.main-page > .aside-card:nth-child(1) { animation-delay: 0.05s; }
+.main-page > .aside-card:nth-child(2) { animation-delay: 0.13s; }
+.main-page > .aside-card:nth-child(3) { animation-delay: 0.21s; }
+.main-page > .aside-card:nth-child(4) { animation-delay: 0.29s; }
+.main-page > .aside-card:nth-child(5) { animation-delay: 0.37s; }
+
+.aside-card + .aside-card {
+  margin-top: 12px;
+}
+
+.aside-card__title {
+  font-size: 17px;
+  color: var(--foreground);
+  padding: 20px 0 0;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.aside-card__title span {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.aside-card--no-padding {
+  padding: 0;
+}
+
+.aside-card--profile {
+  position: relative;
+  overflow: visible; /* 封面图不裁剪圆角 */
+  padding: 0;
+}
+
+.aside-card--social .social-content .social-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.aside-card--social .social-content .social-icons a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.aside-card--social .social-content .social-icons a:hover {
+  background: var(--foreground);
+  color: var(--card);
+  transform: translateY(-2px);
+}
+
+body[data-theme='dark'] .aside-author__stats {
+  box-shadow: inset 0 1px 0 0 #fff3;
+}
+
+body[data-theme='dark'] .aside-card--social .social-content .social-icons {
+  box-shadow: inset 0 1px 0 0 #fff3;
+}
+
+body[data-theme='dark'] .aside-card--social .social-content .social-icons a {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.aside-card--social .social-content .social-icons a svg,
+.aside-card--social .social-content .social-icons a i {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+
+
+
+}

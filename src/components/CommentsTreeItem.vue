@@ -20,6 +20,10 @@ const emit = defineEmits<{
 }>()
 
 const level = computed(() => props.depth || 0)
+
+/* Badge base utilities (shared by pinned / private / pending variants) */
+const badgeBase =
+  'mr-1 inline-flex items-center rounded-[3px] px-1.5 py-px align-middle text-[10px] leading-[1.4] font-semibold text-white'
 const liking = ref(false)
 const liked = ref(localStorage.getItem(`simple_theme_comment_liked_${props.item.id}`) === '1')
 
@@ -114,10 +118,10 @@ function togglePin() {
 <template>
   <div
     class="comments-item"
-    :class="{
-      'comments-item--nested': level > 0,
-      'comments-item--pinned': item.isPinned,
-    }"
+    :class="
+      item.isPinned &&
+      'relative before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:rounded-t-[2px] before:bg-primary before:opacity-50'
+    "
   >
     <div class="comments-item__main">
       <div class="comments-item__avatar">
@@ -165,9 +169,9 @@ function togglePin() {
           </strong>
 
           <!-- Badges -->
-          <span v-if="item.isPinned" class="comments-item__badge comments-item__badge--pinned">置顶</span>
-          <span v-if="item.isPrivate" class="comments-item__badge comments-item__badge--private">私密</span>
-          <span v-if="item.status === 'hold'" class="comments-item__badge comments-item__badge--pending">待审核</span>
+          <span v-if="item.isPinned" :class="[badgeBase, 'bg-primary']">置顶</span>
+          <span v-if="item.isPrivate" :class="[badgeBase, 'bg-[#f59e0b]']">私密</span>
+          <span v-if="item.status === 'hold'" :class="[badgeBase, 'bg-secondary']">待审核</span>
         </div>
 
         <!-- Normal content -->
@@ -239,45 +243,3 @@ function togglePin() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.comments-item--pinned {
-  position: relative;
-}
-.comments-item--pinned::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary, #4f46e5);
-  border-radius: 2px 2px 0 0;
-  opacity: 0.5;
-}
-
-.comments-item__badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-right: 4px;
-  vertical-align: middle;
-  line-height: 1.4;
-}
-.comments-item__badge--pinned {
-  background: var(--primary, #4f46e5);
-  color: #fff;
-}
-.comments-item__badge--private {
-  background: #f59e0b;
-  color: #fff;
-}
-.comments-item__badge--pending {
-  background: var(--secondary, #999);
-  color: #fff;
-}
-
-</style>

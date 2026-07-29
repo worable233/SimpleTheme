@@ -1,7 +1,7 @@
 /* ---------- 1. Prism syntax highlighting CSS variables ---------- */
+/* --font-code is defined in tailwind.css (@theme) */
 :root,
 [data-theme='light'] {
-  --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Consolas', 'Menlo', Monaco, monospace;
   --prism-text: #24292f;
   --prism-comment: #6e7781;
   --prism-punctuation: #24292f;
@@ -50,85 +50,85 @@
 }
 
 /* ---------- 2. Prism token color mapping ---------- */
-.oat-prose pre code .token.comment,
-.oat-prose pre code .token.prolog,
-.oat-prose pre code .token.doctype,
-.oat-prose pre code .token.cdata {
+.prose-content pre code .token.comment,
+.prose-content pre code .token.prolog,
+.prose-content pre code .token.doctype,
+.prose-content pre code .token.cdata {
   color: var(--prism-comment);
   font-style: italic;
 }
 
-.oat-prose pre code .token.keyword,
-.oat-prose pre code .token.selector,
-.oat-prose pre code .token.tag {
+.prose-content pre code .token.keyword,
+.prose-content pre code .token.selector,
+.prose-content pre code .token.tag {
   color: var(--prism-keyword);
 }
 
-.oat-prose pre code .token.string,
-.oat-prose pre code .token.attr-value,
-.oat-prose pre code .token.regex,
-.oat-prose pre code .token.char {
+.prose-content pre code .token.string,
+.prose-content pre code .token.attr-value,
+.prose-content pre code .token.regex,
+.prose-content pre code .token.char {
   color: var(--prism-string);
 }
 
-.oat-prose pre code .token.function,
-.oat-prose pre code .token.class-name {
+.prose-content pre code .token.function,
+.prose-content pre code .token.class-name {
   color: var(--prism-function);
 }
 
-.oat-prose pre code .token.number,
-.oat-prose pre code .token.boolean {
+.prose-content pre code .token.number,
+.prose-content pre code .token.boolean {
   color: var(--prism-number);
 }
 
-.oat-prose pre code .token.constant,
-.oat-prose pre code .token.symbol {
+.prose-content pre code .token.constant,
+.prose-content pre code .token.symbol {
   color: var(--prism-constant);
 }
 
-.oat-prose pre code .token.operator,
-.oat-prose pre code .token.entity {
+.prose-content pre code .token.operator,
+.prose-content pre code .token.entity {
   color: var(--prism-operator);
 }
 
-.oat-prose pre code .token.punctuation {
+.prose-content pre code .token.punctuation {
   color: var(--prism-punctuation);
 }
 
-.oat-prose pre code .token.property,
-.oat-prose pre code .token.variable {
+.prose-content pre code .token.property,
+.prose-content pre code .token.variable {
   color: var(--prism-property);
 }
 
-.oat-prose pre code .token.builtin {
+.prose-content pre code .token.builtin {
   color: var(--prism-builtin);
 }
 
-.oat-prose pre code .token.attr-name {
+.prose-content pre code .token.attr-name {
   color: var(--prism-attr);
 }
 
-.oat-prose pre code .token.atrule {
+.prose-content pre code .token.atrule {
   color: var(--prism-function);
 }
 
-.oat-prose pre code .token.inserted {
+.prose-content pre code .token.inserted {
   color: var(--prism-inserted);
 }
 
-.oat-prose pre code .token.deleted {
+.prose-content pre code .token.deleted {
   color: var(--prism-deleted);
 }
 
-.oat-prose pre code .token.important {
+.prose-content pre code .token.important {
   color: var(--prism-keyword);
   font-weight: inherit;
 }
 
-.oat-prose pre code .token.bold {
+.prose-content pre code .token.bold {
   font-weight: 700;
 }
 
-.oat-prose pre code .token.italic {
+.prose-content pre code .token.italic {
   font-style: italic;
 }

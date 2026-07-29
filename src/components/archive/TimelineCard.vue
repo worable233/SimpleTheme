@@ -15,129 +15,29 @@ const emit = defineEmits<{
 
 <template>
   <section
-    class="timeline-year-card"
+    class="group flex cursor-pointer flex-col gap-4 rounded-large border-[1.5px] border-border bg-card p-[1.2rem] shadow-[0_4px_24px_0_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-primary hover:shadow-[0_12px_52px_-8px_rgba(0,0,0,0.18)] focus-visible:border-primary dark:shadow-[inset_0_1px_0_0_#fff3]"
     tabindex="0"
     @click="emit('select', year)"
     @keydown.enter="emit('select', year)"
   >
-    <div class="timeline-year-header">
-      <span class="timeline-year-number">{{ year }}</span>
-      <span class="timeline-year-count">{{ total }} 篇文章</span>
+    <div class="flex items-center justify-between">
+      <span class="text-3xl leading-tight font-extrabold text-foreground">{{ year }}</span>
+      <span
+        class="rounded-full bg-border px-3 py-1 text-[0.9rem] whitespace-nowrap text-foreground dark:bg-white/10 dark:text-white/70"
+        >{{ total }} 篇文章</span
+      >
     </div>
-    <div class="timeline-year-calendar">
+    <div class="grid grid-cols-6 grid-rows-2 gap-2">
       <span
         v-for="m in 12"
         :key="m"
-        class="timeline-year-calendar-month"
-        :class="{ active: activeMonths[m - 1] }"
-      >{{ m }}</span>
+        class="flex aspect-square items-center justify-center rounded-medium border-[1.5px] border-transparent bg-border text-[0.85rem] font-semibold text-foreground transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:bg-white/[0.08] dark:text-[#aaa]"
+        :class="
+          activeMonths[m - 1] &&
+          'scale-105 border-primary bg-primary text-white shadow-[0_2px_12px_-4px_var(--primary)] dark:text-[#222]'
+        "
+        >{{ m }}</span
+      >
     </div>
   </section>
 </template>
-
-<style scoped>
-.timeline-year-card {
-  background: var(--card, rgba(255,255,255,0.7));
-  border-radius: var(--radius-large, 8px);
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
-  padding: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  cursor: pointer;
-  border: 1.5px solid var(--border, #e0e0e0);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.timeline-year-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 12px 52px -8px rgba(0,0,0,0.18);
-  border-color: var(--primary, #505050);
-}
-
-.timeline-year-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.timeline-year-number {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--foreground, #222);
-  line-height: 1.2;
-}
-
-.timeline-year-count {
-  font-size: 0.9rem;
-  color: var(--foreground, #888);
-  background: var(--border, rgba(0,0,0,0.06));
-  padding: 0.3rem 0.8rem;
-  border-radius: var(--radius-full, 9999px);
-  white-space: nowrap;
-}
-
-.timeline-year-calendar {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.timeline-year-calendar-month {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--foreground, #999);
-  background: var(--border, rgba(0,0,0,0.04));
-  border-radius: var(--radius-medium, 6px);
-  aspect-ratio: 1;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border: 1.5px solid transparent;
-}
-
-.timeline-year-calendar-month.active {
-  background: var(--primary, #505050);
-  color: #fff;
-  border-color: var(--primary, #505050);
-  box-shadow: 0 2px 12px -4px var(--primary, #505050);
-  transform: scale(1.05);
-}
-
-/* Dark mode */
-:global(body.dark) .timeline-year-card {
-  background: rgba(30,30,30,0.92);
-  border-color: #333;
-  box-shadow: inset 0 1px 0 0 #fff3;
-}
-
-:global(body.dark) .timeline-year-card:hover {
-  border-color: var(--primary, #fff);
-}
-
-:global(body.dark) .timeline-year-number {
-  color: rgba(255,255,255,0.9);
-}
-
-:global(body.dark) .timeline-year-count {
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.7);
-}
-
-:global(body.dark) .timeline-year-calendar-month {
-  background: rgba(255,255,255,0.08);
-  color: #aaa;
-  border-color: #333;
-}
-
-:global(body.dark) .timeline-year-calendar-month.active {
-  background: var(--primary, #fff);
-  color: #222;
-  border-color: var(--primary, #fff);
-  box-shadow: 0 2px 12px -4px var(--primary, #fff);
-}
-</style>

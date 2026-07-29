@@ -3,6 +3,7 @@
  */
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import { apiClient, buildRestUrl } from './api-client'
+import { shouldUseMock, mockFetchCollection, mockFetchContentByRestUrl } from './mock-api'
 import type { PagedPostCollection, WordPressPost } from '@/types/wordpress'
 import axios from 'axios'
 
@@ -20,6 +21,7 @@ export async function fetchCollection(
     termId?: number
   },
 ) {
+  if (shouldUseMock()) return mockFetchCollection(type, options)
   const collectionUrl = getThemeConfig().routes.collection.replace(/\/+$/, '')
   const params = new URLSearchParams({
     type,
@@ -72,7 +74,7 @@ export async function fetchCollection(
           }
         }
       }
-      return { ...post, featuredImage: (typeof sourceUrl === 'string' ? sourceUrl : undefined) || (post as any).featuredImage, categories: categoryNames.length > 0 ? categoryNames : (post as any).categories }
+      return { ...post, featuredImage: (typeof sourceUrl === 'string' ? sourceUrl : undefined) || (post as { featuredImage?: string }).featuredImage, categories: categoryNames.length > 0 ? categoryNames : (post as { categories?: string[] }).categories }
     })
 
     return {
@@ -96,6 +98,7 @@ export async function fetchPostCollectionByTaxonomy(taxonomy: string, termId: nu
 }
 
 export async function fetchContentByRestUrl(restUrl: string) {
+  if (shouldUseMock()) return mockFetchContentByRestUrl(restUrl)
   try {
     const url = new URL(restUrl, window.location.origin)
     const normalized =
@@ -110,6 +113,7 @@ export async function fetchContentByRestUrl(restUrl: string) {
 }
 
 export async function trackPostView(postId: number) {
+  if (shouldUseMock()) return 0
   try {
     const { data } = await apiClient.post<{ viewCount: number }>(
       buildRestUrl('simple-theme/v1/track-view'),
@@ -122,6 +126,7 @@ export async function trackPostView(postId: number) {
 }
 
 export async function fetchPage(slug: string): Promise<WordPressPost | null> {
+  if (shouldUseMock()) return null
   try {
     const { data } = await apiClient.get<WordPressPost[]>(
       buildRestUrl(`wp/v2/pages?slug=${encodeURIComponent(slug)}&per_page=1`),

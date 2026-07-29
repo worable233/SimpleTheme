@@ -2,7 +2,7 @@
  * api-auth.ts — 登录/注册/密码重置 API 客户端
  */
 import { apiClient, buildRestUrl } from './api-client'
-import { getThemeConfig } from './theme-config'
+import { shouldUseMock } from './mock-api'
 
 /** 登录 */
 export async function apiLogin(log: string, pwd: string, rememberme = false) {
@@ -61,12 +61,15 @@ export async function apiResetPassword(key: string, login: string, pass1: string
 }
 
 /** 获取当前用户信息 */
-export async function apiFetchMe() {
+export interface AuthMeResponse {
+  logged_in: boolean
+  user?: { id: number; display_name: string; avatar: string; email: string }
+  rest_nonce?: string
+  admin_url?: string
+}
+
+export async function apiFetchMe(): Promise<AuthMeResponse> {
+  if (shouldUseMock()) return { logged_in: false }
   const { data } = await apiClient.get(buildRestUrl('simple-theme/v1/auth/me'))
-  return data as {
-    logged_in: boolean
-    user?: { id: number; display_name: string; avatar: string; email: string }
-    rest_nonce?: string
-    admin_url?: string
-  }
+  return data as AuthMeResponse
 }

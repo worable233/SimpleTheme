@@ -1,0 +1,144 @@
+/* ==================== Tailwind CSS v4 Entry ==================== */
+@import 'tailwindcss';
+
+/* Dark mode driven by the runtime [data-theme] attribute (set in index.html) */
+@custom-variant dark ([data-theme='dark'] &);
+
+/*
+ * Semantic color tokens — mapped inline so utilities resolve the runtime
+ * [data-theme] values defined in variables.css (light/dark switching).
+ */
+@theme inline {
+  --font-sans: var(--font-sans-serif);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-menu-hover: var(--menu-hover);
+}
+
+/* Static design tokens — emitted as :root custom properties (static keyword
+ * guarantees emission), so legacy var(--radius-*) / var(--shadow-*) references
+ * keep resolving. */
+@theme static {
+  /* Breakpoints matching the theme's historical media queries */
+  --breakpoint-sm: 37.5rem; /* 600px — mobile threshold */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 62.5rem; /* 1000px */
+  --breakpoint-xl: 75rem; /* 1200px — sidebar collapse */
+
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-full: 9999px;
+
+  --font-code:
+    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Consolas', 'Menlo', Monaco,
+    monospace;
+
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 6px 12px rgb(0 0 0 / 0.1);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  --animate-skeleton-pulse: skeleton-pulse 1.5s infinite;
+  --animate-card-pulse: card-pulse 1.5s ease-in-out infinite;
+
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes card-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}
+
+/* ==================== Base overrides ==================== */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    background-color: var(--background);
+    /* Always reserve scrollbar gutter to avoid layout shift between routes */
+    overflow-y: scroll;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    /* Hide the window scrollbar (theme design choice) */
+    scrollbar-width: none;
+  }
+
+  body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  :disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background-color: var(--primary);
+    color: #fff;
+  }
+
+  kbd {
+    display: inline-block;
+    font-family: inherit;
+    font-size: 0.8em;
+    line-height: 1.4;
+    padding: 0.15em 0.4em 0.1em;
+    margin: 0.1em;
+    background-color: var(--muted, rgba(128, 128, 128, 0.1));
+    color: var(--secondary);
+    border-radius: 0.2em;
+    box-shadow: inset 0 -0.15em 0 var(--muted, rgba(128, 128, 128, 0.1));
+    border: none;
+    vertical-align: middle;
+  }
+}

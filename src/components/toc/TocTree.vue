@@ -11,7 +11,7 @@ export interface TocNode extends TocItem {
 
 defineOptions({ name: 'TocTree' })
 
-const props = defineProps<{
+defineProps<{
   nodes: TocNode[]
   activeId: string
 }>()

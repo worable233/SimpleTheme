@@ -6,7 +6,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useHead } from '@vueuse/head'
 import { useLoading } from '../composables/useLoading'
 import { fetchCollection } from '../lib/wordpress'
-import type { WordPressPost, RenderedText } from '../types/wordpress'
+import type { WordPressPost } from '../types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import TimelineCard from '@/components/archive/TimelineCard.vue'
 import CategoryCard from '@/components/archive/CategoryCard.vue'
@@ -81,7 +81,7 @@ const yearGroups = computed<YearGroup[]>(() => {
 const yearTimelineCards = computed(() => {
   return yearGroups.value.map((g) => {
     const total = g.categories.reduce((s, c) => s + c.posts.length, 0)
-    const activeMonths: boolean[] = new Array(12).fill(false)
+    const activeMonths: boolean[] = Array.from({ length: 12 }, () => false)
     for (const cat of g.categories) {
       for (const post of cat.posts) {
         const m = new Date(post.date).getMonth()
@@ -325,9 +325,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 }
 
 /* Content that replaces skeleton should not re-animate */
-.content-area .section-header,
-.content-area .timeline-year-card,
-.content-area .category-card {
+.content-area .section-header {
   animation: none;
   opacity: 1;
   transform: none;

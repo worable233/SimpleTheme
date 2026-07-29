@@ -22,6 +22,8 @@ export interface SimpleThemeConfig {
   logoutUrl?: string
   features?: {
     prismHighlight: boolean
+    /** 是否开放用户注册（WP users_can_register） */
+    registration?: boolean
     showStats?: boolean
     showHeatmap?: boolean
     showSocial?: boolean
@@ -251,6 +253,15 @@ export interface RenderedText {
 
 export interface WordPressPost {
   id: number
+  /* Standard WP REST fields (always emitted by inc/rest/posts.php) */
+  date: string
+  modified: string
+  slug: string
+  link: string
+  status?: string
+  type?: string
+  comment_status?: 'open' | 'closed'
+  /* Theme-provided fields */
   categories?: string[]
   tags?: string[]
   featuredImage?: string

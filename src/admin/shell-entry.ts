@@ -10,7 +10,7 @@
 
 import { createApp } from 'vue'
 import 'boxicons/css/boxicons.min.css'
-import '@knadh/oat/oat.min.css'
+import './styles/admin-tailwind.css'
 import AdminShell from './components/AdminShell.vue'
 
 export interface AdminMenuItem {
