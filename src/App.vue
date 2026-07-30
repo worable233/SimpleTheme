@@ -5,6 +5,7 @@ import SiteFooter from '@/components/SiteFooter.vue'
 import LeftSidebar from '@/components/LeftSidebar.vue'
 import SidebarProfile from '@/components/SidebarProfile.vue'
 import TechInfo from '@/components/sidebar/TechInfo.vue'
+import HitokotoCard from '@/components/sidebar/HitokotoCard.vue'
 import TocWidget from '@/components/TocWidget.vue'
 import AuthModal from '@/components/AuthModal.vue'
 import AnnouncementModal from '@/components/AnnouncementModal.vue'
@@ -173,6 +174,7 @@ watch(
               <!-- Main page: profile + social -->
               <div class="main-page h-full w-1/2 shrink-0">
                 <SidebarProfile @toggle-sub="showSubPage = !showSubPage" />
+                <HitokotoCard />
                 <TechInfo />
               </div>
               <!-- Sub page: menu -->

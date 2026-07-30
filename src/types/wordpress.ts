@@ -27,6 +27,10 @@ export interface SimpleThemeConfig {
     showStats?: boolean
     showHeatmap?: boolean
     showSocial?: boolean
+    /** 侧边栏一言卡片 */
+    showHitokoto?: boolean
+    /** 一言 API 地址（默认 https://v1.hitokoto.cn） */
+    hitokotoApi?: string
     meta?: ArticleMeta
     articleMeta?: ArticleMeta
   }

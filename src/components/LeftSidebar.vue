@@ -10,6 +10,7 @@ import SidebarNav from './sidebar/SidebarNav.vue'
 import SidebarActions from './sidebar/SidebarActions.vue'
 import SearchModal from './SearchModal.vue'
 import TechInfo from './sidebar/TechInfo.vue'
+import HitokotoCard from './sidebar/HitokotoCard.vue'
 import SiteFooter from './SiteFooter.vue'
 import type { MenuItem } from '@/types/wordpress'
 
@@ -280,6 +281,7 @@ function onRootTooltipHover(e: MouseEvent) {
               </template>
               <template v-else>
                 <SidebarProfile @toggle-sub="showRightSubPage = !showRightSubPage" />
+                <HitokotoCard />
                 <TechInfo />
               </template>
             </div>

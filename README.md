@@ -31,7 +31,7 @@ Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress �
 
 ## 技术栈
 
-Vue 3 · TypeScript · Vue Router · Vite 8 · OatUI · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
+Vue 3 · TypeScript · Vue Router · Vite 8 · Tailwind CSS 4 · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
 
 ## 特性
 
@@ -39,7 +39,7 @@ Vue 3 · TypeScript · Vue Router · Vite 8 · OatUI · Axios · Parsedown · AL
 
 | 类别     | 功能                                                                                                          |
 | -------- | ------------------------------------------------------------------------------------------------------------- |
-| 前端     | Vue 3 + OatUI + TypeScript + Vue Router                                                                       |
+| 前端     | Vue 3 + Tailwind CSS v4 + TypeScript + Vue Router                                                             |
 | 布局     | 响应式双栏，移动端滑动侧栏，浅色/深色模式                                                                     |
 | 主题     | 参考[iEmo](https://github.com/kannafay/iEmo)，自定义主题色                                                    |
 | 后台美化 | 完整 WordPress 后台 + 登录页 UI 重制，明暗模式与前端同步，边栏标识注入                                        |

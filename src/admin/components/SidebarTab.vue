@@ -74,6 +74,24 @@ const emit = defineEmits<{
           @update:modelValue="emit('update', 'sidebar_show_social', $event)"
         />
       </div>
+      <div class="xh-field xh-field--compact">
+        <AppToggle
+          :modelValue="settings.sidebar_show_hitokoto !== false"
+          label="显示一言"
+          @update:modelValue="emit('update', 'sidebar_show_hitokoto', $event)"
+        />
+      </div>
+    </div>
+    <div v-if="settings.sidebar_show_hitokoto !== false" class="xh-field" style="margin-top: 16px;">
+      <label class="xh-field__label">一言 API 地址</label>
+      <input
+        class="xh-input"
+        type="url"
+        :value="(settings.hitokoto_api as string) || ''"
+        placeholder="https://v1.hitokoto.cn"
+        @input="emit('update', 'hitokoto_api', ($event.target as HTMLInputElement).value)"
+      />
+      <p class="xh-field__desc">默认 hitokoto.cn；可换成自建或第三方 API，支持 hitokoto JSON（hitokoto/from 字段）或纯文本响应。</p>
     </div>
     <div v-if="settings.sidebar_show_social !== false" class="xh-field xh-field--full" style="margin-top: 16px;">
       <label class="xh-field__label">社交链接</label>

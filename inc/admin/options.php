@@ -62,6 +62,8 @@ function simple_theme_get_default_options() {
 		'sidebar_show_stats'         => true,
 		'sidebar_show_heatmap'       => true,
 		'sidebar_show_social'        => true,
+		'sidebar_show_hitokoto'      => true,
+		'hitokoto_api'               => 'https://v1.hitokoto.cn',
 		'show_theme_credit'          => true,
 
 		// ---- Footer & Legal ----
@@ -276,6 +278,10 @@ function simple_theme_sanitize_options( $input ) {
 		} elseif ( 'announcement_buttons' === $key ) {
 			$decoded = json_decode( $value, true );
 			$output[ $key ] = is_array( $decoded ) ? $value : $defaults[ $key ];
+		} elseif ( 'hitokoto_api' === $key ) {
+			$url = esc_url_raw( trim( (string) $value ) );
+			// 仅允许 http(s) 地址，非法输入回退默认 API
+			$output[ $key ] = ( $url && preg_match( '#^https?://#i', $url ) ) ? $url : $default_value;
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		}
