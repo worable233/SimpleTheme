@@ -34,7 +34,7 @@ export const mockSiteInfo = {
     accentDark: '#2a2a2a',
     borderLight: '#e2e2e2',
     borderDark: '#333333',
-    containerMaxWidth: 1400,
+    containerMaxWidth: 1500,
     articleMaxWidth: 900,
     cardMeta: {
       showCategory: true,

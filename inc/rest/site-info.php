@@ -85,7 +85,7 @@ function simple_theme_get_site_info() {
 				'accentDark'      => sanitize_hex_color( (string) ( $theme_options['accent_dark'] ?? '#2a2a2a' ) ) ?: '#2a2a2a',
 				'borderLight'     => sanitize_hex_color( (string) ( $theme_options['border_light'] ?? '#e2e2e2' ) ) ?: '#e2e2e2',
 				'borderDark'      => sanitize_hex_color( (string) ( $theme_options['border_dark'] ?? '#333333' ) ) ?: '#333333',
-				'containerMaxWidth'=> simple_theme_get_option_number( 'container_max_width', 1400, 960, 1680 ),
+				'containerMaxWidth'=> simple_theme_get_option_number( 'container_max_width', 1500, 960, 2000 ),
 				'articleMaxWidth' => simple_theme_get_option_number( 'article_max_width', 900, 680, 1200 ),
 				'copyrightStyle' => (string) ( $theme_options['copyright_style'] ?? 'detailed' ),
 				'articleLicense' => (string) ( $theme_options['article_license'] ?? 'cc-by-nc-sa-40' ),

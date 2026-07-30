@@ -2,13 +2,17 @@
 /**
  * 全局后台美化 — Vue Admin Shell
  *
- * 通过 Vue 组件完全替换 WP 后台的左侧菜单栏和顶部导航栏，
- * 样式与主题前端完全一致（相同的 CSS 自定义属性）。
+ * 通过 Vue 组件替换 WP 后台的左侧菜单栏和顶部导航栏，
+ * 样式与主题前端一致（相同的设计 token）。
  *
- * CSS 加载策略：
- *   - 通过 admin_enqueue_scripts 加载，排在 WP 原生样式之后
- *   - source-order 胜出（相同特异性下，后加载的样式生效）
- *   - CSS 自定义属性 --wp-admin-theme-color 覆盖 WP 按钮色
+ * CSS 策略（assets/admin-theme.css）：
+ *   - 不使用 @layer（WP 核心 CSS 无 layer，layer 内规则会被反超）
+ *   - 所有规则严格 scope 到 body.sta-theme-active / body.login
+ *   - 通过 admin_enqueue_scripts 排在 WP 原生样式之后，source-order 胜出
+ *   - --wp-admin-theme-color 覆盖 WP 组件强调色
+ *
+ * 主题自己的设置页（toplevel_page_simple-theme）跳过 shell：
+ * 该页是自带侧栏/顶栏的全屏 SPA，再套一层全局 shell 会双层叠加。
  *
  * @package SimpleTheme
  */
@@ -32,6 +36,11 @@ function simple_theme_should_skip_admin_theme(): bool {
 
 	// 跳过块编辑器、自定义器、站点编辑器
 	if ($screen->is_block_editor() || $screen->id === 'customize' || $screen->id === 'site-editor') {
+		return true;
+	}
+
+	// 跳过主题设置页 —— 它是自带 chrome 的全屏 SPA（见 inc/admin/menu.php）
+	if ($screen->id === 'toplevel_page_simple-theme') {
 		return true;
 	}
 
@@ -149,11 +158,33 @@ add_action('admin_enqueue_scripts', function () {
 
 /**
  * 暗色模式同步：读取前端 localStorage 的 theme 设置，
- * 在 admin_head 中注入内联脚本
+ * 在 admin_head 中注入内联脚本。
+ * 注意：主题设置页虽然跳过 shell，但设置面板依赖 data-theme 切换明暗，
+ * 所以这里只跳过块编辑器等，不跳过设置页。
  */
 add_action('admin_head', function () {
 		if (!simple_theme_is_admin_theme_enabled()) return;
-		if (simple_theme_should_skip_admin_theme()) return;
+		$screen = get_current_screen();
+		$is_settings_page = $screen && 'toplevel_page_simple-theme' === $screen->id;
+		if (!$is_settings_page && simple_theme_should_skip_admin_theme()) return;
+		if ($is_settings_page) {
+			// 设置页无 shell 布局，仅需主题同步
+			?>
+	<script>
+	(function() {
+		var theme = localStorage.getItem('theme');
+		if (theme === 'dark') {
+			document.documentElement.setAttribute('data-theme', 'dark');
+			document.documentElement.style.colorScheme = 'dark';
+		} else if (theme === 'light') {
+			document.documentElement.setAttribute('data-theme', 'light');
+			document.documentElement.style.colorScheme = 'light';
+		}
+	})();
+	</script>
+			<?php
+			return;
+		}
 	?>
 		<style>#wpfooter{display:none!important}</style>
 	<script>
@@ -167,22 +198,6 @@ add_action('admin_head', function () {
 			document.documentElement.style.colorScheme = 'light';
 		}
 	})();
-	</script>
-	<?php
-});
-
-/**
- * 侧边栏品牌标识 — 通过 JS 将站点名称注入 #adminmenu 的 data-xhs-title 属性
- */
-add_action('admin_head', function () {
-	if (!simple_theme_is_admin_theme_enabled()) return;
-	if (simple_theme_should_skip_admin_theme()) return;
-	?>
-	<script>
-	document.getElementById('adminmenu')?.setAttribute(
-		'data-xhs-title',
-		<?php echo wp_json_encode(get_bloginfo('name')); ?>
-	);
 	</script>
 	<?php
 });

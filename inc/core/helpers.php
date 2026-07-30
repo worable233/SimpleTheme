@@ -43,7 +43,11 @@ function simple_theme_sanitize_bool( $value ) {
 
 function simple_theme_get_option_number( $key, $default, $min, $max ) {
 	$options = get_option( 'simple_theme_options', array() );
-	$value   = isset( $options[ $key ] ) ? (int) $options[ $key ] : $default;
+	$value   = isset( $options[ $key ] ) ? (int) $options[ $key ] : 0;
+	// 0/空视为未设置，回退默认值，避免被钳制到 $min。
+	if ( $value <= 0 ) {
+		$value = $default;
+	}
 	return max( $min, min( $max, $value ) );
 }
 

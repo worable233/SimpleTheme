@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted } from 'vue'
 import AdminSidebar from './AdminSidebar.vue'
 import AdminTopbar from './AdminTopbar.vue'
 import type { AdminMenuItem } from '../shell-entry'
@@ -108,14 +108,6 @@ function navigate(url: string) {
   window.location.href = url
 }
 
-function handleClick(e: MouseEvent) {
-  // Handle clicks on admin-shell area to close dropdowns
-  const target = e.target as HTMLElement
-  if (!target.closest('.admin-topbar__dropdown') && !target.closest('.admin-topbar__user-btn')) {
-    // Close user dropdown via click outside
-  }
-}
-
 onMounted(() => {
   currentUrl.value = getCurrentUrl()
   menuItems.value = buildMenuFromDom()
@@ -133,12 +125,6 @@ onMounted(() => {
   menuItems.value.forEach((item) => {
     item.current = matchCurrentUrl(item)
   })
-
-  document.addEventListener('click', handleClick)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClick)
 })
 </script>
 

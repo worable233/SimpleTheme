@@ -133,8 +133,8 @@ const darkColors = [
         <input
           type="number"
           class="xh-input xh-input--number"
-          min="960" max="1680" step="10"
-          :value="(settings.container_max_width as number) || 1400"
+          min="960" max="2000" step="10"
+          :value="(settings.container_max_width as number) || 1500"
           @input="emit('update', 'container_max_width', Number(($event.target as HTMLInputElement).value))"
         />
       </div>

@@ -1,2496 +1,637 @@
-/* ================================================================
- * Simple Theme Admin — WordPress 后台样式（完整替换 WP 核心 CSS）
+/* ═══════════════════════════════════════════════════════════════
+ * Simple Theme — wp-admin 后台美化（精简重写版）
  *
- * 完全替换 WordPress 原生后台样式，使用与主题前端一致的
- * CSS 自定义属性和设计语言。
+ * 原则：
+ *  1. 所有规则严格 scope 到 body.sta-theme-active（或 body.login），
+ *     绝不使用全局裸标签选择器 —— 不污染未开启美化的页面/插件 UI。
+ *  2. 不使用 @layer：WP 核心 CSS 无 layer，放进 layer 会被反超。
+ *     依靠 source-order + 同等特异性覆盖；!important 仅用于对抗
+ *     WP 内联样式/高特异性的少数位置（隐藏原生 chrome、布局复位）。
+ *  3. 设计 token 与 src/admin/styles/admin-tailwind.css 同源同值
+ *     （前台调色板），暗色由 <html data-theme="dark"> 驱动。
  *
- * 策略:
- *   - 隐藏 WP 原生侧边栏 (#adminmenu) 和顶栏 (#wpadminbar)
- *   - Vue 组件渲染新的侧边栏和顶栏
- *   - 此文件在 WP 原生样式之后加载，通过注销 WP 核心样式的
- *     方式代替（见 inc/core/admin-theme.php）
- *   - 由于 WP 核心样式被完全移除，此文件必须为所有 HTML
- *     元素提供兜底样式
- * ================================================================ */
+ * Vue shell（侧栏/顶栏）自身样式在组件内（Tailwind），本文件只负责：
+ *  ① 隐藏原生 chrome ② 布局脚手架 ③ 原生内容区适度美化 ④ 登录页
+ * ═══════════════════════════════════════════════════════════════ */
 
-
-/* =================================================================
- *  1. 设计令牌
- *  与前端 src/styles/variables.css 完全一致。
- *  使用 [data-theme] 选择器（同前端），不使用 light-dark()。
- * ================================================================= */
-
-:root {
-  /* ── 布局常量 ────────────────────────────────── */
-  --sidebar-width: 68px;
-  --topbar-height: 48px;
-
-  /* ── 字体 ─────────────────────────────────── */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'PingFang SC', 'MiSans VF',
-    'Segoe UI', system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
-
-  /* ── 阴影（Apple 风格 — 极柔和）─────────────── */
-  --shadow-small: 0 1px 3px rgb(0 0 0 / 0.04);
-  --shadow-medium: 0 4px 12px rgb(0 0 0 / 0.05);
-  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
-  --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.1);
-
-  /* ── 圆角（Apple 风格 — 更圆润）───────────── */
-  --radius-small: 5px;
-  --radius-medium: 7px;
-  --radius-large: 10px;
-  --radius-full: 9999px;
-
-  /* ── 过渡（Apple 系统缓动）─────────────────── */
-  --apple-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: 0.15s var(--apple-ease);
-  --transition-normal: 0.25s var(--apple-ease);
-
-  /* ── WordPress 主题色 ──────────────────────── */
-  --wp-admin-theme-color: #1d1d1f;
-  --wp-admin-theme-color-darker-10: #000;
-  --wp-admin-theme-color-darker-20: #000;
-  --wp-admin-theme-color-rgb: 29, 29, 31;
-}
-
-/* Apple HIG — 亮色 */
-[data-theme='light'] {
-  color-scheme: light;
-  --background: #f5f5f7;
-  --foreground: #1d1d1f;
+/* ─────────────────────────────────────────────
+   1. Design tokens（scope 到美化 body / 登录页）
+   ───────────────────────────────────────────── */
+body.sta-theme-active,
+body.login {
+  --background: #f5f6f7;
+  --foreground: #333;
   --card: #ffffff;
-  --card-foreground: #1d1d1f;
-  --primary: #1d1d1f;
-  --primary-foreground: #ffffff;
-  --secondary: #86868b;
-  --secondary-foreground: #1d1d1f;
+  --primary: #333;
+  --primary-foreground: #fff;
+  --secondary: #999;
   --muted: #f5f5f5;
-  --muted-foreground: #86868b;
-  --faint: #fafafa;
-  --faint-foreground: #86868b;
-  --accent: #e8e8ed;
-  --accent-foreground: #1d1d1f;
-  --border: rgba(0, 0, 0, 0.06);
-  --input-border: #d2d2d7;
-  --ring: rgba(0, 0, 0, 0.12);
-  --danger: #ff3b30;
-  --danger-hover: #d70015;
-  --danger-bg: #fff2f0;
-  --success: #34c759;
-  --success-bg: #f0faf3;
-  --warning: #ff9f0a;
-  --warning-bg: #fff8f0;
-  --card-highlight: 0 0 0 0 transparent;
+  --menu-hover: #f0f0f0;
+  --border: #e2e2e2;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --sta-topbar-height: 48px;
+  --sta-sidebar-width: 68px;
+
+  /* WP 组件强调色（按钮/焦点/链接强调），跟随主题主色 */
+  --wp-admin-theme-color: #333;
+  --wp-admin-theme-color-darker-10: #1f1f1f;
+  --wp-admin-theme-color-darker-20: #0f0f0f;
+  --wp-admin-theme-color--rgb: 51, 51, 51;
 }
 
-/* Apple HIG — 暗色 */
-[data-theme='dark'] {
-  color-scheme: dark;
-  --background: #1c1c1e;
-  --foreground: #f5f5f7;
-  --card: #2c2c2e;
-  --card-foreground: #f5f5f7;
-  --primary: #f5f5f7;
-  --primary-foreground: #1c1c1e;
-  --secondary: #98989d;
-  --secondary-foreground: #f5f5f7;
-  --muted: #2c2c2e;
-  --muted-foreground: #98989d;
-  --faint: #3a3a3c;
-  --faint-foreground: #98989d;
-  --accent: #3a3a3c;
-  --accent-foreground: #f5f5f7;
-  --border: rgba(255, 255, 255, 0.08);
-  --input-border: #48484a;
-  --ring: rgba(255, 255, 255, 0.12);
-  --danger: #ff453a;
-  --danger-hover: #ff6b5e;
-  --danger-bg: rgba(255, 69, 58, 0.12);
-  --success: #30d158;
-  --success-bg: rgba(48, 209, 88, 0.12);
-  --warning: #ff9f0a;
-  --warning-bg: rgba(255, 159, 10, 0.12);
-  --card-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+[data-theme='dark'] body.sta-theme-active {
+  --background: #1a1a1a;
+  --foreground: #e0e0e0;
+  --card: #222222;
+  --primary: #e0e0e0;
+  --primary-foreground: #1a1a1a;
+  --secondary: #999;
+  --muted: #2a2a2a;
+  --menu-hover: #2a2a2a;
+  --border: #333333;
+  --danger: #f4807b;
+  --success: #6cc070;
+  --warning: #f0a030;
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.45);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
+
+  --wp-admin-theme-color: #e0e0e0;
+  --wp-admin-theme-color-darker-10: #ffffff;
+  --wp-admin-theme-color-darker-20: #ffffff;
+  --wp-admin-theme-color--rgb: 224, 224, 224;
 }
 
-
-/* =================================================================
- *  2. 全局重置 & 基础元素兜底
- *  覆盖所有 HTML 元素，确保在 WP 核心样式被移除后页面不崩坏。
- * ================================================================= */
-
-/* ── 盒模型全局重置 ──────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-/* ── HTML 根元素 ──────────────────────────────── */
-html.wp-toolbar.sta-theme-active {
-  padding-top: 0 !important;
-  scroll-behavior: smooth;
-}
-
-/* ── Body ─────────────────────────────────────── */
-html.wp-toolbar,
-body,
-#wpcontent {
-  background: var(--background, #f5f6f7);
-}
-
-body {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--foreground);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/* ── 选中文字 ──────────────────────────────────── */
-::selection {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-
-/* ── 滚动条 ────────────────────────────────────── */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border, #e2e2e2) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background: var(--border, #e2e2e2);
-  border-radius: 3px;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground, #999);
-}
-
-/* ── 链接 ──────────────────────────────────────── */
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color var(--transition-fast, 0.15s ease);
-}
-a:hover {
-  color: var(--foreground, #333);
-  text-decoration: underline;
-}
-a:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-small);
-}
-
-/* ── 标题（全局兜底）────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  margin: 0 0 0.5em;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--foreground, #333);
-  text-wrap: pretty;
-}
-h1 { font-size: 24px; letter-spacing: -0.3px; font-weight: 650; }
-h2 { font-size: 20px; letter-spacing: -0.2px; }
-h3 { font-size: 16px; }
-h4 { font-size: 14px; }
-h5 { font-size: 13px; }
-h6 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
-
-/* ── 段落 ──────────────────────────────────────── */
-p {
-  margin: 0 0 1em;
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-p:last-child {
-  margin-bottom: 0;
-}
-
-/* ── 列表（全局兜底）───────────────────────────── */
-ul, ol {
-  margin: 0 0 1em 1.5em;
-  padding: 0;
-}
-ul { list-style: disc; }
-ol { list-style: decimal; }
-li {
-  margin-bottom: 0.25em;
-  line-height: 1.6;
-}
-li:last-child {
-  margin-bottom: 0;
-}
-ul ul, ol ul, ul ol, ol ol {
-  margin-bottom: 0;
-}
-
-/* ── 定义列表 ──────────────────────────────────── */
-dl { margin: 0 0 1em; }
-dt {
-  font-weight: 600;
-  color: var(--foreground, #333);
-  margin-bottom: 0.25em;
-}
-dd {
-  margin: 0 0 0.5em 1.5em;
-  color: var(--muted-foreground, #999);
-}
-
-/* ── 图片 ──────────────────────────────────────── */
-img {
-  max-width: 100%;
-  height: auto;
-  vertical-align: middle;
-  border-style: none;
-}
-figure {
-  margin: 0 0 1em;
-  display: inline-block;
-}
-figcaption {
-  font-size: 12px;
-  color: var(--muted-foreground, #999);
-  text-align: center;
-  margin-top: 6px;
-}
-
-/* ── 引用 ──────────────────────────────────────── */
-blockquote {
-  margin: 0 0 1em;
-  padding: 8px 16px;
-  border-left: 3px solid var(--border, #e2e2e2);
-  color: var(--muted-foreground, #999);
-  font-style: italic;
-}
-blockquote p:last-child {
-  margin-bottom: 0;
-}
-cite {
-  font-style: italic;
-  color: var(--muted-foreground, #999);
-}
-
-/* ── 行内代码 / 代码块 ─────────────────────── */
-code, kbd, samp {
-  font-family: var(--font-mono, Consolas, Monaco, monospace);
-  background: var(--muted, #f5f5f5);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.875em;
-  color: var(--foreground, #333);
-}
-pre {
-  margin: 0 0 1em;
-  padding: 14px 18px;
-  background: var(--muted, #f5f5f5);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.5;
-  font-family: var(--font-mono, Consolas, Monaco, monospace);
-}
-pre code {
-  background: none;
-  padding: 0;
-  border-radius: 0;
-}
-kbd {
-  border: 1px solid var(--border, #e2e2e2);
-  border-bottom-width: 2px;
-  padding: 1px 5px;
-  background: var(--card, #fff);
-}
-
-/* ── 行内语义元素 ────────────────────────────── */
-strong, b { font-weight: 600; }
-em, i { font-style: italic; }
-small { font-size: 0.85em; }
-mark {
-  background: var(--warning-bg, #fdf6ec);
-  color: var(--foreground, #333);
-  padding: 0 3px;
-  border-radius: 2px;
-}
-ins {
-  background: var(--success-bg, #f0f9eb);
-  text-decoration: none;
-  padding: 0 3px;
-  border-radius: 2px;
-}
-del {
-  color: var(--muted-foreground, #999);
-}
-sub, sup {
-  font-size: 0.75em;
-  line-height: 0;
-  position: relative;
-  vertical-align: baseline;
-}
-sup { top: -0.5em; }
-sub { bottom: -0.25em; }
-
-/* ── 缩写 ──────────────────────────────────────── */
-abbr[title], acronym[title] {
-  text-decoration: underline dotted;
-  cursor: help;
-  border-bottom: 1px dotted var(--border, #e2e2e2);
-}
-
-/* ── 地址 ──────────────────────────────────────── */
-address {
-  font-style: normal;
-  line-height: 1.6;
-  margin: 0 0 1em;
-  color: var(--muted-foreground, #999);
-}
-
-/* ── 水平分割线 ──────────────────────────────── */
-hr {
-  border: none;
-  border-top: 1px solid var(--border, #e2e2e2);
-  margin: 1.5em 0;
-  height: 0;
-  clear: both;
-}
-
-/* ── Details / Summary ─────────────────────────── */
-details {
-  margin: 0 0 1em;
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  background: var(--card, #fff);
-  overflow: hidden;
-}
-summary {
-  padding: 10px 14px;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--faint, #fafafa);
-  transition: background var(--transition-fast, 0.15s ease);
-  user-select: none;
-}
-summary:hover {
-  background: var(--muted, #f5f5f5);
-}
-details[open] summary {
-  border-bottom: 1px solid var(--border, #e2e2e2);
-}
-details > :not(summary) {
-  padding: 12px 14px;
-}
-
-/* ── 表格（全局兜底）────────────────────────── */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0 0 1em;
-}
-caption {
-  text-align: left;
-  font-weight: 600;
-  padding: 6px 0;
-  color: var(--muted-foreground, #999);
-  font-size: 13px;
-}
-th, td {
-  padding: 8px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  color: var(--foreground, #333);
-  font-size: 13px;
-}
-th {
-  font-weight: 600;
-  background: var(--faint, #fafafa);
-}
-tfoot th, tfoot td {
-  border-top: 1px solid var(--border, #e2e2e2);
-  border-bottom: none;
-}
-
-/* ── Progress ────────────────────────────────────── */
-progress {
-  width: 100%;
-  height: 8px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--muted, #f5f5f5);
-  overflow: hidden;
-}
-progress::-webkit-progress-bar {
-  background: var(--muted, #f5f5f5);
-  border-radius: var(--radius-full);
-}
-progress::-webkit-progress-value {
-  background: var(--primary);
-  border-radius: var(--radius-full);
-  transition: width var(--transition-fast, 0.15s ease);
-}
-progress::-moz-progress-bar {
-  background: var(--primary);
-  border-radius: var(--radius-full);
-}
-
-/* ── 变量 / 等宽行内元素 ────────────────────── */
-var {
-  font-family: var(--font-mono, Consolas, Monaco, monospace);
-  font-style: italic;
-  color: var(--primary);
-}
-
-/* ── 隐藏 / 可见性工具 ───────────────────────── */
-.hidden,
-[hidden] {
-  display: none !important;
-}
-.sr-only,
-.screen-reader-text {
-  border: 0 !important;
-  clip: rect(1px, 1px, 1px, 1px) !important;
-  clip-path: inset(50%) !important;
-  height: 1px !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  position: absolute !important;
-  width: 1px !important;
-  word-wrap: normal !important;
-}
-
-
-/* =================================================================
- *  3. 布局重置 — CSS Grid 并列布局
- *  body 设为 CSS Grid，侧边栏、顶栏、内容区各自占据一个 grid cell，
- *  彼此并列，不再使用 fixed 悬浮。
- * ================================================================= */
-
-/* 隐藏 WP 原生侧边栏（sta-theme-active 时） */
-body.sta-theme-active #adminmenuwrap,
+/* ─────────────────────────────────────────────
+   2. 隐藏原生 chrome（!important 对抗 WP 内联/响应式规则）
+   ───────────────────────────────────────────── */
+body.sta-theme-active #adminmenumain,
 body.sta-theme-active #adminmenuback,
+body.sta-theme-active #adminmenuwrap,
 body.sta-theme-active #adminmenu,
-body.sta-theme-active #adminmenumain {
-  display: none !important;
-}
-
-/* 隐藏 WP 原生顶栏 */
 body.sta-theme-active #wpadminbar {
   display: none !important;
 }
 
-/* body 自然滚动，fixed 侧边栏/顶栏用 padding 腾出空间 */
-body.sta-theme-active {
-  padding: 48px 0 24px 68px;
-  margin: 0;
-  min-height: 100vh;
+/* ─────────────────────────────────────────────
+   3. 布局脚手架
+   ───────────────────────────────────────────── */
+html.wp-toolbar:has(body.sta-theme-active) {
+  padding-top: 0 !important;
 }
 
-/* Admin Shell 侧边栏 — fixed 在左侧 */
-#simple-theme-admin-sidebar {
+/* :has() 兜底（老浏览器）：body 自己也能复位 */
+body.sta-theme-active {
+  padding: var(--sta-topbar-height) 0 24px var(--sta-sidebar-width);
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body.sta-theme-active #simple-theme-admin-sidebar {
   position: fixed;
   top: 0;
   left: 0;
-  width: 68px;
+  width: var(--sta-sidebar-width);
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: 48px;
   z-index: 90;
-  border-right: 1px solid var(--border);
   background: var(--card);
+  border-right: 1px solid var(--border);
 }
 
-/* Admin Shell 顶栏 — fixed 在顶部 */
-#simple-theme-admin-topbar {
+body.sta-theme-active #simple-theme-admin-topbar {
   position: fixed;
   top: 0;
-  left: 68px;
+  left: var(--sta-sidebar-width);
   right: 0;
-  height: 48px;
+  height: var(--sta-topbar-height);
   z-index: 100;
-  background: color-mix(in srgb, var(--card) 70%, transparent);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid var(--border);
 }
 
-/* WP 内容包装器 — 自然流，不限制滚动 */
-#wpwrap {
+body.sta-theme-active #wpwrap {
   position: static;
   overflow: visible;
   min-height: auto;
+  background: transparent;
 }
 
-/* 内容区域 — body padding 已腾位 */
-#wpcontent {
+body.sta-theme-active #wpcontent {
   margin-left: 0 !important;
   padding-top: 0 !important;
   padding-left: 0 !important;
+  padding-right: 0;
+  background: transparent;
 }
 
-#wpfooter {
-  margin-left: 0 !important;
-  background: var(--card, #ffffff);
-  border-top: 1px solid var(--border, #e2e2e2);
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  padding: 12px 24px;
-}
-
-#wpbody {
-  display: flow-root;
+body.sta-theme-active #wpbody {
   min-height: auto;
 }
 
-#wpbody-content {
+body.sta-theme-active #wpbody-content {
   padding-bottom: 48px;
+  float: none;
+  width: auto;
 }
 
+body.sta-theme-active #wpfooter {
+  display: none;
+}
 
-/* =================================================================
- *  4. 页面布局 & 标题区域
- * ================================================================= */
-
-.wrap {
+body.sta-theme-active .wrap {
   margin: 0;
-  padding: 32px 32px 0;
+  padding: 28px 32px 0;
 }
 
-.wrap > h1,
-.wrap > h2 {
+/* ─────────────────────────────────────────────
+   4. 内容区美化（全部 scope 到 body.sta-theme-active）
+   ───────────────────────────────────────────── */
+
+/* 页面标题 */
+body.sta-theme-active .wrap h1,
+body.sta-theme-active .wrap .wp-heading-inline {
+  color: var(--foreground);
   font-size: 24px;
-  font-weight: 650;
-  color: var(--foreground, #333);
-  margin: 0 0 24px;
-  padding: 0;
-  line-height: 1.3;
-  letter-spacing: -0.3px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.wrap > h1:first-child,
-.wrap > h2:first-child {
-  margin-top: 0;
-}
-
-/* ── 页面标题操作按钮 ─────────────────────────── */
-.page-title-action {
-  top: -2px;
-  margin-left: 12px;
-  border-radius: var(--radius-full);
-  padding: 4px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid var(--border, #e2e2e2);
-  color: var(--foreground, #333);
-  background: var(--card, #ffffff);
-  transition: all var(--transition-fast, 0.15s ease);
-  line-height: 2;
-  min-height: 0;
-  box-shadow: none;
+body.sta-theme-active .wrap .page-title-action {
+  margin-left: 10px;
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  background: var(--card);
+  color: var(--foreground);
   text-decoration: none;
-  display: inline-block;
+  font-size: 13px;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
-.page-title-action:hover {
+
+body.sta-theme-active .wrap .page-title-action:hover {
   border-color: var(--primary);
   color: var(--primary);
-  background: var(--muted, #f5f5f5);
-  text-decoration: none;
+  background: var(--card);
 }
-.page-title-action:focus-visible {
+
+/* 链接 */
+body.sta-theme-active #wpbody-content a {
+  color: var(--foreground);
+  transition: color var(--transition-fast);
+}
+
+body.sta-theme-active #wpbody-content a:hover {
+  color: var(--wp-admin-theme-color-darker-10);
+}
+
+/* 按钮（覆盖 .wp-core-ui 特异性） */
+body.sta-theme-active .wp-core-ui .button,
+body.sta-theme-active .wp-core-ui .button-secondary {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+body.sta-theme-active .wp-core-ui .button:hover,
+body.sta-theme-active .wp-core-ui .button-secondary:hover {
+  background: var(--muted);
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  color: var(--primary);
+}
+
+body.sta-theme-active .wp-core-ui .button:focus,
+body.sta-theme-active .wp-core-ui .button-secondary:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
   outline: none;
 }
 
-/* ── filter 导航链接 ────────────────────────── */
-.subsubsub {
-  font-size: 13px;
-  color: var(--muted-foreground, #999);
-  margin: 0 0 16px;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 8px;
-  list-style: none;
-}
-
-.subsubsub li {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-}
-
-.subsubsub a {
-  color: var(--muted-foreground, #999);
-  line-height: 2.2;
-  padding: 2px 8px;
-  border-radius: var(--radius-medium);
-  transition: all var(--transition-fast, 0.15s ease);
-  text-decoration: none;
-}
-
-.subsubsub a.current {
-  color: var(--primary);
-  font-weight: 600;
-  background: var(--muted, #f5f5f5);
-}
-
-.subsubsub a:hover {
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
-  text-decoration: none;
-}
-
-.subsubsub .count {
-  color: var(--border, #e2e2e2);
-  font-weight: 400;
-}
-
-.subsubsub a.current .count {
-  color: var(--primary);
-}
-
-/* ── 显示选项 & 帮助选项卡 ───────────────────── */
-#screen-meta {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-top: none;
-  box-shadow: var(--shadow-small);
-  margin: 0 0 -1px;
-}
-
-#screen-meta-links .show-settings {
-  border: 1px solid var(--border, #e2e2e2);
-  border-top: none;
-  border-radius: 0 0 var(--radius-medium) var(--radius-medium);
-  background: var(--card, #ffffff);
-  color: var(--muted-foreground, #999);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-#screen-meta-links .show-settings:hover {
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
-}
-
-.contextual-help-tabs-wrap {
-  padding: 12px 20px;
-}
-.contextual-help-tabs {
-  border-color: var(--border, #e2e2e2);
-}
-.contextual-help-tabs a {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.contextual-help-tabs a:hover {
-  color: var(--primary);
-}
-.contextual-help-tabs .active {
-  border-color: var(--primary);
-}
-.contextual-help-tabs .active a {
-  color: var(--primary);
-  font-weight: 600;
-}
-
-#contextual-help-back {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-}
-#contextual-help-columns {
-  display: flex;
-}
-.help-tab-content {
-  padding: 12px 20px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-
-/* =================================================================
- *  5. 卡片 & 文章盒子
- * ================================================================= */
-
-#dashboard-widgets .postbox {
-  border: none;
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-medium);
-  background: var(--card);
-  overflow: hidden;
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-}
-#dashboard-widgets .postbox:hover {
-  box-shadow: var(--shadow-large);
-  transform: translateY(-1px);
-}
-#dashboard-widgets .postbox .hndle {
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  padding: 16px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  background: var(--card, #ffffff);
-  cursor: move;
-}
-#dashboard-widgets .postbox .handlediv {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-#dashboard-widgets .postbox .handlediv:hover {
-  color: var(--primary);
-}
-#dashboard-widgets .postbox .inside {
-  padding: 16px 20px;
-}
-#dashboard-widgets .postbox .inside table {
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-#dashboard-widgets .postbox.closed .hndle {
-  border-bottom: none;
-}
-#dashboard-widgets .meta-box-sortables {
-  margin-top: 20px;
-}
-
-.postbox {
-  border: none;
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-medium);
-  background: var(--card);
-  overflow: hidden;
-  transition: box-shadow var(--transition-normal);
-}
-.postbox .hndle {
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  padding: 16px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  background: var(--card, #ffffff);
-  cursor: move;
-}
-.postbox .handlediv {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.postbox .handlediv:hover {
-  color: var(--primary);
-}
-.postbox .inside {
-  padding: 16px 20px;
-}
-.postbox.closed .hndle {
-  border-bottom: none;
-}
-.postbox .toggle-indicator {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.postbox:hover .toggle-indicator {
-  color: var(--primary);
-}
-
-.meta-box-sortables {
-  margin-top: 16px;
-}
-
-/* ── Welcome 面板 ──────────────────────────────── */
-.welcome-panel {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  padding: 28px;
-  margin: 0 0 20px;
-}
-.welcome-panel h2 {
-  font-size: 22px;
-  font-weight: 650;
-  color: var(--foreground, #333);
-}
-.welcome-panel .welcome-panel-column p {
-  color: var(--muted-foreground, #999);
-}
-.welcome-panel .welcome-panel-dismiss {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.welcome-panel .welcome-panel-dismiss:hover {
-  color: var(--primary);
-}
-
-
-/* =================================================================
- *  6. 表单 & 输入
- * ================================================================= */
-
-input[type="text"],
-input[type="search"],
-input[type="email"],
-input[type="url"],
-input[type="password"],
-input[type="number"],
-input[type="date"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="tel"],
-input[type="time"],
-input[type="week"],
-input[type="month"],
-select,
-textarea {
-  border: 1px solid var(--border, #d0d0d0);
-  border-radius: var(--radius-medium);
-  padding: 4px 11px;
-  font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  color: var(--foreground, #333);
-  background: var(--card, #fff);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: border-color var(--transition-fast, 0.15s ease),
-              box-shadow var(--transition-fast, 0.15s ease);
-  line-height: 1.5;
-  min-height: 32px;
-  box-sizing: border-box;
-}
-input[type="text"]:hover,
-input[type="search"]:hover,
-input[type="email"]:hover,
-input[type="url"]:hover,
-input[type="password"]:hover,
-input[type="number"]:hover,
-input[type="date"]:hover,
-input[type="datetime"]:hover,
-input[type="datetime-local"]:hover,
-input[type="tel"]:hover,
-input[type="time"]:hover,
-input[type="week"]:hover,
-input[type="month"]:hover,
-select:hover,
-textarea:hover {
-  border-color: color-mix(in srgb, var(--border) 80%, var(--foreground));
-}
-input[type="text"]:focus,
-input[type="search"]:focus,
-input[type="email"]:focus,
-input[type="url"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-input[type="date"]:focus,
-input[type="datetime"]:focus,
-input[type="datetime-local"]:focus,
-input[type="tel"]:focus,
-input[type="time"]:focus,
-input[type="week"]:focus,
-input[type="month"]:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
-  outline: none;
-}
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -1px;
-}
-input[type="text"]:disabled,
-input[type="search"]:disabled,
-input[type="email"]:disabled,
-input[type="url"]:disabled,
-input[type="password"]:disabled,
-select:disabled,
-textarea:disabled {
-  background: var(--background, #f5f6f7);
-  color: var(--muted-foreground, #999);
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-input[type="text"][readonly],
-input[type="email"][readonly],
-input[type="url"][readonly],
-textarea[readonly] {
-  background: var(--background, #f5f6f7);
-  cursor: default;
-}
-
-select {
-  appearance: auto;
-  padding-right: 28px;
-  cursor: pointer;
-}
-
-input[type="checkbox"],
-input[type="radio"] {
-  accent-color: var(--primary);
-  width: 16px;
-  height: 16px;
-  margin: 0 4px 0 0;
-}
-input[type="checkbox"]:focus-visible,
-input[type="radio"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-input[type="search"] {
-  -webkit-appearance: textfield;
-}
-
-/* ── 文件输入 ──────────────────────────────────── */
-input[type="file"] {
-  padding: 6px 11px;
-  font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  color: var(--foreground, #333);
-  border: 1px solid var(--border, #d0d0d0);
-  border-radius: var(--radius-medium);
-  background: var(--card, #fff);
-  cursor: pointer;
-  box-sizing: border-box;
-}
-input[type="file"]:hover {
-  border-color: var(--primary);
-}
-input[type="file"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
-}
-
-/* ── 通用按钮元素 ──────────────────────────────── */
-button,
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
-  font-family: var(--font-sans, system-ui, sans-serif);
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1.5;
-  border-radius: var(--radius-medium);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-input[type="submit"] {
+body.sta-theme-active .wp-core-ui .button-primary {
   background: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid var(--primary);
-  padding: 4px 20px;
-  min-height: 32px;
-  font-weight: 500;
-}
-input[type="submit"]:hover {
-  background: color-mix(in srgb, var(--primary) 85%, #000);
-  border-color: color-mix(in srgb, var(--primary) 85%, #000);
-}
-input[type="submit"]:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
-  outline: none;
-}
-input[type="reset"] {
-  background: var(--card, #fff);
-  color: var(--foreground, #333);
-  border: 1px solid var(--border, #d0d0d0);
-  padding: 4px 16px;
-  min-height: 32px;
-}
-input[type="reset"]:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-input[type="reset"]:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
-  outline: none;
-}
-
-/* ── Label ──────────────────────────────────────── */
-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--foreground, #333);
-  line-height: 1.5;
-  display: inline-block;
-}
-
-/* ── Fieldset / Legend ──────────────────────────── */
-fieldset {
-  border: 1px solid var(--border, #d0d0d0);
-  border-radius: 8px;
-  padding: 16px 20px 20px;
-  margin-bottom: 16px;
-  min-width: 0;
-}
-legend {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  padding: 0 8px;
-  width: auto;
-}
-
-/* ── 搜索框 ────────────────────────────────────── */
-.search-box {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: stretch;
-}
-.search-box input[name="s"],
-.search-box .search-input {
-  border-radius: var(--radius-medium) 0 0 var(--radius-medium);
-  border-right: none;
-  min-height: 32px;
-}
-.search-box .button {
-  border-radius: 0 var(--radius-medium) var(--radius-medium) 0;
-  margin-left: -1px;
-  min-height: 32px;
-  line-height: 1;
-}
-
-/* ── Form Table ──────────────────────────────────── */
-.form-table {
-  border-collapse: collapse;
-  margin-top: 8px;
-  width: 100%;
-}
-.form-table th {
-  color: var(--foreground, #333);
-  font-weight: 600;
-  padding: 12px 12px 12px 0;
-  vertical-align: top;
-  background: none;
-}
-.form-table td {
-  padding: 12px 0;
-}
-.form-table .description {
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.wp-core-ui .description,
-.wp-core-ui .form-wrap p {
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-}
-
-/* ── Tagify / 多选标签 ────────────────────────── */
-.tagify,
-.wp-tag-editor {
-  min-height: 32px;
   border-radius: var(--radius-medium);
-}
-
-
-/* =================================================================
- *  7. 按钮
- * ================================================================= */
-
-.wp-core-ui .button,
-.wp-core-ui .button-secondary {
-  border: 1px solid var(--border, #d0d0d0);
-  border-radius: var(--radius-medium);
-  padding: 4px 16px;
-  font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  line-height: 1.5;
-  color: var(--foreground, #333);
-  background: var(--card, #fff);
-  cursor: pointer;
-  transition: all var(--transition-fast, 0.15s ease);
   box-shadow: none;
-  min-height: 32px;
-  font-weight: 450;
-  box-sizing: border-box;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+  text-shadow: none;
 }
-.wp-core-ui .button:hover,
-.wp-core-ui .button-secondary:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
-  text-decoration: none;
-  transform: translateY(-0.5px);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.06);
+
+body.sta-theme-active .wp-core-ui .button-primary:hover,
+body.sta-theme-active .wp-core-ui .button-primary:focus {
+  background: var(--wp-admin-theme-color-darker-10);
+  border-color: var(--wp-admin-theme-color-darker-10);
+  color: var(--primary-foreground);
 }
-.wp-core-ui .button:focus-visible,
-.wp-core-ui .button-secondary:focus-visible {
+
+body.sta-theme-active .wp-core-ui .button:disabled,
+body.sta-theme-active .wp-core-ui .button-primary:disabled,
+body.sta-theme-active .wp-core-ui .button.disabled,
+body.sta-theme-active .wp-core-ui .button-primary.disabled {
+  opacity: 0.5;
+  background: var(--muted) !important;
+  color: var(--secondary) !important;
+  border-color: var(--border) !important;
+}
+
+/* 表单控件（scope 到内容区，不碰 shell/插件弹层） */
+body.sta-theme-active #wpbody-content input[type='text'],
+body.sta-theme-active #wpbody-content input[type='search'],
+body.sta-theme-active #wpbody-content input[type='email'],
+body.sta-theme-active #wpbody-content input[type='url'],
+body.sta-theme-active #wpbody-content input[type='password'],
+body.sta-theme-active #wpbody-content input[type='number'],
+body.sta-theme-active #wpbody-content input[type='tel'],
+body.sta-theme-active #wpbody-content input[type='date'],
+body.sta-theme-active #wpbody-content select,
+body.sta-theme-active #wpbody-content textarea {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+body.sta-theme-active #wpbody-content input[type='text']:focus,
+body.sta-theme-active #wpbody-content input[type='search']:focus,
+body.sta-theme-active #wpbody-content input[type='email']:focus,
+body.sta-theme-active #wpbody-content input[type='url']:focus,
+body.sta-theme-active #wpbody-content input[type='password']:focus,
+body.sta-theme-active #wpbody-content input[type='number']:focus,
+body.sta-theme-active #wpbody-content input[type='tel']:focus,
+body.sta-theme-active #wpbody-content input[type='date']:focus,
+body.sta-theme-active #wpbody-content select:focus,
+body.sta-theme-active #wpbody-content textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
+  box-shadow: 0 0 0 1px var(--primary);
   outline: none;
 }
-.wp-core-ui .button:active,
-.wp-core-ui .button-secondary:active {
-  transform: scale(0.97) translateY(0);
+
+body.sta-theme-active #wpbody-content input[type='checkbox'],
+body.sta-theme-active #wpbody-content input[type='radio'] {
+  border: 1px solid var(--border);
+  background: var(--card);
   box-shadow: none;
 }
 
-.wp-core-ui .button-primary {
+body.sta-theme-active #wpbody-content input[type='checkbox']:checked,
+body.sta-theme-active #wpbody-content input[type='radio']:checked {
   background: var(--primary);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-medium);
-  color: var(--primary-foreground);
-  padding: 4px 20px;
-  font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  line-height: 1.5;
-  min-height: 32px;
-  box-shadow: none;
-  text-shadow: none;
-  font-weight: 500;
-  transition: all var(--transition-fast, 0.15s ease);
-  cursor: pointer;
-  box-sizing: border-box;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-.wp-core-ui .button-primary:hover {
-  background: color-mix(in srgb, var(--primary) 85%, #000);
-  border-color: color-mix(in srgb, var(--primary) 85%, #000);
-  color: var(--primary-foreground);
-  box-shadow: none;
-  transform: none;
-  text-decoration: none;
-}
-.wp-core-ui .button-primary:focus-visible {
-  background: color-mix(in srgb, var(--primary) 85%, #000);
-  border-color: color-mix(in srgb, var(--primary) 85%, #000);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
-  outline: none;
-}
-.wp-core-ui .button-primary:active {
-  background: color-mix(in srgb, var(--primary) 70%, #000);
-  border-color: color-mix(in srgb, var(--primary) 70%, #000);
-  transform: scale(0.97);
-  box-shadow: none;
-}
-.wp-core-ui .button-primary[disabled],
-.wp-core-ui .button-primary:disabled {
-  background: var(--muted-foreground, #999);
-  border-color: var(--border, #d0d0d0);
-  color: var(--primary-foreground);
-  cursor: not-allowed;
-  opacity: 0.4;
-  transform: none;
+  border-color: var(--primary);
 }
 
-.wp-core-ui .button-link {
-  color: var(--primary);
-  background: transparent;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  transition: color var(--transition-fast, 0.15s ease);
-  cursor: pointer;
-  box-shadow: none;
-  text-decoration: none;
-}
-.wp-core-ui .button-link:hover {
-  color: var(--foreground, #333);
-  text-decoration: underline;
-}
-.wp-core-ui .button-link:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent);
-  outline: none;
-  border-radius: var(--radius-small);
+body.sta-theme-active #wpbody-content input[type='checkbox']:checked::before {
+  filter: invert(1) grayscale(1) brightness(2);
 }
 
-.wp-core-ui .button-danger {
-  background: var(--danger);
-  border: 1px solid var(--danger);
-  border-radius: var(--radius-medium);
-  color: #fff;
-  padding: 4px 16px;
-  font-size: 13px;
-  line-height: 1.5;
-  min-height: 32px;
-  box-shadow: none;
-  text-shadow: none;
-  font-weight: 500;
-  transition: all var(--transition-fast, 0.15s ease);
-  cursor: pointer;
-  box-sizing: border-box;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-.wp-core-ui .button-danger:hover {
-  background: var(--danger-hover);
-  border-color: var(--danger-hover);
-  color: #fff;
-  transform: none;
-  text-decoration: none;
-}
-
-.wp-core-ui .button-small {
-  padding: 2px 12px;
-  font-size: 12px;
-  line-height: 1.5;
-  min-height: 26px;
-}
-
-
-/* =================================================================
- *  8. 列表表格
- * ================================================================= */
-
-.wp-list-table,
-.widefat {
-  border: none;
+/* 列表表格 */
+body.sta-theme-active .wp-list-table,
+body.sta-theme-active .widefat {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  background: var(--card, #ffffff);
-  overflow: hidden;
-  border-collapse: separate;
   border-spacing: 0;
-  margin-bottom: 0;
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
 }
 
-.wp-list-table thead th,
-.widefat thead th {
-  background: transparent;
+body.sta-theme-active .widefat thead th,
+body.sta-theme-active .widefat thead td,
+body.sta-theme-active .widefat tfoot th,
+body.sta-theme-active .widefat tfoot td {
+  background: var(--card);
   color: var(--secondary);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 16px 16px 10px;
+  font-size: 12px;
   border-bottom: 1px solid var(--border);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
-.wp-list-table thead th a,
-.widefat thead th a {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.wp-list-table thead th a:hover,
-.widefat thead th a:hover {
-  color: var(--primary);
+body.sta-theme-active .widefat td,
+body.sta-theme-active .widefat th {
+  color: var(--foreground);
+  border-color: var(--border);
 }
 
-.wp-list-table tbody td,
-.widefat tbody td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  color: var(--foreground, #333);
-  font-size: 13px;
+body.sta-theme-active .striped > tbody > :nth-child(odd),
+body.sta-theme-active .alternate,
+body.sta-theme-active ul.striped > :nth-child(odd) {
+  background: var(--card);
 }
 
-.wp-list-table tbody tr:last-child td,
-.widefat tbody tr:last-child td {
-  border-bottom: none;
+body.sta-theme-active .wp-list-table tbody tr:hover {
+  background: var(--muted);
 }
 
-.wp-list-table tbody tr:hover td,
-.widefat tbody tr:hover td {
-  background: var(--faint, #fafafa);
+body.sta-theme-active .wp-list-table .row-actions a {
+  color: var(--secondary);
 }
 
-.wp-list-table.striped > tbody > :nth-child(odd),
-.striped > tbody > :nth-child(odd),
-.alternate {
-  background-color: var(--faint, #fafafa);
+body.sta-theme-active .wp-list-table .row-actions a:hover {
+  color: var(--foreground);
 }
 
-.wp-list-table tbody tr.active td,
-.widefat tbody tr.active td {
-  background: var(--muted, #f5f5f5);
-}
-
-.wp-list-table .row-actions {
-  color: var(--border, #e2e2e2);
-  font-size: 12px;
-  margin-top: 2px;
-}
-.wp-list-table .row-actions span a {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-  padding: 2px 4px;
-  border-radius: var(--radius-small);
-}
-.wp-list-table .row-actions span a:hover {
-  color: var(--primary);
-}
-.wp-list-table .row-actions .trash a {
-  color: var(--danger);
-}
-.wp-list-table .row-actions .trash a:hover {
-  color: var(--danger-hover);
-}
-
-.wp-list-table th.check-column,
-.wp-list-table td.check-column {
-  width: 2.4em;
-  text-align: center;
-  padding-left: 12px;
-}
-
-/* ── 表格导航（分页 + 筛选）─────────────────── */
-.tablenav {
-  margin: 16px 0;
-  color: var(--muted-foreground, #999);
-  font-size: 13px;
-  padding: 0;
-  min-height: 36px;
-}
-.tablenav-pages {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.tablenav-pages .displaying-num {
-  color: var(--muted-foreground, #999);
-  margin-right: 8px;
-}
-.tablenav-pages .pagination-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.tablenav-pages .pagination-links > span,
-.tablenav-pages .pagination-links > a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 6px;
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  background: var(--card, #ffffff);
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  transition: all var(--transition-fast, 0.15s ease);
-  text-decoration: none;
-}
-.tablenav-pages .pagination-links a:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
-}
-.tablenav-pages .pagination-links .current-page {
-  border-radius: var(--radius-medium);
-  border: 1px solid var(--border, #e2e2e2);
-  text-align: center;
-  width: 40px;
-  height: 30px;
-  padding: 0 4px;
-  font-size: 13px;
-  color: var(--foreground, #333);
-}
-.tablenav-pages .pagination-links .tablenav-pages-navspan {
-  color: var(--muted-foreground, #999);
-  border-color: var(--border, #e2e2e2);
-}
-.tablenav .actions {
-  overflow: visible;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.tablenav .bulkactions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.tablenav .alignleft.actions select {
-  min-width: 140px;
-}
-
-.wp-list-table .sorting-indicator {
-  color: var(--primary);
-  margin-left: 4px;
-}
-
-/* ── 快速编辑 ──────────────────────────────────── */
-#inline-edit-wrapper {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-  padding: 20px;
-}
-#inline-edit-wrapper fieldset {
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-#bulk-edit-wrapper {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  padding: 16px;
-}
-
-/* ── 评论表格 ──────────────────────────────────── */
-.activity-block {
-  border-bottom-color: var(--border, #e2e2e2);
-}
-.activity-block .subsubsub li {
-  color: var(--muted-foreground, #999);
-}
-#activity-widget #the-comment-list .comment-item {
-  background: var(--card, #ffffff);
-}
-#activity-widget #the-comment-list .unapproved,
-#the-comment-list .unapproved th,
-#the-comment-list .unapproved td {
-  background: var(--warning-bg, #fdf6ec);
-}
-#activity-widget #the-comment-list .unapproved::before,
-#the-comment-list .unapproved th.check-column {
-  background: var(--warning, #e6a23c);
-  border-left-color: var(--warning, #e6a23c);
-}
-#the-comment-list tr.undo,
-#the-comment-list div.undo {
-  background-color: var(--background, #f5f6f7);
-}
-.vim-current,
-.vim-current th,
-.vim-current td {
-  background-color: var(--accent, #f5f5f5) !important;
-}
-
-
-/* =================================================================
- *  9. 通知 & 警告
- * ================================================================= */
-
-.notice,
-.updated,
-.error {
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  border: 1px solid var(--border, #e2e2e2);
-  border-left: 4px solid var(--border, #e2e2e2);
-  margin: 20px 0;
-  padding: 14px 18px;
-  background: var(--card, #ffffff);
-  position: relative;
-}
-.notice p,
-.updated p,
-.error p {
-  margin: 4px 0;
-  color: var(--foreground, #333);
-  font-size: 13px;
-}
-.notice a,
-.updated a,
-.error a {
-  font-weight: 500;
-}
-.notice .notice-dismiss,
-.updated .notice-dismiss,
-.error .notice-dismiss {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
-.notice .notice-dismiss:hover,
-.updated .notice-dismiss:hover,
-.error .notice-dismiss:hover {
-  color: var(--primary);
-}
-
-.updated,
-.notice-success {
-  border-left-color: var(--success, #67c23a);
-  background: var(--success-bg, #f0f9eb);
-}
-
-.error,
-.notice-error {
-  border-left-color: var(--danger, #dd2424);
-  background: var(--danger-bg, #fef0f0);
-}
-
-.notice-warning {
-  border-left-color: var(--warning, #e6a23c);
-  background: var(--warning-bg, #fdf6ec);
-}
-
-.notice-info {
-  border-left-color: var(--primary, #333);
-  background: var(--card, #ffffff);
-}
-
-.update-nag {
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  background: var(--warning-bg, #fdf6ec);
-  border: 1px solid var(--warning);
-  border-left: 4px solid var(--warning);
-  color: var(--foreground, #333);
-  font-size: 13px;
-  padding: 12px 18px;
-  margin: 20px 0;
-  display: inline-block;
-}
-
-.notice.inline {
-  border-radius: var(--radius-medium);
-  box-shadow: none;
-  border: 1px solid var(--border, #e2e2e2);
-  background: var(--background, #f5f6f7);
-  padding: 10px 14px;
-  margin: 8px 0;
-}
-
-
-/* =================================================================
- *  10. 登录页面
- * ================================================================= */
-
-body.login {
-  background: var(--background, #f5f6f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 24px 16px;
-}
-body.login::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: var(--primary);
-  z-index: 1;
-}
-
-.login #login {
-  background: var(--card, #ffffff);
-  border-radius: 12px;
-  box-shadow: var(--shadow-elevated);
-  padding: 48px 44px 40px;
-  max-width: 400px;
-  width: 100%;
-  position: relative;
-  border: 1px solid var(--border, #e2e2e2);
-}
-.login #login h1 {
-  text-align: center;
-  margin-bottom: 28px;
-}
-.login #login h1 a {
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  width: auto;
-  height: 64px;
-  margin: 0 auto 8px;
-  display: block;
-}
-
-.login form {
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-}
-.login form label {
-  color: var(--foreground, #333);
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  display: block;
-}
-.login form .input,
-.login input[type="text"],
-.login input[type="password"],
-.login input[type="email"] {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  padding: 12px 16px;
-  font-size: 15px;
-  min-height: 48px;
-  width: 100%;
-  margin: 4px 0 16px;
-  box-sizing: border-box;
-  transition: border-color var(--transition-fast, 0.15s ease),
-              box-shadow var(--transition-fast, 0.15s ease);
-}
-.login form .input:hover,
-.login input[type="text"]:hover,
-.login input[type="password"]:hover,
-.login input[type="email"]:hover {
-  border-color: color-mix(in srgb, var(--border) 80%, var(--foreground));
-}
-.login form .input:focus,
-.login input[type="text"]:focus,
-.login input[type="password"]:focus,
-.login input[type="email"]:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-}
-
-.login .button-primary {
-  width: 100%;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-full);
+/* 表格工具栏 / 筛选 / 分页 */
+body.sta-theme-active .tablenav {
+  color: var(--secondary);
   height: auto;
-  margin-top: 4px;
-  transition: all var(--transition-fast, 0.15s ease);
-  background: var(--primary);
-  border: none;
-  color: var(--primary-foreground);
-  cursor: pointer;
-}
-.login .button-primary:hover {
-  background: color-mix(in srgb, var(--primary) 85%, #000);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
-}
-.login .button-primary:active {
-  transform: scale(0.98);
-  background: color-mix(in srgb, var(--primary) 70%, #000);
+  margin: 12px 0;
 }
 
-.login #backtoblog,
-.login #nav {
-  color: var(--muted-foreground, #999);
-  font-size: 13px;
-  padding: 0;
-  margin: 20px 0 0;
-  text-align: center;
-}
-.login #backtoblog a,
-.login #nav a {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
+body.sta-theme-active .tablenav .tablenav-pages a,
+body.sta-theme-active .tablenav-pages span.current {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  color: var(--foreground);
   text-decoration: none;
 }
-.login #backtoblog a:hover,
-.login #nav a:hover {
+
+body.sta-theme-active .tablenav .tablenav-pages a:hover {
+  border-color: var(--primary);
   color: var(--primary);
-  text-decoration: underline;
 }
 
-.login .message,
-.login .success {
-  border-radius: var(--radius-medium);
-  border-left: 4px solid var(--success);
-  background: var(--success-bg, #f0f9eb);
-  box-shadow: var(--shadow-small);
-  padding: 12px 16px;
-  margin: 0 0 16px;
-  font-size: 13px;
-}
-.login #login_error {
-  border-radius: var(--radius-medium);
-  border-left: 4px solid var(--danger);
-  background: var(--danger-bg, #fef0f0);
-  box-shadow: var(--shadow-small);
-  padding: 12px 16px;
-  margin: 0 0 16px;
-  font-size: 13px;
-}
-.login .forgetmenot {
-  margin: 0 0 16px;
-}
-.login .forgetmenot label {
-  font-weight: 400;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.login .forgetmenot input[type="checkbox"] {
-  margin: 0;
+body.sta-theme-active .tablenav-pages span.current {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
-
-/* =================================================================
- *  11. 经典编辑器
- * ================================================================= */
-
-#post-body-content {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  padding: 24px 28px;
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  margin-bottom: 20px;
-}
-#post-body-content textarea#content {
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-  min-height: 300px;
+body.sta-theme-active .subsubsub {
+  margin: 8px 0 4px;
 }
 
-#wp-content-editor-tools {
-  background: transparent;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  padding: 12px 0;
-  margin: 0 -24px 16px;
-  padding-left: 24px;
-  padding-right: 24px;
-}
-#wp-content-editor-container {
-  border: none;
-}
-#wp-content-editor-tools .wp-editor-tabs button {
-  border: 1px solid var(--border, #e2e2e2);
-  border-bottom: none;
-  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
-  background: var(--background, #f5f6f7);
-  color: var(--muted-foreground, #999);
-  padding: 8px 16px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all var(--transition-fast, 0.15s ease);
-}
-#wp-content-editor-tools .wp-editor-tabs button:hover {
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
-}
-#wp-content-editor-tools .wp-editor-tabs .active {
-  background: var(--card, #ffffff);
-  color: var(--foreground, #333);
-  border-bottom-color: var(--card, #ffffff);
-}
-
-.wp-media-buttons .button {
-  margin-bottom: 0;
-  border-radius: var(--radius-medium);
-}
-
-#submitdiv .inside {
-  padding: 16px 20px;
-}
-#submitdiv #major-publishing-actions {
-  background: transparent;
-  border-top: 1px solid var(--border, #e2e2e2);
-  padding: 12px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-#submitdiv #delete-action {
-  margin-right: auto;
-}
-#submitdiv #publishing-action {
-  display: flex;
-  gap: 8px;
-}
-
-#poststuff .postbox .inside {
-  margin: 0;
-  padding: 16px 20px;
-}
-#poststuff h2 {
-  color: var(--foreground, #333);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-#misc-publishing-actions .misc-pub-section {
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  padding: 6px 0;
-  border-top: 1px solid var(--border, #e2e2e2);
-}
-
-
-/* =================================================================
- *  12. 杂项组件
- * ================================================================= */
-
-/* ── 分类 / 标签面板 ────────────────────────────── */
-.categorydiv div.tabs-panel {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  background: var(--card, #ffffff);
-  padding: 8px;
-}
-.categorydiv ul.category-tabs {
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  margin: 0 0 12px;
-  padding: 0;
-}
-.categorydiv ul.category-tabs li {
-  margin: 0;
-}
-.categorydiv ul.category-tabs li a {
-  color: var(--muted-foreground, #999);
-  padding: 8px 16px;
-  display: block;
-  transition: all var(--transition-fast, 0.15s ease);
+body.sta-theme-active .subsubsub a {
+  color: var(--secondary);
   text-decoration: none;
 }
-.categorydiv ul.category-tabs li a:hover {
-  color: var(--primary);
-  background: var(--muted, #f5f5f5);
+
+body.sta-theme-active .subsubsub a:hover {
+  color: var(--foreground);
 }
-.categorydiv ul.category-tabs li.tabs a {
-  color: var(--primary);
+
+body.sta-theme-active .subsubsub a.current,
+body.sta-theme-active .subsubsub a .count {
+  color: var(--foreground);
   font-weight: 600;
-  border-bottom: 2px solid var(--primary);
 }
 
-/* ── 导航菜单编辑器 ──────────────────────────── */
-.menu-item-handle {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  background: var(--card, #ffffff);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  padding: 12px 16px;
-  transition: box-shadow var(--transition-fast, 0.15s ease),
-              border-color var(--transition-fast, 0.15s ease);
-}
-.menu-item-handle:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-  border-color: var(--primary);
-}
-.menu-item-handle .item-title {
-  font-weight: 600;
-  color: var(--foreground, #333);
-}
-.menu-item-handle .item-controls a {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.menu-item-handle .item-controls a:hover {
-  color: var(--primary);
+body.sta-theme-active .search-box input[type='search'] {
+  margin-right: 6px;
 }
 
-.accordion-section-content {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  padding: 16px;
-}
-
-/* ── 小工具 ────────────────────────────────────── */
-.widgets-holder-wrap {
-  border: 1px solid var(--border, #e2e2e2);
+/* 卡片（postbox / 欢迎面板 / 健康卡片） */
+body.sta-theme-active .postbox,
+body.sta-theme-active .welcome-panel,
+body.sta-theme-active .health-check-accordion,
+body.sta-theme-active .card {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  background: var(--card, #ffffff);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-.widget-title {
-  border-radius: 0;
-  border: none;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  background: var(--background, #f5f6f7);
-  color: var(--foreground, #333);
-  transition: background var(--transition-fast, 0.15s ease);
-}
-.widget-title:hover {
-  background: var(--muted, #f5f5f5);
-}
-.widget-title h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  margin: 0;
-}
-.widget-inside {
-  padding: 16px;
-  border: none;
-  background: var(--card, #ffffff);
-}
-.widget-control-actions {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border, #e2e2e2);
+  box-shadow: var(--shadow-small);
+  color: var(--foreground);
 }
 
-/* ── 颜色选择器 ──────────────────────────────── */
-.wp-picker-container .wp-color-result {
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border, #e2e2e2);
-  padding: 0 0 0 36px;
-  height: 36px;
-  line-height: 34px;
-  font-size: 13px;
-  transition: all var(--transition-fast, 0.15s ease);
+body.sta-theme-active .postbox .postbox-header {
+  border-bottom: 1px solid var(--border);
 }
-.wp-picker-container .wp-color-result:hover {
-  border-color: var(--primary);
+
+body.sta-theme-active .postbox .hndle,
+body.sta-theme-active .postbox-header h2,
+body.sta-theme-active .welcome-panel h2 {
+  color: var(--foreground);
 }
-.wp-picker-container .iris-picker {
-  border: 1px solid var(--border, #e2e2e2);
+
+body.sta-theme-active .postbox .inside {
+  color: var(--foreground);
+}
+
+body.sta-theme-active .welcome-panel {
+  border-color: var(--border);
+}
+
+body.sta-theme-active .welcome-panel .welcome-panel-close {
+  color: var(--secondary);
+}
+
+/* index.php 仪表盘小工具容器 */
+body.sta-theme-active #dashboard-widgets .postbox .inside {
+  border-radius: 0 0 var(--radius-large) var(--radius-large);
+}
+
+/* 通知 */
+body.sta-theme-active .notice,
+body.sta-theme-active div.updated,
+body.sta-theme-active div.error {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
   border-radius: var(--radius-medium);
   box-shadow: var(--shadow-small);
+  color: var(--foreground);
+  margin: 16px 32px 8px 32px;
 }
 
-/* ── 上传进度 ──────────────────────────────────── */
-.upload-progress .upload-progress-bar {
-  background: var(--muted, #f5f5f5);
-  border-radius: var(--radius-full);
-  height: 6px;
-  overflow: hidden;
-}
-.upload-progress .upload-progress-bar .progress {
-  background: var(--primary);
-  border-radius: var(--radius-full);
-  height: 100%;
-  transition: width var(--transition-fast, 0.15s ease);
+body.sta-theme-active .wrap .notice,
+body.sta-theme-active .wrap div.updated,
+body.sta-theme-active .wrap div.error {
+  margin-left: 0;
+  margin-right: 0;
 }
 
-/* ── 插件卡片 ──────────────────────────────────── */
-.plugin-card {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  background: var(--card, #ffffff);
-  transition: box-shadow var(--transition-normal, 0.2s ease),
-              transform var(--transition-normal, 0.2s ease),
-              border-color var(--transition-fast, 0.15s ease);
-}
-.plugin-card:hover {
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
-  transform: translateY(-2px);
-  border-color: var(--primary);
-}
-.plugin-card .plugin-card-top {
-  padding: 24px;
-}
-.plugin-card .name h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  margin: 0 0 8px;
-}
-.plugin-card .desc p {
-  color: var(--muted-foreground, #999);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.plugin-card .plugin-icon {
-  border-radius: var(--radius-large);
-}
-.plugin-card .column-rating .star-rating {
-  color: var(--warning);
+body.sta-theme-active .notice-success,
+body.sta-theme-active div.updated {
+  border-left-color: var(--success);
 }
 
-/* ── 主题浏览器 ────────────────────────────────── */
-.theme-browser .theme {
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small), var(--card-highlight);
-  overflow: hidden;
-  transition: box-shadow var(--transition-normal, 0.2s ease),
-              transform var(--transition-normal, 0.2s ease),
-              border-color var(--transition-fast, 0.15s ease);
-  background: var(--card, #ffffff);
-}
-.theme-browser .theme:hover {
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08), var(--card-highlight);
-  transform: translateY(-2px);
-  border-color: var(--primary);
-}
-.theme-browser .theme .theme-screenshot {
-  border-radius: var(--radius-large) var(--radius-large) 0 0;
-}
-.theme-browser .theme .theme-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-  margin: 0;
-  padding: 12px 16px;
-}
-.theme-browser .theme.active .theme-name {
-  color: var(--primary);
-  font-weight: 700;
-}
-.theme-browser .theme.active .theme-actions {
-  background: var(--muted, #f5f5f5);
-}
-.theme-browser .theme .theme-actions {
-  background: var(--background, #f5f6f7);
-  border-top: 1px solid var(--border, #e2e2e2);
-  padding: 8px 12px;
-}
-.theme-browser .theme .more-details {
-  background: rgba(0, 0, 0, 0.65);
-  border-radius: var(--radius-medium);
-  backdrop-filter: blur(4px);
+body.sta-theme-active .notice-error,
+body.sta-theme-active div.error {
+  border-left-color: var(--danger);
 }
 
-/* ── 媒体库 ────────────────────────────────────── */
-.attachments-browser .attachments {
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  padding: 8px;
-}
-.attachments-browser .media-toolbar {
-  background: var(--background, #f5f6f7);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  padding: 8px 12px;
-}
-.media-frame {
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-large);
-  overflow: hidden;
-  border: 1px solid var(--border, #e2e2e2);
-}
-.media-frame-title {
-  background: var(--card, #ffffff);
-  padding: 12px 16px;
-  font-size: 15px;
-  font-weight: 600;
-}
-.media-frame-title,
-.media-frame-router,
-.media-frame-content,
-.media-frame-toolbar {
-  border-color: var(--border, #e2e2e2);
-}
-.media-frame-router {
-  background: var(--background, #f5f6f7);
-}
-.media-router .media-menu-item {
-  color: var(--muted-foreground, #999);
-  transition: color var(--transition-fast, 0.15s ease);
-}
-.media-router .media-menu-item:hover,
-.media-router .media-menu-item.active {
-  color: var(--primary);
-}
-.media-frame-toolbar {
-  background: var(--card, #ffffff);
-  border-top: 1px solid var(--border, #e2e2e2);
-  padding: 12px 16px;
-}
-.media-frame-content {
-  background: var(--background, #f5f6f7);
-}
-.attachment {
-  border-radius: var(--radius-medium);
-  transition: border-color var(--transition-fast, 0.15s ease),
-              box-shadow var(--transition-fast, 0.15s ease);
-}
-.attachment:hover {
-  border-color: var(--primary);
-}
-.attachment.details {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+body.sta-theme-active .notice-warning {
+  border-left-color: var(--warning);
 }
 
-/* ── 管理指针 ──────────────────────────────────── */
-.wp-pointer .wp-pointer-content {
-  border: none;
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-medium);
-  padding: 0;
-  overflow: hidden;
-}
-.wp-pointer .wp-pointer-content h3 {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 14px 18px;
-  margin: 0;
-  border: none;
-}
-.wp-pointer .wp-pointer-content p {
-  padding: 14px 18px;
-  margin: 0;
-  color: var(--foreground, #333);
-  font-size: 13px;
-}
-.wp-pointer .wp-pointer-buttons {
-  padding: 10px 18px 14px;
-  border-top: 1px solid var(--border, #e2e2e2);
-  margin: 0;
+body.sta-theme-active .notice-info {
+  border-left-color: var(--secondary);
 }
 
-/* ── 导出 / 导入 ────────────────────────────── */
-.export-filters {
-  background: var(--background, #f5f6f7);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: var(--radius-medium);
-  padding: 16px;
-  margin: 8px 0;
+/* 屏幕选项 / 帮助抽屉 */
+body.sta-theme-active #screen-meta {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-large) var(--radius-large);
+  box-shadow: var(--shadow-small);
+  color: var(--foreground);
+  margin: 0 32px;
 }
 
-
-/* =================================================================
- *  13. 暗色模式
- *  已通过 [data-theme='dark'] 选择器处理（第 1 节）。
- *  无需额外样式。
- * ================================================================= */
-
-
-/* =================================================================
- *  14. 响应式
- * ================================================================= */
-
-@media (max-width: 960px) {
-  body.sta-theme-active {
-    padding-left: 68px;
-  }
-  #simple-theme-admin-sidebar {
-    width: 68px;
-  }
-  #simple-theme-admin-topbar {
-    left: 68px;
-  }
-  .wrap {
-    padding: 24px 20px 0;
-  }
+body.sta-theme-active #screen-meta-links .show-settings {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-small) var(--radius-small);
+  color: var(--secondary);
 }
 
+/* 表单表格（设置页等） */
+body.sta-theme-active .form-table th {
+  color: var(--foreground);
+}
+
+body.sta-theme-active .form-table td,
+body.sta-theme-active .form-table p.description {
+  color: var(--secondary);
+}
+
+/* 暗色下的杂项兜底 */
+[data-theme='dark'] body.sta-theme-active .wp-header-end + .notice,
+[data-theme='dark'] body.sta-theme-active .spinner {
+  filter: none;
+}
+
+/* ─────────────────────────────────────────────
+   5. 响应式
+   ───────────────────────────────────────────── */
 @media (max-width: 782px) {
   body.sta-theme-active {
-    padding: 48px 0 20px 0;
+    padding: var(--sta-topbar-height) 0 20px 0;
   }
-  #simple-theme-admin-sidebar {
-    display: none !important;
-  }
-  #simple-theme-admin-topbar {
-    left: 0;
-  }
-  #wpbody-content {
-    padding-bottom: 48px;
-  }
-  .wrap {
-    padding: 20px 16px 0;
-  }
-  .wrap > h1,
-  .wrap > h2 {
-    font-size: 20px;
-  }
-  .wp-list-table thead th {
-    padding: 10px 12px;
-    font-size: 10px;
-  }
-  .wp-list-table tbody td {
-    padding: 10px 12px;
-  }
-  .wp-list-table,
-  .widefat {
-    border-radius: var(--radius-large);
-  }
-  #dashboard-widgets .postbox,
-  .postbox {
-    border-radius: var(--radius-large);
-  }
-  .login #login {
-    padding: 32px 24px 28px;
-    border-radius: var(--radius-large);
-    margin: 0;
-    box-shadow: var(--shadow-medium);
-  }
-  .plugin-card .plugin-card-top {
-    padding: 16px;
-  }
-  .form-table th,
-  .form-table td {
-    display: block;
-    padding: 8px 0;
-    width: 100%;
-  }
-  .form-table th {
-    padding-top: 16px;
-  }
-  .tablenav {
-    min-height: 48px;
-  }
-  .notice,
-  .updated,
-  .error {
-    margin: 16px 0;
-    padding: 12px 14px;
-  }
-  .tablenav-pages .displaying-num {
+
+  body.sta-theme-active #simple-theme-admin-sidebar {
     display: none;
   }
-  .search-box {
-    width: 100%;
-    margin-bottom: 12px;
-  }
-}
 
-@media (max-width: 600px) {
-  body.sta-theme-active {
-    padding: 48px 0 0 0;
-  }
-  #simple-theme-admin-sidebar {
-    display: none !important;
-  }
-  #simple-theme-admin-topbar {
+  body.sta-theme-active #simple-theme-admin-topbar {
     left: 0;
   }
-  .wrap {
-    padding: 12px 12px 0;
+
+  body.sta-theme-active .wrap {
+    padding: 16px 16px 0;
   }
-  .wrap > h1,
-  .wrap > h2 {
-    font-size: 18px;
+
+  body.sta-theme-active .notice,
+  body.sta-theme-active div.updated,
+  body.sta-theme-active div.error {
+    margin: 12px 16px 8px;
   }
-  .login #login {
-    padding: 24px 16px 20px;
-    border-radius: var(--radius-medium);
-    box-shadow: var(--shadow-small);
-  }
-  .page-title-action {
-    display: inline-block;
-    margin: 8px 0 0;
-  }
-  .theme-browser .theme {
-    border-radius: var(--radius-large);
+
+  body.sta-theme-active #screen-meta {
+    margin: 0 16px;
   }
 }
 
-/* ── 减少动画（可访问性）─────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  html.wp-toolbar {
-    scroll-behavior: auto;
-  }
+/* ─────────────────────────────────────────────
+   6. 登录页（body.login 独立 scope，浅色）
+   ───────────────────────────────────────────── */
+body.login {
+  background: var(--background);
+  font-family:
+    'MiSans VF', 'OPPO Sans', 'SF Pro SC', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Segoe UI', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
 }
 
-
-/* =================================================================
- *  15. 打印
- * ================================================================= */
-
-@media print {
-  #adminmenuwrap,
-  #adminmenuback,
-  #adminmenu,
-  #wpadminbar,
-  .admin-sidebar,
-  .admin-topbar,
-  #simple-theme-admin-shell,
-  #wpfooter,
-  .notice,
-  .tablenav,
-  .search-box,
-  .subsubsub,
-  .row-actions {
-    display: none !important;
-  }
-  #wpcontent {
-    margin-left: 0 !important;
-    padding-top: 0 !important;
-  }
-  .wrap {
-    padding: 0 !important;
-  }
-  body {
-    background: #fff;
-    color: #000;
-    font-size: 12pt;
-  }
-  a {
-    color: #000 !important;
-    text-decoration: underline;
-  }
-  .wp-list-table,
-  .widefat {
-    box-shadow: none;
-    border: 1px solid #ddd;
-  }
+body.login #login {
+  padding-top: 8%;
 }
 
-
-/* =================================================================
- *  16. WP 核心工具样式
- *  提供 WordPress 在移除原生样式后仍然需要的基础 CSS 类。
- * ================================================================= */
-
-/* ── 输入尺寸类 ──────────────────────────────── */
-.regular-text {
-  width: 25em;
-}
-.small-text {
-  width: 50px;
-  padding: 4px 8px;
+body.login #login h1 a {
+  background: var(--primary);
+  border-radius: 16px;
+  color: var(--primary-foreground);
+  height: 64px;
+  width: 64px;
+  background-size: 40px;
 }
 
-/* ── 提交按钮区域 ────────────────────────────── */
-p.submit,
-.submit {
-  padding-bottom: 8px;
-}
-#submit {
-  min-width: 120px;
-}
-
-/* ── 旋转加载 ──────────────────────────────────── */
-.spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin: 4px 10px 0;
-  vertical-align: middle;
-  border: 2px solid var(--border, #e2e2e2);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: admin-spin 0.6s linear infinite;
-  visibility: hidden;
-}
-.spinner.is-active {
-  visibility: visible;
-}
-@keyframes admin-spin {
-  to { transform: rotate(360deg); }
+body.login #loginform {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-medium);
+  padding: 28px 24px;
 }
 
-/* ── 浮动工具 ────────────────────────────────── */
-.alignleft {
-  float: left;
-}
-.alignright {
-  float: right;
-}
-.aligncenter {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-.clear {
-  clear: both;
-}
-
-/* ── 独立描述文本 ────────────────────────────── */
-p.description,
-.description {
-  color: var(--muted-foreground, #999);
-  font-size: 12px;
-  margin: 4px 0 0;
-}
-
-/* ── 上下文帮助侧边栏 ──────────────────────── */
-.contextual-help-sidebar {
-  float: right;
-  width: 150px;
-  padding: 0 12px;
-  overflow: auto;
-}
-
-/* ── 站点图标预览 ────────────────────────────── */
-.site-icon-preview {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-.site-icon-preview .direction-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.site-icon-preview-browser {
-  border: 1px solid var(--border, #e2e2e2);
+body.login #loginform .input,
+body.login input[type='text'],
+body.login input[type='password'] {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-medium);
-  padding: 12px;
-  background: var(--card, #ffffff);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 200px;
-}
-.site-icon-preview-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted-foreground, #999);
-}
-.site-icon-action-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-.app-icon-preview {
-  width: 256px;
-  height: 256px;
-  object-fit: contain;
-  border-radius: var(--radius-small, 4px);
-  flex-shrink: 0;
-}
-.browser-icon-preview {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-/* ── 屏幕阅读器快捷键 ────────────────────────── */
-.screen-reader-shortcut {
-  position: absolute;
-  left: -1000em;
-}
-.screen-reader-shortcut:focus {
-  left: 6px;
-  top: -25px;
-  height: auto;
-  width: auto;
-  display: block;
+  color: var(--foreground);
+  box-shadow: none;
   font-size: 14px;
-  font-weight: 600;
-  padding: 15px 23px 14px;
-  background: var(--card, #ffffff);
-  color: var(--foreground, #333);
-  z-index: 100000;
-  line-height: normal;
-  text-decoration: none;
-  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
 }
 
-/* ── 等宽字体工具 ────────────────────────────── */
-.code {
-  font-family: var(--font-mono, Consolas, Monaco, monospace);
-}
-input.regular-text.code {
-  font-family: var(--font-mono, Consolas, Monaco, monospace);
+body.login #loginform .input:focus,
+body.login input[type='text']:focus,
+body.login input[type='password']:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  outline: none;
 }
 
-/* ── 文字对齐 ────────────────────────────────── */
-.text-left { text-align: left; }
-.text-center { text-align: center; }
-.text-right { text-align: right; }
+body.login .wp-core-ui .button-primary {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-medium);
+  color: var(--primary-foreground);
+  box-shadow: none;
+  text-shadow: none;
+  transition: opacity var(--transition-fast);
+}
 
+body.login .wp-core-ui .button-primary:hover {
+  opacity: 0.85;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+body.login .login .message,
+body.login .login .success,
+body.login .login #login_error {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-small);
+  color: var(--foreground);
+}
+
+body.login .login #login_error {
+  border-left-color: var(--danger);
+}
+
+body.login .login .message {
+  border-left-color: var(--success);
+}
+
+body.login #nav a,
+body.login #backtoblog a {
+  color: var(--secondary);
+}
+
+body.login #nav a:hover,
+body.login #backtoblog a:hover {
+  color: var(--foreground);
+}
+
+body.login .language-switcher select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+}

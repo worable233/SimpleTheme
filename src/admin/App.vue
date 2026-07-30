@@ -26,13 +26,13 @@ const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastVisible = ref(false)
 
 const tabs = [
-  { key: 'appearance', label: '外观样式' },
-  { key: 'home', label: '首页设置' },
-  { key: 'sidebar', label: '侧边栏' },
-  { key: 'admin_theme', label: '后台样式' },
-  { key: 'advanced', label: '高级' },
-  { key: 'smtp', label: 'SMTP' },
-  { key: 'email_template', label: '邮件模板' },
+  { key: 'appearance', label: '外观样式', sub: 'Appearance.' },
+  { key: 'home', label: '首页设置', sub: 'Home.' },
+  { key: 'sidebar', label: '侧边栏', sub: 'Sidebar.' },
+  { key: 'admin_theme', label: '后台样式', sub: 'Admin.' },
+  { key: 'advanced', label: '高级', sub: 'Advanced.' },
+  { key: 'smtp', label: 'SMTP', sub: 'Mail.' },
+  { key: 'email_template', label: '邮件模板', sub: 'Template.' },
 ]
 
 const currentSettings = ref<AdminSettings>({})
@@ -121,6 +121,10 @@ const activeComponent = computed(() => {
 const activeTabLabel = computed(() => {
   return tabs.find(t => t.key === activeTab.value)?.label || ''
 })
+
+const activeTabSub = computed(() => {
+  return tabs.find(t => t.key === activeTab.value)?.sub || ''
+})
 </script>
 
 <template>
@@ -173,7 +177,10 @@ const activeTabLabel = computed(() => {
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <h2 class="xh-topbar__title">{{ activeTabLabel }}</h2>
+          <h2 class="xh-topbar__title">
+            {{ activeTabLabel }}
+            <span v-if="activeTabSub" class="xh-topbar__sub">{{ activeTabSub }}</span>
+          </h2>
         </div>
         <div class="xh-topbar__actions">
           <span v-if="isDirty" class="xh-dirty-badge">未保存</span>

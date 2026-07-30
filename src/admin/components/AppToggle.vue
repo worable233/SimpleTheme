@@ -35,7 +35,7 @@ function toggle() {
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: #ddd;
+  background: var(--xh-border);
   transition: background 0.2s ease;
   flex-shrink: 0;
 }
@@ -49,8 +49,8 @@ function toggle() {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: var(--xh-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease;
 }
 .xh-toggle__track--on .xh-toggle__thumb {

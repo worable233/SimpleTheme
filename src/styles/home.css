@@ -210,8 +210,10 @@ body[data-theme='dark'] .post-card:hover {
   white-space: nowrap;
 }
 
-/* Container query: narrow card — keep meta floating on cover */
-@container (max-width: 528px) {
+/* Container query: narrow card — stack cover above body.
+   阈值取 440px：桌面三栏布局下中间栏卡片约 480-520px 仍保持横排（左文右图），
+   仅真正窄屏（手机 ~360px）才堆叠为上图下文 */
+@container (max-width: 440px) {
   .post-card__cover {
     position: revert;
     width: 100%;

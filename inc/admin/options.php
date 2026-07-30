@@ -29,7 +29,7 @@ function simple_theme_get_default_options() {
 		'accent_dark'              => '#2a2a2a',
 		'border_light'             => '#e2e2e2',
 		'border_dark'              => '#333333',
-		'container_max_width'      => 1400,
+		'container_max_width'      => 1500,
 		'article_max_width'        => 900,
 
 		// ---- Hero / Cover ----
@@ -110,6 +110,9 @@ function simple_theme_get_default_options() {
 
 			// ---- Admin Theme ----
 			'admin_theme_enabled'     => false,
+
+			// ---- Email Template ----
+			'email_template'          => 'simple',
 
 			// ---- Admin Bar ----
 			'hide_admin_bar'          => false,

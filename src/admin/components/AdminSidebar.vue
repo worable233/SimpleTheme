@@ -65,7 +65,7 @@ function onNavMouseOver(e: MouseEvent) {
   }
   const li = link.closest<HTMLElement>('.admin-sidebar__item')
   // Only show tooltip for items WITHOUT children
-  if (li?.classList.contains('admin-sidebar__item--has-sub')) {
+  if (li?.dataset.hasSub === 'true') {
     tooltip.visible = false
     return
   }
@@ -85,9 +85,7 @@ function onNavMouseOver(e: MouseEvent) {
   tooltip.visible = true
 }
 
-function onNavMouseOut(e: MouseEvent) {
-  const related = e.relatedTarget as HTMLElement | null
-  if (related?.closest('.admin-sidebar__tooltip-global')) return
+function onNavMouseOut() {
   tooltip.visible = false
 }
 
@@ -156,426 +154,117 @@ function handleSubClick(child: { title: string; url: string }) {
 </script>
 
 <template>
-  <aside class="admin-sidebar">
+  <aside class="admin-sidebar relative flex h-full w-full shrink-0 flex-col items-center bg-card">
     <!-- Logo -->
-    <div class="admin-sidebar__logo">
-      <a :href="'./'" class="admin-sidebar__logo-link" title="返回前台">
-        <abbr v-if="menuItems.length > 0">S</abbr>
-        <span v-else class="admin-sidebar__logo-loading"></span>
+    <div class="flex h-[72px] w-full shrink-0 items-center justify-center">
+      <a href="./" title="返回前台" class="block size-[50px]">
+        <abbr
+          v-if="menuItems.length > 0"
+          class="flex size-[50px] items-center justify-center rounded-full bg-muted text-xl font-bold text-foreground no-underline [text-decoration:none]"
+        >S</abbr>
+        <span v-else class="block size-[50px] animate-pulse rounded-full bg-muted"></span>
       </a>
     </div>
 
     <!-- Navigation -->
     <nav
-      class="admin-sidebar__nav"
+      class="flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto py-2 [scrollbar-width:thin]"
       @mouseover="onNavMouseOver"
       @mouseout="onNavMouseOut"
     >
-      <ul>
+      <ul class="my-auto flex flex-col items-center gap-2">
         <li
           v-for="item in menuItems"
           :key="item.id"
-          :class="{
-            'admin-sidebar__item': true,
-            'admin-sidebar__item--active': isCurrent(item),
-            'admin-sidebar__item--has-sub': item.children && item.children.length > 0,
-          }"
+          class="admin-sidebar__item relative list-none"
+          :data-has-sub="item.children && item.children.length > 0 ? 'true' : 'false'"
           @mouseenter="item.children?.length && openSubMenu(item.id, $event)"
           @mouseleave="item.children?.length && scheduleCloseSubMenu()"
         >
           <a
             :href="item.url"
             :title="item.title"
+            class="relative flex size-11 items-center justify-center rounded-(--radius-large) p-0 leading-none no-underline transition-colors duration-150"
+            :class="isCurrent(item)
+              ? 'bg-primary text-primary-foreground hover:bg-primary'
+              : 'text-foreground hover:bg-menu-hover'"
             @click.prevent="handleClick(item)"
-          ><span v-html="getIconHtml(item.icon)"></span></a>
+          >
+            <span class="sta-icon flex items-center justify-center leading-none" v-html="getIconHtml(item.icon)"></span>
+            <!-- Chevron for items with children -->
+            <span
+              v-if="item.children?.length"
+              class="absolute top-1/2 -right-3 size-2 -translate-y-1/2 rotate-45 border-t-[1.5px] border-r-[1.5px] border-current opacity-30"
+            ></span>
+          </a>
         </li>
       </ul>
     </nav>
 
-    <!-- Floating submenus (outside nav overflow) -->
-    <div class="admin-sidebar__floating-submenus">
-      <template v-for="item in menuItems" :key="'sub-' + item.id">
-        <ul
-          v-if="item.children?.length"
-          class="admin-sidebar__sub"
-          :class="{ 'admin-sidebar__sub--open': hoveredItemId === item.id }"
-          :style="{
-            left: (subMenuPositions[item.id]?.x ?? 0) + 'px',
-            top: (subMenuPositions[item.id]?.y ?? 0) + 'px',
-          }"
-          @mouseenter="keepSubMenuOpen"
-          @mouseleave="closeSubMenuNow"
+    <!-- Floating submenus (position:fixed escapes nav overflow) -->
+    <template v-for="item in menuItems" :key="'sub-' + item.id">
+      <ul
+        v-if="item.children?.length"
+        class="sta-shell-pop fixed z-[10000] flex min-w-[170px] -translate-y-1/2 flex-col gap-px rounded-(--radius-large) border border-border bg-card p-1.5 shadow-(--shadow-large) transition-[opacity,translate] duration-200"
+        :class="hoveredItemId === item.id
+          ? 'pointer-events-auto translate-x-0 opacity-100'
+          : 'pointer-events-none -translate-x-2 opacity-0'"
+        :style="{
+          left: (subMenuPositions[item.id]?.x ?? 0) + 'px',
+          top: (subMenuPositions[item.id]?.y ?? 0) + 'px',
+        }"
+        @mouseenter="keepSubMenuOpen"
+        @mouseleave="closeSubMenuNow"
+      >
+        <li
+          v-for="child in item.children"
+          :key="child.title + child.url"
+          class="flex list-none"
         >
-          <li
-            v-for="child in item.children"
-            :key="child.title + child.url"
-            :class="{ 'admin-sidebar__sub--current': currentUrl === child.url }"
-          >
-            <a
-              :href="child.url"
-              @click.prevent="handleSubClick(child)"
-            >{{ child.title }}</a>
-          </li>
-        </ul>
-      </template>
-    </div>
+          <a
+            :href="child.url"
+            class="sta-sub-link flex w-full items-center gap-2.5 rounded-[7px] px-3.5 py-[9px] text-[13px] whitespace-nowrap no-underline transition-colors duration-150"
+            :class="currentUrl === child.url
+              ? 'bg-primary text-primary-foreground hover:bg-primary'
+              : 'text-foreground hover:bg-menu-hover'"
+            @click.prevent="handleSubClick(child)"
+          >{{ child.title }}</a>
+        </li>
+      </ul>
+    </template>
 
     <!-- Bottom spacer -->
-    <div class="admin-sidebar__spacer"></div>
+    <div class="h-3 w-full"></div>
 
     <!-- Global tooltip (position:fixed escapes overflow clipping) -->
     <div
       v-if="tooltip.visible"
-      class="admin-sidebar__tooltip-global"
+      class="pointer-events-none fixed z-[9999] -translate-y-1/2 rounded-md bg-black/50 px-3 py-[5px] text-sm leading-normal whitespace-nowrap text-white backdrop-blur-[10px]"
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
     >{{ tooltip.text }}</div>
   </aside>
 </template>
 
 <style scoped>
-.admin-sidebar {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  background-color: var(--card);
-  z-index: auto;
-  padding-top: 0;
-}
-
-.admin-sidebar__logo {
-  width: 100%;
-  height: 72px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.admin-sidebar__logo-link {
-  display: block;
-  width: 50px;
-  height: 50px;
-}
-
-.admin-sidebar__logo-link abbr {
-  display: flex;
-  width: 50px;
-  height: 50px;
-  justify-content: center;
-  align-items: center;
-  background: var(--muted, #f5f5f5);
-  border-radius: 50%;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--foreground, #333);
-  text-decoration: none;
-}
-
-.admin-sidebar__logo-loading {
-  display: block;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: var(--muted, #f5f5f5);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.admin-sidebar__nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: clip;
-  width: 100%;
-  padding: 8px 0;
-  scrollbar-width: thin;
-}
-
-.admin-sidebar__nav::-webkit-scrollbar {
-  width: 4px;
-}
-
-.admin-sidebar__nav::-webkit-scrollbar-thumb {
-  background: var(--border, #e2e2e2);
-  border-radius: 2px;
-}
-
-.admin-sidebar__nav ul {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  margin-bottom: auto;
-}
-
-.admin-sidebar__item {
-  list-style: none;
-  position: relative;
-}
-
-.admin-sidebar__item a {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-large);
-  color: var(--foreground, #333);
-  position: relative;
-  transition: background-color var(--transition-fast, 0.15s ease);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-  box-sizing: border-box;
-  padding: 0;
-}
-
-.admin-sidebar__item a:hover {
-  background-color: var(--menu-hover, #f0f0f0);
-}
-
-/* Icon wrapper inside the link */
-.admin-sidebar__item a > span:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-}
-
-.admin-sidebar__item a > span:first-child i.bx {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 24px;
-  line-height: 1;
-  color: var(--foreground, #333);
-}
-
-.admin-sidebar__item a :deep(.dashicons) {
-  width: 22px;
-  height: 22px;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--foreground, #333);
-}
-
-.admin-sidebar__item a :deep(svg) {
+/* Injected icon markup (v-html) can't take utility classes — size it here. */
+.sta-icon :deep(svg) {
   width: 22px;
   height: 22px;
   display: block;
 }
 
-.admin-sidebar__item a :deep(img) {
+.sta-icon :deep(img) {
   width: 22px;
   height: 22px;
   border-radius: 4px;
   object-fit: contain;
 }
 
-/* Chevron for items with children */
-.admin-sidebar__item--has-sub a::after {
-  content: '';
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-right: 1.5px solid var(--foreground, #333);
-  border-top: 1.5px solid var(--foreground, #333);
-  transform: translateY(-50%) rotate(45deg);
-  opacity: 0.3;
-}
-
-.admin-sidebar__item--active a {
-  color: var(--primary-foreground, #fff);
-  background-color: var(--primary, #333);
-}
-
-.admin-sidebar__item--active a :deep(.dashicons) {
-  color: var(--primary-foreground, #fff);
-}
-
-.admin-sidebar__item--active a > span:first-child i.bx {
-  color: var(--primary-foreground, #fff);
-}
-
-/* === Global tooltip (position:fixed escapes overflow clipping) === */
-.admin-sidebar__tooltip-global {
-  position: fixed;
-  z-index: 9999;
-  transform: translateY(-50%) translateX(-4px);
-  opacity: 0;
-  pointer-events: none;
-  font-size: 14px;
-  line-height: 1.4;
-  color: #fff;
-  white-space: nowrap;
-  padding: 5px 12px;
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.admin-sidebar__tooltip-global[style*="left"] {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
-
-/* Floating submenu container */
-.admin-sidebar__floating-submenus {
-  position: static;
-}
-
-/* Floating submenu — positioned via JS style + position:fixed */
-.admin-sidebar__sub {
-  position: fixed !important;
-  z-index: 10000;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-large);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 6px;
-  margin: 0;
-  min-width: 170px;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  transform: translateY(-50%) translateX(-8px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.admin-sidebar__sub--open {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(-50%) translateX(0);
-}
-
-.admin-sidebar__sub li {
-  list-style: none;
-  display: flex;
-}
-
-.admin-sidebar__sub li a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 14px;
-  border-radius: 7px;
-  width: auto;
-  height: auto;
-  font-size: 13px;
-  font-weight: 450;
-  color: var(--foreground, #333);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  width: 100%;
-}
-
-.admin-sidebar__sub li a:hover {
-  background-color: var(--menu-hover, #f0f0f0);
-}
-
-.admin-sidebar__sub li a :deep(.dashicons) {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
+.sta-icon :deep(.dashicons) {
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
   line-height: 1;
-  flex-shrink: 0;
-  color: var(--secondary, #666);
-  transition: color 0.15s;
-}
-
-.admin-sidebar__sub li a :deep(svg) {
-  width: 16px;
-  height: 16px;
-  display: block;
-  flex-shrink: 0;
-  color: var(--secondary, #666);
-  transition: color 0.15s;
-}
-
-.admin-sidebar__sub li a:hover :deep(.dashicons) {
-  color: var(--foreground, #333);
-}
-
-.admin-sidebar__sub li a:hover :deep(svg) {
-  color: var(--foreground, #333);
-}
-
-.admin-sidebar__sub--current a {
-  background-color: var(--primary, #333) !important;
-  color: var(--primary-foreground, #fff) !important;
-}
-
-.admin-sidebar__sub--current a :deep(.dashicons) {
-  color: var(--primary-foreground, #fff) !important;
-}
-
-.admin-sidebar__sub--current a :deep(svg) {
-  color: var(--primary-foreground, #fff) !important;
-}
-
-.admin-sidebar__spacer {
-  width: 100%;
-  height: 12px;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-</style>
-
-<!--
-  Global CSS custom properties for the admin shell (light + dark themes).
-  These variables are consumed by AdminSidebar, AdminTopbar, and any
-  component inside the admin shell via var(--foreground) etc.
-
-  The theme is toggled by setting data-theme="dark" on <html>,
-  done in AdminTopbar.vue's applyTheme().
--->
-<style>
-:root,
-[data-theme="light"] {
-  --foreground: #1d1d1f;
-  --secondary: #86868b;
-  --background: #f5f5f7;
-  --card: #ffffff;
-  --border: rgba(0, 0, 0, 0.06);
-  --muted: #f5f5f5;
-  --menu-hover: rgba(0, 0, 0, 0.05);
-  --primary: #1d1d1f;
-  --primary-foreground: #ffffff;
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
-  --radius-full: 9999px;
-}
-
-[data-theme="dark"] {
-  --foreground: #f5f5f7;
-  --secondary: #98989d;
-  --background: #1c1c1e;
-  --card: #2c2c2e;
-  --border: rgba(255, 255, 255, 0.08);
-  --muted: #2c2c2e;
-  --menu-hover: rgba(255, 255, 255, 0.08);
-  --primary: #f5f5f7;
-  --primary-foreground: #1c1c1e;
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
-  --radius-full: 9999px;
+  color: currentColor;
 }
 </style>

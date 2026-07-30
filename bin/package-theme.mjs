@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Package Simple Theme as ZIP (cross-platform)
  * Usage: node bin/package-theme.mjs
@@ -44,39 +44,25 @@ if (existsSync(zipPath)) {
 // Files/directories to exclude (basename match)
 const excludedNames = new Set([
   'node_modules', 'src', '.git', '.gitattributes', '.gitignore', '.claude',
+  '.agents', '.codex', '.qoder', '.atomcode', '.DS_Store',
   '.env', '.env.docker', '.env.production',
   '.editorconfig', '.eslintcache', '.oxlintrc.json', '.prettierrc.json',
   'tsconfig.json', 'tsconfig.app.json', 'tsconfig.node.json',
   'vite.config.ts', 'eslint.config.ts', 'env.d.ts',
   'package.json', 'package-lock.json', 'composer.json', 'composer.lock',
-  '_build.bat', '_check.bat', '_run-dev.bat', '_pack.bat',
   'bin', 'public', 'skills',
   'docker-compose.yml', 'Dockerfile', '.dockerignore',
   'index.html',
-  'vite-server.log', 'dev-server.log', 'vite-srv.log',
-  'copy-svgs.ps1',
   'CLAUDE.md', 'AGENTS.md', 'README.md', 'LICENSE',
-  'UI-DESIGN-ANALYSIS.md', 'MATERIAL_DESIGN_GUIDE.md',
-  '参考主题', '参考iEmo', '参考Sakurairo', 'iEmo-master.zip',
-  '.vscode', '.idea', '.deepseek', '.learnings', '.atomcode', 'includes', '.atomcode.md',
-  '_check.php', '_fix_admin.py', '_fix_loggedin.py', '_count_large.py',
-  '_check-zip.mjs', '_check-zip-contents.ps1',
-  'bin/check-zip-contents.ps1',
-  'check_captcha.php', 'debug-lines.cjs', 'debug-resolve.php',
-  'dist.zip', 'original.css', 'response.txt',
-  'test_queue.cjs', 'test_queue_behavior.php',
-  'dist/emojis',  'original_LinksView.vue', 'original_prose.css',
-  'Simple-Theme-v1.0.0.zip', 'Simple-Theme-v2.0.0.zip',
-  'deploy-temp.zip',
-  'vendor', 'uixpress',
-  'build-errors.txt', 'errors.txt', 'tmp_homeview_diff.txt',
-  '_zipcheck',
+  '.vscode', '.idea',
+  'dist/emojis',
+  zipName,
+  'vendor',
 ]);
 
 const alwaysExcludeDirs = new Set([
-  'node_modules', '.git', '.claude', '.vscode', '.idea',
-  '.deepseek', '.learnings', '.atomcode', 'includes',
-  'vendor', 'uixpress',
+  'node_modules', '.git', '.claude', '.agents', '.codex', '.qoder', '.vscode', '.idea',
+  '.atomcode', 'vendor',
 ]);
 
 let fileCount = 0;

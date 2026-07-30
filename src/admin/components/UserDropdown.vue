@@ -17,6 +17,20 @@ const emit = defineEmits<{
 const dropdownEl = ref<HTMLElement | null>(null)
 const pos = ref({ top: '0px', right: '0px' })
 
+// Real URLs scraped from the hidden native admin bar (carry WP nonces).
+const profileUrl = ref('profile.php')
+const logoutUrl = ref('')
+
+function resolveNativeUrls() {
+  const profileLink = document.querySelector<HTMLAnchorElement>(
+    '#wp-admin-bar-edit-profile a, #wp-admin-bar-user-info a',
+  )
+  if (profileLink?.href) profileUrl.value = profileLink.href
+
+  const logoutLink = document.querySelector<HTMLAnchorElement>('#wp-admin-bar-logout a')
+  if (logoutLink?.href) logoutUrl.value = logoutLink.href
+}
+
 function updatePosition() {
   if (!props.anchorEl || !props.visible) return
   const rect = props.anchorEl.getBoundingClientRect()
@@ -48,6 +62,7 @@ function onScroll() {
 }
 
 onMounted(() => {
+  resolveNativeUrls()
   document.addEventListener('click', onClickOutside)
   window.addEventListener('scroll', onScroll, true)
   window.addEventListener('resize', updatePosition)
@@ -66,30 +81,34 @@ onBeforeUnmount(() => {
       <div
         v-if="visible"
         ref="dropdownEl"
-        class="admin-topbar__dropdown"
-        :style="{
-          position: 'fixed',
-          top: pos.top,
-          right: pos.right,
-          zIndex: 10001,
-        }"
+        class="sta-shell-pop fixed min-w-[200px] overflow-hidden rounded-lg border border-border bg-card shadow-(--shadow-large)"
+        :style="{ top: pos.top, right: pos.right, zIndex: 10001 }"
       >
-        <div class="admin-topbar__dropdown-header">
-          <img v-if="userAvatar" :src="userAvatar" alt="" class="admin-topbar__dropdown-avatar" />
+        <div class="flex items-center gap-3 border-b border-border px-4 py-3.5">
+          <img
+            v-if="userAvatar"
+            :src="userAvatar"
+            alt=""
+            class="size-10 shrink-0 rounded-full object-cover"
+          />
           <span
             v-else
-            class="admin-topbar__dropdown-avatar admin-topbar__dropdown-avatar--placeholder"
+            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground"
           >{{ userName ? userName.charAt(0).toUpperCase() : 'U' }}</span>
-          <div class="admin-topbar__dropdown-info">
-            <span class="admin-topbar__dropdown-name">{{ userName }}</span>
+          <div class="flex-1">
+            <span class="text-sm font-semibold text-foreground">{{ userName }}</span>
           </div>
         </div>
-        <div class="admin-topbar__dropdown-body">
-          <a :href="'profile.php'" class="admin-topbar__dropdown-item">个人资料</a>
-          <a :href="'profile.php'">编辑个人资料</a>
-        </div>
-        <div class="admin-topbar__dropdown-body">
-          <button class="admin-topbar__theme-btn" @click="emit('toggleTheme')">
+
+        <div class="border-b border-border py-2">
+          <a
+            :href="profileUrl"
+            class="block px-4 py-2 text-[13px] text-foreground no-underline transition-colors duration-150 hover:bg-menu-hover"
+          >个人资料</a>
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 border-0 bg-transparent px-4 py-2 text-left text-[13px] text-foreground transition-colors duration-150 hover:bg-menu-hover"
+            @click="emit('toggleTheme')"
+          >
             <svg
               v-if="currentTheme === 'dark'"
               viewBox="0 0 24 24"
@@ -111,8 +130,12 @@ onBeforeUnmount(() => {
             <span>{{ currentTheme === 'dark' ? '浅色模式' : '深色模式' }}</span>
           </button>
         </div>
-        <div class="admin-topbar__dropdown-footer">
-          <a :href="'logout'">退出登录</a>
+
+        <div class="py-2">
+          <a
+            :href="logoutUrl || 'wp-login.php?action=logout'"
+            class="block px-4 py-2 text-[13px] text-secondary no-underline transition-colors duration-150 hover:bg-menu-hover hover:text-danger"
+          >退出登录</a>
         </div>
       </div>
     </Transition>
@@ -120,102 +143,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.admin-topbar__dropdown {
-  min-width: 200px;
-  background: var(--card, #ffffff);
-  border: 1px solid var(--border, #e2e2e2);
-  border-radius: 8px;
-  box-shadow: var(--shadow-large, 0 6px 12px rgb(0 0 0 / 0.1));
-  overflow: hidden;
-}
-
-.admin-topbar__dropdown-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-}
-
-.admin-topbar__dropdown-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.admin-topbar__dropdown-avatar--placeholder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--primary, #FF2442);
-  color: var(--primary-foreground, #fff);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.admin-topbar__dropdown-info {
-  flex: 1;
-}
-
-.admin-topbar__dropdown-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground, #333);
-}
-
-.admin-topbar__dropdown-body {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border, #e2e2e2);
-}
-
-.admin-topbar__dropdown-body a,
-.admin-topbar__dropdown-footer a {
-  display: block;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: var(--foreground, #333);
-  text-decoration: none;
-  transition: background-color var(--transition-fast, 0.15s ease);
-}
-
-.admin-topbar__dropdown-body a:hover,
-.admin-topbar__dropdown-footer a:hover {
-  background-color: var(--muted, #f5f5f5);
-  color: var(--primary, #FF2442);
-}
-
-.admin-topbar__theme-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: var(--foreground, #333);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: left;
-  transition: background-color var(--transition-fast, 0.15s ease);
-}
-
-.admin-topbar__theme-btn:hover {
-  background-color: var(--muted, #f5f5f5);
-  color: var(--primary, #FF2442);
-}
-
-.admin-topbar__dropdown-footer {
-  padding: 8px 0;
-}
-
-.admin-topbar__dropdown-footer a {
-  color: var(--muted-foreground, #999);
-}
-
-/* Transition */
 .topbar-fade-enter-active,
 .topbar-fade-leave-active {
   transition: opacity 0.15s ease;

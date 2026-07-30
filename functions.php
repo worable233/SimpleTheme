@@ -1,6 +1,7 @@
 <?php
 /**
- * Simple Theme 的主题引导与 WordPress 集成�? *
+ * Simple Theme 的主题引导与 WordPress 集成。
+ *
  * @package SimpleTheme
  */
 
@@ -18,7 +19,7 @@ require_once __DIR__ . '/inc/core/setup.php';
 require_once __DIR__ . '/inc/core/helpers.php';
 require_once __DIR__ . '/inc/core/assets.php';
 
-// Global admin 小红书 theme (CSS @layer isolation)
+// Global admin theme — Vue shell + scoped CSS (no @layer; see inc/core/admin-theme.php)
 require_once __DIR__ . '/inc/core/admin-theme.php';
 
 // Enable WordPress Link Manager (disabled by default since WP 3.5)
@@ -56,24 +57,14 @@ require_once __DIR__ . '/inc/rest/register.php';
 require_once __DIR__ . '/inc/core/email-templates.php';
 
 // ============================================================
-// 2. Old comment-extras.php �?ONLY for external plugin/child-theme
-// ============================================================
-// All functions previously in includes/comment-extras.php have been
-// merged into inc/rest/comments.php. The old file is intentionally
-// NOT loaded here �?loading it alongside inc/rest/comments.php
-// causes fatal "cannot redeclare function" errors.
-// Plugins/child-themes that directly require this file can still do so:
-//   require_once get_theme_file_path( 'includes/comment-extras.php' );
-
-// ============================================================
-// 3. CORS �?early hook (before headers sent)
+// 2. CORS — early hook (before headers sent)
 // ============================================================
 // (handled in inc/core/setup.php via init hook)
 
 
 
 // ============================================================
-// 5. Service Worker - serve with root scope
+// 3. Service Worker - serve with root scope
 // ============================================================
 add_action( 'init', function () {
     $request_path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );

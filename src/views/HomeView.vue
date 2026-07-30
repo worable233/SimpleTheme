@@ -38,6 +38,21 @@ const skeletonStyle = computed(() =>
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
+/** 卡片是否有任何 meta 需要展示 — 全部关闭时不渲染胶囊（否则出现空白悬浮胶囊） */
+const hasCardMeta = (post: WordPressPost): boolean => {
+  const m = metaConfig.value
+  if (!m) return false
+  return !!(
+    (m.showCategory && post.categories?.[0]) ||
+    m.showPublishDate ||
+    (m.showModifiedDate && post.modified) ||
+    (m.showCommentCount && post.commentCount !== undefined) ||
+    (m.showViewCount && post.viewCount !== undefined) ||
+    (m.showReadingTime && post.readingTime) ||
+    (m.showWordCount && post.wordCount)
+  )
+}
+
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -316,7 +331,7 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
                 loading="lazy"
                 class="post-card__cover"
               />
-              <div class="post-card__meta">
+              <div v-if="hasCardMeta(post)" class="post-card__meta">
                 <span v-if="metaConfig?.showCategory && post.categories?.[0]" class="post-card__meta-item">{{ post.categories[0] }}</span>
                 <time v-if="metaConfig?.showPublishDate" :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>
                 <time v-if="metaConfig?.showModifiedDate && post.modified" :datetime="post.modified" class="post-card__meta-item">{{ formatModifiedDate(post.modified) }}</time>

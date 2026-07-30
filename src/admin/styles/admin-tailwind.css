@@ -2,47 +2,79 @@
  * Embedded inside wp-admin pages — deliberately NO preflight import,
  * so WordPress admin chrome outside our mount points stays untouched.
  * Utilities are class-based and safe to include globally.
+ *
+ * Single source of truth for admin-context design tokens.
+ * Light values are the defaults; dark values apply when the shell
+ * (AdminTopbar) sets data-theme="dark" on <html>.
+ * Values mirror the frontend palette (src/styles/variables.css).
  * ================================================================ */
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-/* Semantic tokens formerly provided by oat.min.css (:root, light-dark based).
- * Values preserved 1:1 so admin visuals stay identical after removing oat. */
+@custom-variant dark ([data-theme='dark'] &);
+
 :root {
-  color-scheme: light dark;
-  --background: light-dark(#fff, #09090b);
-  --foreground: light-dark(#09090b, #fafafa);
-  --card: light-dark(#fff, #18181b);
-  --card-foreground: light-dark(#09090b, #fafafa);
-  --primary: light-dark(#574747, #fafafa);
-  --primary-foreground: light-dark(#fafafa, #18181b);
-  --secondary: light-dark(#f4f4f5, #27272a);
-  --secondary-foreground: light-dark(#574747, #fafafa);
-  --muted: light-dark(#f4f4f5, #27272a);
-  --muted-foreground: light-dark(#71717a, #a1a1aa);
-  --faint: light-dark(#fafafa, #1e1e21);
-  --faint-foreground: light-dark(#a1a1aa, #71717a);
-  --accent: light-dark(#f4f4f5, #27272a);
-  --border: light-dark(#d4d4d8, #52525b);
-  --input: light-dark(#d4d4d8, #52525b);
-  --ring: light-dark(#574747, #d4d4d8);
-  --danger: light-dark(#d32f2f, #f4807b);
-  --success: light-dark(#008032, #6cc070);
-  --warning: light-dark(#a65b00, #f0a030);
-  --menu-hover: light-dark(#f5f5f5, #2a2a2a);
-  --radius-small: 0.125rem;
-  --radius-medium: 0.375rem;
-  --radius-large: 0.75rem;
+  color-scheme: light;
+  --background: #f5f6f7;
+  --foreground: #333;
+  --card: #ffffff;
+  --card-foreground: #333;
+  --primary: #333;
+  --primary-foreground: #fff;
+  --secondary: #999;
+  --secondary-foreground: #333;
+  --muted: #f5f5f5;
+  --muted-foreground: #999;
+  --faint: #fafafa;
+  --faint-foreground: #999;
+  --accent: #f5f5f5;
+  --border: #e2e2e2;
+  --input: #e2e2e2;
+  --ring: #333;
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+  --menu-hover: #f0f0f0;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
   --radius-full: 9999px;
-  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-medium: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-large: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --transition-fast: 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #1a1a1a;
+  --foreground: #e0e0e0;
+  --card: #222222;
+  --card-foreground: #e0e0e0;
+  --primary: #e0e0e0;
+  --primary-foreground: #1a1a1a;
+  --secondary: #999;
+  --secondary-foreground: #e0e0e0;
+  --muted: #2a2a2a;
+  --muted-foreground: #999;
+  --faint: #252525;
+  --faint-foreground: #999;
+  --accent: #2a2a2a;
+  --border: #333333;
+  --input: #333333;
+  --ring: #e0e0e0;
+  --danger: #f4807b;
+  --success: #6cc070;
+  --warning: #f0a030;
+  --menu-hover: #2a2a2a;
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.45);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
+}
+
 /* Map runtime tokens into Tailwind so utilities (bg-card, text-foreground …)
- * resolve the light-dark values above. */
+ * resolve the [data-theme] values above. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -63,4 +95,32 @@
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-menu-hover: var(--menu-hover);
+}
+
+/* Minimal reset for shell roots only (Preflight is intentionally absent
+ * in wp-admin, so normalize box model inside our own mount points). */
+#simple-theme-admin-sidebar,
+#simple-theme-admin-sidebar *,
+#simple-theme-admin-sidebar *::before,
+#simple-theme-admin-sidebar *::after,
+#simple-theme-admin-topbar,
+#simple-theme-admin-topbar *,
+#simple-theme-admin-topbar *::before,
+#simple-theme-admin-topbar *::after,
+#simple-theme-admin-shell,
+#simple-theme-admin-shell *,
+.sta-shell-pop,
+.sta-shell-pop *,
+.sta-shell-pop *::before,
+.sta-shell-pop *::after {
+  box-sizing: border-box;
+}
+
+#simple-theme-admin-sidebar ul,
+#simple-theme-admin-topbar ul,
+.sta-shell-pop ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
