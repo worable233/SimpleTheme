@@ -110,6 +110,7 @@ function simple_theme_get_site_info() {
 						'showReadingTime'   => (bool) ( $theme_options['article_meta_show_reading_time'] ?? true ),
 						'showWordCount'     => (bool) ( $theme_options['article_meta_show_word_count'] ?? false ),
 						'showAuthor'      => (bool) ( $theme_options['article_meta_show_author'] ?? true ),
+						'showEditLink'      => (bool) ( $theme_options['article_meta_show_edit_link'] ?? true ),
 					),
 			),
 			'comments'      => array(
@@ -135,6 +136,7 @@ function simple_theme_get_site_info() {
 			),
 			'stats'          => $stats,
 			'socialLinks'    => $social_links,
+			'sidebar'        => function_exists( 'simple_theme_get_sidebar_data' ) ? simple_theme_get_sidebar_data() : array(),
 			'loginUrl'       => wp_login_url(),
 			'icp'            => $icp_text,
 			'icpGov'         => $icp_gov_text,

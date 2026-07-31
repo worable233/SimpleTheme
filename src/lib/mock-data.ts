@@ -58,9 +58,9 @@ export const mockSiteInfo = {
     lastActivityDate: '2026-04-15T10:00:00',
   },
   socialLinks: [
-    { label: '哔哩哔哩', url: 'https://space.bilibili.com/', icon: 'bx bxl-bilibili' },
-    { label: 'GitHub', url: 'https://github.com/', icon: 'bx bxl-github' },
-    { label: 'Telegram', url: 'https://t.me/', icon: 'bx bxl-telegram' },
+    { label: '哔哩哔哩', url: 'https://space.bilibili.com/', icon: 'bilibili' },
+    { label: 'GitHub', url: 'https://github.com/', icon: 'github' },
+    { label: 'Telegram', url: 'https://t.me/', icon: 'telegram' },
   ],
   comments: {
     requireNameEmail: true,
@@ -77,6 +77,11 @@ export const mockSiteInfo = {
   },
   icp: '沪ICP备2024XXXXXX号',
   icpGov: '沪公网安备 310XXXXXXXXXX号',
+  sidebar: [
+    { type: 'profile' as const, settings: { showStats: true, showHeatmap: true, showSocial: true } },
+    { type: 'hitokoto' as const, settings: { api: 'https://v1.hitokoto.cn' } },
+    { type: 'techInfo' as const },
+  ],
 }
 
 export const mockMenuItems = [

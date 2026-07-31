@@ -31,6 +31,7 @@ const articleMetaFields = [
   { key: 'article_meta_show_reading_time', label: '阅读时间' },
   { key: 'article_meta_show_word_count', label: '字数' },
   { key: 'article_meta_show_author', label: '作者' },
+  { key: 'article_meta_show_edit_link', label: '编辑文章（仅作者可见）' },
 ]
 </script>
 

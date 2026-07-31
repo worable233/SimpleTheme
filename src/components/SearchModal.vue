@@ -4,6 +4,7 @@
  */
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import AppIcon from '@/components/AppIcon.vue'
 import { buildRestUrl, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
@@ -166,12 +167,24 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
+// 正文 core/search 区块提交 → 预填关键词并立即搜索（弹窗由 LeftSidebar 监听同一事件打开）
+function onOpenSearchEvent(e: Event) {
+  const query = (e as CustomEvent<string>).detail || ''
+  if (!query) return
+  searchQuery.value = query
+  nextTick(() => {
+    if (query.length >= 2) doSearch(query)
+  })
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('st:open-search', onOpenSearchEvent)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('st:open-search', onOpenSearchEvent)
   if (abortController) abortController.abort()
 })
 </script>
@@ -188,7 +201,7 @@ onUnmounted(() => {
         <div class="search-modal__panel">
           <!-- Search input -->
           <div class="search-modal__input">
-            <i class="bx bx-search search-modal__icon" style="font-size: 22px;"></i>
+            <AppIcon name="search" :size="22" class="search-modal__icon" />
             <input
               ref="searchInput"
               :value="searchQuery"
@@ -205,7 +218,7 @@ onUnmounted(() => {
               @click="searchQuery = ''; searchResults = []; hasSearched = false; errorMessage = ''; cancelSearch()"
               aria-label="清除搜索"
             >
-              <i class="bx bx-x" style="font-size: 18px;"></i>
+              <AppIcon name="x" :size="18" />
             </button>
             <ModalCloseButton class="search-modal__close" @click="closeSearch" />
           </div>

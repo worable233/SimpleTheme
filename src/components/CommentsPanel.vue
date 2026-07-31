@@ -166,10 +166,21 @@ async function loadComments(page = 1) {
         }
       } catch { /* ignore */ }
     } else {
-      // Merge new items, avoiding duplicates
-      const existingIds = new Set(comments.value.map((c) => c.id))
+      // Merge new items, avoiding duplicates; 孤儿页的回复尝试挂回已加载的父级
+      const existingIds = new Set<number>()
+      const collectIds = (list: WordPressComment[]) => {
+        for (const c of list) {
+          existingIds.add(c.id)
+          if (c.children.length) collectIds(c.children)
+        }
+      }
+      collectIds(comments.value)
       for (const item of result.items) {
-        if (!existingIds.has(item.id)) {
+        if (existingIds.has(item.id)) continue
+        const parent = item.parent > 0 ? findComment(comments.value, item.parent) : undefined
+        if (parent) {
+          parent.children.push(item)
+        } else {
           comments.value.push(item)
         }
       }
@@ -244,6 +255,8 @@ async function handleFormSubmit(payload: {
       isPrivate: payload.isPrivate,
       mailNotify: payload.mailNotify,
       useMarkdown: payload.useMarkdown,
+      // 未展示同意选项时默认同意，后端据此调 wp_set_comment_cookies
+      cookiesConsent: props.formSettings.showCookiesOptIn ? payload.cookies : true,
     })
 
     dismissToast(loadingToast)

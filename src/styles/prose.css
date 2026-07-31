@@ -275,6 +275,430 @@
   max-width: 100%;
 }
 
+/* ==================== 区块补齐（block-library 未加载，逐个适配） ==================== */
+
+/* Pullquote — 大字居中，上下分隔线，与普通引用区分 */
+.prose-content .wp-block-pullquote {
+  border-top: 3px solid var(--border);
+  border-bottom: 3px solid var(--border);
+  padding: 2em 1em;
+  margin: 2em 0;
+  text-align: center;
+}
+
+.prose-content .wp-block-pullquote blockquote {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-style: normal;
+}
+
+.prose-content .wp-block-pullquote p {
+  font-size: 1.35em;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0;
+}
+
+.prose-content .wp-block-pullquote cite {
+  display: block;
+  margin-top: 0.75em;
+  font-size: 0.875em;
+  font-style: normal;
+  color: var(--secondary);
+}
+
+/* Verse（诗句）— 覆盖 pre 的代码块观感：正常字体、无背景，保留换行 */
+.prose-content pre.wp-block-verse {
+  font-family: inherit;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--border);
+  border-radius: 0;
+  padding: 0.25em 0 0.25em 1.25em;
+  font-size: 1em;
+  font-style: italic;
+  white-space: pre-wrap;
+  color: var(--foreground);
+}
+
+/* Preformatted — 保留代码块底色但允许折行，防溢出 */
+.prose-content pre.wp-block-preformatted {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 通用按钮（file 下载按钮 / search 按钮等 wp-element-button） */
+.prose-content .wp-element-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.4rem;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-medium, 6px);
+  border: 1px solid transparent;
+  text-decoration: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.prose-content .wp-element-button:hover {
+  opacity: 0.85;
+}
+
+/* File 块 — 文件名 + 下载按钮成行排列 */
+.prose-content .wp-block-file {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium, 6px);
+  margin: 1.5em 0;
+}
+
+.prose-content .wp-block-file > a:first-child {
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Search 块（正文内，提交已被拦截到搜索弹窗） */
+.prose-content .wp-block-search__inside-wrapper {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.prose-content .wp-block-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium, 6px);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.9em;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.prose-content .wp-block-search__input:focus {
+  border-color: var(--primary);
+}
+
+.prose-content .wp-block-search__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* 空的社交图标列表不占位（空 ul 内含空白文本节点，:empty 不命中，用 :has 判断） */
+.prose-content .wp-block-social-links:not(:has(li)) {
+  display: none;
+  margin: 0;
+}
+
+/* 标签云（正文）— 与文章页标签同款风格；统一字号（!important 压过 WP 输出的
+   8pt~22pt 内联 font-size，大小不一观感杂乱） */
+.prose-content .wp-block-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.prose-content .wp-block-tag-cloud a {
+  font-size: 13px !important;
+  text-decoration: none;
+  color: var(--secondary);
+  background: var(--muted);
+  padding: 3px 10px;
+  border-radius: 4px;
+  line-height: 1.5;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.prose-content .wp-block-tag-cloud a:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  opacity: 1;
+}
+
+/* 日历 — caption/表头/导航 */
+.prose-content .wp-block-calendar table {
+  text-align: center;
+}
+
+.prose-content .wp-block-calendar caption {
+  font-weight: 600;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.prose-content .wp-block-calendar th,
+.prose-content .wp-block-calendar td {
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+}
+
+.prose-content .wp-block-calendar a {
+  font-weight: 600;
+}
+
+.prose-content .wp-calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.875em;
+}
+
+/* 动态列表类区块（最新文章/RSS/归档/分类/页面列表）— WP 核心默认无圆点 */
+.prose-content ul.wp-block-latest-posts,
+.prose-content ul.wp-block-rss,
+.prose-content ul.wp-block-archives-list,
+.prose-content ul.wp-block-categories-list,
+.prose-content ul.wp-block-page-list,
+.prose-content .wp-block-latest-comments {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose-content ul.wp-block-latest-posts li,
+.prose-content ul.wp-block-rss li,
+.prose-content ul.wp-block-archives-list li,
+.prose-content ul.wp-block-categories-list li,
+.prose-content ul.wp-block-page-list li {
+  list-style: none;
+}
+
+/* Accordion（core/accordion，交互由 useContentEnhancer 接管） */
+.prose-content .wp-block-accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium, 6px);
+  margin: 1.5em 0;
+  overflow: hidden;
+}
+
+.prose-content .wp-block-accordion-item + .wp-block-accordion-item {
+  border-top: 1px solid var(--border);
+}
+
+.prose-content .wp-block-accordion-heading {
+  margin: 0;
+  font-size: 1em;
+}
+
+.prose-content .wp-block-accordion-heading__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.prose-content .wp-block-accordion-heading__toggle:hover {
+  background: var(--muted);
+}
+
+.prose-content .wp-block-accordion-heading__toggle-icon {
+  flex-shrink: 0;
+  color: var(--secondary);
+  font-weight: 400;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.prose-content .wp-block-accordion-panel {
+  padding: 0 1rem 1rem;
+}
+
+/* inert = 收起（无 block-library CSS，自行控制显隐） */
+.prose-content .wp-block-accordion-panel[inert] {
+  display: none;
+}
+
+/* Details 块 — 与 accordion 观感统一 */
+.prose-content .wp-block-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium, 6px);
+  margin: 1.5em 0;
+  padding: 0;
+}
+
+.prose-content .wp-block-details summary {
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: var(--radius-medium, 6px);
+}
+
+.prose-content .wp-block-details[open] summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-medium, 6px) var(--radius-medium, 6px) 0 0;
+}
+
+.prose-content .wp-block-details summary:hover {
+  background: var(--muted);
+}
+
+.prose-content .wp-block-details > *:not(summary) {
+  padding: 0 1rem;
+}
+
+.prose-content .wp-block-details > *:last-child:not(summary) {
+  padding-bottom: 1rem;
+}
+
+/* 数学公式（MathML）— 防溢出 */
+.prose-content .wp-block-math {
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+/* Icon 块 — svg 尺寸保险（无 width 属性时默认 24px，避免 300x150 撞大） */
+.prose-content .wp-block-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+/* 视频 — 保留原生控件（全屏/画中画难以复刻），容器统一圆角黑底卡片风 */
+.prose-content video {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-large);
+  background: #000;
+  box-shadow: var(--shadow-small);
+}
+
+.prose-content .wp-block-video {
+  margin: 1.5em 0;
+}
+
+[data-theme='dark'] .prose-content video {
+  box-shadow: var(--shadow-small), var(--card-highlight);
+}
+
+/* ==================== 自定义音频播放器（替代原生 audio 控件） ==================== */
+.st-audio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 1.5em 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+}
+
+[data-theme='dark'] .st-audio {
+  box-shadow: var(--shadow-small), var(--card-highlight);
+}
+
+.st-audio__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.st-audio__btn:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.st-audio__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.st-audio__time {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--secondary);
+  min-width: 76px;
+  text-align: center;
+}
+
+.st-audio__track {
+  flex: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.st-audio__rail {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.st-audio__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.1s linear;
+}
+
+.st-audio__mute {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.st-audio__mute:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.st-audio__mute svg {
+  width: 17px;
+  height: 17px;
+}
+
 /* ==================== Heading anchors (Fumadocs-style) ==================== */
 /* .fh marks headings that have been enhanced by useContentEnhancer */
 .fh {
@@ -377,7 +801,8 @@
   margin-bottom: 0;
 }
 
-/* Table */
+/* Table — 覆盖 WP core 注入的 wp-block-table-inline-css（td/th 黑色 1px 实线、
+   thead 3px 实线），统一回主题的浅色分隔线风格 */
 .prose-content table {
   width: 100%;
   border-collapse: separate;
@@ -398,6 +823,25 @@
   font-weight: 600;
   border-bottom: 1px solid var(--border);
   border-left: 1px solid transparent;
+}
+
+/* 压过 .wp-block-table td/th { border:1px solid }（WP 核心内联样式，黑色粗框） */
+.prose-content .wp-block-table th,
+.prose-content .wp-block-table td {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose-content .wp-block-table thead {
+  border-bottom: 0;
+}
+
+.prose-content .wp-block-table tfoot {
+  border-top: 0;
+}
+
+.prose-content .wp-block-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .prose-content th:first-child {
@@ -426,8 +870,9 @@
   color: var(--foreground);
 }
 
-/* Link underline (Fumadocs-style) */
-.prose-content a:not([data-card]) {
+/* Link underline (Fumadocs-style) — 排除按钮类（wp-element-button）与标签云，
+   否则 (0,2,1) 特异性会覆盖它们的前景色，造成深底深字按钮不可见 */
+.prose-content a:not([data-card]):not(.wp-element-button):not(.tag-cloud-link) {
   color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: 3.5px;
@@ -437,7 +882,7 @@
   transition: opacity 0.2s;
 }
 
-.prose-content a:not([data-card]):hover {
+.prose-content a:not([data-card]):not(.wp-element-button):not(.tag-cloud-link):hover {
   opacity: 0.8;
 }
 
@@ -572,10 +1017,13 @@
     font-size: 1.1rem;
   }
   .prose-content table {
-    display: block;
+    max-width: 100%;
+  }
+  /* 注意：不要给 table 设 display:block —— 会让单元格收缩堆在左侧、
+     背景框却撑满全宽；横向滚动由 figure.wp-block-table / .wp-block-calendar 容器负责 */
+  .prose-content .wp-block-calendar {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    max-width: 100%;
   }
   .prose-content pre {
     max-width: 100%;

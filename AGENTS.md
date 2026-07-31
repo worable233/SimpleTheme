@@ -20,7 +20,7 @@ A WordPress Studio site (`worable`, at `~/Studio/worable`) symlinks this repo as
 ## Gotchas
 
 - Frontend routing: catch-all route → `ContentView` resolves the URL via theme REST API (`/wp-json/simple-theme/v1/`); special pages (`/shuoshuo`, `/about`, `/archives`, `/links`) fall back to built-in Vue views on API 404.
-- `inc/core/crawler-handler.php` serves full static HTML to search-engine bots instead of the SPA — keep SEO changes there, not in Vue.
+- Unified rendering: `index.php` embeds server-rendered semantic HTML (`templates/parts/static-content.php`, hidden `#st-static`, Vue mount discards it) so every visitor/bot gets the same HTML — no UA sniffing. SEO meta (description/OG/JSON-LD) lives in `inc/core/seo-handler.php`; keep SEO changes there, not in Vue.
 - `<altcha-*>` tags are native web components (configured in vite.config.ts) — do not treat them as Vue components.
 - PHP must stay compatible with PHP 7.3+ and WordPress 6.0+.
 - Prettier: no semicolons, single quotes, printWidth 100.

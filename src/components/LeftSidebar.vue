@@ -3,7 +3,8 @@ import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isExternalUrl } from '@/lib/theme-config'
-import { getItemIcon } from './sidebar/icon-map'
+import { resolveMenuIcon } from './sidebar/icon-map'
+import AppIcon from '@/components/AppIcon.vue'
 import SidebarProfile from './SidebarProfile.vue'
 import SidebarMobileHeader from './sidebar/SidebarMobileHeader.vue'
 import SidebarNav from './sidebar/SidebarNav.vue'
@@ -11,10 +12,23 @@ import SidebarActions from './sidebar/SidebarActions.vue'
 import SearchModal from './SearchModal.vue'
 import TechInfo from './sidebar/TechInfo.vue'
 import HitokotoCard from './sidebar/HitokotoCard.vue'
+import GenericWidget from './sidebar/GenericWidget.vue'
 import SiteFooter from './SiteFooter.vue'
-import type { MenuItem } from '@/types/wordpress'
+import type { MenuItem, SidebarWidget } from '@/types/wordpress'
 
 const { siteInfo, primaryMenu, footerMenu, shellLoading } = useSiteShell()
+
+// 与 App.vue 右侧栏一致：移动端抽屉也按「外观→小工具」配置渲染，未配置时回退默认三件套
+const DEFAULT_SIDEBAR: SidebarWidget[] = [
+  { type: 'profile', settings: { showStats: true, showHeatmap: true, showSocial: true } },
+  { type: 'hitokoto', settings: { api: '' } },
+  { type: 'techInfo' },
+]
+const sidebarWidgets = computed<SidebarWidget[]>(() =>
+  siteInfo.value.sidebar && siteInfo.value.sidebar.length > 0
+    ? siteInfo.value.sidebar
+    : DEFAULT_SIDEBAR,
+)
 const route = useRoute()
 const searchOpen = ref(false)
 const leftSidebarRef = ref<HTMLElement | null>(null)
@@ -115,6 +129,13 @@ function onDocumentClick(e: MouseEvent) {
 
 onMounted(() => document.addEventListener('click', onDocumentClick))
 onUnmounted(() => document.removeEventListener('click', onDocumentClick))
+
+// 正文 core/search 区块提交时由 useContentEnhancer 派发，打开搜索弹窗（关键词由 SearchModal 自行接收）
+function onOpenSearchEvent() {
+  searchOpen.value = true
+}
+onMounted(() => window.addEventListener('st:open-search', onOpenSearchEvent))
+onUnmounted(() => window.removeEventListener('st:open-search', onOpenSearchEvent))
 
 function onSidebarMouseLeave() {
   tooltip.visible = false
@@ -224,7 +245,7 @@ function onRootTooltipHover(e: MouseEvent) {
           @click="searchOpen = true"
           aria-label="搜索"
         >
-          <i class="bx bx-search" style="font-size: 20px;"></i>
+          <AppIcon name="search" :size="20" />
         </button>
       </div>
 
@@ -280,9 +301,22 @@ function onRootTooltipHover(e: MouseEvent) {
                 </div>
               </template>
               <template v-else>
-                <SidebarProfile @toggle-sub="showRightSubPage = !showRightSubPage" />
-                <HitokotoCard />
-                <TechInfo />
+                <template v-for="(widget, i) in sidebarWidgets" :key="i">
+                  <SidebarProfile
+                    v-if="widget.type === 'profile'"
+                    :settings="widget.settings"
+                    @toggle-sub="showRightSubPage = !showRightSubPage"
+                  />
+                  <HitokotoCard
+                    v-else-if="widget.type === 'hitokoto'"
+                    :settings="widget.settings"
+                  />
+                  <TechInfo v-else-if="widget.type === 'techInfo'" />
+                  <GenericWidget
+                    v-else-if="widget.type === 'html'"
+                    :html="widget.html"
+                  />
+                </template>
               </template>
             </div>
 
@@ -290,7 +324,7 @@ function onRootTooltipHover(e: MouseEvent) {
             <div class="sub-page flex w-1/2 shrink-0 flex-col">
               <div class="sub-page__header">
                 <div class="aside-btn-close" @click="showRightSubPage = false">
-                  <i class="bx bx-chevron-left" style="font-size: 14px;"></i>
+                  <AppIcon name="chevron-left" :size="14" />
                   返回
                 </div>
               </div>
@@ -342,7 +376,7 @@ function onRootTooltipHover(e: MouseEvent) {
               :to="child.path || child.url"
               :aria-current="isCurrent(child.path) ? 'page' : undefined"
             >
-              <span v-html="getItemIcon(child, isCurrent(child.path))"></span>
+              <AppIcon v-bind="resolveMenuIcon(child, isCurrent(child.path))" class="menu-icon" />
               <span class="menu-item-title">{{ child.title }}</span>
             </RouterLink>
             <RouterLink
@@ -350,7 +384,7 @@ function onRootTooltipHover(e: MouseEvent) {
               to="/"
               :aria-current="isCurrent('/') ? 'page' : undefined"
             >
-              <span v-html="getItemIcon(child, isCurrent('/'))"></span>
+              <AppIcon v-bind="resolveMenuIcon(child, isCurrent('/'))" class="menu-icon" />
               <span class="menu-item-title">{{ child.title }}</span>
             </RouterLink>
             <a
@@ -359,7 +393,7 @@ function onRootTooltipHover(e: MouseEvent) {
               :target="child.target || '_blank'"
               rel="noreferrer noopener"
             >
-              <span v-html="getItemIcon(child)"></span>
+              <AppIcon v-bind="resolveMenuIcon(child)" class="menu-icon" />
               <span class="menu-item-title">{{ child.title }}</span>
             </a>
           </li>

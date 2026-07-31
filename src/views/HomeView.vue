@@ -11,6 +11,7 @@ import { showError } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
 const route = useRoute()
@@ -342,6 +343,9 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
               </div>
               <div class="post-card__body">
                 <h2 class="post-card__title">
+                  <span v-if="post.isSticky" class="post-card__sticky">
+                    <AppIcon name="pin" filled :size="13" />置顶
+                  </span>
                   <router-link :to="toInternalPath(post.link)">
                     <span v-html="post.title.rendered"></span>
                   </router-link>

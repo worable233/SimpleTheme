@@ -47,6 +47,8 @@ export interface ArticleMeta {
   showReadingTime: boolean
   showWordCount: boolean
   showAuthor: boolean
+  /** 编辑文章入口（仅对有编辑权限的用户显示） */
+  showEditLink?: boolean
 }
 
 export interface AboutTimelineEntry {
@@ -249,7 +251,16 @@ export interface SiteInfo {
   collections?: CollectionsSettings
   announcement?: AnnouncementSettings
   cookieConsent?: CookieConsentSettings
+  /** 右侧栏小工具序列（外观→小工具 配置，按顺序渲染） */
+  sidebar?: SidebarWidget[]
 }
+
+/** 右侧栏小工具项：主题结构化卡片，或核心/区块小工具的 HTML */
+export type SidebarWidget =
+  | { type: 'profile'; settings: { showStats: boolean; showHeatmap: boolean; showSocial: boolean } }
+  | { type: 'hitokoto'; settings: { api: string } }
+  | { type: 'techInfo'; settings?: Record<string, never> }
+  | { type: 'html'; idBase: string; html: string }
 
 export interface RenderedText {
   rendered: string
@@ -266,6 +277,8 @@ export interface WordPressPost {
   type?: string
   comment_status?: 'open' | 'closed'
   /* Theme-provided fields */
+  /** wp-admin 编辑链接（后端仅对可编辑该文章的用户返回） */
+  editUrl?: string
   categories?: string[]
   tags?: string[]
   featuredImage?: string
@@ -273,6 +286,8 @@ export interface WordPressPost {
   viewCount?: number
   readingTime?: number
   wordCount?: number
+  /** WordPress 原生置顶文章 */
+  isSticky?: boolean
   title: RenderedText
   excerpt?: RenderedText
   content?: RenderedText
@@ -315,8 +330,13 @@ export interface CommentsResponse {
   totalPages: number
 }
 
+/** 官方 ALTCHA challenge JSON（直接传给 altcha-widget 的 challengejson 属性） */
 export interface CaptchaData {
+  algorithm: string
   challenge: string
+  maxnumber: number
+  salt: string
+  signature: string
 }
 
 export interface MenuItem {
@@ -344,10 +364,13 @@ export interface PagedPostCollection {
 }
 
 export interface ResolveResponse {
-  type: 'home' | 'post' | 'page' | 'term' | '404' | 'error' | 'shuoshuo'
+  type: 'home' | 'post' | 'page' | 'term' | 'date' | '404' | 'error' | 'shuoshuo'
   id?: number
   name?: string
   taxonomy?: string
+  /** 日期归档（type='date'） */
+  year?: number
+  month?: number
   permalink?: string
   restUrl?: string
   message?: string

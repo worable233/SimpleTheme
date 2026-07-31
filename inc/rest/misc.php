@@ -122,6 +122,38 @@ function simple_theme_avatar_proxy( WP_REST_Request $request ) {
 	exit;
 }
 
+// ========== Route core Gravatar URLs through the configurable mirror ==========
+//
+// WordPress core (admin bar, get_avatar()/get_avatar_url() for registered
+// commenters, etc.) emits https://secure.gravatar.com/avatar/… URLs. On
+// networks where gravatar.com is unreachable, the browser hangs on each of
+// these image requests until its TCP timeout (~1 min), which is exactly the
+// slow/failed avatar requests seen in the network panel. Rewrite the host of
+// any gravatar.com avatar URL to the configurable mirror (default
+// weavatar.com, same as the avatar proxy) so every avatar resolves quickly.
+// Runs on the final get_avatar_data so local/QQ/upload URLs (which never point
+// at gravatar.com) are left untouched.
+add_filter( 'get_avatar_data', 'simple_theme_mirror_gravatar_host', 20 );
+function simple_theme_mirror_gravatar_host( $args ) {
+	if ( empty( $args['url'] ) ) {
+		return $args;
+	}
+	$options = get_option( 'simple_theme_options', array() );
+	$base    = ( is_array( $options ) && ! empty( $options['gravatar_base_url'] ) )
+		? $options['gravatar_base_url']
+		: 'https://weavatar.com/avatar/';
+	$base = rtrim( $base, '/' );
+	if ( '' === $base ) {
+		return $args;
+	}
+	$args['url'] = preg_replace(
+		'#^https?://(?:[a-z0-9-]+\.)*gravatar\.com/avatar#i',
+		$base,
+		$args['url']
+	);
+	return $args;
+}
+
 // ========== Illustration ==========
 
 function simple_theme_serve_illustration( WP_REST_Request $request ) {
@@ -187,120 +219,63 @@ function simple_theme_get_internal_path( $url ) {
 }
 
 /**
- * Find a post by path, with direct DB fallback for Chinese/URL-encoded slugs
- * that get_page_by_path() cannot handle (sanitize_title_for_query strips non-ASCII).
+ * Find a post by path.
+ *
+ * 优先走 WordPress 原生解析：
+ *   ① url_to_postid() — 基于 rewrite 规则，正确处理日期型固定链接、子目录站点、CPT
+ *   ② get_page_by_path() — 层级页面路径
+ *   ③ WP_Query post_name__in — 中文/URL 编码 slug 兑底
+ *      （get_page_by_path 的 sanitize 会丢弃非 ASCII，数据库存的是编码后的 post_name）
  *
  * @param string $path       Request URI path.
  * @param array  $post_types Post types to search.
  * @return WP_Post|null
  */
 function simple_theme_find_post_by_path( $path, $post_types ) {
-	global $wpdb;
-
-	// Normalize: remove trailing slash so get_page_by_path and slug matching work consistently
+	// Normalize: remove trailing slash so path matching works consistently
 	$path = '/' . trim( $path, '/' );
 
-	// Try get_page_by_path first (works for ASCII slugs)
+	// ① WordPress 原生 rewrite 解析
+	$post_id = url_to_postid( home_url( $path ) );
+	if ( $post_id ) {
+		$post = get_post( $post_id );
+		if ( $post && 'publish' === $post->post_status && in_array( $post->post_type, $post_types, true ) ) {
+			return $post;
+		}
+	}
+
+	// ② 层级路径（ASCII slug 页面/文章）
 	$post = get_page_by_path( $path, OBJECT, $post_types );
-	if ( $post ) {
+	if ( $post && 'publish' === $post->post_status ) {
 		return $post;
 	}
 
-	// Extract last segment as slug candidate
-	$trimmed   = trim( $path, '/' );
-	$parts     = explode( '/', $trimmed );
+	// ③ 末段 slug 兑底：一次 WP_Query 同时尝试解码/小写编码/大写编码/原样四种候选
+	$parts     = explode( '/', trim( $path, '/' ) );
 	$last_slug = end( $parts );
 	if ( ! $last_slug ) {
 		return null;
 	}
-
-	// Also try the last segment alone via get_page_by_path
-	$post = get_page_by_path( $last_slug, OBJECT, $post_types );
-	if ( $post ) {
-		return $post;
-	}
-
-	// Build IN clause for post types (safe: array_map with static values)
-	$in_types = "'" . implode( "','", array_map( 'esc_sql', $post_types ) ) . "'";
-
-	// Helper: escape % for $wpdb->prepare (sprintf interprets %e8 etc. as format specifiers)
-	$escape_pct = function ( $s ) { return str_replace( '%', '%%', $s ); };
-
-	// Strategy 1: URL-decoded slug (e.g. "test-说说")
-	// This is what gets passed by default (PHP POST/GET automatically URL-decodes)
-	$decoded = urldecode( $last_slug ); // safe: idempotent if already decoded
-	$row = $wpdb->get_row( $wpdb->prepare(
-		"SELECT ID FROM {$wpdb->posts}
-		WHERE post_name = %s
-		AND post_type IN ({$in_types})
-		AND post_status = 'publish'
-		LIMIT 1",
-		$escape_pct( $decoded )
+	$decoded    = urldecode( $last_slug ); // safe: idempotent if already decoded
+	$candidates = array_unique( array(
+		$decoded,
+		strtolower( urlencode( $decoded ) ), // WordPress 存储中文 slug 的常规形式
+		urlencode( $decoded ),
+		$last_slug,
 	) );
-	if ( $row ) {
-		return get_post( $row->ID );
-	}
 
-	// Strategy 2: URL-encoded slug (lowercase, as stored by WordPress)
-	// e.g. "test-说说" → urlencode → "test-%E8%AF%B4%E8%AF%B4" → strtolower → "test-%e8%af%b4%e8%af%b4"
-	$re_encoded = strtolower( urlencode( $decoded ) );
-	$row = $wpdb->get_row( $wpdb->prepare(
-		"SELECT ID FROM {$wpdb->posts}
-		WHERE post_name = %s
-		AND post_type IN ({$in_types})
-		AND post_status = 'publish'
-		LIMIT 1",
-		$escape_pct( $re_encoded )
+	$query = new WP_Query( array(
+		'post_type'      => $post_types,
+		'post_status'    => 'publish',
+		'post_name__in'  => $candidates,
+		'posts_per_page' => 1,
+		'no_found_rows'  => true,
+		// 必须忽略置顶：否则 WP_Query 会把置顶文章强制前置到任意查询结果，
+		// 导致不存在的 slug（如 /tag/xxx/）被误解析成置顶文章
+		'ignore_sticky_posts' => true,
 	) );
-	if ( $row ) {
-		return get_post( $row->ID );
-	}
 
-	// Strategy 3: URL-encoded slug (uppercase hex)
-	// Fallback for sites that might store uppercase
-	$re_encoded_upper = urlencode( $decoded );
-	if ( $re_encoded_upper !== $re_encoded ) {
-		$row = $wpdb->get_row( $wpdb->prepare(
-			"SELECT ID FROM {$wpdb->posts}
-			WHERE post_name = %s
-			AND post_type IN ({$in_types})
-			AND post_status = 'publish'
-			LIMIT 1",
-			$escape_pct( $re_encoded_upper )
-		) );
-		if ( $row ) {
-			return get_post( $row->ID );
-		}
-	}
-
-	// Strategy 4: LIKE fallback for truncated/partial slugs
-	$row = $wpdb->get_row( $wpdb->prepare(
-		"SELECT ID FROM {$wpdb->posts}
-		WHERE post_name LIKE %s
-		AND post_type IN ({$in_types})
-		AND post_status = 'publish'
-		LIMIT 1",
-		$escape_pct( $wpdb->esc_like( $re_encoded ) . '%' )
-	) );
-	if ( $row ) {
-		return get_post( $row->ID );
-	}
-
-	// Strategy 5: remove known CPT prefix and try again
-	// e.g. /shuoshuo/test-说说 → try "test-说说" only
-	$stripped = ltrim( $path, '/' );
-	$cpt_slugs = array( 'shuoshuo' );
-	foreach ( $cpt_slugs as $cpt_slug ) {
-		if ( 0 === strpos( $stripped, $cpt_slug . '/' ) ) {
-			$inner_path = '/' . substr( $stripped, strlen( $cpt_slug ) + 1 );
-			$post = get_page_by_path( $inner_path, OBJECT, $post_types );
-			if ( $post ) {
-				return $post;
-			}
-		}
-	}
-
-	return null;
+	return $query->posts ? $query->posts[0] : null;
 }
 
 function simple_theme_resolve_path( WP_REST_Request $request ) {
@@ -309,7 +284,18 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'message' => 'Path required' ), 400 );
 	}
 
-	error_log( '[simple-theme] simple_theme_resolve_path called: path=' . $path );
+	// 先剥离 query string（如 /?s=test）：查询参数不参与路径解析，
+	// 否则 "/?s=xxx" 会被后续兼容逻辑误判为分类/文章
+	$path = preg_replace( '/[?#].*$/', '', $path );
+	if ( '' === $path || '/' === $path ) {
+		return new WP_REST_Response( array(
+			'type' => 'home',
+			'id'   => 0,
+			'name' => '',
+			'permalink' => home_url( '/' ),
+			'path' => '/',
+		), 200 );
+	}
 
 	// Try to match WordPress native routes
 	$home_url  = home_url( '/' );
@@ -362,6 +348,23 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		), 200 );
 	}
 
+	// Check if it's a date archive (/YYYY/ or /YYYY/MM/) — archives 块/日历链接
+	if ( preg_match( '#^/(\d{4})(?:/(\d{1,2}))?/?$#', $internal_path, $m ) ) {
+		$year  = (int) $m[1];
+		$month = isset( $m[2] ) ? (int) $m[2] : 0;
+		if ( $year >= 1970 && $year <= 2200 && $month <= 12 ) {
+			return new WP_REST_Response( array(
+				'type'  => 'date',
+				'id'    => 0,
+				'name'  => $month ? sprintf( '%d 年 %d 月', $year, $month ) : sprintf( '%d 年', $year ),
+				'year'  => $year,
+				'month' => $month,
+				'permalink' => $month ? get_month_link( $year, $month ) : get_year_link( $year ),
+				'path'  => $internal_path,
+			), 200 );
+		}
+	}
+
 	// Check if it's the home page
 	if ( '/' === $internal_path || '' === $internal_path ) {
 		return new WP_REST_Response( array(
@@ -396,29 +399,27 @@ function simple_theme_normalize_requested_path( $path ) {
 function simple_theme_path_to_term( $path ) {
 	$normalized = simple_theme_normalize_requested_path( $path );
 
-	$taxonomies = array( 'category', 'post_tag' );
-	$home_path  = trim( parse_url( home_url( '/' ), PHP_URL_PATH ) ?? '', '/' );
-
+	$home_path = trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
 	$slug = ltrim( $normalized, '/' );
 	if ( $home_path ) {
 		$slug = preg_replace( '#^' . preg_quote( $home_path, '#' ) . '/?#', '', $slug );
 	}
 
-	// Remove category base if present
-	$category_base = get_option( 'category_base' ) ?: 'category';
-	$slug = preg_replace( '#^' . preg_quote( $category_base, '#' ) . '/#', '', $slug );
+	// ① WordPress 原生分类路径解析（自动处理 category_base 与层级）
+	$category = get_category_by_path( $slug, false );
+	if ( $category instanceof WP_Term ) {
+		return $category;
+	}
 
-	foreach ( $taxonomies as $taxonomy ) {
-		$term = get_term_by( 'slug', $slug, $taxonomy );
-		if ( $term ) {
-			return $term;
-		}
+	// ② 末段 slug 兑底（含中文 slug 的解码/编码候选），覆盖标签与非常规分类路径
+	$parts = explode( '/', $slug );
+	$last  = end( $parts ) ?: $slug;
+	$decoded    = urldecode( $last );
+	$candidates = array_unique( array( $last, $decoded, strtolower( urlencode( $decoded ) ) ) );
 
-		// Try with full path as slug
-		$parts = explode( '/', $slug );
-		$last_slug = end( $parts );
-		if ( $last_slug && $last_slug !== $slug ) {
-			$term = get_term_by( 'slug', $last_slug, $taxonomy );
+	foreach ( array( 'category', 'post_tag' ) as $taxonomy ) {
+		foreach ( $candidates as $candidate ) {
+			$term = get_term_by( 'slug', $candidate, $taxonomy );
 			if ( $term ) {
 				return $term;
 			}

@@ -50,50 +50,15 @@ const emit = defineEmits<{
     </div>
   </AppCard>
 
-  <!-- Sidebar Toggles -->
-  <AppCard title="侧边栏卡片" description="控制右侧面板显示哪些卡片区域。">
-    <div class="xh-grid">
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="settings.sidebar_show_stats !== false"
-          label="显示站点统计"
-          @update:modelValue="emit('update', 'sidebar_show_stats', $event)"
-        />
-      </div>
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="settings.sidebar_show_heatmap !== false"
-          label="显示贡献热力图"
-          @update:modelValue="emit('update', 'sidebar_show_heatmap', $event)"
-        />
-      </div>
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="settings.sidebar_show_social !== false"
-          label="显示社交链接"
-          @update:modelValue="emit('update', 'sidebar_show_social', $event)"
-        />
-      </div>
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="settings.sidebar_show_hitokoto !== false"
-          label="显示一言"
-          @update:modelValue="emit('update', 'sidebar_show_hitokoto', $event)"
-        />
-      </div>
+  <!-- Sidebar Widgets (now managed via 外观 → 小工具) -->
+  <AppCard title="侧边栏小工具" description="右侧栏已改为标准 WordPress 小工具，可自由增删/排序，也能放入搜索、最新文章、标签云等核心小工具。">
+    <div class="xh-field">
+      <a class="xh-btn xh-btn--primary" href="widgets.php" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+        前往外观 → 小工具配置
+      </a>
+      <p class="xh-field__desc">在小工具页面拖拽“主题：个人资料卡 / 一言 / 站点信息”到“右侧栏”区域，并在卡片内勾选要显示的内容（统计/热力图/社交）。以下为这些卡片提供数据。</p>
     </div>
-    <div v-if="settings.sidebar_show_hitokoto !== false" class="xh-field" style="margin-top: 16px;">
-      <label class="xh-field__label">一言 API 地址</label>
-      <input
-        class="xh-input"
-        type="url"
-        :value="(settings.hitokoto_api as string) || ''"
-        placeholder="https://v1.hitokoto.cn"
-        @input="emit('update', 'hitokoto_api', ($event.target as HTMLInputElement).value)"
-      />
-      <p class="xh-field__desc">默认 hitokoto.cn；可换成自建或第三方 API，支持 hitokoto JSON（hitokoto/from 字段）或纯文本响应。</p>
-    </div>
-    <div v-if="settings.sidebar_show_social !== false" class="xh-field xh-field--full" style="margin-top: 16px;">
+    <div class="xh-field xh-field--full" style="margin-top: 16px;">
       <label class="xh-field__label">社交链接</label>
       <textarea
         class="xh-textarea"
@@ -101,7 +66,7 @@ const emit = defineEmits<{
         placeholder='[{"label":"GitHub","url":"https://github.com/...","icon":"github"}]'
         @input="emit('update', 'social_links', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
-      <p class="xh-field__desc">JSON 数组格式：{ "label": "...", "url": "...", "icon": "..." }</p>
+      <p class="xh-field__desc">供“个人资料卡”小工具的社交区域使用。JSON 数组格式：{ "label": "...", "url": "...", "icon": "..." }</p>
     </div>
     <div class="xh-field xh-field--full" style="margin-top: 16px;">
       <label class="xh-field__label">技术信息</label>
@@ -111,7 +76,7 @@ const emit = defineEmits<{
         placeholder='[{"label":"运行天数","value":"365"}]'
         @input="emit('update', 'tech_info_items', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
-      <p class="xh-field__desc">JSON 数组格式：{ "label": "...", "value": "..." }</p>
+      <p class="xh-field__desc">供“站点信息”小工具使用。JSON 数组格式：{ "label": "...", "value": "..." }</p>
     </div>
   </AppCard>
 

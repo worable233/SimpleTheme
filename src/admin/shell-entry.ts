@@ -9,7 +9,6 @@
  */
 
 import { createApp } from 'vue'
-import 'boxicons/css/boxicons.min.css'
 import './styles/admin-tailwind.css'
 import AdminShell from './components/AdminShell.vue'
 

@@ -219,10 +219,10 @@
   })();
 
   var noticeTypes = {
-    task:    { label: noticeLabels.taskLabel,    icon: '<i class="bx bx-list-check"></i>', className: 'task',    titleText: 'TASK' },
-    warning: { label: noticeLabels.warningLabel, icon: '<i class="bx bx-error"></i>',        className: 'warning', titleText: 'WARNING' },
-    noway:   { label: noticeLabels.nowayLabel,   icon: '<i class="bx bx-x-circle"></i>',     className: 'noway',   titleText: 'DIAALLOWED' },
-    buy:     { label: noticeLabels.buyLabel,     icon: '<i class="bx bx-check-circle"></i>', className: 'buy',     titleText: 'ALLOWED' }
+    task:    { label: noticeLabels.taskLabel,    icon: '<i class="ti ti-list-check"></i>', className: 'task',    titleText: 'TASK' },
+    warning: { label: noticeLabels.warningLabel, icon: '<i class="ti ti-error"></i>',        className: 'warning', titleText: 'WARNING' },
+    noway:   { label: noticeLabels.nowayLabel,   icon: '<i class="ti ti-x-circle"></i>',     className: 'noway',   titleText: 'DIAALLOWED' },
+    buy:     { label: noticeLabels.buyLabel,     icon: '<i class="ti ti-check-circle"></i>', className: 'buy',     titleText: 'ALLOWED' }
   };
 
   function NoticeEdit(props) {
@@ -335,8 +335,8 @@
         blockTitle: '展示卡片',
         toolbarButtonLabel: '选择图片',
         panelTitle: '展示卡片设置',
-        iconClassLabel: 'Boxicons 图标类名',
-        iconClassHelp: '例如 bx bx-book',
+        iconClassLabel: 'Tabler 图标类名',
+        iconClassHelp: '例如 ti ti-book',
         titleLabel: '标题',
         imgUrlLabel: '图片链接（可选）',
         iconColorLabel: '图标颜色',
@@ -349,8 +349,8 @@
         blockTitle: '展示卡片',
         toolbarButtonLabel: '選擇圖片',
         panelTitle: '展示卡片設定',
-        iconClassLabel: 'Boxicons 圖標類名',
-        iconClassHelp: '例如 bx bx-book',
+        iconClassLabel: 'Tabler 圖標類名',
+        iconClassHelp: '例如 ti ti-book',
         titleLabel: '標題',
         imgUrlLabel: '圖片連結（可選）',
         iconColorLabel: '圖標顏色',
@@ -363,8 +363,8 @@
         blockTitle: 'カード表示',
         toolbarButtonLabel: '画像を選択',
         panelTitle: 'カード表示設定',
-        iconClassLabel: 'Boxiconsアイコンクラス',
-        iconClassHelp: '例: bx bx-book',
+        iconClassLabel: 'Tablerアイコンクラス',
+        iconClassHelp: '例: ti ti-book',
         titleLabel: 'タイトル',
         imgUrlLabel: '画像リンク（任意）',
         iconColorLabel: 'アイコン色',
@@ -377,8 +377,8 @@
         blockTitle: 'ShowCard',
         toolbarButtonLabel: 'Select Image',
         panelTitle: 'ShowCard Settings',
-        iconClassLabel: 'Boxicons Icon Classes',
-        iconClassHelp: 'e.g., bx bx-book',
+        iconClassLabel: 'Tabler Icon Classes',
+        iconClassHelp: 'e.g., ti ti-book',
         titleLabel: 'Title',
         imgUrlLabel: 'Image URL (Optional)',
         iconColorLabel: 'Icon Color',
@@ -469,7 +469,7 @@
               className: 'showcard-button',
               style: { color: color }
             },
-              createElement(RawHTML, null, '<i class="bx bx-play-circle" style="font-size:24px"></i>')
+              createElement(RawHTML, null, '<i class="ti ti-play-circle" style="font-size:24px"></i>')
             )
           )
         ),
@@ -498,12 +498,12 @@
             className: 'showcard-button',
             style: { color: color + ' !important' }
           },
-            createElement(RawHTML, null, '<i class="bx bx-play-circle" style="font-size:24px"></i>')
+            createElement(RawHTML, null, '<i class="ti ti-play-circle" style="font-size:24px"></i>')
           )
         )
       ),
       createElement('div', { className: 'icon-title' },
-        createElement(RawHTML, null, '<i class="bx bx-bookmark" style="color:' + color + ';font-size:16px"></i>'),
+        createElement(RawHTML, null, '<i class="ti ti-bookmark" style="color:' + color + ';font-size:16px"></i>'),
         createElement('span', { className: 'title' }, title)
       )
     );
@@ -518,7 +518,7 @@
     ),
     category: 'sakurairo',
     attributes: {
-      icon:      { type: 'string', default: 'bx bx-bookmark' },
+      icon:      { type: 'string', default: 'ti ti-bookmark' },
       title:     { type: 'string', default: cardLabels.titlePlaceholder },
       img:       { type: 'string', default: '' },
       color:     { type: 'string', default: '#ffffff' },

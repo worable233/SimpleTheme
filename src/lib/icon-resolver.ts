@@ -1,1597 +1,249 @@
 /**
- * icon-resolver — 通用图标解析器
+ * icon-resolver — 图标名称解析器（Tabler）
  *
- * 核心功能:
- *   1. 将图标名称 → Boxicons HTML（如 "github" → <i class="bx bxl-github"></i>）
- *   2. FontAwesome 类名 → Boxicons 兼容转换（如 "fa-solid fa-home" → "home" → bxs-home）
- *   3. 中文菜单标题 → 图标映射（如 "首页" → bxs-home）
- *   4. filled/outline 变体切换（bx- ↔ bxs-）
+ * 职责：把各种来源的图标标识（语义名 / 旧 Boxicons 类名 / FontAwesome 类名 /
+ * `<i class="...">` HTML / Tabler 类名 / 中文菜单标题）归一化为一个 Tabler
+ * kebab 名（如 "brand-github"、"home"）与 filled 布尔，供 AppIcon.vue 渲染
+ * 对应的 Tabler SVG 组件，或供 prose-icons 内联 SVG。
  *
- * 使用场景:
- *   - 前端侧边栏菜单图标渲染（getItemIcon）
- *   - 后台菜单图标设置（getIconHtml + getIconList + searchIcons）
- *   - 社交卡片图标设置（getIconHtml）
+ * 兼容：旧站数据库里存的 `bx bxl-github`、`bx bxs-home`、FA 类名、中文标题
+ * 全部零改动继续可用（无破坏式迁移）。
  */
 
+import ICON_MAP from './tabler-icon-map.json'
 import type { MenuItem } from '@/types/wordpress'
 
-// ============================================================
-// 1. 完整 Boxicons 映射表
-//    命名规则: bx-xxx = outline, bxs-xxx = filled/solid, bxl-xxx = logo
-// ============================================================
-
-const ICON_MAP: Record<string, string> = {
-  // ========== 导航 & UI ==========
-  home: '<i class="bx bxs-home"></i>',
-  menu: '<i class="bx bx-menu"></i>',
-  'menu-alt': '<i class="bx bx-menu-alt-right"></i>',
-  close: '<i class="bx bx-x"></i>',
-  'x-circle': '<i class="bx bx-x-circle"></i>',
-  plus: '<i class="bx bx-plus"></i>',
-  'plus-circle': '<i class="bx bx-plus-circle"></i>',
-  'plus-square': '<i class="bx bx-plus-square"></i>',
-  minus: '<i class="bx bx-minus"></i>',
-  'minus-circle': '<i class="bx bx-minus-circle"></i>',
-  check: '<i class="bx bx-check"></i>',
-  'check-circle': '<i class="bx bx-check-circle"></i>',
-  'check-square': '<i class="bx bx-check-square"></i>',
-  'solid-check-circle': '<i class="bx bxs-check-circle"></i>',
-  'solid-check-square': '<i class="bx bxs-check-square"></i>',
-  dots: '<i class="bx bx-dots-vertical-rounded"></i>',
-  'dots-horizontal': '<i class="bx bx-dots-horizontal-rounded"></i>',
-  grid: '<i class="bx bx-grid"></i>',
-  'grid-alt': '<i class="bx bx-grid-alt"></i>',
-  'grid-small': '<i class="bx bx-grid-small"></i>',
-  'solid-grid': '<i class="bx bxs-grid"></i>',
-  list: '<i class="bx bx-list-ul"></i>',
-  'list-ol': '<i class="bx bx-list-ol"></i>',
-  'list-plus': '<i class="bx bx-list-plus"></i>',
-  'list-check': '<i class="bx bx-list-check"></i>',
-  sidebar: '<i class="bx bx-sidebar"></i>',
-  layout: '<i class="bx bx-layout"></i>',
-  'layout-block': '<i class="bx bx-layout-block"></i>',
-  'layout-grid': '<i class="bx bx-layout-grid"></i>',
-  'layout-square': '<i class="bx bx-layout-square"></i>',
-  'solid-dashboard': '<i class="bx bxs-dashboard"></i>',
-  dock: '<i class="bx bx-dock-top"></i>',
-  window: '<i class="bx bx-window"></i>',
-  'window-open': '<i class="bx bx-window-open"></i>',
-  'window-alt': '<i class="bx bx-window-alt"></i>',
-  terminal: '<i class="bx bx-terminal"></i>',
-
-  // ========== 箭头 & 方向 ==========
-  'chevron-up': '<i class="bx bx-chevron-up"></i>',
-  'chevron-down': '<i class="bx bx-chevron-down"></i>',
-  'chevron-left': '<i class="bx bx-chevron-left"></i>',
-  'chevron-right': '<i class="bx bx-chevron-right"></i>',
-  'chevrons-up': '<i class="bx bx-chevrons-up"></i>',
-  'chevrons-down': '<i class="bx bx-chevrons-down"></i>',
-  'chevrons-left': '<i class="bx bx-chevrons-left"></i>',
-  'chevrons-right': '<i class="bx bx-chevrons-right"></i>',
-  'arrow-back': '<i class="bx bx-arrow-back"></i>',
-  'arrow-forward': '<i class="bx bx-arrow-forward"></i>',
-  'up-arrow': '<i class="bx bx-up-arrow-alt"></i>',
-  'down-arrow': '<i class="bx bx-down-arrow-alt"></i>',
-  'left-arrow': '<i class="bx bx-left-arrow-alt"></i>',
-  'right-arrow': '<i class="bx bx-right-arrow-alt"></i>',
-  'solid-up-arrow': '<i class="bx bxs-up-arrow"></i>',
-  'solid-down-arrow': '<i class="bx bxs-down-arrow"></i>',
-  'solid-left-arrow': '<i class="bx bxs-left-arrow"></i>',
-  'solid-right-arrow': '<i class="bx bxs-right-arrow"></i>',
-  'up-arrow-circle': '<i class="bx bxs-up-arrow-circle"></i>',
-  'down-arrow-circle': '<i class="bx bxs-down-arrow-circle"></i>',
-  'left-arrow-circle': '<i class="bx bxs-left-arrow-circle"></i>',
-  'right-arrow-circle': '<i class="bx bxs-right-arrow-circle"></i>',
-  'up-arrow-square': '<i class="bx bxs-up-arrow-square"></i>',
-  'down-arrow-square': '<i class="bx bxs-down-arrow-square"></i>',
-  'left-arrow-square': '<i class="bx bxs-left-arrow-square"></i>',
-  'right-arrow-square': '<i class="bx bxs-right-arrow-square"></i>',
-  'upvote': '<i class="bx bx-upvote"></i>',
-  'downvote': '<i class="bx bx-downvote"></i>',
-  'solid-upvote': '<i class="bx bxs-upvote"></i>',
-  'solid-downvote': '<i class="bx bxs-downvote"></i>',
-  resize: '<i class="bx bx-resize"></i>',
-  'move-horizontal': '<i class="bx bx-move-horizontal"></i>',
-  'move-vertical': '<i class="bx bx-move-vertical"></i>',
-  'solid-direction-up': '<i class="bx bxs-direction-up"></i>',
-  'solid-direction-down': '<i class="bx bxs-direction-down"></i>',
-  'solid-direction-left': '<i class="bx bxs-direction-left"></i>',
-  'solid-direction-right': '<i class="bx bxs-direction-right"></i>',
-
-  // ========== 搜索 & 工具 ==========
-  search: '<i class="bx bx-search"></i>',
-  'search-alt': '<i class="bx bx-search-alt-2"></i>',
-  'search-alt-2': '<i class="bx bx-search-alt-2"></i>',
-  'solid-search': '<i class="bx bxs-search"></i>',
-  zoom: '<i class="bx bx-zoom-in"></i>',
-  settings: '<i class="bx bx-cog"></i>',
-  'settings-spin': '<i class="bx bx-loader-alt"></i>',
-  filter: '<i class="bx bx-filter-alt"></i>',
-  'filter-alt': '<i class="bx bx-filter-alt"></i>',
-  adjust: '<i class="bx bx-adjust"></i>',
-  slider: '<i class="bx bx-slider-alt"></i>',
-  'slider-alt': '<i class="bx bx-slider"></i>',
-  ruler: '<i class="bx bx-ruler"></i>',
-  'infinite': '<i class="bx bx-infinite"></i>',
-  'trash': '<i class="bx bx-trash"></i>',
-  'solid-trash': '<i class="bx bxs-trash"></i>',
-  'trash-alt': '<i class="bx bx-trash-alt"></i>',
-
-  // ========== 媒体 & 播放 ==========
-  play: '<i class="bx bx-play"></i>',
-  pause: '<i class="bx bx-pause"></i>',
-  stop: '<i class="bx bx-stop"></i>',
-  'play-circle': '<i class="bx bx-play-circle"></i>',
-  'solid-play': '<i class="bx bxs-play"></i>',
-  forward: '<i class="bx bx-skip-next"></i>',
-  backward: '<i class="bx bx-skip-previous"></i>',
-  'fast-forward': '<i class="bx bx-fast-forward"></i>',
-  'fast-backward': '<i class="bx bx-fast-backward"></i>',
-  'skip-next': '<i class="bx bx-skip-next"></i>',
-  'skip-previous': '<i class="bx bx-skip-previous"></i>',
-  volume: '<i class="bx bx-volume-full"></i>',
-  'volume-mute': '<i class="bx bx-volume-mute"></i>',
-  'volume-low': '<i class="bx bx-volume-low"></i>',
-  'volume-off': '<i class="bx bx-volume-off"></i>',
-  music: '<i class="bx bx-music"></i>',
-  'music-alt': '<i class="bx bxs-music"></i>',
-  radio: '<i class="bx bx-radio"></i>',
-  microphone: '<i class="bx bx-microphone"></i>',
-  'microphone-off': '<i class="bx bx-microphone-off"></i>',
-  headphone: '<i class="bx bx-headphone"></i>',
-  podcast: '<i class="bx bx-podcast"></i>',
-  video: '<i class="bx bx-video"></i>',
-  'video-off': '<i class="bx bx-video-off"></i>',
-  'video-recording': '<i class="bx bx-video-recording"></i>',
-  camera: '<i class="bx bx-camera"></i>',
-  'camera-off': '<i class="bx bx-camera-off"></i>',
-  'camera-plus': '<i class="bx bx-camera-plus"></i>',
-  'solid-camera': '<i class="bx bxs-camera"></i>',
-  'show': '<i class="bx bx-show"></i>',
-  'hide': '<i class="bx bx-hide"></i>',
-  'slideshow': '<i class="bx bx-slideshow"></i>',
-  'movie': '<i class="bx bx-movie"></i>',
-  'film': '<i class="bx bx-film"></i>',
-  'clapperboard': '<i class="bx bx-clapperboard"></i>',
-
-  // ========== 通信 & 社交 ==========
-  chat: '<i class="bx bx-message-rounded-dots"></i>',
-  'message': '<i class="bx bx-message-rounded-dots"></i>',
-  'message-alt': '<i class="bx bx-message-alt-dots"></i>',
-  'solid-message': '<i class="bx bxs-message-rounded-dots"></i>',
-  'chat-dots': '<i class="bx bx-message-rounded-dots"></i>',
-  'chat-alt': '<i class="bx bx-message-alt-dots"></i>',
-  mail: '<i class="bx bx-envelope"></i>',
-  'solid-mail': '<i class="bx bxs-envelope"></i>',
-  'mail-open': '<i class="bx bx-envelope-open"></i>',
-  send: '<i class="bx bx-send"></i>',
-  'paper-plane': '<i class="bx bx-paper-plane"></i>',
-  'reply': '<i class="bx bx-reply"></i>',
-  'reply-all': '<i class="bx bx-reply-all"></i>',
-  'share': '<i class="bx bx-share-alt"></i>',
-  'share-alt': '<i class="bx bx-share"></i>',
-  'solid-share': '<i class="bx bxs-share-alt"></i>',
-  'share-social': '<i class="bx bx-share-alt"></i>',
-  export: '<i class="bx bx-export"></i>',
-  link: '<i class="bx bx-link"></i>',
-  'link-external': '<i class="bx bx-link-external"></i>',
-  'link-alt': '<i class="bx bx-link-alt"></i>',
-  phone: '<i class="bx bx-phone"></i>',
-  'phone-call': '<i class="bx bx-phone-call"></i>',
-  'phone-off': '<i class="bx bx-phone-off"></i>',
-  'solid-phone': '<i class="bx bxs-phone"></i>',
-  notification: '<i class="bx bx-bell"></i>',
-  'notification-off': '<i class="bx bx-bell-off"></i>',
-  'solid-notification': '<i class="bx bxs-bell"></i>',
-  group: '<i class="bx bx-group"></i>',
-  'solid-group': '<i class="bx bxs-group"></i>',
-
-  // ========== 用户 & 人物 ==========
-  user: '<i class="bx bx-user"></i>',
-  'user-plus': '<i class="bx bx-user-plus"></i>',
-  'user-minus': '<i class="bx bx-user-minus"></i>',
-  'user-check': '<i class="bx bx-user-check"></i>',
-  'user-x': '<i class="bx bx-user-x"></i>',
-  'solid-user': '<i class="bx bxs-user"></i>',
-  'solid-user-circle': '<i class="bx bxs-user-circle"></i>',
-  'user-circle': '<i class="bx bx-user-circle"></i>',
-  'user-detail': '<i class="bx bx-user-detail"></i>',
-  'user-pin': '<i class="bx bx-user-pin"></i>',
-  'solid-user-account': '<i class="bx bxs-user-account"></i>',
-  'id-card': '<i class="bx bx-id-card"></i>',
-  'badge': '<i class="bx bx-badge"></i>',
-  'solid-badge': '<i class="bx bxs-badge"></i>',
-  'badge-check': '<i class="bx bx-badge-check"></i>',
-  'solid-badge-check': '<i class="bx bxs-badge-check"></i>',
-  'log-in': '<i class="bx bx-log-in"></i>',
-  'log-out': '<i class="bx bx-log-out"></i>',
-  'solid-log-in': '<i class="bx bxs-log-in"></i>',
-  'solid-log-out': '<i class="bx bxs-log-out"></i>',
-  'crown': '<i class="bx bx-crown"></i>',
-  'solid-crown': '<i class="bx bxs-crown"></i>',
-
-  // ========== 文件 & 文件夹 ==========
-  file: '<i class="bx bx-file"></i>',
-  'file-blank': '<i class="bx bx-file-blank"></i>',
-  'solid-file': '<i class="bx bxs-file"></i>',
-  'file-plus': '<i class="bx bx-file-plus"></i>',
-  'file-minus': '<i class="bx bx-file-minus"></i>',
-  'file-edit': '<i class="bx bx-file-edit"></i>',
-  'file-find': '<i class="bx bx-file-find"></i>',
-  'file-export': '<i class="bx bx-file-export"></i>',
-  'file-import': '<i class="bx bx-file-import"></i>',
-  'file-archive': '<i class="bx bx-file-archive"></i>',
-  'file-pdf': '<i class="bx bx-file-pdf"></i>',
-  'file-doc': '<i class="bx bx-file-doc"></i>',
-  'file-image': '<i class="bx bx-file-image"></i>',
-  'file-code': '<i class="bx bx-file-code"></i>',
-  'file-css': '<i class="bx bx-file-css"></i>',
-  'file-js': '<i class="bx bx-file-js"></i>',
-  'file-json': '<i class="bx bx-file-json"></i>',
-  'file-md': '<i class="bx bx-file-markdown"></i>',
-  folder: '<i class="bx bx-folder"></i>',
-  'folder-plus': '<i class="bx bx-folder-plus"></i>',
-  'folder-minus': '<i class="bx bx-folder-minus"></i>',
-  'folder-open': '<i class="bx bx-folder-open"></i>',
-  'solid-folder': '<i class="bx bxs-folder"></i>',
-  'solid-folder-open': '<i class="bx bxs-folder-open"></i>',
-  'copy': '<i class="bx bx-copy"></i>',
-  'solid-copy': '<i class="bx bxs-copy"></i>',
-  'paste': '<i class="bx bx-paste"></i>',
-  'clipboard': '<i class="bx bx-clipboard"></i>',
-
-  // ========== 编辑 & 设计 ==========
-  edit: '<i class="bx bx-edit"></i>',
-  'edit-alt': '<i class="bx bx-edit-alt"></i>',
-  'solid-edit': '<i class="bx bxs-edit"></i>',
-  'edit-pencil': '<i class="bx bx-pencil"></i>',
-  pen: '<i class="bx bx-pen"></i>',
-  brush: '<i class="bx bx-brush"></i>',
-  'solid-brush': '<i class="bx bxs-brush"></i>',
-  wand: '<i class="bx bx-wand"></i>',
-  'solid-wand': '<i class="bx bxs-wand"></i>',
-  eraser: '<i class="bx bx-eraser"></i>',
-  'color': '<i class="bx bx-color"></i>',
-  'palette': '<i class="bx bx-palette"></i>',
-  'solid-palette': '<i class="bx bxs-palette"></i>',
-  'paint': '<i class="bx bx-paint"></i>',
-  'paint-roll': '<i class="bx bx-paint-roll"></i>',
-  'cut': '<i class="bx bx-cut"></i>',
-  'crop': '<i class="bx bx-crop"></i>',
-  'scissors': '<i class="bx bx-cut"></i>',
-  'selection': '<i class="bx bx-selection"></i>',
-  'layer': '<i class="bx bx-layer"></i>',
-  'solid-layer': '<i class="bx bxs-layer"></i>',
-  'layers': '<i class="bx bx-layers"></i>',
-  'droplet': '<i class="bx bx-droplet"></i>',
-  'solid-droplet': '<i class="bx bxs-droplet"></i>',
-  'eyedropper': '<i class="bx bx-eyedropper"></i>',
-
-  // ========== 对象 & 形状 ==========
-  star: '<i class="bx bx-star"></i>',
-  'solid-star': '<i class="bx bxs-star"></i>',
-  'star-half': '<i class="bx bx-star-half"></i>',
-  heart: '<i class="bx bx-heart"></i>',
-  'solid-heart': '<i class="bx bxs-heart"></i>',
-  like: '<i class="bx bx-like"></i>',
-  'solid-like': '<i class="bx bxs-like"></i>',
-  dislike: '<i class="bx bx-dislike"></i>',
-  'solid-dislike': '<i class="bx bxs-dislike"></i>',
-  tag: '<i class="bx bx-tag"></i>',
-  'solid-tag': '<i class="bx bxs-tag"></i>',
-  'tag-alt': '<i class="bx bx-tag-alt"></i>',
-  bookmark: '<i class="bx bx-bookmark"></i>',
-  'solid-bookmark': '<i class="bx bxs-bookmark"></i>',
-  'bookmark-plus': '<i class="bx bx-bookmark-plus"></i>',
-  'bookmark-minus': '<i class="bx bx-bookmark-minus"></i>',
-  flag: '<i class="bx bx-flag"></i>',
-  'solid-flag': '<i class="bx bxs-flag"></i>',
-  'flag-alt': '<i class="bx bx-flag-alt"></i>',
-  diamond: '<i class="bx bx-diamond"></i>',
-  'solid-diamond': '<i class="bx bxs-diamond"></i>',
-  circle: '<i class="bx bx-circle"></i>',
-  'solid-circle': '<i class="bx bxs-circle"></i>',
-  square: '<i class="bx bx-square-rounded"></i>',
-  'solid-square': '<i class="bx bxs-square-rounded"></i>',
-  shield: '<i class="bx bx-shield"></i>',
-  'solid-shield': '<i class="bx bxs-shield"></i>',
-  'shield-alt': '<i class="bx bx-shield-alt-2"></i>',
-  lock: '<i class="bx bx-lock-alt"></i>',
-  'solid-lock': '<i class="bx bxs-lock-alt"></i>',
-  'lock-open': '<i class="bx bx-lock-open-alt"></i>',
-  unlock: '<i class="bx bx-lock-open-alt"></i>',
-  key: '<i class="bx bx-key"></i>',
-  'solid-key': '<i class="bx bxs-key"></i>',
-  bulb: '<i class="bx bx-bulb"></i>',
-  'solid-bulb': '<i class="bx bxs-bulb"></i>',
-  bolt: '<i class="bx bx-bolt"></i>',
-  'solid-bolt': '<i class="bx bxs-bolt"></i>',
-  gift: '<i class="bx bx-gift"></i>',
-  'solid-gift': '<i class="bx bxs-gift"></i>',
-  'info-circle': '<i class="bx bx-info-circle"></i>',
-  'solid-info-circle': '<i class="bx bxs-info-circle"></i>',
-  info: '<i class="bx bx-info-circle"></i>',
-  question: '<i class="bx bx-question-mark"></i>',
-  'question-circle': '<i class="bx bx-question-mark"></i>',
-  'exclamation': '<i class="bx bx-exclamation"></i>',
-  'exclamation-circle': '<i class="bx bx-exclamation-circle"></i>',
-  error: '<i class="bx bx-error"></i>',
-  'error-circle': '<i class="bx bx-error-circle"></i>',
-  warning: '<i class="bx bx-error"></i>',
-  'warning-circle': '<i class="bx bx-error-circle"></i>',
-
-  // ========== 书 & 写作 ==========
-  book: '<i class="bx bx-book"></i>',
-  'solid-book': '<i class="bx bxs-book"></i>',
-  'book-plus': '<i class="bx bx-book-plus"></i>',
-  bookbook: '<i class="bx bx-book-bookmark"></i>',
-  'book-open': '<i class="bx bx-book-open"></i>',
-  'book-content': '<i class="bx bx-book-content"></i>',
-  'book-alt': '<i class="bx bx-book-alt"></i>',
-  'notepad': '<i class="bx bx-notepad"></i>',
-  'solid-notepad': '<i class="bx bxs-notepad"></i>',
-  'note': '<i class="bx bx-note"></i>',
-  'solid-note': '<i class="bx bxs-note"></i>',
-  'news': '<i class="bx bx-news"></i>',
-  'solid-news': '<i class="bx bxs-news"></i>',
-  'quote': '<i class="bx bx-quote-left"></i>',
-  'quote-left': '<i class="bx bx-quote-left"></i>',
-  'quote-right': '<i class="bx bx-quote-right"></i>',
-  'solid-quote-left': '<i class="bx bxs-quote-left"></i>',
-  'quote-alt': '<i class="bx bx-quote-alt-left"></i>',
-  'font': '<i class="bx bx-font"></i>',
-  'bold': '<i class="bx bx-bold"></i>',
-  'italic': '<i class="bx bx-italic"></i>',
-  'underline': '<i class="bx bx-underline"></i>',
-  'strikethrough': '<i class="bx bx-strikethrough"></i>',
-  'text': '<i class="bx bx-text"></i>',
-  'align-left': '<i class="bx bx-align-left"></i>',
-  'align-center': '<i class="bx bx-align-center"></i>',
-  'align-right': '<i class="bx bx-align-right"></i>',
-  'align-justify': '<i class="bx bx-align-justify"></i>',
-  'code': '<i class="bx bx-code-alt"></i>',
-  'code-alt': '<i class="bx bx-code"></i>',
-  'code-block': '<i class="bx bx-code-block"></i>',
-  'solid-code': '<i class="bx bxs-code-alt"></i>',
-
-  // ========== 时间 & 日期 ==========
-  clock: '<i class="bx bx-time-five"></i>',
-  'clock-alt': '<i class="bx bx-time"></i>',
-  'solid-clock': '<i class="bx bxs-time-five"></i>',
-  'stopwatch': '<i class="bx bx-stopwatch"></i>',
-  'timer': '<i class="bx bx-timer"></i>',
-  calendar: '<i class="bx bx-calendar"></i>',
-  'calendar-alt': '<i class="bx bx-calendar-alt"></i>',
-  'solid-calendar': '<i class="bx bxs-calendar"></i>',
-  'calendar-plus': '<i class="bx bx-calendar-plus"></i>',
-  'calendar-minus': '<i class="bx bx-calendar-minus"></i>',
-  'calendar-check': '<i class="bx bx-calendar-check"></i>',
-  'calendar-event': '<i class="bx bx-calendar-event"></i>',
-  'calendar-week': '<i class="bx bx-calendar-week"></i>',
-  'hourglass': '<i class="bx bx-hourglass"></i>',
-
-  // ========== 天气 & 自然 ==========
-  sun: '<i class="bx bx-sun"></i>',
-  'solid-sun': '<i class="bx bxs-sun"></i>',
-  moon: '<i class="bx bx-moon"></i>',
-  'solid-moon': '<i class="bx bxs-moon"></i>',
-  cloud: '<i class="bx bx-cloud"></i>',
-  'solid-cloud': '<i class="bx bxs-cloud"></i>',
-  'cloud-rain': '<i class="bx bx-cloud-rain"></i>',
-  'cloud-lightning': '<i class="bx bx-cloud-lightning"></i>',
-  'cloud-drizzle': '<i class="bx bx-cloud-drizzle"></i>',
-  'cloud-snow': '<i class="bx bx-cloud-snow"></i>',
-  'rain': '<i class="bx bx-cloud-rain"></i>',
-  'lightning': '<i class="bx bx-cloud-lightning"></i>',
-  'snow': '<i class="bx bx-cloud-snow"></i>',
-  leaf: '<i class="bx bx-leaf"></i>',
-  'solid-leaf': '<i class="bx bxs-leaf"></i>',
-  'tree': '<i class="bx bx-tree"></i>',
-  'solid-tree': '<i class="bx bxs-tree"></i>',
-  'flower': '<i class="bx bx-flower"></i>',
-  'water': '<i class="bx bx-water"></i>',
-  'wind': '<i class="bx bx-wind"></i>',
-  'umbrella': '<i class="bx bx-umbrella"></i>',
-
-  // ========== 地图 & 旅行 ==========
-  map: '<i class="bx bx-map"></i>',
-  'solid-map': '<i class="bx bxs-map"></i>',
-  'map-alt': '<i class="bx bx-map-alt"></i>',
-  'map-pin': '<i class="bx bx-map-pin"></i>',
-  'solid-map-pin': '<i class="bx bxs-map-pin"></i>',
-  'current-location': '<i class="bx bx-current-location"></i>',
-  'navigation': '<i class="bx bx-navigation"></i>',
-  'compass': '<i class="bx bx-compass"></i>',
-  'solid-compass': '<i class="bx bxs-compass"></i>',
-  'globe': '<i class="bx bx-globe"></i>',
-  'solid-globe': '<i class="bx bxs-globe"></i>',
-  'world': '<i class="bx bx-globe"></i>',
-  'car': '<i class="bx bx-car"></i>',
-  'solid-car': '<i class="bx bxs-car"></i>',
-  'car-mechanic': '<i class="bx bx-car-mechanic"></i>',
-  'bike': '<i class="bx bx-bike"></i>',
-  'solid-bike': '<i class="bx bxs-bike"></i>',
-  'train': '<i class="bx bx-train"></i>',
-  'solid-train': '<i class="bx bxs-train"></i>',
-  'ship': '<i class="bx bx-ship"></i>',
-  'solid-ship': '<i class="bx bxs-ship"></i>',
-  'plane': '<i class="bx bx-plane"></i>',
-  'plane-alt': '<i class="bx bx-plane-alt"></i>',
-  'rocket': '<i class="bx bx-rocket"></i>',
-  'solid-rocket': '<i class="bx bxs-rocket"></i>',
-  'bus': '<i class="bx bx-bus"></i>',
-  'walk': '<i class="bx bx-walk"></i>',
-  'run': '<i class="bx bx-run"></i>',
-
-  // ========== 相册 & 图片 ==========
-  photo: '<i class="bx bx-image-alt"></i>',
-  'photo-alt': '<i class="bx bx-image"></i>',
-  'solid-photo': '<i class="bx bxs-image-alt"></i>',
-  'image': '<i class="bx bx-image-alt"></i>',
-  'image-add': '<i class="bx bx-image-add"></i>',
-  'images': '<i class="bx bx-images"></i>',
-  'album': '<i class="bx bx-album"></i>',
-  'solid-album': '<i class="bx bxs-album"></i>',
-  'photo-album': '<i class="bx bx-photo-album"></i>',
-  'landscape': '<i class="bx bx-landscape"></i>',
-  'collection': '<i class="bx bx-collection"></i>',
-  'gallery': '<i class="bx bx-gallery"></i>',
-
-  // ========== 购物 & 商务 ==========
-  shopping: '<i class="bx bx-shopping-bag"></i>',
-  'shopping-bag': '<i class="bx bx-shopping-bag"></i>',
-  'solid-shopping-bag': '<i class="bx bxs-shopping-bag"></i>',
-  'cart': '<i class="bx bx-cart"></i>',
-  'cart-alt': '<i class="bx bx-cart-alt"></i>',
-  'solid-cart': '<i class="bx bxs-cart"></i>',
-  'cart-download': '<i class="bx bx-cart-download"></i>',
-  'store': '<i class="bx bx-store"></i>',
-  'store-alt': '<i class="bx bx-store-alt"></i>',
-  'discount': '<i class="bx bx-purchase-tag-alt"></i>',
-  'credit': '<i class="bx bx-credit-card"></i>',
-  'credit-card': '<i class="bx bx-credit-card"></i>',
-  'solid-credit-card': '<i class="bx bxs-credit-card"></i>',
-  'wallet': '<i class="bx bx-wallet"></i>',
-  'solid-wallet': '<i class="bx bxs-wallet"></i>',
-  'wallet-alt': '<i class="bx bx-wallet-alt"></i>',
-  'dollar': '<i class="bx bx-dollar"></i>',
-  'dollar-circle': '<i class="bx bx-dollar-circle"></i>',
-  'coin': '<i class="bx bx-coin"></i>',
-  'solid-coin': '<i class="bx bxs-coin"></i>',
-  'money': '<i class="bx bx-money"></i>',
-  'atm': '<i class="bx bx-atm"></i>',
-  'receipt': '<i class="bx bx-receipt"></i>',
-  'briefcase': '<i class="bx bx-briefcase"></i>',
-  'solid-briefcase': '<i class="bx bxs-briefcase"></i>',
-  'briefcase-alt': '<i class="bx bx-briefcase-alt"></i>',
-  'bar-chart': '<i class="bx bx-bar-chart-alt-2"></i>',
-  'chart': '<i class="bx bx-line-chart"></i>',
-  'pie-chart': '<i class="bx bx-pie-chart-alt-2"></i>',
-  'analytics': '<i class="bx bx-analytics"></i>',
-  'trending-up': '<i class="bx bx-trending-up"></i>',
-  'trending-down': '<i class="bx bx-trending-down"></i>',
-
-  // ========== 设备 & 科技 ==========
-  'devices': '<i class="bx bx-devices"></i>',
-  'laptop': '<i class="bx bx-laptop"></i>',
-  'monitor': '<i class="bx bx-monitor"></i>',
-  'tablet': '<i class="bx bx-tablet"></i>',
-  'mobile': '<i class="bx bx-mobile"></i>',
-  'mobile-alt': '<i class="bx bx-mobile-alt"></i>',
-  'smartphone': '<i class="bx bx-mobile"></i>',
-  'watch': '<i class="bx bx-watch"></i>',
-  'signal': '<i class="bx bx-signal-5"></i>',
-  'wifi': '<i class="bx bx-wifi"></i>',
-  'wifi-off': '<i class="bx bx-wifi-off"></i>',
-  'bluetooth': '<i class="bx bx-bluetooth"></i>',
-  'battery': '<i class="bx bx-battery"></i>',
-  'battery-charging': '<i class="bx bx-battery-charging"></i>',
-  'battery-full': '<i class="bx bxs-battery-charging"></i>',
-  'power-off': '<i class="bx bx-power-off"></i>',
-  'printer': '<i class="bx bx-printer"></i>',
-  'mouse': '<i class="bx bx-mouse"></i>',
-  'keyboard': '<i class="bx bx-keyboard"></i>',
-  'hard-drive': '<i class="bx bx-hard-drive"></i>',
-  'hdd': '<i class="bx bx-hdd"></i>',
-  'server': '<i class="bx bx-server"></i>',
-  'chip': '<i class="bx bx-chip"></i>',
-  'cpu': '<i class="bx bx-cpu"></i>',
-
-  // ========== 下载 & 上传 ==========
-  download: '<i class="bx bx-download"></i>',
-  'solid-download': '<i class="bx bxs-download"></i>',
-  upload: '<i class="bx bx-upload"></i>',
-  'solid-upload': '<i class="bx bxs-upload"></i>',
-  'import': '<i class="bx bx-import"></i>',
-  'cloud-upload': '<i class="bx bx-cloud-upload"></i>',
-  'cloud-download': '<i class="bx bx-cloud-download"></i>',
-  'revision': '<i class="bx bx-revision"></i>',
-  'refresh': '<i class="bx bx-refresh"></i>',
-  'sync': '<i class="bx bx-sync"></i>',
-  'reset': '<i class="bx bx-reset"></i>',
-  'rotate': '<i class="bx bx-rotate-right"></i>',
-  'undo': '<i class="bx bx-undo"></i>',
-  'redo': '<i class="bx bx-redo"></i>',
-
-  // ========== 游戏 & 娱乐 ==========
-  game: '<i class="bx bx-game"></i>',
-  'gamepad': '<i class="bx bx-game"></i>',
-  'joystick': '<i class="bx bx-joystick"></i>',
-  'solid-game': '<i class="bx bxs-game"></i>',
-  trophy: '<i class="bx bx-trophy"></i>',
-  'solid-trophy': '<i class="bx bxs-trophy"></i>',
-  'medal': '<i class="bx bx-medal"></i>',
-  'solid-medal': '<i class="bx bxs-medal"></i>',
-  'award': '<i class="bx bx-award"></i>',
-  'solid-award': '<i class="bx bxs-award"></i>',
-  'badminton': '<i class="bx bxs-badminton"></i>',
-  'basketball': '<i class="bx bxs-basketball"></i>',
-  'football': '<i class="bx bx-football"></i>',
-  'tennis': '<i class="bx bx-tennis-ball"></i>',
-  'baseball': '<i class="bx bx-baseball"></i>',
-  'bowling': '<i class="bx bx-bowling-ball"></i>',
-  'golf': '<i class="bx bx-golf-ball"></i>',
-  'dice': '<i class="bx bx-dice-6"></i>',
-  'ghost': '<i class="bx bx-ghost"></i>',
-  'solid-ghost': '<i class="bx bxs-ghost"></i>',
-  'planet': '<i class="bx bx-planet"></i>',
-  'confetti': '<i class="bx bx-confetti"></i>',
-  'party': '<i class="bx bx-party"></i>',
-  'fire': '<i class="bx bx-fire"></i>',
-  'hot': '<i class="bx bx-hot"></i>',
-  'happy': '<i class="bx bx-happy"></i>',
-  'smile': '<i class="bx bx-smile"></i>',
-  'solid-smile': '<i class="bx bxs-smile"></i>',
-  'happy-alt': '<i class="bx bx-happy-alt"></i>',
-  'happy-beaming': '<i class="bx bx-happy-beaming"></i>',
-  'meh': '<i class="bx bx-meh"></i>',
-  'solid-meh': '<i class="bx bxs-meh"></i>',
-  'frown': '<i class="bx bx-frown"></i>',
-  'solid-frown': '<i class="bx bxs-frown"></i>',
-  'cool': '<i class="bx bx-cool"></i>',
-  'solid-cool': '<i class="bx bxs-cool"></i>',
-  'sleepy': '<i class="bx bx-sleepy"></i>',
-  'tired': '<i class="bx bx-tired"></i>',
-  'wink': '<i class="bx bx-wink-smile"></i>',
-  'angry': '<i class="bx bx-angry"></i>',
-  'sad': '<i class="bx bx-sad"></i>',
-
-  // ========== 归档 & 存储 ==========
-  archive: '<i class="bx bx-archive"></i>',
-  'solid-archive': '<i class="bx bxs-archive"></i>',
-  'archive-in': '<i class="bx bx-archive-in"></i>',
-  'archive-out': '<i class="bx bx-archive-out"></i>',
-  'inbox': '<i class="bx bx-inbox"></i>',
-  'solid-inbox': '<i class="bx bxs-inbox"></i>',
-  'outbox': '<i class="bx bx-outbox"></i>',
-  'drawer': '<i class="bx bx-drawer"></i>',
-  'dumpster': '<i class="bx bx-dumpster"></i>',
-  'box': '<i class="bx bx-box"></i>',
-  'package': '<i class="bx bx-package"></i>',
-
-  // ========== 食物 & 饮品 ==========
-  coffee: '<i class="bx bx-coffee"></i>',
-  'solid-coffee': '<i class="bx bxs-coffee"></i>',
-  'coffee-togo': '<i class="bx bx-coffee-togo"></i>',
-  'tea': '<i class="bx bx-coffee-togo"></i>',
-  'cake': '<i class="bx bx-cake"></i>',
-  'pizza': '<i class="bx bx-pizza"></i>',
-  'food-menu': '<i class="bx bx-food-menu"></i>',
-  'drink': '<i class="bx bx-drink"></i>',
-  'beer': '<i class="bx bx-beer"></i>',
-  'wine': '<i class="bx bx-wine"></i>',
-  'bowl-rice': '<i class="bx bx-bowl-rice"></i>',
-  'bowl-hot': '<i class="bx bx-bowl-hot"></i>',
-  'cookie': '<i class="bx bx-cookie"></i>',
-  'ice-cream': '<i class="bx bx-ice-cream"></i>',
-
-  // ========== 健康 & 健身 ==========
-  'heart-rate': '<i class="bx bx-heart-circle"></i>',
-  'pulse': '<i class="bx bx-pulse"></i>',
-  'health': '<i class="bx bx-health"></i>',
-  'fitness': '<i class="bx bx-fitness"></i>',
-  'dumbbell': '<i class="bx bx-dumbbell"></i>',
-  'first-aid': '<i class="bx bx-first-aid"></i>',
-  'medical': '<i class="bx bx-medical"></i>',
-  'syringe': '<i class="bx bx-syringe"></i>',
-  'pill': '<i class="bx bx-pill"></i>',
-  'bandage': '<i class="bx bx-bandage"></i>',
-  'plus-medical': '<i class="bx bx-plus-medical"></i>',
-  'body': '<i class="bx bx-body"></i>',
-  'restaurant': '<i class="bx bx-restaurant"></i>',
-  'spa': '<i class="bx bx-spa"></i>',
-
-  // ========== 手势 & 动作 ==========
-  'hand': '<i class="bx bx-hand"></i>',
-  'handicap': '<i class="bx bx-handicap"></i>',
-  'peace': '<i class="bx bx-handicap"></i>',
-  'handshake': '<i class="bx bx-handshake"></i>',
-  'thumbs-up': '<i class="bx bx-like"></i>',
-  'thumbs-down': '<i class="bx bx-dislike"></i>',
-  'clap': '<i class="bx bx-clap"></i>',
-  'wave': '<i class="bx bx-wave"></i>',
-  'fingerprint': '<i class="bx bx-fingerprint"></i>',
-  'point': '<i class="bx bx-pointer"></i>',
-
-  // ========== 学术 & 教育 ==========
-  graduation: '<i class="bx bx-graduation"></i>',
-  'solid-graduation': '<i class="bx bxs-graduation"></i>',
-  'school': '<i class="bx bx-school"></i>',
-  'library': '<i class="bx bx-library"></i>',
-  'notebook': '<i class="bx bx-notebook"></i>',
-  'pencil': '<i class="bx bx-pencil"></i>',
-  'calculator': '<i class="bx bx-calculator"></i>',
-  'flask': '<i class="bx bx-flask"></i>',
-  'atom': '<i class="bx bx-atom"></i>',
-
-  // ========== 各种 Shape ==========
-  'shape-circle': '<i class="bx bx-circle"></i>',
-  'shape-square': '<i class="bx bx-square-rounded"></i>',
-  'shape-triangle': '<i class="bx bx-triangle"></i>',
-  'shape-rhombus': '<i class="bx bx-rhombus"></i>',
-  'shape-polygon': '<i class="bx bx-polygon"></i>',
-  'shape-hexagon': '<i class="bx bx-hexagon"></i>',
-  'shape-octagon': '<i class="bx bx-octagon"></i>',
-
-  // ========== 品牌/社交 Logo (bxl-) ==========
-  github: '<i class="bx bxl-github"></i>',
-  twitter: '<i class="bx bxl-twitter"></i>',
-  'twitter-x': '<i class="bx bxl-twitter"></i>',
-  facebook: '<i class="bx bxl-facebook"></i>',
-  'facebook-circle': '<i class="bx bxl-facebook-circle"></i>',
-  instagram: '<i class="bx bxl-instagram"></i>',
-  'instagram-alt': '<i class="bx bxl-instagram-alt"></i>',
-  linkedin: '<i class="bx bxl-linkedin"></i>',
-  'linkedin-square': '<i class="bx bxl-linkedin-square"></i>',
-  youtube: '<i class="bx bxl-youtube"></i>',
-  tiktok: '<i class="bx bxl-tiktok"></i>',
-  telegram: '<i class="bx bxl-telegram"></i>',
-  discord: '<i class="bx bxl-discord"></i>',
-  slack: '<i class="bx bxl-slack"></i>',
-  reddit: '<i class="bx bxl-reddit"></i>',
-  whatsapp: '<i class="bx bxl-whatsapp"></i>',
-  wechat: '<i class="bx bxl-wechat"></i>',
-  'weixin': '<i class="bx bxl-wechat"></i>',
-  qq: '<i class="bx bxl-qq"></i>',
-  bilibili: '<i class="bx bxl-bilibili"></i>',
-  douyin: '<i class="bx bxl-tiktok"></i>',
-  zhihu: '<i class="bx bxl-zhihu"></i>',
-  weibo: '<i class="bx bxl-weibo"></i>',
-  douban: '<i class="bx bxl-douban"></i>',
-  google: '<i class="bx bxl-google"></i>',
-  'google-plus': '<i class="bx bxl-google-plus"></i>',
-  'google-drive': '<i class="bx bxl-google-drive"></i>',
-  apple: '<i class="bx bxl-apple"></i>',
-  microsoft: '<i class="bx bxl-microsoft"></i>',
-  windows: '<i class="bx bxl-windows"></i>',
-  android: '<i class="bx bxl-android"></i>',
-  linux: '<i class="bx bxl-linux"></i>',
-  'apple-store': '<i class="bx bxl-app-store"></i>',
-  medium: '<i class="bx bxl-medium"></i>',
-  mediumold: '<i class="bx bxl-medium-old"></i>',
-  'product-hunt': '<i class="bx bxl-product-hunt"></i>',
-  docker: '<i class="bx bxl-docker"></i>',
-  kubernetes: '<i class="bx bxl-kubernetes"></i>',
-  nodejs: '<i class="bx bxl-nodejs"></i>',
-  python: '<i class="bx bxl-python"></i>',
-  javascript: '<i class="bx bxl-javascript"></i>',
-  typescript: '<i class="bx bxl-typescript"></i>',
-  'css3': '<i class="bx bxl-css3"></i>',
-  'html5': '<i class="bx bxl-html5"></i>',
-  'sass': '<i class="bx bxl-sass"></i>',
-  'vuejs': '<i class="bx bxl-vuejs"></i>',
-  'react': '<i class="bx bxl-react"></i>',
-  'angular': '<i class="bx bxl-angular"></i>',
-  'npm': '<i class="bx bxl-npm"></i>',
-  'yarn': '<i class="bx bxl-yarn"></i>',
-  'git': '<i class="bx bxl-git"></i>',
-  'github-alt': '<i class="bx bxl-github"></i>',
-  'codepen': '<i class="bx bxl-codepen"></i>',
-  'codesandbox': '<i class="bx bxl-codesandbox"></i>',
-  'figma': '<i class="bx bxl-figma"></i>',
-  'sketch': '<i class="bx bxl-sketch"></i>',
-  'wordpress': '<i class="bx bxl-wordpress"></i>',
-  'php': '<i class="bx bxl-php"></i>',
-  'jquery': '<i class="bx bxl-jquery"></i>',
-  'bootstrap': '<i class="bx bxl-bootstrap"></i>',
-  'tailwind-css': '<i class="bx bxl-tailwind-css"></i>',
-  'microsoft-teams': '<i class="bx bxl-microsoft-teams"></i>',
-  'pinterest': '<i class="bx bxl-pinterest"></i>',
-  'bitcoin': '<i class="bx bxl-bitcoin"></i>',
-  'ethereum': '<i class="bx bxl-ethereum"></i>',
-  'patreon': '<i class="bx bxl-patreon"></i>',
-  'ko-fi': '<i class="bx bxl-ko-fi"></i>',
-  'buymeacoffee': '<i class="bx bxl-buymeacoffee"></i>',
-  'paypal': '<i class="bx bxl-paypal"></i>',
-  'stripe': '<i class="bx bxl-stripe"></i>',
-  'alipay': '<i class="bx bxl-alipay"></i>',
-  'unity': '<i class="bx bxl-unity"></i>',
-  'unreal-engine': '<i class="bx bxl-unreal-engine"></i>',
-  'steam': '<i class="bx bxl-steam"></i>',
-  'epic-games': '<i class="bx bxl-epic-games"></i>',
-  'twitch': '<i class="bx bxl-twitch"></i>',
-  'spotify': '<i class="bx bxl-spotify"></i>',
-  'soundcloud': '<i class="bx bxl-soundcloud"></i>',
-  'netlify': '<i class="bx bxl-netlify"></i>',
-  'vercel': '<i class="bx bxl-vercel"></i>',
-  'heroku': '<i class="bx bxl-heroku"></i>',
-  'digitalocean': '<i class="bx bxl-digitalocean"></i>',
-  'cloudflare': '<i class="bx bxl-cloudflare"></i>',
-  'stack-overflow': '<i class="bx bxl-stack-overflow"></i>',
-  'stackoverflow': '<i class="bx bxl-stack-overflow"></i>',
-  'visual-studio': '<i class="bx bxl-visual-studio"></i>',
-  'vscode': '<i class="bx bxl-visual-studio"></i>',
-  'jetbrains': '<i class="bx bxl-jetbrains"></i>',
-  'webstorm': '<i class="bx bxl-webstorm"></i>',
-  'phpstorm': '<i class="bx bxl-phpstorm"></i>',
-  'postman': '<i class="bx bxl-postman"></i>',
+/** 解析结果：name = Tabler kebab 名；filled = 是否使用实心变体 */
+export interface ResolvedIcon {
+  name: string
+  filled: boolean
 }
 
-// 所有已存在的 bxs- 图标名（用于判断 filled 变体是否存在）
-const EXISTING_FILLED_ICONS = new Set<string>()
-for (const val of Object.values(ICON_MAP)) {
-  const m = val.match(/class="[^"]*\bbxs-([\w-]+)/)
-  if (m?.[1]) EXISTING_FILLED_ICONS.add(m[1])
-}
+/** 找不到时的兜底图标 */
+export const DEFAULT_ICON_NAME = 'circle'
+
+/** 语义名/别名 → Tabler kebab（数据源，供生成脚本与本模块共用） */
+const NAME_MAP = ICON_MAP as Record<string, string>
+
+/** 所有合法的 Tabler kebab 值（允许直接传 Tabler 名） */
+const VALID_TABLER = new Set<string>(
+  Object.entries(NAME_MAP)
+    .filter(([k]) => !k.startsWith('_'))
+    .map(([, v]) => v),
+)
 
 // ============================================================
-// 2. 中文标题 → 图标名称（向后兼容旧菜单项）
+// 中文标题 → 语义名（向后兼容旧菜单项）
 // ============================================================
-
 const TITLE_ICON_MAP: Record<string, string> = {
-  '首页': 'home',
-  '说说': 'chat',
-  '关于': 'about',
-  '关于我': 'about',
-  '归档': 'archive',
-  '文章归档': 'archive',
-  '友情链接': 'link',
-  '友链': 'link',
-  '赞助': 'star',
-  '赞赏': 'star',
-  '收藏': 'bookmark',
-  '标签': 'tag',
-  '分类': 'folder',
-  '留言': 'mail',
-  '留言板': 'mail',
-  '相册': 'photo',
-  '音乐': 'music',
-  '搜索': 'search',
-  '登录': 'log-in',
-  '注册': 'user',
-  '设置': 'settings',
-  '个人中心': 'user',
-  '个人资料': 'user-detail',
-  '动态': 'chat',
-  '项目': 'grid',
-  '工具': 'settings',
-  '学习': 'graduation',
-  '笔记': 'book',
-  '日记': 'notepad',
-  '摄影': 'camera',
-  '电影': 'video',
-  '游戏': 'game',
-  '动漫': 'smile',
-  '阅读': 'book',
-  '写作': 'edit',
-  '生活': 'sun',
-  '旅行': 'map',
-  '美食': 'coffee',
-  '运动': 'dumbbell',
-  '代码': 'code',
-  '资源': 'download',
-  '下载': 'download',
-  '问答': 'question',
-  '帮助': 'info',
-  '反馈': 'mail',
-  '关于博客': 'info-circle',
-  '建站日志': 'clock',
-  '站点地图': 'map',
+  首页: 'home',
+  说说: 'chat',
+  关于: 'about',
+  关于我: 'about',
+  归档: 'archive',
+  文章归档: 'archive',
+  友情链接: 'link',
+  友链: 'link',
+  赞助: 'star',
+  赞赏: 'star',
+  收藏: 'bookmark',
+  标签: 'tag',
+  分类: 'folder',
+  留言: 'mail',
+  留言板: 'mail',
+  相册: 'photo',
+  音乐: 'music',
+  搜索: 'search',
+  登录: 'log-in',
+  注册: 'user',
+  设置: 'settings',
+  个人中心: 'user',
+  个人资料: 'user-detail',
+  动态: 'chat',
+  项目: 'grid',
+  工具: 'settings',
+  学习: 'graduation',
+  笔记: 'book',
+  日记: 'notepad',
+  摄影: 'camera',
+  电影: 'video',
+  游戏: 'game',
+  动漫: 'smile',
+  阅读: 'book',
+  写作: 'edit',
+  生活: 'sun',
+  旅行: 'map',
+  美食: 'coffee',
+  运动: 'dumbbell',
+  代码: 'code',
+  资源: 'download',
+  下载: 'download',
+  问答: 'question',
+  帮助: 'info',
+  反馈: 'mail',
+  关于博客: 'info-circle',
+  建站日志: 'clock',
+  站点地图: 'map',
 }
 
 // ============================================================
-// 3. FontAwesome → Boxicons 兼容映射
+// FontAwesome 类名 → 语义名（常见项；少数插件保存 fa- 格式）
 // ============================================================
-
-const FA_TO_BX: Record<string, string> = {
-  'fa-solid fa-home': 'home',
+const FA_TO_SEMANTIC: Record<string, string> = {
   'fa-home': 'home',
-  'fa-solid fa-envelope': 'mail',
-  'fa-envelope': 'mail',
-  'fa-solid fa-tag': 'tag',
-  'fa-tag': 'tag',
-  'fa-solid fa-folder': 'folder',
-  'fa-folder': 'folder',
-  'fa-solid fa-user': 'user',
-  'fa-user': 'user',
-  'fa-solid fa-cog': 'settings',
-  'fa-cog': 'settings',
-  'fa-solid fa-gear': 'settings',
-  'fa-solid fa-search': 'search',
-  'fa-search': 'search',
-  'fa-solid fa-star': 'star',
-  'fa-star': 'star',
-  'fa-solid fa-heart': 'heart',
-  'fa-heart': 'heart',
-  'fa-solid fa-bookmark': 'bookmark',
-  'fa-bookmark': 'bookmark',
-  'fa-regular fa-bookmark': 'bookmark',
-  'fa-solid fa-calendar': 'calendar',
-  'fa-calendar': 'calendar',
-  'fa-solid fa-clock': 'clock',
-  'fa-clock': 'clock',
-  'fa-solid fa-music': 'music',
-  'fa-music': 'music',
-  'fa-solid fa-image': 'photo',
-  'fa-image': 'photo',
-  'fa-solid fa-camera': 'camera',
-  'fa-camera': 'camera',
-  'fa-solid fa-link': 'link',
-  'fa-link': 'link',
-  'fa-solid fa-external-link': 'link-external',
-  'fa-solid fa-download': 'download',
-  'fa-download': 'download',
-  'fa-solid fa-lock': 'lock',
-  'fa-lock': 'lock',
-  'fa-solid fa-unlock': 'lock-open',
-  'fa-solid fa-bell': 'notification',
-  'fa-bell': 'notification',
-  'fa-solid fa-info': 'about',
-  'fa-info': 'about',
-  'fa-info-circle': 'info-circle',
-  'fa-solid fa-info-circle': 'info-circle',
-  'fa-solid fa-archive': 'archive',
-  'fa-archive': 'archive',
-  'fa-solid fa-comment': 'chat',
-  'fa-comment': 'chat',
-  'fa-solid fa-comments': 'chat',
-  'fa-comments': 'chat',
-  'fa-solid fa-message': 'chat',
-  'fa-solid fa-code': 'code',
-  'fa-code': 'code',
-  'fa-solid fa-shopping-cart': 'shopping-cart',
-  'fa-shopping-cart': 'shopping-cart',
-  'fa-solid fa-shopping-bag': 'shopping-bag',
-  'fa-solid fa-sign-in-alt': 'log-in',
-  'fa-sign-in-alt': 'log-in',
-  'fa-solid fa-sign-out-alt': 'log-out',
-  'fa-sign-out-alt': 'log-out',
-  'fa-solid fa-pencil': 'pencil',
-  'fa-pencil': 'pencil',
-  'fa-solid fa-edit': 'edit',
-  'fa-edit': 'edit',
-  'fa-solid fa-pen': 'pen',
-  'fa-solid fa-dashboard': 'grid',
-  'fa-dashboard': 'grid',
-  'fa-solid fa-tachometer': 'grid',
-  'fa-solid fa-th': 'grid-alt',
-  'fa-th': 'grid-alt',
-  'fa-solid fa-th-large': 'grid',
-  'fa-solid fa-th-list': 'list',
-  'fa-th-list': 'list',
-  'fa-solid fa-list': 'list',
-  'fa-list': 'list',
-  'fa-solid fa-rss': 'chat',
-  'fa-rss': 'chat',
-  'fa-solid fa-globe': 'globe',
-  'fa-globe': 'globe',
-  'fa-solid fa-fire': 'fire',
-  'fa-fire': 'fire',
-  'fa-solid fa-thumbs-up': 'like',
-  'fa-thumbs-up': 'like',
-  'fa-regular fa-thumbs-up': 'like',
-  'fa-solid fa-thumbs-down': 'dislike',
-  'fa-solid fa-quote-left': 'quote-left',
-  'fa-quote-left': 'quote-left',
-  'fa-quote-right': 'quote-right',
-  'fa-solid fa-paper-plane': 'paper-plane',
-  'fa-paper-plane': 'paper-plane',
-  'fa-solid fa-send': 'send',
-  'fa-solid fa-plane': 'plane',
-  'fa-solid fa-graduation-cap': 'graduation',
-  'fa-graduation-cap': 'graduation',
-  'fa-solid fa-gamepad': 'game',
-  'fa-gamepad': 'game',
-  'fa-solid fa-film': 'film',
-  'fa-film': 'film',
-  'fa-solid fa-video': 'video',
-  'fa-video': 'video',
-  'fa-solid fa-camera-retro': 'camera',
-  'fa-solid fa-paint-brush': 'brush',
-  'fa-paint-brush': 'brush',
-  'fa-solid fa-magic': 'wand',
-  'fa-magic': 'wand',
-  'fa-solid fa-wrench': 'settings',
-  'fa-wrench': 'settings',
-  'fa-solid fa-tools': 'settings',
-  'fa-solid fa-lightbulb': 'bulb',
-  'fa-lightbulb': 'bulb',
-  'fa-regular fa-lightbulb': 'bulb',
-  'fa-solid fa-bolt': 'bolt',
-  'fa-bolt': 'bolt',
-  'fa-solid fa-crown': 'crown',
-  'fa-crown': 'crown',
-  'fa-solid fa-gem': 'diamond',
-  'fa-gem': 'diamond',
-  'fa-regular fa-gem': 'diamond',
-  'fa-solid fa-flag': 'flag',
-  'fa-flag': 'flag',
-  'fa-solid fa-book': 'book',
-  'fa-book': 'book',
-  'fa-regular fa-book': 'book',
-  'fa-solid fa-map-marker': 'map-pin',
-  'fa-map-marker': 'map-pin',
-  'fa-solid fa-map-pin': 'map-pin',
-  'fa-solid fa-map': 'map',
-  'fa-map': 'map',
-  'fa-regular fa-map': 'map',
-  'fa-solid fa-briefcase': 'briefcase',
-  'fa-briefcase': 'briefcase',
-  'fa-solid fa-suitcase': 'briefcase',
-  'fa-solid fa-coffee': 'coffee',
-  'fa-coffee': 'coffee',
-  'fa-solid fa-mug-hot': 'coffee',
-  'fa-solid fa-hand-peace': 'peace',
-  'fa-regular fa-hand-peace': 'peace',
-  'fa-solid fa-handshake': 'handshake',
-  'fa-regular fa-handshake': 'handshake',
-  'fa-solid fa-smile': 'smile',
-  'fa-regular fa-smile': 'smile',
-  'fa-regular fa-smile-wink': 'smile',
-  'fa-solid fa-frown': 'frown',
-  'fa-regular fa-frown': 'frown',
-  'fa-solid fa-leaf': 'leaf',
-  'fa-leaf': 'leaf',
-  'fa-solid fa-tree': 'tree',
-  'fa-solid fa-cloud': 'cloud',
-  'fa-cloud': 'cloud',
-  'fa-solid fa-moon': 'moon',
-  'fa-moon': 'moon',
-  'fa-regular fa-moon': 'moon',
-  'fa-solid fa-sun': 'sun',
-  'fa-sun': 'sun',
-  'fa-regular fa-sun': 'sun',
-  'fa-solid fa-umbrella': 'umbrella',
-  'fa-solid fa-bicycle': 'bike',
-  'fa-bicycle': 'bike',
-  'fa-solid fa-car': 'car',
-  'fa-car': 'car',
-  'fa-solid fa-train': 'train',
-  'fa-solid fa-ship': 'ship',
-  'fa-solid fa-rocket': 'rocket',
-  'fa-rocket': 'rocket',
-  'fa-solid fa-space-shuttle': 'rocket',
-  'fa-solid fa-gift': 'gift',
-  'fa-gift': 'gift',
-  'fa-regular fa-gift': 'gift',
-  'fa-solid fa-credit-card': 'credit-card',
-  'fa-credit-card': 'credit-card',
-  'fa-regular fa-credit-card': 'credit-card',
-  'fa-solid fa-wallet': 'wallet',
-  'fa-wallet': 'wallet',
-  'fa-solid fa-phone': 'phone',
-  'fa-phone': 'phone',
-  'fa-solid fa-phone-alt': 'phone',
-  'fa-solid fa-microphone': 'microphone',
-  'fa-microphone': 'microphone',
-  'fa-solid fa-headphones': 'headphone',
-  'fa-headphones': 'headphone',
-  'fa-solid fa-volume-up': 'volume',
-  'fa-volume-up': 'volume',
-  'fa-solid fa-volume-mute': 'volume-mute',
-  'fa-solid fa-play': 'play',
-  'fa-play': 'play',
-  'fa-solid fa-pause': 'pause',
-  'fa-pause': 'pause',
-  'fa-solid fa-stop': 'stop',
-  'fa-solid fa-forward': 'forward',
-  'fa-solid fa-backward': 'backward',
-  'fa-solid fa-step-forward': 'forward',
-  'fa-solid fa-step-backward': 'backward',
-  'fa-solid fa-shield': 'shield',
-  'fa-shield': 'shield',
-  'fa-solid fa-shield-alt': 'shield',
-  'fa-solid fa-trophy': 'trophy',
-  'fa-trophy': 'trophy',
-  'fa-solid fa-medal': 'medal',
-  'fa-solid fa-award': 'award',
-  'fa-solid fa-check': 'check',
-  'fa-check': 'check',
-  'fa-solid fa-check-circle': 'check-circle',
-  'fa-check-circle': 'check-circle',
-  'fa-regular fa-check-circle': 'check-circle',
-  'fa-solid fa-times': 'close',
-  'fa-times': 'close',
-  'fa-solid fa-times-circle': 'x-circle',
-  'fa-times-circle': 'x-circle',
-  'fa-solid fa-plus': 'plus',
-  'fa-plus': 'plus',
-  'fa-solid fa-plus-circle': 'plus-circle',
-  'fa-plus-circle': 'plus-circle',
-  'fa-solid fa-minus': 'minus',
-  'fa-minus': 'minus',
-  'fa-solid fa-minus-circle': 'minus-circle',
-  'fa-minus-circle': 'minus-circle',
-  'fa-solid fa-question': 'question',
-  'fa-question': 'question',
-  'fa-solid fa-question-circle': 'question-circle',
-  'fa-question-circle': 'question-circle',
-  'fa-solid fa-exclamation': 'exclamation',
-  'fa-exclamation': 'exclamation',
-  'fa-solid fa-exclamation-circle': 'exclamation-circle',
-  'fa-exclamation-circle': 'exclamation-circle',
-  'fa-solid fa-exclamation-triangle': 'warning',
-  'fa-exclamation-triangle': 'warning',
-  'fa-solid fa-warning': 'warning',
-  'fa-warning': 'warning',
-  'fa-solid fa-triangle-exclamation': 'error',
-  'fa-triangle-exclamation': 'error',
-  'fa-solid fa-bars': 'menu',
+  'fa-house': 'home',
   'fa-bars': 'menu',
-  'fa-solid fa-navicon': 'menu',
-  'fa-solid fa-ellipsis-v': 'dots',
-  'fa-ellipsis-v': 'dots',
-  'fa-solid fa-ellipsis-h': 'dots-horizontal',
-  'fa-ellipsis-h': 'dots-horizontal',
-  'fa-solid fa-trash': 'trash',
-  'fa-trash': 'trash',
-  'fa-solid fa-trash-alt': 'trash-alt',
-  'fa-trash-alt': 'trash-alt',
-  'fa-solid fa-upload': 'upload',
-  'fa-upload': 'upload',
-  'fa-solid fa-save': 'save',
-  'fa-save': 'save',
-  'fa-regular fa-save': 'save',
-  'fa-solid fa-copy': 'copy',
-  'fa-copy': 'copy',
-  'fa-regular fa-copy': 'copy',
-  'fa-solid fa-paste': 'paste',
-  'fa-paste': 'paste',
-  'fa-regular fa-paste': 'paste',
-  'fa-solid fa-print': 'printer',
-  'fa-print': 'printer',
-  'fa-solid fa-mobile': 'mobile',
-  'fa-mobile': 'mobile',
-  'fa-solid fa-mobile-alt': 'mobile-alt',
-  'fa-solid fa-tablet': 'tablet',
-  'fa-tablet': 'tablet',
-  'fa-solid fa-laptop': 'laptop',
-  'fa-laptop': 'laptop',
-  'fa-solid fa-desktop': 'monitor',
-  'fa-desktop': 'monitor',
-  'fa-solid fa-tv': 'monitor',
-  'fa-solid fa-eye': 'show',
-  'fa-eye': 'show',
-  'fa-solid fa-eye-slash': 'hide',
-  'fa-eye-slash': 'hide',
-  'fa-solid fa-sliders-h': 'slider',
-  'fa-sliders-h': 'slider',
-  'fa-solid fa-sliders-v': 'slider-alt',
-  'fa-solid fa-filter': 'filter',
-  'fa-filter': 'filter',
-  'fa-solid fa-retweet': 'refresh',
-  'fa-retweet': 'refresh',
-  'fa-solid fa-refresh': 'refresh',
-  'fa-refresh': 'refresh',
-  'fa-solid fa-sync': 'sync',
-  'fa-sync': 'sync',
-  'fa-solid fa-undo': 'undo',
-  'fa-undo': 'undo',
-  'fa-solid fa-redo': 'redo',
-  'fa-redo': 'redo',
-  'fa-solid fa-share': 'share',
-  'fa-share': 'share',
-  'fa-solid fa-share-alt': 'share-alt',
-  'fa-share-alt': 'share-alt',
-  'fa-solid fa-facebook': 'facebook',
-  'fa-facebook': 'facebook',
-  'fa-solid fa-twitter': 'twitter',
-  'fa-twitter': 'twitter',
-  'fa-solid fa-instagram': 'instagram',
-  'fa-instagram': 'instagram',
-  'fa-solid fa-linkedin': 'linkedin',
-  'fa-linkedin': 'linkedin',
-  'fa-solid fa-youtube': 'youtube',
-  'fa-youtube': 'youtube',
-  'fa-solid fa-github': 'github',
-  'fa-github': 'github',
-  'fa-solid fa-gitlab': 'github',
-  'fa-gitlab': 'github',
-  'fa-solid fa-weibo': 'weibo',
-  'fa-weibo': 'weibo',
-  'fa-solid fa-qq': 'qq',
-  'fa-qq': 'qq',
-  'fa-solid fa-weixin': 'wechat',
-  'fa-weixin': 'wechat',
-  'fa-solid fa-wechat': 'wechat',
-  'fa-solid fa-telegram': 'telegram',
-  'fa-telegram': 'telegram',
-  'fa-solid fa-discord': 'discord',
-  'fa-discord': 'discord',
-  'fa-solid fa-reddit': 'reddit',
-  'fa-reddit': 'reddit',
-  'fa-solid fa-whatsapp': 'whatsapp',
-  'fa-whatsapp': 'whatsapp',
-  'fa-solid fa-skype': 'telegram',
-  'fa-skype': 'telegram',
-  'fa-solid fa-spotify': 'spotify',
-  'fa-spotify': 'spotify',
-  'fa-solid fa-steam': 'steam',
-  'fa-steam': 'steam',
-  'fa-solid fa-twitch': 'twitch',
-  'fa-twitch': 'twitch',
-  'fa-solid fa-pinterest': 'pinterest',
-  'fa-pinterest': 'pinterest',
-  'fa-solid fa-medium': 'medium',
-  'fa-medium': 'medium',
-  'fa-solid fa-paypal': 'paypal',
-  'fa-paypal': 'paypal',
-  'fa-solid fa-stack-overflow': 'stack-overflow',
-  'fa-stack-overflow': 'stack-overflow',
-  'fa-solid fa-bitcoin': 'bitcoin',
-  'fa-bitcoin': 'bitcoin',
-  'fa-solid fa-chart-bar': 'bar-chart',
-  'fa-chart-bar': 'bar-chart',
-  'fa-regular fa-chart-bar': 'bar-chart',
-  'fa-solid fa-chart-line': 'chart',
-  'fa-chart-line': 'chart',
-  'fa-solid fa-chart-pie': 'pie-chart',
-  'fa-chart-pie': 'pie-chart',
-  'fa-solid fa-database': 'server',
-  'fa-database': 'server',
-  'fa-solid fa-server': 'server',
-  'fa-server': 'server',
-  'fa-solid fa-cloud-upload': 'cloud-upload',
-  'fa-cloud-upload': 'cloud-upload',
-  'fa-solid fa-cloud-download': 'cloud-download',
-  'fa-cloud-download': 'cloud-download',
-  'fa-solid fa-wifi': 'wifi',
-  'fa-wifi': 'wifi',
-  'fa-solid fa-bluetooth': 'bluetooth',
-  'fa-bluetooth': 'bluetooth',
-  'fa-solid fa-compass': 'compass',
-  'fa-compass': 'compass',
-  'fa-regular fa-compass': 'compass',
-  'fa-solid fa-circle': 'circle',
-  'fa-circle': 'circle',
-  'fa-regular fa-circle': 'circle',
-  'fa-solid fa-square': 'square',
-  'fa-square': 'square',
-  'fa-regular fa-square': 'square',
-  'fa-regular fa-bell': 'notification',
-  'fa-solid fa-bell-slash': 'notification-off',
-  'fa-bell-slash': 'notification-off',
-  'fa-solid fa-calendar-alt': 'calendar-alt',
-  'fa-calendar-alt': 'calendar-alt',
-  'fa-solid fa-calendar-check': 'calendar-check',
-  'fa-regular fa-calendar-check': 'calendar-check',
-  'fa-solid fa-calendar-plus': 'calendar-plus',
-  'fa-regular fa-calendar-plus': 'calendar-plus',
-  'fa-solid fa-calendar-minus': 'calendar-minus',
-  'fa-regular fa-calendar-minus': 'calendar-minus',
-  'fa-solid fa-calendar-times': 'x-circle',
-  'fa-regular fa-calendar-times': 'x-circle',
-  'fa-solid fa-images': 'images',
-  'fa-images': 'images',
-  'fa-regular fa-images': 'images',
-  'fa-solid fa-photo-video': 'video',
-  'fa-solid fa-headset': 'headphone',
-  'fa-headset': 'headphone',
-  'fa-solid fa-microphone-alt': 'microphone',
-  'fa-solid fa-volume-off': 'volume-off',
-  'fa-volume-off': 'volume-off',
-  'fa-solid fa-volume-down': 'volume-low',
-  'fa-volume-down': 'volume-low',
-  'fa-solid fa-battery-full': 'battery-full',
-  'fa-battery-full': 'battery-full',
-  'fa-solid fa-battery-three-quarters': 'battery',
-  'fa-solid fa-battery-half': 'battery',
-  'fa-solid fa-battery-quarter': 'battery',
-  'fa-solid fa-battery-empty': 'battery',
-  'fa-solid fa-plug': 'power-off',
-  'fa-plug': 'power-off',
-  'fa-solid fa-key': 'key',
-  'fa-key': 'key',
-  'fa-solid fa-video-slash': 'video-off',
-  'fa-video-slash': 'video-off',
-  'fa-solid fa-tags': 'tag',
+  'fa-search': 'search',
+  'fa-magnifying-glass': 'search',
+  'fa-user': 'user',
+  'fa-users': 'group',
+  'fa-gear': 'settings',
+  'fa-cog': 'settings',
+  'fa-envelope': 'mail',
+  'fa-comment': 'chat',
+  'fa-comments': 'chat',
+  'fa-star': 'star',
+  'fa-heart': 'heart',
+  'fa-bookmark': 'bookmark',
+  'fa-tag': 'tag',
   'fa-tags': 'tag',
+  'fa-folder': 'folder',
+  'fa-file': 'file',
+  'fa-book': 'book',
+  'fa-pen': 'edit',
+  'fa-pencil': 'edit',
+  'fa-clock': 'clock',
+  'fa-calendar': 'calendar',
+  'fa-camera': 'camera',
+  'fa-image': 'photo',
+  'fa-images': 'photo',
+  'fa-music': 'music',
+  'fa-video': 'video',
+  'fa-download': 'download',
+  'fa-upload': 'upload',
+  'fa-link': 'link',
+  'fa-map': 'map',
+  'fa-location-dot': 'map-pin',
+  'fa-gamepad': 'game',
+  'fa-code': 'code',
+  'fa-graduation-cap': 'graduation',
+  'fa-circle-info': 'info-circle',
+  'fa-info': 'info',
+  'fa-circle-question': 'question',
+  'fa-question': 'question',
+  'fa-triangle-exclamation': 'error',
+  'fa-check': 'check',
+  'fa-xmark': 'close',
+  'fa-cart-shopping': 'cart',
+  'fa-gift': 'gift',
+  'fa-github': 'github',
+  'fa-twitter': 'twitter',
+  'fa-x-twitter': 'twitter-x',
+  'fa-facebook': 'facebook',
+  'fa-instagram': 'instagram',
+  'fa-linkedin': 'linkedin',
+  'fa-youtube': 'youtube',
+  'fa-weibo': 'weibo',
+  'fa-qq': 'qq',
+  'fa-weixin': 'wechat',
+  'fa-telegram': 'telegram',
+  'fa-discord': 'discord',
+  'fa-rss': 'rss',
 }
 
-// ============================================================
-// 4. 辅助函数
-// ============================================================
+/** 图标库/样式前缀，跳过不作为图标名 */
+const PREFIX_TOKENS = new Set([
+  'bx',
+  'ti',
+  'fa',
+  'fas',
+  'far',
+  'fab',
+  'fal',
+  'fa-solid',
+  'fa-regular',
+  'fa-brands',
+  'fa-light',
+  'iconfont',
+])
 
-/** 默认兜底图标 */
-const DEFAULT_ICON_HTML = '<i class="bx bx-circle"></i>'
+/** 从 `<i class="...">` 提取 class；否则原样返回 */
+function normalizeIcon(raw: string): string {
+  const s = raw.trim()
+  if (s.startsWith('<')) {
+    const m = s.match(/class=["']([^"']+)["']/)
+    return m?.[1] ?? s
+  }
+  return s
+}
 
-/**
- * 从完整 HTML 字符串中提取 CSS 类名
- * 兼容某些插件保存 <i class="fa fa-home"></i> 这种格式
- */
-function extractClassFromHtml(html: string): string | null {
-  const match = html.match(/class=["']([^"']+)["']/)
-  if (match) return match[1] ?? null
+/** 把一段图标标识拆成候选语义名 + 推断 filled */
+function resolveTokens(input: string): ResolvedIcon | null {
+  const tokens = normalizeIcon(input).split(/\s+/).filter(Boolean)
+  let filled = false
+  const candidates: string[] = []
+
+  for (const t of tokens) {
+    if (PREFIX_TOKENS.has(t)) continue
+    if (t.includes('-filled') || t.endsWith('-fill')) filled = true
+
+    if (t.startsWith('bxs-')) {
+      filled = true
+      candidates.push(t.slice(4))
+    } else if (t.startsWith('bx-')) {
+      candidates.push(t.slice(3))
+    } else if (t.startsWith('bxl-')) {
+      candidates.push(t.slice(4))
+    } else if (t.startsWith('ti-')) {
+      candidates.push(t.slice(3))
+    } else if (t.startsWith('fa-')) {
+      const sem = FA_TO_SEMANTIC[t]
+      if (sem) candidates.push(sem)
+    } else {
+      candidates.push(t)
+    }
+  }
+
+  for (const c of candidates) {
+    if (NAME_MAP[c]) return { name: NAME_MAP[c], filled }
+    if (VALID_TABLER.has(c)) return { name: c, filled }
+  }
   return null
 }
 
-/**
- * 标准化 icon 值：如果是 HTML 标签则提取 class，否则原样返回
- */
-function normalizeIcon(raw: string): string {
-  if (raw.startsWith('<')) {
-    const cls = extractClassFromHtml(raw)
-    return cls || raw
-  }
-  return raw
-}
-
-/**
- * 通过 FontAwesome 类名尝试查找对应的 Boxicons HTML
- * 支持带 HTML 标签包裹的格式
- */
-function faToBx(icon: string): string | undefined {
-  const cls = normalizeIcon(icon)
-  // 尝试精确匹配
-  const bxName = FA_TO_BX[cls]
-  if (bxName) return ICON_MAP[bxName]
-  // 尝试只匹配最后一个非 bxs/bxr/bxl 的类名
-  const parts = cls.split(/\s+/)
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i]
-    if (!p || !p.startsWith('fa-')) continue
-    const bxName2 = FA_TO_BX[p]
-    if (bxName2) return ICON_MAP[bxName2]
-  }
-  return undefined
-}
-
-/**
- * 根据 active 状态切换图标填充(filled) / 轮廓(outline) 变体。
- * Boxicons 命名规则: bx-xxx = outline, bxs-xxx = filled/solid。
- */
-function toggleIconVariant(html: string, filled: boolean): string {
-  if (filled) {
-    // outline → filled: bx-name → bxs-name（仅当 bxs- 变体存在时）
-    return html.replace(/\bbx-(?![\w-]*s)([\w-]+)/g, (match, name) => {
-      return EXISTING_FILLED_ICONS.has(name) ? `bxs-${name}` : match
-    })
-  } else {
-    // filled → outline: bxs-name → bx-name
-    return html.replace(/\bbxs-([\w-]+)/g, 'bx-$1')
-  }
-}
-
 // ============================================================
-// 5. 公开 API
+// 公开 API
 // ============================================================
 
 /**
- * 根据菜单项 (MenuItem) 解析图标 HTML。
- * 优先级: item.icon 名称 → FontAwesome 兼容 → 中文标题匹配 → 默认图标。
- * @param active 是否显示 filled 变体（当前菜单位于活跃路径时使用）
+ * 解析任意图标标识为 Tabler 图标。
+ * @param raw 语义名 / bx 类名 / ti 类名 / fa 类名 / `<i>` HTML
  */
-export function getItemIcon(item: MenuItem, active?: boolean): string {
-  let icon: string
-  if (!item.icon) {
-    const titleKey = item.title ? TITLE_ICON_MAP[item.title] : undefined
-    icon = titleKey ? (ICON_MAP[titleKey] || DEFAULT_ICON_HTML) : DEFAULT_ICON_HTML
-  } else {
-    const normalized = normalizeIcon(item.icon)
-    if (!normalized.startsWith('fa')) {
-      icon = ICON_MAP[normalized] || ''
-    } else {
-      icon = ''
-    }
-    if (!icon) {
-      const faResult = faToBx(item.icon)
-      icon = faResult || ''
-    }
-    if (!icon) {
-      const titleKey = TITLE_ICON_MAP[item.title]
-      icon = titleKey ? (ICON_MAP[titleKey] || DEFAULT_ICON_HTML) : DEFAULT_ICON_HTML
-    }
-    if (!icon) {
-      icon = DEFAULT_ICON_HTML
-    }
+export function resolveIconName(raw?: string | null): ResolvedIcon {
+  if (!raw) return { name: DEFAULT_ICON_NAME, filled: false }
+  return resolveTokens(raw) || { name: DEFAULT_ICON_NAME, filled: false }
+}
+
+/**
+ * 解析菜单项图标：item.icon → FA 兼容 → 中文标题匹配 → 默认。
+ * @param active 活跃路径时用 filled 变体
+ */
+export function resolveMenuIcon(item: MenuItem, active?: boolean): ResolvedIcon {
+  let resolved: ResolvedIcon | null = null
+
+  if (item.icon) resolved = resolveTokens(item.icon)
+
+  if (!resolved && item.title) {
+    const sem = TITLE_ICON_MAP[item.title]
+    if (sem) resolved = { name: NAME_MAP[sem] || DEFAULT_ICON_NAME, filled: false }
   }
-  if (!icon) icon = DEFAULT_ICON_HTML
-  return active ? toggleIconVariant(icon, true) : toggleIconVariant(icon, false)
+
+  if (!resolved) resolved = { name: DEFAULT_ICON_NAME, filled: false }
+  if (active) resolved.filled = true
+  return resolved
 }
 
-/**
- * 通过图标名称直接获取 Boxicons HTML（无需 MenuItem 对象）。
- * 用于后台图标设置、社交卡片图标等场景。
- * @param name 图标名称（如 "github"、"home"、"bxl-github"）
- * @param filled 是否使用 filled 变体
- */
-export function getIconHtml(name: string, filled?: boolean): string {
-  const icon = ICON_MAP[name]
-  if (icon) {
-    return filled ? toggleIconVariant(icon, true) : toggleIconVariant(icon, false)
-  }
-  return DEFAULT_ICON_HTML
-}
-
-/** 图标条目（供图标选择器使用） */
-export interface IconEntry {
-  name: string
-  html: string
-  category: string
-}
-
-/** 图标分类 */
-const ICON_CATEGORIES: Record<string, string> = {
-  home: 'nav', menu: 'nav', 'menu-alt': 'nav', close: 'nav',
-  'x-circle': 'nav', plus: 'nav', 'plus-circle': 'nav', 'plus-square': 'nav',
-  minus: 'nav', 'minus-circle': 'nav', check: 'nav', 'check-circle': 'nav',
-  'check-square': 'nav', 'solid-check-circle': 'nav', 'solid-check-square': 'nav',
-  dots: 'nav', 'dots-horizontal': 'nav', grid: 'nav', 'grid-alt': 'nav',
-  'grid-small': 'nav', 'solid-grid': 'nav', list: 'nav', 'list-ol': 'nav',
-  'list-plus': 'nav', 'list-check': 'nav', sidebar: 'nav', layout: 'nav',
-  'layout-block': 'nav', 'layout-grid': 'nav', 'layout-square': 'nav',
-  'solid-dashboard': 'nav', dock: 'nav', window: 'nav', 'window-open': 'nav',
-  'window-alt': 'nav', terminal: 'nav',
-
-  'chevron-up': 'arrow', 'chevron-down': 'arrow', 'chevron-left': 'arrow',
-  'chevron-right': 'arrow', 'chevrons-up': 'arrow', 'chevrons-down': 'arrow',
-  'chevrons-left': 'arrow', 'chevrons-right': 'arrow', 'arrow-back': 'arrow',
-  'arrow-forward': 'arrow', 'up-arrow': 'arrow', 'down-arrow': 'arrow',
-  'left-arrow': 'arrow', 'right-arrow': 'arrow', 'solid-up-arrow': 'arrow',
-  'solid-down-arrow': 'arrow', 'solid-left-arrow': 'arrow', 'solid-right-arrow': 'arrow',
-  'up-arrow-circle': 'arrow', 'down-arrow-circle': 'arrow', 'left-arrow-circle': 'arrow',
-  'right-arrow-circle': 'arrow', 'up-arrow-square': 'arrow', 'down-arrow-square': 'arrow',
-  'left-arrow-square': 'arrow', 'right-arrow-square': 'arrow', resize: 'arrow',
-  'move-horizontal': 'arrow', 'move-vertical': 'arrow',
-  'solid-direction-up': 'arrow', 'solid-direction-down': 'arrow',
-  'solid-direction-left': 'arrow', 'solid-direction-right': 'arrow',
-  upvote: 'arrow', downvote: 'arrow', 'solid-upvote': 'arrow', 'solid-downvote': 'arrow',
-
-  search: 'tool', 'search-alt': 'tool', 'search-alt-2': 'tool',
-  'solid-search': 'tool', zoom: 'tool', settings: 'tool', 'settings-spin': 'tool',
-  filter: 'tool', 'filter-alt': 'tool', adjust: 'tool', slider: 'tool',
-  'slider-alt': 'tool', ruler: 'tool', infinite: 'tool', trash: 'tool',
-  'solid-trash': 'tool', 'trash-alt': 'tool',
-
-  play: 'media', pause: 'media', stop: 'media', 'play-circle': 'media',
-  'solid-play': 'media', forward: 'media', backward: 'media', 'fast-forward': 'media',
-  'fast-backward': 'media', 'skip-next': 'media', 'skip-previous': 'media',
-  volume: 'media', 'volume-mute': 'media', 'volume-low': 'media', 'volume-off': 'media',
-  music: 'media', 'music-alt': 'media', radio: 'media', microphone: 'media',
-  'microphone-off': 'media', headphone: 'media', podcast: 'media', video: 'media',
-  'video-off': 'media', 'video-recording': 'media', camera: 'media', 'camera-off': 'media',
-  'camera-plus': 'media', 'solid-camera': 'media', show: 'media', hide: 'media',
-  slideshow: 'media', movie: 'media', film: 'media', clapperboard: 'media',
-
-  chat: 'communication', message: 'communication', 'message-alt': 'communication',
-  'solid-message': 'communication', 'chat-dots': 'communication', 'chat-alt': 'communication',
-  mail: 'communication', 'solid-mail': 'communication', 'mail-open': 'communication',
-  send: 'communication', 'paper-plane': 'communication', reply: 'communication',
-  'reply-all': 'communication', share: 'communication', 'share-alt': 'communication',
-  'solid-share': 'communication', 'share-social': 'communication', export: 'communication',
-  link: 'communication', 'link-external': 'communication', 'link-alt': 'communication',
-  phone: 'communication', 'phone-call': 'communication', 'phone-off': 'communication',
-  'solid-phone': 'communication', notification: 'communication', 'notification-off': 'communication',
-  'solid-notification': 'communication', group: 'communication', 'solid-group': 'communication',
-
-  user: 'user', 'user-plus': 'user', 'user-minus': 'user', 'user-check': 'user',
-  'user-x': 'user', 'solid-user': 'user', 'solid-user-circle': 'user', 'user-circle': 'user',
-  'user-detail': 'user', 'user-pin': 'user', 'solid-user-account': 'user', 'id-card': 'user',
-  badge: 'user', 'solid-badge': 'user', 'badge-check': 'user', 'solid-badge-check': 'user',
-  'log-in': 'user', 'log-out': 'user', 'solid-log-in': 'user', 'solid-log-out': 'user',
-  crown: 'user', 'solid-crown': 'user',
-
-  file: 'file', 'file-blank': 'file', 'solid-file': 'file', 'file-plus': 'file',
-  'file-minus': 'file', 'file-edit': 'file', 'file-find': 'file', 'file-export': 'file',
-  'file-import': 'file', 'file-archive': 'file', 'file-pdf': 'file', 'file-doc': 'file',
-  'file-image': 'file', 'file-code': 'file', 'file-css': 'file', 'file-js': 'file',
-  'file-json': 'file', 'file-md': 'file', folder: 'file', 'folder-plus': 'file',
-  'folder-minus': 'file', 'folder-open': 'file', 'solid-folder': 'file',
-  'solid-folder-open': 'file', copy: 'file', 'solid-copy': 'file', paste: 'file',
-  clipboard: 'file',
-
-  edit: 'edit', 'edit-alt': 'edit', 'solid-edit': 'edit', 'edit-pencil': 'edit',
-  pen: 'edit', brush: 'edit', 'solid-brush': 'edit', wand: 'edit', 'solid-wand': 'edit',
-  eraser: 'edit', color: 'edit', palette: 'edit', 'solid-palette': 'edit',
-  paint: 'edit', 'paint-roll': 'edit', cut: 'edit', crop: 'edit', scissors: 'edit',
-  selection: 'edit', layer: 'edit', 'solid-layer': 'edit', layers: 'edit',
-  droplet: 'edit', 'solid-droplet': 'edit', eyedropper: 'edit',
-
-  star: 'object', 'solid-star': 'object', 'star-half': 'object', heart: 'object',
-  'solid-heart': 'object', like: 'object', 'solid-like': 'object', dislike: 'object',
-  'solid-dislike': 'object', tag: 'object', 'solid-tag': 'object', 'tag-alt': 'object',
-  bookmark: 'object', 'solid-bookmark': 'object', 'bookmark-plus': 'object',
-  'bookmark-minus': 'object', flag: 'object', 'solid-flag': 'object', 'flag-alt': 'object',
-  diamond: 'object', 'solid-diamond': 'object', circle: 'object', 'solid-circle': 'object',
-  square: 'object', 'solid-square': 'object', shield: 'object', 'solid-shield': 'object',
-  'shield-alt': 'object', lock: 'object', 'solid-lock': 'object', 'lock-open': 'object',
-  unlock: 'object', key: 'object', 'solid-key': 'object', bulb: 'object', 'solid-bulb': 'object',
-  bolt: 'object', 'solid-bolt': 'object', gift: 'object', 'solid-gift': 'object',
-  'info-circle': 'object', 'solid-info-circle': 'object', info: 'object', question: 'object',
-  'question-circle': 'object', exclamation: 'object', 'exclamation-circle': 'object',
-  error: 'object', 'error-circle': 'object', warning: 'object', 'warning-circle': 'object',
-
-  book: 'writing', 'solid-book': 'writing', 'book-plus': 'writing', bookbook: 'writing',
-  'book-open': 'writing', 'book-content': 'writing', 'book-alt': 'writing', notepad: 'writing',
-  'solid-notepad': 'writing', note: 'writing', 'solid-note': 'writing', news: 'writing',
-  'solid-news': 'writing', quote: 'writing', 'quote-left': 'writing', 'quote-right': 'writing',
-  'solid-quote-left': 'writing', 'quote-alt': 'writing', font: 'writing', bold: 'writing',
-  italic: 'writing', underline: 'writing', strikethrough: 'writing', text: 'writing',
-  'align-left': 'writing', 'align-center': 'writing', 'align-right': 'writing',
-  'align-justify': 'writing', code: 'writing', 'code-alt': 'writing', 'code-block': 'writing',
-  'solid-code': 'writing',
-
-  clock: 'time', 'clock-alt': 'time', 'solid-clock': 'time', stopwatch: 'time',
-  timer: 'time', calendar: 'time', 'calendar-alt': 'time', 'solid-calendar': 'time',
-  'calendar-plus': 'time', 'calendar-minus': 'time', 'calendar-check': 'time',
-  'calendar-event': 'time', 'calendar-week': 'time', hourglass: 'time',
-
-  sun: 'weather', 'solid-sun': 'weather', moon: 'weather', 'solid-moon': 'weather',
-  cloud: 'weather', 'solid-cloud': 'weather', 'cloud-rain': 'weather',
-  'cloud-lightning': 'weather', 'cloud-drizzle': 'weather', 'cloud-snow': 'weather',
-  rain: 'weather', lightning: 'weather', snow: 'weather', leaf: 'weather',
-  'solid-leaf': 'weather', tree: 'weather', 'solid-tree': 'weather', flower: 'weather',
-  water: 'weather', wind: 'weather', umbrella: 'weather',
-
-  map: 'travel', 'solid-map': 'travel', 'map-alt': 'travel', 'map-pin': 'travel',
-  'solid-map-pin': 'travel', 'current-location': 'travel', navigation: 'travel',
-  compass: 'travel', 'solid-compass': 'travel', globe: 'travel', 'solid-globe': 'travel',
-  world: 'travel', car: 'travel', 'solid-car': 'travel', 'car-mechanic': 'travel',
-  bike: 'travel', 'solid-bike': 'travel', train: 'travel', 'solid-train': 'travel',
-  ship: 'travel', 'solid-ship': 'travel', plane: 'travel', 'plane-alt': 'travel',
-  rocket: 'travel', 'solid-rocket': 'travel', bus: 'travel', walk: 'travel', run: 'travel',
-
-  photo: 'image', 'photo-alt': 'image', 'solid-photo': 'image', image: 'image',
-  'image-add': 'image', images: 'image', album: 'image', 'solid-album': 'image',
-  'photo-album': 'image', landscape: 'image', collection: 'image', gallery: 'image',
-
-  shopping: 'commerce', 'shopping-bag': 'commerce', 'solid-shopping-bag': 'commerce',
-  cart: 'commerce', 'cart-alt': 'commerce', 'solid-cart': 'commerce',
-  'cart-download': 'commerce', store: 'commerce', 'store-alt': 'commerce',
-  discount: 'commerce', credit: 'commerce', 'credit-card': 'commerce',
-  'solid-credit-card': 'commerce', wallet: 'commerce', 'solid-wallet': 'commerce',
-  'wallet-alt': 'commerce', dollar: 'commerce', 'dollar-circle': 'commerce',
-  coin: 'commerce', 'solid-coin': 'commerce', money: 'commerce', atm: 'commerce',
-  receipt: 'commerce', briefcase: 'commerce', 'solid-briefcase': 'commerce',
-  'briefcase-alt': 'commerce', 'bar-chart': 'commerce', chart: 'commerce',
-  'pie-chart': 'commerce', analytics: 'commerce', 'trending-up': 'commerce',
-  'trending-down': 'commerce',
-
-  devices: 'tech', laptop: 'tech', monitor: 'tech', tablet: 'tech', mobile: 'tech',
-  'mobile-alt': 'tech', smartphone: 'tech', watch: 'tech', signal: 'tech',
-  wifi: 'tech', 'wifi-off': 'tech', bluetooth: 'tech', battery: 'tech',
-  'battery-charging': 'tech', 'battery-full': 'tech', 'power-off': 'tech',
-  printer: 'tech', mouse: 'tech', keyboard: 'tech', 'hard-drive': 'tech',
-  hdd: 'tech', server: 'tech', chip: 'tech', cpu: 'tech',
-
-  download: 'download', 'solid-download': 'download', upload: 'download',
-  'solid-upload': 'download', import: 'download', 'cloud-upload': 'download',
-  'cloud-download': 'download', revision: 'download', refresh: 'download',
-  sync: 'download', reset: 'download', rotate: 'download', undo: 'download',
-  redo: 'download',
-
-  game: 'game', gamepad: 'game', joystick: 'game', 'solid-game': 'game',
-  trophy: 'game', 'solid-trophy': 'game', medal: 'game', 'solid-medal': 'game',
-  award: 'game', 'solid-award': 'game', badminton: 'game', basketball: 'game',
-  football: 'game', tennis: 'game', baseball: 'game', bowling: 'game',
-  golf: 'game', dice: 'game', ghost: 'game', 'solid-ghost': 'game', planet: 'game',
-  confetti: 'game', party: 'game', fire: 'game', hot: 'game', happy: 'emoji',
-  smile: 'emoji', 'solid-smile': 'emoji', 'happy-alt': 'emoji', 'happy-beaming': 'emoji',
-  meh: 'emoji', 'solid-meh': 'emoji', frown: 'emoji', 'solid-frown': 'emoji',
-  cool: 'emoji', 'solid-cool': 'emoji', sleepy: 'emoji', tired: 'emoji',
-  wink: 'emoji', angry: 'emoji', sad: 'emoji',
-
-  archive: 'archive', 'solid-archive': 'archive', 'archive-in': 'archive',
-  'archive-out': 'archive', inbox: 'archive', 'solid-inbox': 'archive', outbox: 'archive',
-  drawer: 'archive', dumpster: 'archive', box: 'archive', package: 'archive',
-
-  coffee: 'food', 'solid-coffee': 'food', 'coffee-togo': 'food', tea: 'food',
-  cake: 'food', pizza: 'food', 'food-menu': 'food', drink: 'food', beer: 'food',
-  wine: 'food', 'bowl-rice': 'food', 'bowl-hot': 'food', cookie: 'food',
-  'ice-cream': 'food',
-
-  'heart-rate': 'health', pulse: 'health', health: 'health', fitness: 'health',
-  dumbbell: 'health', 'first-aid': 'health', medical: 'health', syringe: 'health',
-  pill: 'health', bandage: 'health', 'plus-medical': 'health', body: 'health',
-  restaurant: 'health', spa: 'health',
-
-  hand: 'gesture', handicap: 'gesture', peace: 'gesture', handshake: 'gesture',
-  'thumbs-up': 'gesture', 'thumbs-down': 'gesture', clap: 'gesture', wave: 'gesture',
-  fingerprint: 'gesture', point: 'gesture',
-
-  graduation: 'education', 'solid-graduation': 'education', school: 'education',
-  library: 'education', notebook: 'education', pencil: 'education',
-  calculator: 'education', flask: 'education', atom: 'education',
-
-  'shape-circle': 'shape', 'shape-square': 'shape', 'shape-triangle': 'shape',
-  'shape-rhombus': 'shape', 'shape-polygon': 'shape', 'shape-hexagon': 'shape',
-  'shape-octagon': 'shape',
-
-  github: 'logo', twitter: 'logo', 'twitter-x': 'logo', facebook: 'logo',
-  'facebook-circle': 'logo', instagram: 'logo', 'instagram-alt': 'logo', linkedin: 'logo',
-  'linkedin-square': 'logo', youtube: 'logo', tiktok: 'logo', telegram: 'logo',
-  discord: 'logo', slack: 'logo', reddit: 'logo', whatsapp: 'logo', wechat: 'logo',
-  weixin: 'logo', qq: 'logo', bilibili: 'logo', douyin: 'logo', zhihu: 'logo',
-  weibo: 'logo', douban: 'logo', google: 'logo', 'google-plus': 'logo',
-  'google-drive': 'logo', apple: 'logo', microsoft: 'logo', windows: 'logo',
-  android: 'logo', linux: 'logo', 'apple-store': 'logo', medium: 'logo',
-  mediumold: 'logo', 'product-hunt': 'logo', docker: 'logo', kubernetes: 'logo',
-  nodejs: 'logo', python: 'logo', javascript: 'logo', typescript: 'logo',
-  css3: 'logo', html5: 'logo', sass: 'logo', vuejs: 'logo', react: 'logo',
-  angular: 'logo', npm: 'logo', yarn: 'logo', git: 'logo', 'github-alt': 'logo',
-  codepen: 'logo', codesandbox: 'logo', figma: 'logo', sketch: 'logo',
-  wordpress: 'logo', php: 'logo', jquery: 'logo', bootstrap: 'logo',
-  'tailwind-css': 'logo', 'microsoft-teams': 'logo', pinterest: 'logo',
-  bitcoin: 'logo', ethereum: 'logo', patreon: 'logo', 'ko-fi': 'logo',
-  buymeacoffee: 'logo', paypal: 'logo', stripe: 'logo', alipay: 'logo',
-  unity: 'logo', 'unreal-engine': 'logo', steam: 'logo', 'epic-games': 'logo',
-  twitch: 'logo', spotify: 'logo', soundcloud: 'logo', netlify: 'logo',
-  vercel: 'logo', heroku: 'logo', digitalocean: 'logo', cloudflare: 'logo',
-  'stack-overflow': 'logo', stackoverflow: 'logo', 'visual-studio': 'logo',
-  vscode: 'logo', jetbrains: 'logo', webstorm: 'logo', phpstorm: 'logo',
-  postman: 'logo',
-}
-
-/** 获取分类中文名 */
-export const CATEGORY_LABELS: Record<string, string> = {
-  nav: '导航 & UI',
-  arrow: '箭头 & 方向',
-  tool: '搜索 & 工具',
-  media: '媒体 & 播放',
-  communication: '通信 & 社交',
-  user: '用户 & 人物',
-  file: '文件 & 文件夹',
-  edit: '编辑 & 设计',
-  object: '对象 & 形状',
-  writing: '书 & 写作',
-  time: '时间 & 日期',
-  weather: '天气 & 自然',
-  travel: '地图 & 旅行',
-  image: '相册 & 图片',
-  commerce: '购物 & 商务',
-  tech: '设备 & 科技',
-  download: '下载 & 上传',
-  game: '游戏 & 娱乐',
-  emoji: '表情 & 情绪',
-  archive: '归档 & 存储',
-  food: '食物 & 饮品',
-  health: '健康 & 健身',
-  gesture: '手势 & 动作',
-  education: '学术 & 教育',
-  shape: '形状',
-  logo: '品牌 & Logo',
-}
-
-/**
- * 获取所有可用图标列表（按分类分组）
- * 用于后台图标选择器展示
- */
-export function getIconList(): IconEntry[] {
-  return Object.entries(ICON_MAP).map(([name, html]) => ({
-    name,
-    html,
-    category: ICON_CATEGORIES[name] || 'other',
-  }))
-}
-
-/**
- * 搜索图标名称（用于图标选择器搜索）
- */
-export function searchIcons(query: string): IconEntry[] {
-  const q = query.toLowerCase().trim()
-  if (!q) return getIconList()
-  return Object.entries(ICON_MAP)
-    .filter(([name]) => name.includes(q))
-    .map(([name, html]) => ({
-      name,
-      html,
-      category: ICON_CATEGORIES[name] || 'other',
-    }))
-}
-
-/**
- * 检查图标名称是否存在于映射表中
- */
-export function hasIcon(name: string): boolean {
-  return name in ICON_MAP
+/** 该图标标识是否能解析到已知 Tabler 图标 */
+export function hasIcon(raw: string): boolean {
+  return resolveTokens(raw) !== null
 }

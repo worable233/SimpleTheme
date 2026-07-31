@@ -124,12 +124,19 @@
   margin-bottom: 15px;
 }
 
-.single-post__tags span {
+.single-post__tags a {
   font-size: 13px;
   color: var(--secondary);
   background: var(--muted);
   padding: 3px 10px;
   border-radius: 4px;
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.single-post__tags a:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 /* End note / pagination */

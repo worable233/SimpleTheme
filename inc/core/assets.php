@@ -106,6 +106,7 @@ function simple_theme_get_frontend_config() {
 				'showReadingTime'  => (bool) ($theme_options['article_meta_show_reading_time']   ?? true),
 				'showWordCount'    => (bool) ($theme_options['article_meta_show_word_count']      ?? false),
 				'showAuthor'      => (bool) ($theme_options['article_meta_show_author']        ?? true),
+				'showEditLink'     => (bool) ($theme_options['article_meta_show_edit_link']     ?? true),
 			),
 		),
 	);
@@ -224,6 +225,15 @@ function simple_theme_enqueue_assets() {
 		}
 		return $tag;
 	}, 10, 3 );
+}
+
+/**
+ * Output a generator meta tag declaring the theme name and version.
+ */
+add_action( 'wp_head', 'simple_theme_output_generator_meta', 0 );
+function simple_theme_output_generator_meta() {
+	$theme = wp_get_theme( get_template() );
+	echo '<meta name="generator" content="' . esc_attr( $theme->get( 'Name' ) . ' ' . $theme->get( 'Version' ) ) . '">' . "\n";
 }
 
 /**

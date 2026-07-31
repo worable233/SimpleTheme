@@ -10,14 +10,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ========== CORS ==========
+//
+// 仅向已允许的源下发 CORS 头（复用 WordPress 原生白名单：同源
+// + allowed_http_origins 过滤器里登记的开发源），避免无条件反射
+// 任意 Origin 同时携带凭据造成的 CSRF 风险。
 
 add_action( 'init', 'simple_theme_cors_handler' );
 function simple_theme_cors_handler() {
 	if ( empty( $_SERVER['HTTP_ORIGIN'] ) ) {
 		return;
 	}
-	$origin = esc_url_raw( $_SERVER['HTTP_ORIGIN'] );
+	$origin = esc_url_raw( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) );
+	if ( ! is_allowed_http_origin( $origin ) ) {
+		return;
+	}
 	header( 'Access-Control-Allow-Origin: ' . $origin );
+	header( 'Vary: Origin', false );
 	header( 'Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS' );
 	header( 'Access-Control-Allow-Credentials: true' );
 	header( 'Access-Control-Allow-Headers: Authorization, X-WP-Nonce, Content-Type, X-Requested-With' );
@@ -32,6 +40,27 @@ function simple_theme_allow_localhost_origin( $origin ) {
 	$origin[] = 'http://localhost:5173';
 	$origin[] = 'http://127.0.0.1:5173';
 	return $origin;
+}
+
+// WordPress 核心的 rest_send_cors_headers() 会无条件反射任意 Origin 且带
+// Access-Control-Allow-Credentials:true，构成 CSRF 风险。替换为仅对
+// is_allowed_http_origin() 白名单内的源下发头（同源 + 上面登记的开发源）。
+add_action( 'rest_api_init', 'simple_theme_replace_rest_cors', 15 );
+function simple_theme_replace_rest_cors() {
+	remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+	add_filter( 'rest_pre_serve_request', 'simple_theme_rest_cors_headers', 11 );
+}
+function simple_theme_rest_cors_headers( $value ) {
+	$origin = get_http_origin();
+	if ( $origin && is_allowed_http_origin( $origin ) ) {
+		header( 'Access-Control-Allow-Origin: ' . esc_url_raw( $origin ) );
+		header( 'Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, PATCH, DELETE' );
+		header( 'Access-Control-Allow-Credentials: true' );
+		header( 'Vary: Origin', false );
+	} elseif ( 'null' !== get_http_origin() ) {
+		header( 'Vary: Origin', false );
+	}
+	return $value;
 }
 
 // ========== REST API CSRF Bypass ==========
@@ -50,6 +79,10 @@ add_filter( 'rest_pre_dispatch', function ( $result, $server, $request ) {
 	if ( 'rest_cookie_invalid_nonce' !== $result->get_error_code() ) {
 		return $result;
 	}
+	// 仅非生产环境（本地/开发）放宽；生产环境保留标准 CSRF 校验。
+	if ( 'production' === wp_get_environment_type() ) {
+		return $result;
+	}
 	$route = $request->get_route();
 	if ( 0 === strpos( $route, '/simple-theme/v1/' ) ) {
 		return null; // let our permission_callback decide
@@ -61,6 +94,8 @@ add_filter( 'rest_pre_dispatch', function ( $result, $server, $request ) {
 
 add_action( 'after_setup_theme', 'simple_theme_setup' );
 function simple_theme_setup() {
+	load_theme_textdomain( 'simple-theme', get_template_directory() . '/languages' );
+
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
 	add_theme_support( 'html5', array( 'comment-list', 'comment-form', 'search-form', 'gallery', 'caption', 'style', 'script' ) );
@@ -146,7 +181,7 @@ function simple_theme_menu_item_icon_field( $item_id, $item, $depth, $args ) {
 				name="menu_item_icon[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $icon ); ?>"
 			/>
-			<small style="color:#888;font-style:italic;">如: bx bxl-github</small>
+			<small style="color:#888;font-style:italic;">如: ti ti-brand-github、home、star</small>
 		</label>
 	</p>
 	<?php
@@ -159,17 +194,8 @@ function simple_theme_save_menu_item_icon( $menu_id, $menu_item_db_id, $args ) {
 	}
 }
 
-// ========== Post View Count (legacy wp-postview support) ==========
-
-add_action( 'wp', 'simple_theme_set_post_views' );
-function simple_theme_set_post_views() {
-	if ( ! is_singular( 'post' ) ) {
-		return;
-	}
-	$post_id = get_the_ID();
-	if ( ! $post_id ) {
-		return;
-	}
-	$count = (int) get_post_meta( $post_id, 'views', true );
-	update_post_meta( $post_id, 'views', $count + 1 );
-}
+// ========== Post View Count ==========
+//
+// 浏览量统一由前端 REST（simple-theme/v1/track-view）在真实访问时 +1。
+// 不再用 wp 钩子计数——那只在服务器渲染（爬虫直出页）时触发，
+// 会导致 bot 刷量与 SPA 双重计数。

@@ -1,0 +1,27 @@
+# Copyright (C) 2026 worable
+# This file is distributed under the CC BY-NC-ND 4.0 license.
+msgid ""
+msgstr ""
+"Project-Id-Version: Simple Theme 2.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/worable/simple-theme\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language-Team: worable\n"
+"X-Domain: simple-theme\n"
+
+#. Theme sidebar area name
+msgid "右侧栏"
+msgstr ""
+
+#. Profile widget name
+msgid "主题：个人资料卡"
+msgstr ""
+
+#. Hitokoto widget name
+msgid "主题：一言"
+msgstr ""
+
+#. Site info widget name
+msgid "主题：站点信息"
+msgstr ""

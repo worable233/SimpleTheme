@@ -97,6 +97,28 @@ export async function fetchPostCollectionByTaxonomy(taxonomy: string, termId: nu
   return items
 }
 
+/** 按日期归档（年/年月）获取文章——archives 块/日历链接的 /YYYY/MM/ 页 */
+export async function fetchPostCollectionByDate(year: number, month?: number, limit = 50) {
+  const after = month ? new Date(Date.UTC(year, month - 1, 1)) : new Date(Date.UTC(year, 0, 1))
+  const before = month ? new Date(Date.UTC(year, month, 1)) : new Date(Date.UTC(year + 1, 0, 1))
+  const { data } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/posts'), {
+    params: {
+      after: after.toISOString(),
+      before: before.toISOString(),
+      per_page: Math.min(limit, 100),
+      _embed: 1,
+    },
+  })
+  return (Array.isArray(data) ? data : []).map((post) => {
+    const media = (post._embedded as Record<string, unknown[]> | undefined)?.['wp:featuredmedia']
+    const sourceUrl = (media?.[0] as Record<string, unknown> | undefined)?.source_url
+    return {
+      ...post,
+      featuredImage: (typeof sourceUrl === 'string' ? sourceUrl : undefined) || (post as { featuredImage?: string }).featuredImage,
+    }
+  })
+}
+
 export async function fetchContentByRestUrl(restUrl: string) {
   if (shouldUseMock()) return mockFetchContentByRestUrl(restUrl)
   try {

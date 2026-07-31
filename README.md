@@ -31,7 +31,7 @@ Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress �
 
 ## 技术栈
 
-Vue 3 · TypeScript · Vue Router · Vite 8 · Tailwind CSS 4 · Axios · Parsedown · ALTCHA · Prism.js · Boxicons · unDraw
+Vue 3 · TypeScript · Vue Router · Vite 8 · Tailwind CSS 4 · Axios · Parsedown · ALTCHA · Prism.js · Tabler Icons · unDraw
 
 ## 特性
 

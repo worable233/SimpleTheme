@@ -1,10 +1,12 @@
 <?php
 /**
- * Crawler Fallback Template
+ * Server-Rendered Static Content (Unified Rendering)
  *
- * Served to known search engine crawlers when the SPA shell
- * would otherwise hide the content. Renders full static HTML
- * so bots can index the actual page content.
+ * Embedded inside the SPA shell's <div id="app"> for every visitor.
+ * Browser users never see it (hidden attr + Vue mount replaces #app),
+ * search engines and no-JS users get full semantic HTML at the same URL.
+ *
+ * Uses the main query only — no secondary queries, no wp_reset_postdata().
  *
  * @package SimpleTheme
  */
@@ -13,16 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-?><!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-	<meta charset="<?php bloginfo( 'charset' ); ?>">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<?php wp_head(); ?>
-</head>
-<body <?php body_class( 'crawler-fallback' ); ?>>
-<?php wp_body_open(); ?>
-
+?>
 <div class="cf-container">
 
 	<header class="cf-header">
@@ -74,6 +67,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="cf-empty"><?php esc_html_e( '暂无文章', 'simple-theme' ); ?></p>
 				<?php endif; ?>
 			</div>
+			<nav class="cf-pagination">
+				<?php previous_posts_link( '&laquo; 上一页' ); ?>
+				<?php next_posts_link( '下一页 &raquo;' ); ?>
+			</nav>
 
 		<?php elseif ( is_singular() ) : ?>
 			<?php /* ── Single Post / Page ── */ ?>
@@ -107,7 +104,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</div>
 					<?php endif; ?>
 					<div class="cf-single__body">
-						<?php the_content(); ?>
+						<?php if ( post_password_required() ) : ?>
+							<p class="cf-empty"><?php esc_html_e( '此内容受密码保护。', 'simple-theme' ); ?></p>
+						<?php else : ?>
+							<?php the_content(); ?>
+						<?php endif; ?>
 					</div>
 				</article>
 			<?php endwhile; ?>
@@ -141,6 +142,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="cf-empty"><?php esc_html_e( '该分类暂无文章', 'simple-theme' ); ?></p>
 				<?php endif; ?>
 			</div>
+			<nav class="cf-pagination">
+				<?php previous_posts_link( '&laquo; 上一页' ); ?>
+				<?php next_posts_link( '下一页 &raquo;' ); ?>
+			</nav>
 
 		<?php elseif ( is_archive() ) : ?>
 			<?php /* ── Date / Author / Other Archives ── */ ?>
@@ -180,6 +185,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="cf-empty"><?php esc_html_e( '暂无内容', 'simple-theme' ); ?></p>
 				<?php endif; ?>
 			</div>
+			<nav class="cf-pagination">
+				<?php previous_posts_link( '&laquo; 上一页' ); ?>
+				<?php next_posts_link( '下一页 &raquo;' ); ?>
+			</nav>
 
 		<?php elseif ( is_search() ) : ?>
 			<?php /* ── Search Results ── */ ?>
@@ -202,6 +211,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="cf-empty"><?php esc_html_e( '未找到相关结果', 'simple-theme' ); ?></p>
 				<?php endif; ?>
 			</div>
+			<nav class="cf-pagination">
+				<?php previous_posts_link( '&laquo; 上一页' ); ?>
+				<?php next_posts_link( '下一页 &raquo;' ); ?>
+			</nav>
 
 		<?php else : ?>
 			<?php /* ── 404 or Unknown (fallback) ── */ ?>
@@ -219,56 +232,3 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</footer>
 
 </div>
-
-<?php
-/**
- * Inline minimal CSS for the crawler fallback.
- *
- * Purposefully simple and lightweight — not meant to match the SPA theme's
- * visual design. Crawlers only need clean semantic HTML; these styles
- * improve readability if a human or tool renders the page in a browser.
- */
-?>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif;color:#333;background:#fff;padding:0 20px}
-.cf-container{max-width:780px;margin:0 auto;padding:20px 0}
-.cf-header{padding:20px 0;border-bottom:1px solid #eee;margin-bottom:30px}
-.cf-header__logo{font-size:1.5rem;font-weight:700;color:#000;text-decoration:none}
-.cf-header__desc{color:#666;font-size:.875rem;margin-top:4px}
-.cf-page-title{font-size:1.75rem;font-weight:700;margin-bottom:24px}
-.cf-posts{display:flex;flex-direction:column;gap:24px}
-.cf-post{padding-bottom:24px;border-bottom:1px solid #f0f0f0}
-.cf-post__title{font-size:1.25rem;font-weight:600;margin-bottom:6px}
-.cf-post__title a{color:#1a0dab;text-decoration:none}
-.cf-post__title a:hover{text-decoration:underline}
-.cf-post__meta{font-size:.8125rem;color:#888;margin-bottom:8px}
-.cf-post__meta a{color:#555;text-decoration:none}
-.cf-post__meta a:hover{text-decoration:underline}
-.cf-post__cats::before{content:"· ";margin-left:2px}
-.cf-post__excerpt{font-size:.9375rem;color:#444}
-.cf-single__title{font-size:2rem;font-weight:700;margin-bottom:12px;line-height:1.3}
-.cf-single__meta{font-size:.8125rem;color:#888;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #eee}
-.cf-single__meta a{color:#555;text-decoration:none}
-.cf-single__meta a:hover{text-decoration:underline}
-.cf-single__body{font-size:1rem;line-height:1.8;color:#333}
-.cf-single__body h2,.cf-single__body h3,.cf-single__body h4{margin-top:1.5em;margin-bottom:.5em}
-.cf-single__body p{margin-bottom:1em}
-.cf-single__body img{max-width:100%;height:auto}
-.cf-single__body a{color:#1a0dab}
-.cf-single__body ul,.cf-single__body ol{padding-left:1.5em;margin-bottom:1em}
-.cf-single__body blockquote{border-left:3px solid #ddd;padding-left:1em;margin:1em 0;color:#666}
-.cf-single__body pre{background:#f5f5f5;padding:1em;overflow-x:auto;border-radius:4px;font-size:.875em}
-.cf-single__body code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:.875em}
-.cf-single__body pre code{background:none;padding:0}
-.cf-single__tags::before{content:"· tags: ";margin-left:2px}
-.cf-term-desc{font-size:.9375rem;color:#555;margin-bottom:20px}
-.cf-footer{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:.8125rem;color:#999;text-align:center}
-.cf-empty{color:#999;font-style:italic}
-@media(max-width:600px){.cf-single__title{font-size:1.5rem}}
-</style>
-
-<?php wp_footer(); ?>
-</body>
-</html>

@@ -5,8 +5,6 @@ import router from './router'
 import '@/styles/tailwind.css'
 import './styles/app.css'
 import './styles/prose.css'
-// Boxicons 图标库（项目已全面迁移至 Boxicons）
-import 'boxicons/css/boxicons.min.css'
 // ALTCHA Proof-of-Work CAPTCHA Web Component
 import 'altcha'
 

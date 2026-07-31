@@ -8,13 +8,16 @@
  * 加载失败时整卡隐藏，不渲染错误占位。
  */
 import { computed, onMounted, ref } from 'vue'
-import { getThemeConfig } from '@/lib/theme-config'
 
 const DEFAULT_API = 'https://v1.hitokoto.cn'
 
-const features = computed(() => getThemeConfig().features)
-const enabled = computed(() => features.value?.showHitokoto !== false)
-const api = computed(() => features.value?.hitokotoApi || DEFAULT_API)
+const props = defineProps<{
+  /** 小工具实例设置（API 地址） */
+  settings?: { api: string }
+}>()
+
+const enabled = computed(() => true)
+const api = computed(() => props.settings?.api || DEFAULT_API)
 
 const sentence = ref('')
 const source = ref('')

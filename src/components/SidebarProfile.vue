@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { getThemeConfig } from '@/lib/theme-config'
-import type { SocialLink, SiteStats, SimpleThemeConfig } from '@/types/wordpress'
+import AppIcon from '@/components/AppIcon.vue'
+import type { SocialLink, SiteStats } from '@/types/wordpress'
 
-const features = computed(() => getThemeConfig().features ?? ({} as NonNullable<SimpleThemeConfig['features']>))
+const props = defineProps<{
+  /** 小工具实例设置；未传时（fallback 默认渲染）全部显示 */
+  settings?: { showStats: boolean; showHeatmap: boolean; showSocial: boolean }
+}>()
 
 defineEmits<{
   'toggle-sub': []
@@ -13,6 +16,10 @@ defineEmits<{
 const { siteInfo, shellLoading } = useSiteShell()
 
 const noToggle = defineModel<boolean>('noToggle', { default: false })
+
+const showStatsCard = computed(() => props.settings?.showStats ?? true)
+const showHeatmapCard = computed(() => props.settings?.showHeatmap ?? true)
+const showSocialCard = computed(() => props.settings?.showSocial ?? true)
 
 const avatarUrl = computed(() => siteInfo.value.hero?.avatar || '')
 const showAvatar = computed(() => siteInfo.value.hero?.showAvatar || false)
@@ -156,10 +163,9 @@ function daysAgo(isoDate: string): string {
   return days >= 0 ? `${days} 天前` : '--'
 }
 
-function socialIconHtml(icon: string): string {
-  // 如果已经是完整类名（包含空格）则直接使用，否则用 bx bxl- 前缀
-  const cls = icon.includes(' ') ? icon : `bx bxl-${icon}`
-  return `<i class="${cls}"></i>`
+function socialIconName(icon: string): string {
+  // 兼容旧值：完整类名（含空格，如 "bx bxl-github"）或裸名（如 "github"）
+  return icon.includes(' ') ? icon : `bxl-${icon}`
 }
 </script>
 
@@ -208,7 +214,7 @@ function socialIconHtml(icon: string): string {
   </div>
 
   <!-- ======== Card 2: 站点统计 ======== -->
-  <div v-if="features.showStats !== false && stats" class="aside-card aside-card--stats">
+  <div v-if="showStatsCard && stats" class="aside-card aside-card--stats">
     <h3 class="aside-card__title">统计 <span>Stats.</span></h3>
     <div class="aside-author__stats">
       <div><i>文章</i><span>{{ stats.postCount }}</span></div>
@@ -221,7 +227,7 @@ function socialIconHtml(icon: string): string {
   </div>
 
   <!-- ======== Card 3: 贡献热力图 ======== -->
-  <div v-if="features.showHeatmap !== false && heatmapData.length > 0" class="aside-card aside-card--heatmap">
+  <div v-if="showHeatmapCard && heatmapData.length > 0" class="aside-card aside-card--heatmap">
     <h3 class="aside-card__title">贡献 <span>Heatmap.</span></h3>
     <div class="mx-auto max-w-[200px]">
       <div class="mb-0.5 grid grid-cols-[22px_repeat(13,1fr)] gap-0.5 text-[9px] text-muted-foreground">
@@ -262,11 +268,13 @@ function socialIconHtml(icon: string): string {
   </div>
 
   <!-- ======== Card 4: 社交链接 ======== -->
-  <div v-if="features.showSocial !== false && socialLinks && socialLinks.length > 0" class="aside-card aside-card--social">
+  <div v-if="showSocialCard && socialLinks && socialLinks.length > 0" class="aside-card aside-card--social">
     <h3 class="aside-card__title">社交 <span>Social.</span></h3>
     <div class="social-content">
       <div class="social-icons">
-        <a v-for="link in socialLinks" :key="link.label" :href="link.url" target="_blank" rel="noopener noreferrer" :title="link.label" v-html="socialIconHtml(link.icon)"></a>
+        <a v-for="link in socialLinks" :key="link.label" :href="link.url" target="_blank" rel="noopener noreferrer" :title="link.label">
+          <AppIcon :name="socialIconName(link.icon)" :size="20" />
+        </a>
       </div>
     </div>
   </div>

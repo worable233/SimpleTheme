@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const isVisible = ref(false)
 let ticking = false
@@ -35,7 +36,7 @@ onUnmounted(() => {
       @click="scrollToTop"
       aria-label="回到顶部"
     >
-      <i class="bx bx-chevron-up" style="font-size: 20px;"></i>
+      <AppIcon name="chevron-up" :size="20" />
     </button>
   </Transition>
 </template>

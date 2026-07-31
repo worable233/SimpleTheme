@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 defineProps<{
   message: string
@@ -25,7 +26,7 @@ function accept() {
       v-if="visible"
       class="cookie-consent fixed bottom-7 left-1/2 z-[99998] inline-flex w-auto max-w-[520px] -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card py-2.5 pr-[18px] pl-3.5 text-[13px] leading-normal text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] backdrop-blur-2xl max-sm:w-[calc(100%-32px)] max-sm:flex-wrap max-sm:gap-2.5 max-sm:rounded-large max-sm:px-4 max-sm:py-3"
     >
-      <i class="bx bxs-cookie -mt-px shrink-0 text-[22px] text-muted-foreground"></i>
+      <AppIcon name="cookie" filled :size="22" class="-mt-px shrink-0 text-muted-foreground" />
       <p
         class="m-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap max-sm:whitespace-normal"
       >

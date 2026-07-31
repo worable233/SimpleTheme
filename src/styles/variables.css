@@ -66,7 +66,7 @@
   --code-bgc: rgba(255 255 255 / 0.05);
   --background: var(--theme-bg-dark, #1a1a1a);
   --foreground: var(--theme-fg-dark, #e0e0e0);
-  --card-highlight: inset 0 1px 0 0 #fff3;
+  --card-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   --card: var(--theme-card-dark, #222);
   --card-foreground: var(--theme-fg-dark, #e0e0e0);
   --primary: #e0e0e0;

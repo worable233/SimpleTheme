@@ -18,6 +18,7 @@ if ( file_exists( __DIR__ . '/inc/blocks/sakurairo.php' ) ) {
 require_once __DIR__ . '/inc/core/setup.php';
 require_once __DIR__ . '/inc/core/helpers.php';
 require_once __DIR__ . '/inc/core/assets.php';
+require_once __DIR__ . '/inc/core/widgets.php';
 
 // Global admin theme — Vue shell + scoped CSS (no @layer; see inc/core/admin-theme.php)
 require_once __DIR__ . '/inc/core/admin-theme.php';
@@ -30,9 +31,6 @@ require_once __DIR__ . '/inc/core/auth-handler.php';
 
 // SEO / special route safety net (must load after core modules)
 require_once __DIR__ . '/inc/core/seo-handler.php';
-
-// Crawler bot detection & native WordPress fallback (for search engine indexing)
-require_once __DIR__ . '/inc/core/crawler-handler.php';
 
 // Admin modules
 require_once __DIR__ . '/inc/admin/options.php';

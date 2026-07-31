@@ -5,6 +5,7 @@ import { getThemeConfig, isExternalUrl, toInternalPath, toResolvablePath } from 
 import {
   fetchContentByRestUrl,
   fetchPostCollectionByTaxonomy,
+  fetchPostCollectionByDate,
   getErrorMessage,
   resolveThemePath,
   trackPostView,
@@ -14,6 +15,7 @@ import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
 import { showError } from '@/lib/toast'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import NotFoundView from '@/views/NotFoundView.vue'
@@ -90,14 +92,17 @@ const specialPageComponent = computed(() => {
 
 const postTags = computed(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
-  const terms = (post?._embedded?.['wp:term'] as Array<Array<{ taxonomy?: string; name?: string }>> | undefined) || []
+  const terms = (post?._embedded?.['wp:term'] as Array<Array<{ taxonomy?: string; name?: string; slug?: string; link?: string }>> | undefined) || []
   for (const group of terms) {
     const tags = group
       .filter((term) => term?.taxonomy === 'post_tag' && typeof term.name === 'string')
-      .map((term) => term.name as string)
+      .map((term) => ({
+        name: term.name as string,
+        link: term.link || (term.slug ? `/tag/${term.slug}/` : ''),
+      }))
     if (tags.length > 0) return tags
   }
-  return [] as string[]
+  return [] as { name: string; link: string }[]
 })
 
 const showMeta = computed(() => getThemeConfig().features?.articleMeta || {} as Record<string, boolean>)
@@ -120,6 +125,20 @@ const loadTermPosts = async (taxonomy: string, id: number) => {
   termPosts.value = []
   try {
     termPosts.value = await fetchPostCollectionByTaxonomy(taxonomy, id)
+    rememberPreviews(termPosts.value)
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, '归档内容加载失败，请稍后重试。')
+    showError(errorMessage.value)
+  } finally {
+    termPostsLoading.value = false
+  }
+}
+
+const loadDatePosts = async (year: number, month?: number) => {
+  termPostsLoading.value = true
+  termPosts.value = []
+  try {
+    termPosts.value = await fetchPostCollectionByDate(year, month)
     rememberPreviews(termPosts.value)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '归档内容加载失败，请稍后重试。')
@@ -160,6 +179,14 @@ const loadCurrentContent = async () => {
       termName.value = resolved.name || '归档'
       termTaxonomy.value = resolved.taxonomy
       await loadTermPosts(resolved.taxonomy, resolved.id)
+      return
+    }
+
+    if ('date' === resolved.type && resolved.year) {
+      termName.value = resolved.name || '日期归档'
+      termTaxonomy.value = 'date'
+      contentType.value = 'term' // 复用 TermArchive 展示
+      await loadDatePosts(resolved.year, resolved.month || undefined)
       return
     }
 
@@ -301,36 +328,40 @@ watch(
             </div>
             <div class="single-post__cover-meta">
               <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
-                <i class="bx bx-time"></i>
+                <AppIcon name="time" :size="16" />
                 <span>{{ postData.readingTime }} 分钟</span>
               </span>
               <span v-if="showMeta?.showPublishDate" class="meta-item">
-                <i class="bx bx-calendar"></i>
+                <AppIcon name="calendar" :size="16" />
                 <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
               </span>
               <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
-                <i class="bx bx-file"></i>
+                <AppIcon name="file" :size="16" />
                 <span>{{ formatWordCount(postData.wordCount) }}</span>
               </span>
               <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
-                <i class="bx bx-edit"></i>
+                <AppIcon name="edit" :size="16" />
                 <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
               </span>
               <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
-                <i class="bx bx-message-dots"></i>
+                <AppIcon name="message-dots" :size="16" />
                 <span>{{ postData.commentCount }} 条评论</span>
               </span>
               <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
-                <i class="bx bx-show"></i>
+                <AppIcon name="show" :size="16" />
                 <span>{{ postData.viewCount }} 次浏览</span>
               </span>
               <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
-                <i class="bx bx-folder"></i>
+                <AppIcon name="folder" :size="16" />
                 <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
               </span>
               <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
-                <i class="bx bx-user"></i>
+                <AppIcon name="user" :size="16" />
                 <span>{{ authorName }}</span>
+              </span>
+              <span v-if="showMeta?.showEditLink && postData.editUrl" class="meta-item">
+                <AppIcon name="edit-alt" :size="16" />
+                <a :href="postData.editUrl" target="_blank" rel="noopener">编辑文章</a>
               </span>
             </div>
           </div>
@@ -339,36 +370,40 @@ watch(
           <h1 class="single-post__header-title" v-html="postData.title.rendered"></h1>
           <div class="single-post__header-meta">
               <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
-                <i class="bx bx-time"></i>
+                <AppIcon name="time" :size="16" />
                 <span>{{ postData.readingTime }} 分钟</span>
               </span>
               <span v-if="showMeta?.showPublishDate" class="meta-item">
-                <i class="bx bx-calendar"></i>
+                <AppIcon name="calendar" :size="16" />
                 <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
               </span>
               <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
-                <i class="bx bx-file"></i>
+                <AppIcon name="file" :size="16" />
                 <span>{{ formatWordCount(postData.wordCount) }}</span>
               </span>
               <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
-                <i class="bx bx-edit"></i>
+                <AppIcon name="edit" :size="16" />
                 <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
               </span>
               <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
-                <i class="bx bx-message-dots"></i>
+                <AppIcon name="message-dots" :size="16" />
                 <span>{{ postData.commentCount }} 条评论</span>
               </span>
               <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
-                <i class="bx bx-show"></i>
+                <AppIcon name="show" :size="16" />
                 <span>{{ postData.viewCount }} 次浏览</span>
               </span>
               <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
-                <i class="bx bx-folder"></i>
+                <AppIcon name="folder" :size="16" />
                 <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
               </span>
               <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
-                <i class="bx bx-user"></i>
+                <AppIcon name="user" :size="16" />
                 <span>{{ authorName }}</span>
+              </span>
+              <span v-if="showMeta?.showEditLink && postData.editUrl" class="meta-item">
+                <AppIcon name="edit-alt" :size="16" />
+                <a :href="postData.editUrl" target="_blank" rel="noopener">编辑文章</a>
               </span>
             </div>
         </div>
@@ -376,7 +411,7 @@ watch(
           <div class="prose-content" v-html="postData.content?.rendered"></div>
           <footer class="single-post__footer">
             <div v-if="postTags.length > 0" class="single-post__tags">
-              <span v-for="tag in postTags" :key="tag">#{{ tag }}</span>
+              <router-link v-for="tag in postTags" :key="tag.name" :to="toInternalPath(tag.link)">#{{ tag.name }}</router-link>
             </div>
           </footer>
         </div>
@@ -445,9 +480,10 @@ watch(
   white-space: nowrap;
 }
 
-.meta-item i {
-  font-size: 1rem;
-  line-height: 1;
+.meta-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .meta-item a {

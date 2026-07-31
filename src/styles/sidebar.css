@@ -73,30 +73,6 @@
   color: var(--foreground);
 }
 
-.left-sidebar__menu ul li a i.bx,
-.left-sidebar__menu ul li button.menu-toggle i.bx {
-  font-size: 24px;
-  line-height: 1;
-  color: var(--foreground);
-}
-
-/* Icon wrapper span (v-html injected) */
-.left-sidebar__menu ul li a > span:first-child,
-.left-sidebar__menu ul li button.menu-toggle > span:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-}
-
-.left-sidebar__menu ul li a > span:first-child i.bx {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-}
-
 /* Current item highlight */
 .left-sidebar__menu ul li.current-menu-item > a {
   color: var(--primary-foreground);
@@ -107,10 +83,6 @@
 .left-sidebar__menu ul li.current-menu-item > a svg {
   color: var(--primary-foreground);
   filter: drop-shadow(0 0 3px rgba(0 0 0 / 0.2));
-}
-
-.left-sidebar__menu ul li.current-menu-item > a i.bx {
-  color: var(--primary-foreground);
 }
 
 /* Item titles: hidden on desktop, used as tooltip data source */
@@ -193,27 +165,7 @@
   transition: color 0.15s;
 }
 
-.sub-menu li a i.bx {
-  font-size: 16px;
-  line-height: 1;
-  flex-shrink: 0;
-  color: var(--secondary);
-  transition: color 0.15s;
-}
-
-/* 子菜单图标 span（v-html 注入）— 浮动面板渲染在 .left-sidebar__menu 之外，
-   导航栏的 span 重置规则命中不到它；inline span + preflight 的 display:block svg
-   会产生基线错位，必须显式 flex 居中 */
-.sub-menu li a > span:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-  flex-shrink: 0;
-}
-
-.sub-menu li a:hover svg,
-.sub-menu li a:hover i.bx {
+.sub-menu li a:hover svg {
   color: var(--foreground);
 }
 
@@ -236,8 +188,7 @@
   color: var(--primary-foreground);
 }
 
-.sub-menu li.current-menu-item a svg,
-.sub-menu li.current-menu-item a i.bx {
+.sub-menu li.current-menu-item a svg {
   color: var(--primary-foreground);
 }
 
@@ -588,6 +539,181 @@ body[data-theme='dark'] .aside-card--social .social-content .social-icons a {
   align-items: center;
   justify-content: center;
   font-size: 20px;
+}
+
+/* ==================== Generic Widgets (核心/区块/第三方小工具统一风格) ====================
+   后端用 before_widget=‘.aside-card widget’、before_title=‘.aside-card__title’ 包裹，
+   这里为小工具内部的常见 markup（列表/搜索/标签云/日历/下拉）套主题样式。 */
+.sidebar-widget .aside-card {
+  padding-top: 20px;
+}
+.sidebar-widget .aside-card .aside-card__title {
+  padding-top: 0;
+}
+
+/* 区块小工具标题（不走 before_title 时）对齐卡片标题风格 */
+.sidebar-widget .widget-title,
+.sidebar-widget .wp-block-heading,
+.sidebar-widget h2,
+.sidebar-widget h3,
+.sidebar-widget h4 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 14px;
+}
+
+/* 列表（最新文章/评论/归档/分类） */
+.sidebar-widget ul,
+.sidebar-widget ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sidebar-widget li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+.sidebar-widget li:last-child {
+  border-bottom: none;
+}
+.sidebar-widget a {
+  color: var(--foreground);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.sidebar-widget a:hover {
+  color: var(--primary);
+}
+
+/* 嵌套子菜单缩进 */
+.sidebar-widget li .children,
+.sidebar-widget li .sub-menu {
+  padding-left: 14px;
+}
+
+/* 搜索表单（.wp-block-search / 核心 search widget） */
+.sidebar-widget .wp-block-search__inside-wrapper,
+.sidebar-widget form[role='search'],
+.sidebar-widget .search-form {
+  display: flex;
+  gap: 8px;
+}
+.sidebar-widget input[type='search'],
+.sidebar-widget input[type='text'] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--foreground);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+.sidebar-widget input[type='search']:focus,
+.sidebar-widget input[type='text']:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--card);
+}
+.sidebar-widget button,
+.sidebar-widget input[type='submit'],
+.sidebar-widget .wp-block-search__button {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s ease;
+}
+.sidebar-widget button:hover,
+.sidebar-widget input[type='submit']:hover,
+.sidebar-widget .wp-block-search__button:hover {
+  opacity: 0.85;
+}
+
+/* 下拉选择（分类/归档小工具） */
+.sidebar-widget select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--foreground);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.sidebar-widget select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* 标签云 — chip 样式 */
+.sidebar-widget .wp-block-tag-cloud,
+.sidebar-widget .tagcloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sidebar-widget .tag-cloud-link {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 13px !important;
+  color: var(--secondary);
+  background: var(--muted);
+  border-radius: 8px;
+  border-bottom: none;
+  transition: all 0.15s ease;
+}
+.sidebar-widget .tag-cloud-link:hover {
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+/* 日历 */
+.sidebar-widget .wp-calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sidebar-widget .wp-calendar-table th,
+.sidebar-widget .wp-calendar-table td {
+  padding: 5px;
+  text-align: center;
+  border: 1px solid var(--border);
+  color: var(--secondary);
+}
+.sidebar-widget .wp-calendar-table th {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.sidebar-widget .wp-calendar-table td#today {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.sidebar-widget .wp-calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* 最近评论作者/日期次要文本 */
+.sidebar-widget .rss-date,
+.sidebar-widget .comment-author-link,
+.sidebar-widget .post-date {
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
 

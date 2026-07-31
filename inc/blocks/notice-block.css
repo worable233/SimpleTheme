@@ -617,7 +617,9 @@
   margin: 28px 0;
   border-radius: var(--radius-large);
   overflow: hidden;
-  background: var(--card);
+  /* 黑底：iframe 右下角 clip-path 裁角（遮广告按钮）露出的是容器背景，
+     用 card 白底会在播放器右下角形成白方块，改黑与播放器融合 */
+  background: #000;
   box-shadow: var(--shadow-small);
   border: 1px solid var(--border);
   transition: box-shadow 0.2s ease;
@@ -653,7 +655,7 @@
   margin: 28px 0;
   border-radius: var(--radius-large);
   overflow: hidden;
-  background: var(--card);
+  background: #000;
   box-shadow: var(--shadow-small);
   border: 1px solid var(--border);
   transition: box-shadow 0.2s ease;

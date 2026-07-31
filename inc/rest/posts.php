@@ -49,24 +49,42 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 	$total_posts   = (int) wp_count_posts( 'post' )->publish;
 	$total_pages   = $post_count > 0 ? max( 1, (int) ceil( $total_posts / $post_count ) ) : 1;
 
-	$args = array(
-		'post_type'      => 'post',
-		'posts_per_page' => $post_count,
-		'paged'          => max( 1, $page ),
-		'post_status'    => 'publish',
+	// WordPress 原生置顶文章：第一页置顶置顶，后续页不重复。
+	// （REST 自定义查询非 is_home，WP_Query 不会自动提升 sticky，故手动处理）
+	$sticky_ids   = array_filter( array_map( 'intval', (array) get_option( 'sticky_posts', array() ) ) );
+	$sticky_posts = array();
+	if ( ! empty( $sticky_ids ) ) {
+		$sticky_posts = get_posts( array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'post__in'            => $sticky_ids,
+			'orderby'             => 'post__in',
+			'posts_per_page'      => count( $sticky_ids ),
+			'ignore_sticky_posts' => true,
+		) );
+	}
+	$sticky_count = count( $sticky_posts );
+
+	// 常规流（所有页）排除置顶，避免重复；用偏移量保证分页连续。
+	$regular_args = array(
+		'post_type'           => 'post',
+		'post_status'         => 'publish',
+		'post__not_in'        => $sticky_ids,
 		'ignore_sticky_posts' => true,
+		'suppress_filters'    => false,
 	);
 
 	if ( $page > 1 ) {
-		// Paginated request — use WP_Query to compute total/found_posts correctly
-		$query  = new WP_Query( $args );
-		$posts  = $query->posts;
-		$total  = (int) $query->found_posts;
-		$total_pages = (int) $query->max_num_pages;
+		$regular_args['posts_per_page'] = $post_count;
+		$regular_args['offset']         = $post_count * ( $page - 1 ) - $sticky_count;
+		$posts = get_posts( $regular_args );
 	} else {
-		$posts = get_posts( $args );
-		$total = $total_posts;
+		$regular_args['posts_per_page'] = max( 1, $post_count - $sticky_count );
+		$regular_args['offset']         = 0;
+		$regular = $sticky_count >= $post_count ? array() : get_posts( $regular_args );
+		$posts   = array_slice( array_merge( $sticky_posts, $regular ), 0, $post_count );
 	}
+	$total = $total_posts;
 
 	$shuoshuo_posts = array();
 	if ( $show_shuoshuo && $shuoshuo_count > 0 ) {
@@ -145,6 +163,24 @@ function simple_theme_track_post_view( WP_REST_Request $request ) {
 	return new WP_REST_Response( array( 'viewCount' => $count + 1 ), 200 );
 }
 
+/**
+ * 在 wp/v2 响应中追加 editUrl。
+ * get_edit_post_link() 自带 current_user_can( 'edit_post' ) 权限检查，
+ * 只有能编辑该文章的用户（作者/编辑/管理员，需携带 REST nonce）才会拿到。
+ */
+function simple_theme_add_edit_url( $response, $post ) {
+	$edit_url = get_edit_post_link( $post->ID, 'raw' );
+	if ( $edit_url ) {
+		$data = $response->get_data();
+		$data['editUrl'] = $edit_url;
+		$response->set_data( $data );
+	}
+	return $response;
+}
+add_filter( 'rest_prepare_post', 'simple_theme_add_edit_url', 10, 2 );
+add_filter( 'rest_prepare_page', 'simple_theme_add_edit_url', 10, 2 );
+add_filter( 'rest_prepare_shuoshuo', 'simple_theme_add_edit_url', 10, 2 );
+
 function simple_theme_format_post_item( WP_Post $post ) {
 	$attachment_id = get_post_thumbnail_id( $post->ID );
 	$featured      = null;
@@ -173,5 +209,6 @@ function simple_theme_format_post_item( WP_Post $post ) {
 		'viewCount'      => max( 0, (int) get_post_meta( $post->ID, 'views', true ) ),
 		'wordCount'      => $stats['wordCount'],
 		'readingTime'    => $stats['readingTime'],
+		'isSticky'       => is_sticky( $post->ID ),
 	);
 }

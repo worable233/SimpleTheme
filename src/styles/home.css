@@ -165,6 +165,28 @@ body[data-theme='dark'] .post-card:hover {
   color: var(--primary);
 }
 
+/* Sticky badge — subtle pill with pin icon, primary-tinted (readable in both themes) */
+.post-card__sticky {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-inline-end: 8px;
+  padding: 1px 9px 1px 7px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: 0.12em;
+  white-space: nowrap;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 13%, transparent);
+}
+
+.post-card__sticky svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+}
+
 .post-card__excerpt {
   color: var(--secondary);
   font-size: 0.875rem;

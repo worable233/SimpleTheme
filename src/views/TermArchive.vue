@@ -15,6 +15,12 @@ defineProps<{
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
+const subtitleMap: Record<string, string> = {
+  post_tag: '标签归档',
+  category: '分类归档',
+  date: '日期归档',
+}
+
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -35,7 +41,8 @@ const formatWordCount = (count?: number) => {
   <section class="term-archive">
     <header class="section-header">
       <h1>
-        <span class="section-header__title">{{ termName }}</span>
+        <span class="section-header__title">{{ termTaxonomy === 'post_tag' ? '#' + termName : termName }}</span>
+        <span class="section-header__subtitle">&nbsp;{{ subtitleMap[termTaxonomy] || '归档' }}</span>
       </h1>
     </header>
 

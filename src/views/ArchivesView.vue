@@ -4,6 +4,7 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useHead } from '@vueuse/head'
+import AppIcon from '@/components/AppIcon.vue'
 import { useLoading } from '../composables/useLoading'
 import { fetchCollection } from '../lib/wordpress'
 import type { WordPressPost } from '../types/wordpress'
@@ -253,7 +254,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         <!-- Timeline Year Cards Section -->
         <section class="section-header">
           <h2 class="section-title">
-            <i class="bx bx-calendar" style="vertical-align: -2px; margin-right: 6px; font-size: 1.3rem;"></i>
+            <AppIcon name="calendar" :size="21" class="archives-icon" />
             时间线
           </h2>
         </section>
@@ -271,7 +272,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         <!-- Category Cards Section -->
         <section class="section-header" style="margin-top: 3rem;">
           <h2 class="section-title">
-            <i class="bx bx-folder" style="vertical-align: -2px; margin-right: 6px; font-size: 1.3rem;"></i>
+            <AppIcon name="folder" :size="21" class="archives-icon" />
             分类
           </h2>
         </section>
@@ -318,10 +319,18 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--foreground, #333);
   margin: 0;
+}
+
+.archives-icon {
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
 /* Content that replaces skeleton should not re-animate */

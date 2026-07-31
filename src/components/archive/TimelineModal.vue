@@ -6,6 +6,7 @@
  */
 import type { RenderedText } from '@/types/wordpress'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 interface PostWithMeta {
   id: number
@@ -55,7 +56,7 @@ function onMaskClick(e: MouseEvent) {
                 <div class="modal-statbox">
                   <div class="stat-tooltip">汇总</div>
                   <div class="stat-icon">
-                    <i class="bx bx-file-blank" style="font-size: 1.3rem;"></i>
+                    <AppIcon name="file-blank" :size="21" />
                   </div>
                   <div class="stat-label">文章总数</div>
                   <div class="stat-value">{{ data.total }}</div>
@@ -63,7 +64,7 @@ function onMaskClick(e: MouseEvent) {
                 <div class="modal-statbox">
                   <div class="stat-tooltip">分类</div>
                   <div class="stat-icon">
-                    <i class="bx bx-folder" style="font-size: 1.3rem;"></i>
+                    <AppIcon name="folder" :size="21" />
                   </div>
                   <div class="stat-label">分类数</div>
                   <div class="stat-value">{{ data.categories }}</div>
@@ -71,7 +72,7 @@ function onMaskClick(e: MouseEvent) {
                 <div class="modal-statbox">
                   <div class="stat-tooltip">有文章的月份</div>
                   <div class="stat-icon">
-                    <i class="bx bx-calendar-check" style="font-size: 1.3rem;"></i>
+                    <AppIcon name="calendar-check" :size="21" />
                   </div>
                   <div class="stat-label">活跃月份</div>
                   <div class="stat-value">{{ data.months.length }}</div>

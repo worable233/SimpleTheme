@@ -296,35 +296,36 @@ function simple_theme_sakurairo_frontend_assets() {
 }
 
 // ============================================================
-// 7. FontAwesome → Boxicons icon conversion
+// 7. FontAwesome → Tabler icon conversion
 // ============================================================
 
 /**
- * Convert Font Awesome icons to Boxicons in HTML content.
+ * Convert Font Awesome icons to Tabler classes in HTML content.
  *
  * Matches <i class="...fa-*..."> elements and replaces FA icon
- * classes with equivalent bx bx-* classes via a mapping table.
+ * classes with equivalent ti ti-* classes via a mapping table.
  * Skips FA style prefixes (fa-solid, fa-regular, fa-brands, etc.).
+ * The SPA front-end converts these ti classes into inline SVG.
  *
  * @param string $html HTML content.
- * @return string HTML with FA icons replaced by Boxicons.
+ * @return string HTML with FA icons replaced by Tabler classes.
  */
 function simple_theme_fa_to_bx( $html ) {
 	$fa_to_bx = array(
-		'triangle-exclamation' => 'bx bx-error',
-		'exclamation-triangle' => 'bx bx-error',
-		'warning'              => 'bx bx-error',
-		'check'                => 'bx bx-check',
-		'check-circle'         => 'bx bx-check-circle',
-		'times'                => 'bx bx-x',
-		'xmark'                => 'bx bx-x',
-		'ban'                  => 'bx bxs-ban',
-		'shopping-cart'        => 'bx bx-cart',
-		'shopping-bag'         => 'bx bx-shopping-bag',
-		'gift'                 => 'bx bx-gift',
-		'bookmark'             => 'bx bx-bookmark',
-		'info-circle'          => 'bx bx-info-circle',
-		'question-circle'      => 'bx bx-question-mark',
+		'triangle-exclamation' => 'ti ti-error',
+		'exclamation-triangle' => 'ti ti-error',
+		'warning'              => 'ti ti-error',
+		'check'                => 'ti ti-check',
+		'check-circle'         => 'ti ti-check-circle',
+		'times'                => 'ti ti-x',
+		'xmark'                => 'ti ti-x',
+		'ban'                  => 'ti ti-ban',
+		'shopping-cart'        => 'ti ti-cart',
+		'shopping-bag'         => 'ti ti-shopping-bag',
+		'gift'                 => 'ti ti-gift',
+		'bookmark'             => 'ti ti-bookmark',
+		'info-circle'          => 'ti ti-info-circle',
+		'question-circle'      => 'ti ti-question-mark',
 	);
 
 	// FA modifier/style prefixes to skip (not icon names).

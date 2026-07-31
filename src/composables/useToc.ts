@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 export interface TocItem {
   id: string
@@ -8,6 +8,7 @@ export interface TocItem {
 
 const tocItems = ref<TocItem[]>([])
 const activeId = ref('')
+const drawerOpen = ref(false)
 
 export function useToc() {
   /** Extract TOC items from the prose container DOM */
@@ -31,11 +32,20 @@ export function useToc() {
   function clearToc() {
     tocItems.value = []
     activeId.value = ''
+    drawerOpen.value = false
   }
+
+  /** 当前激活章节的标题文本（顶栏阅读模式显示用） */
+  const activeText = computed(() => {
+    if (!activeId.value) return ''
+    return tocItems.value.find((item) => item.id === activeId.value)?.text || ''
+  })
 
   return {
     tocItems,
     activeId,
+    activeText,
+    drawerOpen,
     setTocItems,
     clearToc,
     extractToc,

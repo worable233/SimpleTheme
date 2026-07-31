@@ -57,8 +57,11 @@ function simple_theme_get_default_options() {
 		'article_meta_show_reading_time'   => true,
 		'article_meta_show_word_count'     => false,
 		'article_meta_show_author'         => true,
+		'article_meta_show_edit_link'      => true,
 		'reading_speed'              => 300,
 		'enable_prism_highlight'     => true,
+		// @deprecated 2.1 — 侧栏卡片显隐已迁往「外观 → 小工具」，
+		// 以下选项仅供老站升级时迁移到小工具实例读取（见 inc/core/widgets.php）。
 		'sidebar_show_stats'         => true,
 		'sidebar_show_heatmap'       => true,
 		'sidebar_show_social'        => true,

@@ -51,22 +51,22 @@
   var typeConfig = {
     task: {
       label: labels.taskLabel,
-      icon: '<i class="bx bx-list-check"></i>',
+      icon: '<i class="ti ti-list-check"></i>',
       className: 'task'
     },
     warning: {
       label: labels.warningLabel,
-      icon: '<i class="bx bx-error"></i>',
+      icon: '<i class="ti ti-error"></i>',
       className: 'warning'
     },
     noway: {
       label: labels.nowayLabel,
-      icon: '<i class="bx bx-x-circle"></i>',
+      icon: '<i class="ti ti-x-circle"></i>',
       className: 'noway'
     },
     buy: {
       label: labels.buyLabel,
-      icon: '<i class="bx bx-check-circle"></i>',
+      icon: '<i class="ti ti-check-circle"></i>',
       className: 'buy'
     }
   };

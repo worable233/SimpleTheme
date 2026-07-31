@@ -1,18 +1,17 @@
 <script setup lang="ts">
 /**
- * TocWidget — 目录小部件（桌面端侧边栏 + 移动端浮动按钮/抽屉）
+ * TocWidget — 目录小部件（桌面端侧边栏卡片 + 移动端底部抽屉，
+ * 移动端入口在顶栏阅读模式，见 SidebarMobileHeader）
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToc } from '@/composables/useToc'
 import TocTree from './toc/TocTree.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import type { TocNode } from './toc/TocTree.vue'
 
-const { tocItems, activeId } = useToc()
+const { tocItems, activeId, drawerOpen: isOpen } = useToc()
 const route = useRoute()
-
-const isOpen = ref(false)
 
 // Build hierarchical tree from flat items
 const tocTree = computed(() => {
@@ -172,19 +171,7 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <!-- Mobile floating TOC trigger button (teleported to body to escape right-sidebar hiding) -->
-  <Teleport to="body">
-    <button
-      v-if="tocData.length > 0"
-      class="fixed right-5 bottom-[30px] z-[600] block h-11 w-11 cursor-pointer rounded-full border border-border bg-card p-2.5 text-foreground shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-[transform,box-shadow] duration-300 max-sm:bottom-20 hover:scale-105 hover:shadow-[0_6px_24px_rgba(0,0,0,0.18)]"
-      @click="isOpen = !isOpen"
-      aria-label="目录"
-    >
-      <i class="bx bx-list-ul flex h-full w-full items-center justify-center text-xl"></i>
-    </button>
-  </Teleport>
-
-  <!-- Mobile TOC drawer -->
+  <!-- Mobile TOC drawer（入口在移动端顶栏阅读模式，见 SidebarMobileHeader） -->
   <Teleport to="body">
     <Transition name="toc-drawer">
       <div

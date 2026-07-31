@@ -102,13 +102,66 @@ const progressPercent = computed(() => {
   if (totalWizardSteps.value <= 1) return 100
   return (currentStepIndex.value / (totalWizardSteps.value - 1)) * 100
 })
+
+// ── 字段校验（邮箱支持 QQ 号，与后端 qqAvatar 的 ^\d{5,} 规则对齐）──
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const QQ_RE = /^\d{5,11}$/
+
+function isValidEmailInput(value: string): boolean {
+  const t = value.trim()
+  return EMAIL_RE.test(t) || QQ_RE.test(t)
+}
+
+function isValidUrlInput(value: string): boolean {
+  const t = value.trim()
+  if (!t) return true
+  try {
+    const u = new URL(/^https?:\/\//i.test(t) ? t : `https://${t}`)
+    return u.hostname.includes('.')
+  } catch {
+    return false
+  }
+}
+
+/** QQ 号 → QQ 邮箱（后端 sanitize_email 会丢弃纯数字） */
+function normalizeEmail(value: string): string {
+  const t = value.trim()
+  return QQ_RE.test(t) ? `${t}@qq.com` : t
+}
+
+/** 缺少协议时自动补全 https:// */
+function normalizeUrl(value: string): string {
+  const t = value.trim()
+  if (!t) return ''
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`
+}
+
 const isStepValid = computed(() => {
   switch (wizardStep.value) {
     case 'name': return authorName.value.trim().length > 0
-    case 'email': return props.formSettings.requireNameEmail ? authorEmail.value.trim().length > 0 : true
-    case 'url': return true
+    case 'email': {
+      const t = authorEmail.value.trim()
+      if (!t) return !props.formSettings.requireNameEmail
+      return isValidEmailInput(t)
+    }
+    case 'url': return isValidUrlInput(authorUrl.value)
     case 'options': return true
     default: return true
+  }
+})
+
+// 输入非空但不合法时的内联错误提示
+const wizardStepError = computed(() => {
+  switch (wizardStep.value) {
+    case 'email': {
+      const t = authorEmail.value.trim()
+      return t && !isValidEmailInput(t) ? '请输入正确的邮箱，或 5-11 位 QQ 号' : ''
+    }
+    case 'url': {
+      const t = authorUrl.value.trim()
+      return t && !isValidUrlInput(t) ? '请输入正确的网址，如 example.com' : ''
+    }
+    default: return ''
   }
 })
 
@@ -140,9 +193,12 @@ async function loadCaptcha() {
   try {
     captchaData.value = await fetchCaptcha()
   } catch {
-    captchaData.value = { challenge: '' }
+    captchaData.value = null
   }
 }
+
+// altcha-widget 接收官方 challengejson（JSON 字符串）
+const captchaJson = computed(() => (captchaData.value ? JSON.stringify(captchaData.value) : ''))
 
 function onCaptchaStateChange(e: Event) {
   const detail = (e as CustomEvent).detail
@@ -409,14 +465,30 @@ function clearForm() {
 }
 
 function handleSubmit() {
+  // 提交前校验 + 规范化（桌面内联表单和移动端向导都走这里）
+  if (!props.currentUser) {
+    const email = authorEmail.value.trim()
+    if (props.formSettings.showEmailField && email && !isValidEmailInput(email)) {
+      showError('邮箱格式不正确，请输入邮箱或 5-11 位 QQ 号')
+      return
+    }
+    if (props.formSettings.showUrlField && !isValidUrlInput(authorUrl.value)) {
+      showError('网址格式不正确')
+      return
+    }
+    if (props.formSettings.captchaEnabled && !captchaPayload.value) {
+      showError('请先完成人机验证')
+      return
+    }
+  }
   const payload: {
     name: string; email: string; url: string; content: string; cookies: boolean
     captchaPayload?: string
     isPrivate?: boolean; mailNotify?: boolean; useMarkdown?: boolean
   } = {
-    name: authorName.value,
-    email: authorEmail.value,
-    url: authorUrl.value,
+    name: authorName.value.trim(),
+    email: normalizeEmail(authorEmail.value),
+    url: normalizeUrl(authorUrl.value),
     content: content.value,
     cookies: cookiesConsent.value,
     isPrivate: isPrivate.value,
@@ -434,6 +506,9 @@ defineExpose({ clearForm })
 
 <template>
 
+  <!-- 移动端 Teleport 到 body：祖先（如 .content-view 的路由过渡 transform）
+       会让 position:fixed 相对祖先定位而非视口，导致底部栏错位 -->
+  <Teleport to="body" :disabled="!isMobile">
   <form
     class="comments-form"
     :class="{
@@ -528,7 +603,8 @@ defineExpose({ clearForm })
 
       <div v-if="formSettings.captchaEnabled && !currentUser" class="comments-form__captcha">
         <altcha-widget
-          :challenge="captchaData?.challenge || ''"
+          v-if="captchaData"
+          :challengejson="captchaJson"
           style="--altcha-max-width: 100%"
           @statechange="onCaptchaStateChange"
         ></altcha-widget>
@@ -577,6 +653,7 @@ defineExpose({ clearForm })
       </div>
     </Transition>
   </form>
+  </Teleport>
 
   <!-- Mobile wizard modal (Teleported) -->
   <Teleport to="body">
@@ -634,10 +711,12 @@ defineExpose({ clearForm })
                     v-model="authorEmail"
                     type="text"
                     class="wizard-step__input"
+                    :class="{ 'wizard-step__input--invalid': wizardStepError }"
                     placeholder="输入邮箱或 QQ 号"
                     maxlength="80"
                     @keydown.enter.prevent="isStepValid && nextStep()"
                   />
+                  <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
                 </div>
               </template>
 
@@ -656,10 +735,12 @@ defineExpose({ clearForm })
                     v-model="authorUrl"
                     type="url"
                     class="wizard-step__input"
+                    :class="{ 'wizard-step__input--invalid': wizardStepError }"
                     placeholder="输入你的网站地址"
                     maxlength="120"
-                    @keydown.enter.prevent="nextStep()"
+                    @keydown.enter.prevent="isStepValid && nextStep()"
                   />
+                  <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
                 </div>
               </template>
 
@@ -705,7 +786,8 @@ defineExpose({ clearForm })
                 </div>
                 <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
                   <altcha-widget
-                    :challenge="captchaData?.challenge || ''"
+                    v-if="captchaData"
+                    :challengejson="captchaJson"
                     style="--altcha-max-width: 100%"
                     @statechange="onCaptchaStateChange"
                   ></altcha-widget>
@@ -962,22 +1044,27 @@ defineExpose({ clearForm })
    面板实际锚到 .comments-form__footer-right */
 
 /* ── Mobile layout (fixed bottom) ── */
+/* 收起时容器为不透明页面背景色，与页面无缝融合；展开/表情面板才出现卡片面板 */
 .comments-form--mobile {
   position: fixed !important;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 500;
-  background: color-mix(in srgb, var(--card) 65%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 14px 14px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  background: var(--card);
   padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px) 0;
   max-height: 50vh;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+.comments-form--mobile.comments-form--expanded,
+.comments-form--mobile.comments-form--emoji-open {
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Mobile bottom sheet (≤600px) ── */
@@ -1008,13 +1095,19 @@ defineExpose({ clearForm })
     right: 0;
     z-index: 500;
     background: var(--card);
-    border-radius: 14px 14px 0 0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
     padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 8px) 0;
     max-height: 50vh;
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
+  }
+
+  .comments-form--expanded,
+  .comments-form--emoji-open {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08);
   }
 
   .comments-form--expanded {
@@ -1059,35 +1152,30 @@ defineExpose({ clearForm })
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px 0;
-    background: color-mix(in srgb, var(--card) 65%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 10px 0;
   }
 
-  /* ── Collapsed textarea: compact pill ── */
+  /* ── Collapsed textarea: compact outline pill ── */
   .comments-form__textarea--collapsed {
-    min-height: 36px;
-    max-height: 36px;
-    height: 36px;
+    min-height: 34px;
+    max-height: 34px;
+    height: 34px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 4px 10px;
+    padding: 5px 14px;
     flex: 1;
-    border-radius: 18px;
+    border-radius: 17px;
     margin-bottom: 0;
-    background: var(--faint);
-    line-height: 26px;
-    font-size: 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    line-height: 22px;
+    font-size: 13px;
   }
 
   /* ── Expanded textarea: normal multi-line ── */
   .comments-form--expanded .comments-form__input-row {
     display: block;
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
   .comments-form--expanded .comments-form__textarea {
     min-height: 80px;
@@ -1452,6 +1540,19 @@ defineExpose({ clearForm })
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
+.wizard-step__input--invalid,
+.wizard-step__input--invalid:focus {
+  border-color: var(--danger, #dd2424);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #dd2424) 12%, transparent);
+}
+
+.wizard-step__error {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger, #dd2424);
+}
+
 .wizard-step__input::placeholder {
   color: var(--secondary);
   opacity: 0.6;
@@ -1654,25 +1755,21 @@ body[data-theme='dark'] .wizard-step__input:focus {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Dark mode: no border highlight on collapsed empty textarea ── */
+/* ── Dark mode: 收起胶囊描边 ── */
 body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed {
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
-  border-color: transparent;
-  background: var(--faint);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: transparent;
 }
 
-/* ── Dark mode: visible frosted glass on mobile ── */
-body[data-theme='dark'] .comments-form--mobile {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-body[data-theme='dark'] .comments-form--mobile .comments-form__input-row {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* ── Dark mode: 展开/表情面板 ── */
+body[data-theme='dark'] .comments-form--mobile.comments-form--expanded,
+body[data-theme='dark'] .comments-form--mobile.comments-form--emoji-open {
+  background: var(--card);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Transitions ── */

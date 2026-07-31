@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
 import LeftSidebar from '@/components/LeftSidebar.vue'
 import SidebarProfile from '@/components/SidebarProfile.vue'
 import TechInfo from '@/components/sidebar/TechInfo.vue'
 import HitokotoCard from '@/components/sidebar/HitokotoCard.vue'
+import GenericWidget from '@/components/sidebar/GenericWidget.vue'
 import TocWidget from '@/components/TocWidget.vue'
 import AuthModal from '@/components/AuthModal.vue'
 import AnnouncementModal from '@/components/AnnouncementModal.vue'
@@ -15,10 +16,22 @@ import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
 import { showError } from '@/lib/toast'
-import type { ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
+import type { SidebarWidget, ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
 
 const { siteInfo, shellError, ensureLoaded, footerMenu } = useSiteShell()
 const route = useRoute()
+
+// 未在「外观→小工具」配置时的默认三件套，避免侧栏空白
+const DEFAULT_SIDEBAR: SidebarWidget[] = [
+  { type: 'profile', settings: { showStats: true, showHeatmap: true, showSocial: true } },
+  { type: 'hitokoto', settings: { api: '' } },
+  { type: 'techInfo' },
+]
+const sidebarWidgets = computed<SidebarWidget[]>(() =>
+  siteInfo.value.sidebar && siteInfo.value.sidebar.length > 0
+    ? siteInfo.value.sidebar
+    : DEFAULT_SIDEBAR,
+)
 const showSubPage = ref(false)
 
 const { init: initAuth } = useAuth()
@@ -171,11 +184,24 @@ watch(
               class="relative flex w-[200%] flex-none overflow-clip transition-transform duration-300 ease-[ease]"
               :class="{ '-translate-x-1/2': showSubPage }"
             >
-              <!-- Main page: profile + social -->
+              <!-- Main page: widget-driven sidebar（外观→小工具 配置，按顺序渲染） -->
               <div class="main-page h-full w-1/2 shrink-0">
-                <SidebarProfile @toggle-sub="showSubPage = !showSubPage" />
-                <HitokotoCard />
-                <TechInfo />
+                <template v-for="(widget, i) in sidebarWidgets" :key="i">
+                  <SidebarProfile
+                    v-if="widget.type === 'profile'"
+                    :settings="widget.settings"
+                    @toggle-sub="showSubPage = !showSubPage"
+                  />
+                  <HitokotoCard
+                    v-else-if="widget.type === 'hitokoto'"
+                    :settings="widget.settings"
+                  />
+                  <TechInfo v-else-if="widget.type === 'techInfo'" />
+                  <GenericWidget
+                    v-else-if="widget.type === 'html'"
+                    :html="widget.html"
+                  />
+                </template>
               </div>
               <!-- Sub page: menu -->
               <div class="sub-page flex h-full w-1/2 shrink-0 flex-col">

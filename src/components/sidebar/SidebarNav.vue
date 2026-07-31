@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import { isExternalUrl } from '@/lib/theme-config'
-import { getItemIcon } from './icon-map'
+import { resolveMenuIcon } from './icon-map'
+import AppIcon from '@/components/AppIcon.vue'
 import type { MenuItem } from '@/types/wordpress'
 
 defineProps<{
@@ -48,7 +49,7 @@ function hasChildren(item: MenuItem): boolean {
             @click="emit('toggle-sub-menu', item.id)"
             :aria-expanded="openMenus.has(item.id)"
           >
-            <span v-html="getItemIcon(item)"></span>
+            <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
             <span class="menu-item-title">{{ item.title }}</span>
             <svg class="sub-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10">
               <polyline points="6 9 12 15 18 9" />
@@ -62,7 +63,7 @@ function hasChildren(item: MenuItem): boolean {
           :to="item.path || item.url"
           :aria-current="isCurrent(item.path) ? 'page' : undefined"
         >
-          <span v-html="getItemIcon(item, isCurrent(item.path))"></span>
+          <AppIcon v-bind="resolveMenuIcon(item, isCurrent(item.path))" class="menu-icon" />
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <RouterLink
@@ -70,7 +71,7 @@ function hasChildren(item: MenuItem): boolean {
           to="/"
           :aria-current="isCurrent('/') ? 'page' : undefined"
         >
-          <span v-html="getItemIcon(item, isCurrent('/'))"></span>
+          <AppIcon v-bind="resolveMenuIcon(item, isCurrent('/'))" class="menu-icon" />
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <a
@@ -79,7 +80,7 @@ function hasChildren(item: MenuItem): boolean {
           :target="item.target || '_blank'"
           rel="noreferrer noopener"
         >
-          <span v-html="getItemIcon(item)"></span>
+          <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
           <span class="menu-item-title">{{ item.title }}</span>
         </a>
       </li>

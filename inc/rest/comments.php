@@ -157,21 +157,6 @@ function simple_theme_get_qq_avatar_url( string $email_or_qq ): string {
 	return '';
 }
 
-function simple_theme_build_comment_tree( array $items, $parent_id = 0, $max_depth = 3, $current_depth = 0 ) {
-	$branch = array();
-	foreach ( $items as $item ) {
-		if ( (int) $item['parent'] === $parent_id ) {
-			$children = array();
-			if ( $current_depth < $max_depth ) {
-				$children = simple_theme_build_comment_tree( $items, $item['id'], $max_depth, $current_depth + 1 );
-			}
-			$item['children'] = $children;
-			$branch[] = $item;
-		}
-	}
-	return $branch;
-}
-
 function simple_theme_user_can_edit_comment( int $comment_id ): bool {
 	$comment = get_comment( $comment_id );
 	if ( ! $comment ) {
@@ -180,18 +165,21 @@ function simple_theme_user_can_edit_comment( int $comment_id ): bool {
 	if ( is_user_logged_in() && (int) $comment->user_id === get_current_user_id() ) {
 		return true;
 	}
-	$cookie = simple_theme_get_commenter_cookie( $comment_id );
+	$cookie = simple_theme_get_commenter_cookie();
 	if ( $cookie && hash_equals( $cookie, $comment->comment_author_email ) ) {
 		return true;
 	}
 	return current_user_can( 'moderate_comments' );
 }
 
-function simple_theme_get_commenter_cookie( int $comment_id ): ?string {
-	if ( ! isset( $_COOKIE['comment_author_email_' . COOKIEHASH] ) ) {
-		return null;
+/**
+ * 读取 WordPress 原生评论者 cookie 中的邮箱（wp_set_comment_cookies 写入）。
+ */
+function simple_theme_get_commenter_cookie(): string {
+	if ( ! isset( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) ) {
+		return '';
 	}
-	return sanitize_email( wp_unslash( $_COOKIE['comment_author_email_' . COOKIEHASH] ) );
+	return sanitize_email( wp_unslash( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) );
 }
 
 function simple_theme_is_private_comment( int $comment_id ): bool {
@@ -203,6 +191,11 @@ function simple_theme_user_can_view_comment( WP_Comment $comment ): bool {
 		return true;
 	}
 	if ( is_user_logged_in() && (int) $comment->user_id === get_current_user_id() ) {
+		return true;
+	}
+	// 匿名作者通过评论者 cookie 识别自己的私密评论
+	$cookie = simple_theme_get_commenter_cookie();
+	if ( $cookie && $comment->comment_author_email && hash_equals( $cookie, $comment->comment_author_email ) ) {
 		return true;
 	}
 	if ( current_user_can( 'moderate_comments' ) ) {
@@ -222,15 +215,22 @@ function simple_theme_comment_uses_markdown( int $comment_id ): bool {
 // ========== Comment Mail Notification (async via cron) ==========
 
 /**
- * Schedule an async mail notification when a comment receives a reply.
- * Hooked to wp_insert_comment so the REST endpoint returns immediately.
+ * Schedule an async mail notification when a reply gets published.
+ * 仅在回复已是“已批准”状态时发送；待审核评论在批准时再通过
+ * comment_unapproved_to_approved 补发，st_notified 防重复。
  */
-function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
+function simple_theme_maybe_schedule_mail_notify( WP_Comment $comment ) {
 	$parent_id = (int) $comment->comment_parent;
 	if ( $parent_id <= 0 ) {
 		return;
 	}
-	$notify = get_comment_meta( $comment->comment_parent, 'st_mail_notify', true );
+	if ( '1' !== (string) $comment->comment_approved ) {
+		return;
+	}
+	if ( '1' === get_comment_meta( $comment->comment_ID, 'st_notified', true ) ) {
+		return;
+	}
+	$notify = get_comment_meta( $parent_id, 'st_mail_notify', true );
 	if ( '1' !== $notify ) {
 		return;
 	}
@@ -238,15 +238,21 @@ function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
 	if ( ! $parent || empty( $parent->comment_author_email ) ) {
 		return;
 	}
+	update_comment_meta( $comment->comment_ID, 'st_notified', '1' );
 	// Schedule a single cron event to send the email asynchronously.
 	// This prevents SMTP connection delay from blocking the comment submission.
 	wp_schedule_single_event(
 		time(),
 		'simple_theme_async_mail_notify',
-		array( $comment_id )
+		array( (int) $comment->comment_ID )
 	);
 }
+
+function simple_theme_mail_notify( int $comment_id, WP_Comment $comment ) {
+	simple_theme_maybe_schedule_mail_notify( $comment );
+}
 add_action( 'wp_insert_comment', 'simple_theme_mail_notify', 10, 2 );
+add_action( 'comment_unapproved_to_approved', 'simple_theme_maybe_schedule_mail_notify' );
 
 /**
  * Actually send the reply notification email.
@@ -284,133 +290,11 @@ add_action( 'simple_theme_async_mail_notify', 'simple_theme_send_mail_notify' );
 
 // ========== REST Endpoints ==========
 
-function simple_theme_get_comments( WP_REST_Request $request ) {
-	$post_id = (int) $request->get_param( 'post_id' );
-	$page    = max( 1, (int) $request->get_param( 'page' ) );
-	$per_page = min( 50, max( 5, (int) $request->get_param( 'per_page' ) ?: 20 ) );
-
-	if ( ! $post_id ) {
-		return new WP_REST_Response( array( 'message' => 'Post ID required' ), 400 );
-	}
-
-	$comments = get_comments( array(
-		'post_id' => $post_id,
-		'status'  => 'approve',
-		'order'   => 'ASC',
-		'number'  => $per_page,
-		'paged'   => $page,
-	) );
-
-	$total = (int) get_comments( array(
-		'post_id' => $post_id,
-		'status'  => 'approve',
-		'count'   => true,
-	) );
-
-	$filtered = array();
-	foreach ( $comments as $comment ) {
-		if ( ! simple_theme_user_can_view_comment( $comment ) ) {
-			continue;
-		}
-		$filtered[] = simple_theme_format_comment_item( $comment );
-	}
-
-	$pinned = array();
-	foreach ( $filtered as $i => $item ) {
-		if ( $item['isPinned'] ) {
-			$pinned[] = $item;
-			unset( $filtered[ $i ] );
-		}
-	}
-	$filtered = array_values( $filtered );
-
-	return new WP_REST_Response( array(
-		'items'      => array_merge( $pinned, simple_theme_build_comment_tree( $filtered ) ),
-		'total'      => $total,
-		'page'       => $page,
-		'perPage'    => $per_page,
-		'totalPages' => $per_page > 0 ? max( 1, (int) ceil( $total / $per_page ) ) : 1,
-	), 200 );
-}
-
-function simple_theme_create_comment( WP_REST_Request $request ) {
-	$params = $request->get_json_params();
-	$post_id = (int) ( $params['post'] ?? 0 );
-
-	if ( ! $post_id || ! get_post( $post_id ) ) {
-		return new WP_REST_Response( array( 'message' => 'Invalid post' ), 400 );
-	}
-
-	if ( ! comments_open( $post_id ) ) {
-		return new WP_REST_Response( array( 'message' => '评论已关闭' ), 403 );
-	}
-
-	$use_markdown_req = ! empty( $params['useMarkdown'] );
-
-	$raw_content = $params['content'] ?? '';
-
-	if ( $use_markdown_req ) {
-		$parsedown = new Parsedown();
-		$parsedown->setSafeMode( true );
-		$raw_content = $parsedown->text( $raw_content );
-	} else {
-		$raw_content = htmlspecialchars( $raw_content, ENT_NOQUOTES, 'UTF-8' );
-	}
-
-	$comment_data = array(
-		'comment_post_ID'      => $post_id,
-		'comment_parent'       => max( 0, (int) ( $params['parent'] ?? 0 ) ),
-		'comment_content'      => wp_kses_post( $raw_content ),
-		'comment_author'       => sanitize_text_field( $params['author_name'] ?? '' ),
-		'comment_author_email'  => sanitize_email( $params['author_email'] ?? '' ),
-		'comment_author_url'   => esc_url_raw( $params['author_url'] ?? '' ),
-		'comment_type'         => 'comment',
-	);
-
-	if ( is_user_logged_in() ) {
-		$user = wp_get_current_user();
-		$comment_data['user_id'] = $user->ID;
-		if ( empty( $comment_data['comment_author'] ) ) {
-			$comment_data['comment_author'] = $user->display_name;
-		}
-		if ( empty( $comment_data['comment_author_email'] ) ) {
-			$comment_data['comment_author_email'] = $user->user_email;
-		}
-	}
-
-	// CAPTCHA check (Altcha PoW)
-	if ( simple_theme_option( 'comment_captcha_enabled', false ) ) {
-		$captcha_payload = sanitize_text_field( $params['captchaPayload'] ?? '' );
-		if ( ! is_user_logged_in() ) {
-			if ( ! $captcha_payload || ! simple_theme_verify_altcha( $captcha_payload ) ) {
-				return new WP_REST_Response( array( 'message' => '验证码错误' ), 400 );
-			}
-		}
-	}
-
-	$comment_id = wp_new_comment( $comment_data, true );
-
-	if ( is_wp_error( $comment_id ) ) {
-		return new WP_REST_Response( array( 'message' => $comment_id->get_error_message() ), 400 );
-	}
-
-	// Save custom meta
-	if ( ! empty( $params['isPrivate'] ) ) {
-		update_comment_meta( $comment_id, 'st_private', '1' );
-	}
-	if ( ! empty( $params['mailNotify'] ) ) {
-		update_comment_meta( $comment_id, 'st_mail_notify', '1' );
-	}
-	if ( ! empty( $params['useMarkdown'] ) ) {
-		update_comment_meta( $comment_id, 'st_markdown', '1' );
-	}
-
-	// Save browser / OS / IP metadata from the request
-	simple_theme_save_comment_meta_info( $comment_id );
-
-	$comment = get_comment( $comment_id );
-	return new WP_REST_Response( array( 'item' => simple_theme_format_comment_item( $comment ) ), 201 );
-}
+/*
+ * 评论列表/创建均使用 WordPress 核心端点 /wp/v2/comments（见文件尾部的
+ * rest_* 钩子），主题只保留核心不提供的能力：点赞、验证码、置顶、
+ * 删除自己的待审核评论、拉取自己的待审核评论。
+ */
 
 function simple_theme_like_comment( WP_REST_Request $request ) {
 	$comment_id = (int) $request->get_param( 'commentId' );
@@ -446,106 +330,59 @@ function simple_theme_like_comment( WP_REST_Request $request ) {
 // ========== Comment Extras (comment-extras.php merge) ==========
 
 // ========== ALTCHA (Proof-of-Work CAPTCHA) ==========
+//
+// 按官方 ALTCHA 协议实现（widget 求解 sha256(salt + number) === challenge）：
+// - salt 携带 ?expires= 过期时间，签名覆盖 challenge，无法篡改
+// - 验证成功后 challenge 记入 transient 防重放
 
 define( 'ALTCHA_HMAC_KEY', wp_salt( 'secure_auth' ) );
+define( 'ALTCHA_MAX_NUMBER', 50000 );
+define( 'ALTCHA_TTL', 600 ); // 验证码 10 分钟有效
 
 function simple_theme_generate_captcha(): array {
-	$salt      = bin2hex( random_bytes( 16 ) );
-	$challenge = bin2hex( random_bytes( 32 ) );
-	$data      = array(
+	$secret    = random_int( 0, ALTCHA_MAX_NUMBER );
+	$salt      = bin2hex( random_bytes( 12 ) ) . '?expires=' . ( time() + ALTCHA_TTL );
+	$challenge = hash( 'sha256', $salt . $secret );
+	return array(
 		'algorithm' => 'SHA-256',
 		'challenge' => $challenge,
+		'maxnumber' => ALTCHA_MAX_NUMBER,
 		'salt'      => $salt,
-		'signature' => hash_hmac( 'sha256', $challenge . $salt, ALTCHA_HMAC_KEY ),
-		'maxnumber' => 50000,
+		'signature' => hash_hmac( 'sha256', $challenge, ALTCHA_HMAC_KEY ),
 	);
-	return array(
-		'challenge' => base64_encode( wp_json_encode( $data ) ),
-	);
-}
-
-define( 'ALTCHA_QUEUE_MAX', 3 );
-define( 'ALTCHA_QUEUE_TTL', 180 ); // 3 分钟，PoW 足够宽裕
-
-/**
- * Get the captcha queue from transient.
- * Returns an array of entries, cleaned of stale ones.
- */
-function simple_theme_captcha_get_queue(): array {
-	$queue = get_transient( 'simple_theme_captcha_queue' );
-	if ( ! is_array( $queue ) ) {
-		$queue = array();
-	}
-	// Remove expired entries
-	$now    = time();
-	$active = array();
-	foreach ( $queue as $entry ) {
-		if ( ( $entry['time'] ?? 0 ) + ALTCHA_QUEUE_TTL > $now ) {
-			$active[] = $entry;
-		}
-	}
-	return $active;
-}
-
-/**
- * Save the queue back to transient.
- */
-function simple_theme_captcha_save_queue( array $queue ): void {
-	set_transient( 'simple_theme_captcha_queue', $queue, ALTCHA_QUEUE_TTL );
-}
-
-/**
- * Remove a specific challenge from the queue (used after successful verification).
- */
-function simple_theme_captcha_remove_challenge( string $challenge ): void {
-	$queue = simple_theme_captcha_get_queue();
-	$found = false;
-	foreach ( $queue as $i => $entry ) {
-		if ( ( $entry['challenge'] ?? '' ) === $challenge ) {
-			unset( $queue[ $i ] );
-			$found = true;
-			break;
-		}
-	}
-	if ( $found ) {
-		simple_theme_captcha_save_queue( array_values( $queue ) );
-	}
-}
-
-/**
- * Get a stable IP hash for the current request.
- */
-function simple_theme_captcha_ip_hash(): string {
-	$ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-	return hash( 'sha256', $ip . '::captcha_queue' );
 }
 
 function simple_theme_verify_altcha( string $payload ): bool {
 	$data = json_decode( base64_decode( $payload ), true );
-	if ( ! $data || ! isset( $data['algorithm'], $data['challenge'], $data['number'], $data['salt'], $data['signature'] ) ) {
+	if ( ! is_array( $data ) || ! isset( $data['challenge'], $data['number'], $data['salt'], $data['signature'] ) ) {
 		return false;
 	}
 
-	// Verify HMAC signature
-	$expected = hash_hmac( 'sha256', $data['challenge'] . $data['salt'], ALTCHA_HMAC_KEY );
-	if ( ! hash_equals( $expected, $data['signature'] ) ) {
+	// 过期检查（expires 嵌在 salt 中，受签名保护）
+	$query = wp_parse_url( (string) $data['salt'], PHP_URL_QUERY );
+	parse_str( (string) $query, $args );
+	if ( empty( $args['expires'] ) || time() > (int) $args['expires'] ) {
 		return false;
 	}
 
-	// Verify Proof-of-Work: SHA-256(challenge + number) must start with "0"
-	$hash = hash( 'sha256', $data['challenge'] . $data['number'] );
-	if ( $hash[0] !== '0' ) {
+	// 防重放：每个 challenge 只能验证通过一次
+	$used_key = 'st_altcha_' . md5( (string) $data['challenge'] );
+	if ( get_transient( $used_key ) ) {
 		return false;
 	}
 
-	// Optional expiry
-	if ( ! empty( $data['expires'] ) && time() > $data['expires'] ) {
+	// HMAC 签名校验
+	$expected = hash_hmac( 'sha256', (string) $data['challenge'], ALTCHA_HMAC_KEY );
+	if ( ! hash_equals( $expected, (string) $data['signature'] ) ) {
 		return false;
 	}
 
-	// Remove from queue — successfully verified
-	simple_theme_captcha_remove_challenge( $data['challenge'] );
+	// PoW 校验：sha256(salt + number) 必须等于 challenge
+	if ( ! hash_equals( (string) $data['challenge'], hash( 'sha256', $data['salt'] . $data['number'] ) ) ) {
+		return false;
+	}
 
+	set_transient( $used_key, 1, ALTCHA_TTL );
 	return true;
 }
 
@@ -580,46 +417,7 @@ function simple_theme_register_comment_extra_routes() {
 }
 
 function simple_theme_rest_captcha() {
-	$ip_hash = simple_theme_captcha_ip_hash();
-	$queue   = simple_theme_captcha_get_queue();
-
-	// ① IP 去重 — 检查该 IP 是否已有 pending 的验证码
-	foreach ( $queue as $entry ) {
-		if ( ( $entry['ip'] ?? '' ) === $ip_hash ) {
-			return new WP_REST_Response( array(
-				'code'    => 'captcha_pending',
-				'message' => '已有验证码等待处理，请完成当前验证后再请求',
-			), 429 );
-		}
-	}
-
-	// ② 队列满 — 最多 3 个并发 pending
-	if ( count( $queue ) >= ALTCHA_QUEUE_MAX ) {
-		return new WP_REST_Response( array(
-			'code'    => 'captcha_queue_full',
-			'message' => '当前验证码请求过多，请稍后再试',
-		), 429 );
-	}
-
-	// ③ 生成验证码
-	$result    = simple_theme_generate_captcha();
-	$challenge = '';
-
-	// 从 base64 包裹的 JSON 中提取 challenge 值
-	$inner = json_decode( base64_decode( $result['challenge'] ), true );
-	if ( $inner && ! empty( $inner['challenge'] ) ) {
-		$challenge = $inner['challenge'];
-	}
-
-	// ④ 加入队列
-	$queue[] = array(
-		'ip'        => $ip_hash,
-		'challenge' => $challenge,
-		'time'      => time(),
-	);
-	simple_theme_captcha_save_queue( $queue );
-
-	return new WP_REST_Response( $result, 200 );
+	return new WP_REST_Response( simple_theme_generate_captcha(), 200 );
 }
 
 
@@ -636,26 +434,6 @@ function simple_theme_rest_pin_comment( WP_REST_Request $request ) {
 }
 
 // ========== Comment meta & hooks ==========
-
-/**
- * Meta fields (isPrivate, mailNotify, markdown) are saved directly
- * inside simple_theme_create_comment() after wp_new_comment(),
- * so no wp_insert_comment hook is needed here.
- */
-
-function simple_theme_extend_comment_item( array $item, WP_Comment $comment ) {
-	$item['isPinned'] = simple_theme_is_comment_pinned( $comment->comment_ID );
-	return $item;
-}
-add_filter( 'rest_prepare_comment', function( $response ) {
-	if ( $response->data ) {
-		$comment = get_comment( $response->data['id'] ?? 0 );
-		if ( $comment ) {
-			$response->data['isPinned'] = simple_theme_is_comment_pinned( $comment->comment_ID );
-		}
-	}
-	return $response;
-}, 10, 1 );
 
 function simple_theme_filter_private_comments( $comments, $post_id ) {
 	return array_filter( $comments, function( $comment ) {
@@ -683,9 +461,9 @@ function simple_theme_delete_comment( WP_REST_Request $request ) {
 	$can_delete = false;
 	if ( is_user_logged_in() ) {
 		$can_delete = (int) $comment->user_id === get_current_user_id();
-	} elseif ( isset( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) ) {
-		$email = sanitize_email( wp_unslash( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) );
-		$can_delete = $comment->comment_author_email === $email;
+	} else {
+		$email = simple_theme_get_commenter_cookie();
+		$can_delete = $email && $comment->comment_author_email === $email;
 	}
 
 	if ( ! $can_delete && ! current_user_can( 'moderate_comments' ) ) {
@@ -709,8 +487,8 @@ function simple_theme_get_user_pending_comments( WP_REST_Request $request ) {
 	if ( is_user_logged_in() ) {
 		$user = wp_get_current_user();
 		$email = $user->user_email;
-	} elseif ( isset( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) ) {
-		$email = sanitize_email( wp_unslash( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) );
+	} else {
+		$email = simple_theme_get_commenter_cookie();
 	}
 
 	if ( ! $email ) {
@@ -736,6 +514,7 @@ function simple_theme_get_user_pending_comments( WP_REST_Request $request ) {
 
 /**
  * Filter comment query to exclude private comments from users who can't view them.
+ * 登录用户按 user_id 匹配；匿名作者按 WordPress 评论者 cookie 的邮箱匹配。
  */
 add_filter( 'comments_clauses', function( $clauses ) {
 	if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST ) {
@@ -745,11 +524,16 @@ add_filter( 'comments_clauses', function( $clauses ) {
 
 	if ( ! current_user_can( 'moderate_comments' ) ) {
 		$current_user_id = get_current_user_id();
+		$cookie_email    = simple_theme_get_commenter_cookie();
 		$clauses['join'] .= " LEFT JOIN {$wpdb->commentmeta} AS st_priv ON ( {$wpdb->comments}.comment_ID = st_priv.comment_id AND st_priv.meta_key = 'st_private' )";
 		$clauses['where'] .= $wpdb->prepare(
-			" AND ( st_priv.meta_id IS NULL OR ( st_priv.meta_value = '1' AND {$wpdb->comments}.user_id = %d AND %d > 0 ) )",
+			" AND ( st_priv.meta_id IS NULL OR st_priv.meta_value <> '1'" .
+			" OR ( %d > 0 AND {$wpdb->comments}.user_id = %d )" .
+			" OR ( %s <> '' AND {$wpdb->comments}.comment_author_email = %s ) )",
 			$current_user_id,
-			$current_user_id
+			$current_user_id,
+			$cookie_email,
+			$cookie_email
 		);
 	}
 	return $clauses;
@@ -781,12 +565,6 @@ add_filter( 'rest_pre_insert_comment', function( $prepared_comment, $request ) {
 		}
 	}
 
-	// QQ number → qq.com email conversion
-	// sanitize_email() strips pure-digit strings, so append @qq.com first
-	if ( ! empty( $prepared_comment['comment_author_email'] ) && preg_match( '/^\d{5,}$/', $prepared_comment['comment_author_email'] ) ) {
-		$prepared_comment['comment_author_email'] = $prepared_comment['comment_author_email'] . '@qq.com';
-	}
-
 	// Markdown→HTML conversion (before KSES in wp_new_comment)
 	if ( ! empty( $request->get_param( 'useMarkdown' ) ) && isset( $prepared_comment['comment_content'] ) ) {
 		$parsedown = new Parsedown();
@@ -814,6 +592,13 @@ add_action( 'rest_after_insert_comment', function( $comment, $request ) {
 	}
 
 	simple_theme_save_comment_meta_info( $comment_id );
+
+	// 用 WordPress 原生机制设置评论者 cookie（核心 REST 端点自己不设），
+	// 后续的“查看/删除自己的待审核评论”、私密评论自见都依赖它。
+	if ( ! is_user_logged_in() ) {
+		$consent = $request->get_param( 'cookiesConsent' );
+		wp_set_comment_cookies( $comment, wp_get_current_user(), null === $consent ? true : (bool) $consent );
+	}
 }, 10, 2 );
 
 /**

@@ -57,18 +57,25 @@ function mapWPComment(item: WPCommentPayload): WordPressComment {
   }
 }
 
-/** 将扁平评论列表构建为嵌套树 */
-function buildCommentTree(items: WordPressComment[], parentId = 0, maxDepth = 3, currentDepth = 0): WordPressComment[] {
-  const branch: WordPressComment[] = []
-  for (const item of items) {
-    if (item.parent === parentId) {
-      const children = currentDepth < maxDepth
-        ? buildCommentTree(items, item.id, maxDepth, currentDepth + 1)
-        : []
-      branch.push({ ...item, children })
+/** 将扁平评论列表构建为嵌套树。
+ *  父级不在当前列表中的“孤儿”（分页导致）提升为根节点，避免回复丢失；
+ *  根节点置顶评论排在最前（稳定排序，组内保持时间序）。 */
+function buildCommentTree(items: WordPressComment[], maxDepth = 3): WordPressComment[] {
+  const ids = new Set(items.map((i) => i.id))
+  const build = (parentId: number, depth: number): WordPressComment[] => {
+    const branch: WordPressComment[] = []
+    for (const item of items) {
+      const isRoot = parentId === 0 && (item.parent === 0 || !ids.has(item.parent))
+      if (isRoot || (parentId !== 0 && item.parent === parentId)) {
+        const children = depth < maxDepth ? build(item.id, depth + 1) : []
+        branch.push({ ...item, children })
+      }
     }
+    return branch
   }
-  return branch
+  const tree = build(0, 0)
+  tree.sort((a, b) => Number(b.isPinned) - Number(a.isPinned))
+  return tree
 }
 
 export async function fetchComments(
@@ -115,6 +122,7 @@ export async function createComment(payload: {
   isPrivate?: boolean
   mailNotify?: boolean
   useMarkdown?: boolean
+  cookiesConsent?: boolean
 }): Promise<WordPressComment> {
   const { data } = await apiClient.post<WPCommentPayload>(
     buildRestUrl('wp/v2/comments'),
@@ -155,10 +163,11 @@ export async function deleteComment(commentId: number) {
 
 export async function fetchUserPendingComments(postId: number) {
   if (shouldUseMock()) return []
-  const { data } = await apiClient.get<{ items: WordPressComment[] }>(
+  const { data } = await apiClient.get<{ items: WPCommentPayload[] }>(
     buildRestUrl(`simple-theme/v1/user-pending-comments?post_id=${postId}`),
   )
-  return data.items
+  // 后端返回主题格式（status 为原始 '0'），统一映射为前端类型（'hold'）
+  return data.items.map(mapWPComment)
 }
 
 export async function pinComment(commentId: number, pin: boolean) {
