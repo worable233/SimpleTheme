@@ -58,6 +58,7 @@ vendor/
 
 # AI configurations and local context
 /.*/
+!/.github/
 /skills/
 !.vscode/
 CLAUDE.md
