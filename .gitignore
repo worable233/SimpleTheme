@@ -62,6 +62,7 @@ vendor/
 /skills/
 !.vscode/
 CLAUDE.md
+AGENTS.md
 .atomcode.md
 *.instructions.md
 .prompt.md
