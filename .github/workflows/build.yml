@@ -42,10 +42,23 @@ jobs:
           path: Simple-Theme-v*.zip
           if-no-files-found: error
 
-      # 打 v* 标签时发布 Release（版本号以 style.css 的 Version 为准）
+      # 打 v* 标签时发布 Release（版本号以 style.css 的 Version 为准）；
+      # 正文取 annotated tag 的附注文字，再自动追加 changelog
+      - name: Extract tag message
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: tag
+        run: |
+          git fetch --tags --force >/dev/null 2>&1 || true
+          {
+            echo "message<<ST_EOF"
+            git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME"
+            echo "ST_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          body: ${{ steps.tag.outputs.message }}
           files: Simple-Theme-v*.zip
           generate_release_notes: true
