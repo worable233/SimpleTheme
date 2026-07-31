@@ -59,13 +59,3 @@ dist/   构建产物（由 PHP 按 manifest 注入）
 ## 许可证
 
 [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名 · 非商业使用 · 禁止演绎
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=worable233%2FSimpleTheme&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=worable233/SimpleTheme&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=worable233/SimpleTheme&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=worable233/SimpleTheme&type=date&legend=top-left" />
- </picture>
-</a>
