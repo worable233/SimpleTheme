@@ -199,7 +199,7 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
-:global(body[data-theme='dark']) .shuoshuo-card:hover {
+body[data-theme='dark'] .shuoshuo-card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), var(--card-highlight);
 }
 
@@ -327,7 +327,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-:global(body[data-theme='dark']) .shuoshuo-card__meta {
+body[data-theme='dark'] .shuoshuo-card__meta {
   background: rgba(0, 0, 0, 0.35);
   box-shadow: inset 0 1px 0 0 #fff3, 0 0 10px rgba(0, 0, 0, 0.1);
 }

@@ -1627,49 +1627,49 @@ defineExpose({ clearForm })
 
 /* ── Dark-mode glass consistency ── */
 
-:global(body[data-theme='dark']) .wizard-modal {
+body[data-theme='dark'] .wizard-modal {
   background: var(--card);
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
-:global(body[data-theme='dark']) .wizard-modal .wizard-progress-bar {
+body[data-theme='dark'] .wizard-modal .wizard-progress-bar {
   background: rgba(255, 255, 255, 0.08);
 }
 
-:global(body[data-theme='dark']) .wizard-step__option {
+body[data-theme='dark'] .wizard-step__option {
   background: rgba(255, 255, 255, 0.04);
 }
 
-:global(body[data-theme='dark']) .wizard-step__option:hover {
+body[data-theme='dark'] .wizard-step__option:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-:global(body[data-theme='dark']) .wizard-step__input {
+body[data-theme='dark'] .wizard-step__input {
   background: rgba(255, 255, 255, 0.05);
 }
 
-:global(body[data-theme='dark']) .wizard-step__input:focus {
+body[data-theme='dark'] .wizard-step__input:focus {
   background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Dark mode: no border highlight on collapsed empty textarea ── */
-:global(body[data-theme='dark']) .comments-form__textarea--empty.comments-form__textarea--collapsed {
+body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed {
   border-color: transparent;
 }
-:global(body[data-theme='dark']) .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
+body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
   border-color: transparent;
   background: var(--faint);
 }
 
 /* ── Dark mode: visible frosted glass on mobile ── */
-:global(body[data-theme='dark']) .comments-form--mobile {
+body[data-theme='dark'] .comments-form--mobile {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
-:global(body[data-theme='dark']) .comments-form--mobile .comments-form__input-row {
+body[data-theme='dark'] .comments-form--mobile .comments-form__input-row {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1731,11 +1731,11 @@ defineExpose({ clearForm })
 
 /* ── Dark mode ── */
 
-:global(body[data-theme='dark']) .wizard-mask {
+body[data-theme='dark'] .wizard-mask {
   background: rgba(0, 0, 0, 0.7);
 }
 
-:global(body[data-theme='dark']) .wizard-step__input:focus {
+body[data-theme='dark'] .wizard-step__input:focus {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 </style>

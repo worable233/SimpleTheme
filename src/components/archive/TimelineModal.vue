@@ -389,52 +389,52 @@ function onMaskClick(e: MouseEvent) {
 }
 
 /* ===== Dark Mode ===== */
-:global([data-theme='dark']) .timeline-modal {
+[data-theme='dark'] .timeline-modal {
   background: rgba(25,25,25,0.98);
   border-color: rgba(255,255,255,0.08);
   box-shadow: inset 0 1px 0 0 #fff3;
 }
 
-:global([data-theme='dark']) .modal-title {
+[data-theme='dark'] .modal-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global([data-theme='dark']) .modal-statbox {
+[data-theme='dark'] .modal-statbox {
   background: rgba(255,255,255,0.04);
   border-color: rgba(255,255,255,0.08);
 }
 
-:global([data-theme='dark']) .stat-label {
+[data-theme='dark'] .stat-label {
   color: rgba(255,255,255,0.5);
 }
 
-:global([data-theme='dark']) .stat-value {
+[data-theme='dark'] .stat-value {
   color: rgba(255,255,255,0.95);
 }
 
-:global([data-theme='dark']) .modal-month-title {
+[data-theme='dark'] .modal-month-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global([data-theme='dark']) .modal-month-title::before {
+[data-theme='dark'] .modal-month-title::before {
   background: var(--primary, rgba(255,255,255,0.8));
 }
 
-:global([data-theme='dark']) .modal-post-item {
+[data-theme='dark'] .modal-post-item {
   background: rgba(255,255,255,0.03);
   border-color: rgba(255,255,255,0.06);
 }
 
-:global([data-theme='dark']) .modal-post-item:hover {
+[data-theme='dark'] .modal-post-item:hover {
   background: rgba(255,255,255,0.05);
   border-color: rgba(255,255,255,0.1);
 }
 
-:global([data-theme='dark']) .modal-post-title {
+[data-theme='dark'] .modal-post-title {
   color: rgba(255,255,255,0.9);
 }
 
-:global([data-theme='dark']) .modal-post-date {
+[data-theme='dark'] .modal-post-date {
   color: rgba(255,255,255,0.5);
   background: rgba(255,255,255,0.08);
 }

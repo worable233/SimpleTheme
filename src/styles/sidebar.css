@@ -515,6 +515,7 @@
 
 .aside-card__title {
   font-size: 17px;
+  font-weight: 700;
   color: var(--foreground);
   padding: 20px 0 0;
   margin: 0 0 14px;

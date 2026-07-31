@@ -54,6 +54,7 @@
 
 .sub-page__menu-title {
   font-size: 17px;
+  font-weight: 700;
   color: var(--foreground);
   padding: 20px 0 14px;
   margin: 0;
