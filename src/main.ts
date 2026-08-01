@@ -19,6 +19,16 @@ if ('serviceWorker' in navigator && !import.meta.env.DEV) {
 
 const app = createApp(App)
 
+// Preserve server-rendered static content before Vue wipes #app on mount.
+// If the REST API is unreachable at runtime (e.g. web.archive.org playback,
+// or a backend outage), views fall back to this static HTML instead of an
+// error illustration — keeping content visible & archivable.
+const staticEl = document.getElementById('st-static')
+if (staticEl && staticEl.innerHTML.trim()) {
+  window.__ST_STATIC_HTML__ = staticEl.innerHTML
+  window.__ST_STATIC_PATH__ = window.location.pathname
+}
+
 // ALTCHA is a native web component, not a Vue component
 // (build-time counterpart lives in vite.config.ts → @vitejs/plugin-vue compilerOptions)
 app.config.compilerOptions.isCustomElement = (tag: string) => tag.startsWith('altcha-')

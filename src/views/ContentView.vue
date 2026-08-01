@@ -20,6 +20,8 @@ import { useSiteShell } from '@/composables/useSiteShell'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import NotFoundView from '@/views/NotFoundView.vue'
 import ErrorView from '@/components/ErrorView.vue'
+import StaticFallback from '@/components/StaticFallback.vue'
+import { useStaticFallback } from '@/composables/useStaticFallback'
 
 import ShuoshuoView from '@/views/ShuoshuoView.vue'
 import ArchivesView from '@/views/ArchivesView.vue'
@@ -50,6 +52,7 @@ const { siteInfo } = useSiteShell()
 const contentType = ref<ResolveResponse['type']>('home')
 const errorMessage = ref('')
 const loading = ref(false)
+const { staticFallbackHtml } = useStaticFallback()
 const postData = ref<WordPressPost | null>(null)
 const postContent = computed(() => postData.value?.content?.rendered ?? null)
 useContentEnhancer(postContent)
@@ -252,8 +255,12 @@ watch(
 
     <!-- Non-special pages — mutually exclusive states chained with v-if/v-else-if/v-else -->
     <template v-else>
+     <StaticFallback
+        v-if="'error' === contentType && staticFallbackHtml"
+        :html="staticFallbackHtml"
+      />
       <ErrorView
-        v-if="'error' === contentType"
+        v-else-if="'error' === contentType"
         illustration="warning"
         title="页面加载失败"
         description="抱歉，页面暂时无法加载，请稍后重试。"

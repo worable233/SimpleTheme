@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router'
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import StaticFallback from '@/components/StaticFallback.vue'
+import { useStaticFallback } from '@/composables/useStaticFallback'
 
 defineProps<{
   termName: string
@@ -12,6 +14,8 @@ defineProps<{
   errorMessage: string
   termPosts: WordPressPost[]
 }>()
+
+const { staticFallbackHtml } = useStaticFallback()
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
@@ -58,6 +62,10 @@ const formatWordCount = (count?: number) => {
     </div>
 
     <!-- Term error -->
+    <StaticFallback
+      v-else-if="errorMessage && staticFallbackHtml"
+      :html="staticFallbackHtml"
+    />
     <ErrorView
       v-else-if="errorMessage"
       illustration="empty"

@@ -11,6 +11,8 @@ import { showError } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import StaticFallback from '@/components/StaticFallback.vue'
+import { useStaticFallback } from '@/composables/useStaticFallback'
 import AppIcon from '@/components/AppIcon.vue'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
@@ -25,6 +27,7 @@ const page = ref(1)
 const totalPages = ref(0)
 const hasMore = ref(true)
 const errorMessage = ref('')
+const { staticFallbackHtml } = useStaticFallback()
 
 /** Local category slug; '' means 'all'. Initialized from route param on mount. */
 const categorySlug = ref((route.params.slug as string) || '')
@@ -294,8 +297,12 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
       </div>
 
       <!-- Error state overlays everything -->
+      <StaticFallback
+        v-if="errorMessage && staticFallbackHtml"
+        :html="staticFallbackHtml"
+      />
       <ErrorView
-        v-if="errorMessage"
+        v-else-if="errorMessage"
         illustration="warning"
         title="首页加载失败"
         :description="errorMessage"
