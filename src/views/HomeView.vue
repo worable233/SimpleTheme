@@ -355,10 +355,11 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
         <div v-if="initialLoading && latestPosts.length === 0" class="post-list">
           <div v-for="i in perPageCount" :key="'sk-init-' + i" class="post-card-skeleton" :style="skeletonStyle">
             <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
+            <div class="post-card-skeleton__meta"><span></span><span></span></div>
             <div class="post-card-skeleton__text">
-              <div class="mb-2 h-[1.125rem] w-[70%] animate-card-pulse rounded-small bg-muted"></div>
-              <div class="mb-2 h-3 w-full animate-card-pulse rounded-small bg-muted"></div>
-              <div class="mb-3 h-3 w-[65%] animate-card-pulse rounded-small bg-muted"></div>
+              <div class="post-card-skeleton__title"></div>
+              <div class="post-card-skeleton__excerpt"></div>
+              <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
             </div>
           </div>
         </div>
@@ -416,10 +417,11 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
         <div v-if="loadingMore" class="post-list mt-6">
           <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton" :style="skeletonStyle">
             <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
+            <div class="post-card-skeleton__meta"><span></span><span></span></div>
             <div class="post-card-skeleton__text">
-              <div class="mb-2 h-[1.125rem] w-[70%] animate-card-pulse rounded-small bg-muted"></div>
-              <div class="mb-2 h-3 w-full animate-card-pulse rounded-small bg-muted"></div>
-              <div class="mb-3 h-3 w-[65%] animate-card-pulse rounded-small bg-muted"></div>
+              <div class="post-card-skeleton__title"></div>
+              <div class="post-card-skeleton__excerpt"></div>
+              <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
             </div>
           </div>
         </div>

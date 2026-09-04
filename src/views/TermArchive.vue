@@ -53,11 +53,13 @@ const formatWordCount = (count?: number) => {
     <!-- Term loading -->
     <div v-if="termPostsLoading" class="post-list">
       <div v-for="i in 3" :key="'sk-term-' + i" class="post-card-skeleton">
-        <div class="post-card-skeleton__text">
-          <div class="skeleton-line w-[70%]"></div>
-          <div class="skeleton-line w-1/2"></div>
-        </div>
         <div class="post-card-skeleton__cover"></div>
+        <div class="post-card-skeleton__meta"><span></span><span></span></div>
+        <div class="post-card-skeleton__text">
+          <div class="post-card-skeleton__title"></div>
+          <div class="post-card-skeleton__excerpt"></div>
+          <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
+        </div>
       </div>
     </div>
 

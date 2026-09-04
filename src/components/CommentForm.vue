@@ -40,6 +40,7 @@ const emojiLeaving = ref(false)
 const emojiTab = ref<'bilibili' | 'tieba' | 'dinosaur' | 'kaomoji'>('bilibili')
 const editorRef = ref<HTMLDivElement | null>(null)
 const emojiPanelRef = ref<HTMLElement | null>(null)
+const isComposing = ref(false)
 
 // Mobile bottom-sheet state
 const mobileExpanded = ref(false)
@@ -312,12 +313,27 @@ function handleEditorInput() {
   if (!el) return
   const raw = extractPlainText()
   content.value = raw
+
+  // IME composition emits input events before the candidate text is committed.
+  // Replacing innerHTML at that point destroys the browser's composition range
+  // and interrupts Chinese/Japanese/Korean input.
+  if (isComposing.value) return
+
   const html = renderToHtml(raw)
   if (el.innerHTML !== html) {
     const cursor = saveCursorOffset()
     el.innerHTML = html
     requestAnimationFrame(() => restoreCursorOffset(cursor))
   }
+}
+
+function handleCompositionStart() {
+  isComposing.value = true
+}
+
+function handleCompositionEnd() {
+  isComposing.value = false
+  handleEditorInput()
 }
 
 function insertEmoji(text: string) {
@@ -490,7 +506,10 @@ defineExpose({ clearForm })
         }"
         :data-placeholder="parentCommentId ? '写下回复...' : '写下评论...'"
         role="textbox"
+        aria-multiline="true"
         @input="handleEditorInput"
+        @compositionstart="handleCompositionStart"
+        @compositionend="handleCompositionEnd"
         @focus="expandMobile"
         @click="expandMobile"
       ></div>
