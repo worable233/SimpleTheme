@@ -138,8 +138,6 @@ async function handleLogin() {
         result.logout_url,
       )
       emit('close')
-      // 刷新页面以同步所有 cookie 和状态
-      window.location.reload()
     } else {
       errorMsg.value = result.message || '登录失败'
     }

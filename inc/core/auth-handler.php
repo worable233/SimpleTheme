@@ -477,6 +477,16 @@ function simple_theme_auth_reset_password( WP_REST_Request $request ) {
 // ============================================================
 
 function simple_theme_auth_me() {
+	// REST cookie authentication normally waits for X-WP-Nonce before it
+	// populates the current user. This endpoint is the bootstrap that provides
+	// that nonce, so validate the existing login cookie explicitly first.
+	if ( ! is_user_logged_in() ) {
+		$user_id = wp_validate_auth_cookie( '', 'logged_in' );
+		if ( $user_id ) {
+			wp_set_current_user( $user_id );
+		}
+	}
+
 	if ( ! is_user_logged_in() ) {
 		$response = new WP_REST_Response( array(
 			'logged_in' => false,

@@ -9,6 +9,9 @@ export const apiClient = axios.create({
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
   },
+  // Keep the WordPress auth cookie across REST requests, including installs
+  // where the configured site URL differs by host or subdomain.
+  withCredentials: true,
   timeout: 8000,
 })
 
