@@ -77,6 +77,10 @@ function simple_theme_setup() {
 	add_theme_support( 'link-color' );
 	add_theme_support( 'wp-block-styles' );
 	add_theme_support( 'editor-styles' );
+	// Theme widgets are classic WP_Widget instances. Keep the classic widgets
+	// screen so their instance forms and AJAX save flow work reliably across
+	// WordPress versions that enable the block widgets editor by default.
+	remove_theme_support( 'widgets-block-editor' );
 
 	register_nav_menus( array(
 		'primary' => __( 'Primary Menu', 'simple-theme' ),

@@ -189,7 +189,8 @@ function handleSubClick(child: { title: string; url: string }) {
             <!-- Chevron for items with children -->
             <span
               v-if="item.children?.length"
-              class="absolute top-1/2 -right-3 size-2 -translate-y-1/2 rotate-45 border-t-[1.5px] border-r-[1.5px] border-current opacity-30"
+              aria-hidden="true"
+              class="absolute top-1/2 right-1 size-1.5 -translate-y-1/2 rotate-45 border-t-[1.5px] border-r-[1.5px] border-current opacity-45"
             ></span>
           </a>
         </li>

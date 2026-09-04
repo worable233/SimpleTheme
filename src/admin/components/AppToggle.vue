@@ -14,12 +14,18 @@ function toggle() {
 </script>
 
 <template>
-  <label class="xh-toggle" @click.prevent="toggle">
+  <button
+    class="xh-toggle"
+    type="button"
+    role="switch"
+    :aria-checked="modelValue"
+    @click="toggle"
+  >
     <span class="xh-toggle__track" :class="{ 'xh-toggle__track--on': modelValue }">
       <span class="xh-toggle__thumb"></span>
     </span>
     <span v-if="label" class="xh-toggle__label">{{ label }}</span>
-  </label>
+  </button>
 </template>
 
 <style scoped>
@@ -29,6 +35,16 @@ function toggle() {
   gap: 10px;
   cursor: pointer;
   user-select: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+.xh-toggle:focus-visible {
+  outline: 2px solid var(--xh-primary);
+  outline-offset: 3px;
 }
 .xh-toggle__track {
   position: relative;

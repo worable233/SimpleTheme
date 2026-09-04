@@ -44,16 +44,16 @@ const emit = defineEmits<{
       </template>
       <div class="xh-field xh-field--compact">
         <label class="xh-field__label">首页文章数量</label>
-        <input type="number" class="xh-input xh-input--number" min="3" max="20" :value="(settings.home_post_count as number) || 6" @input="emit('update', 'home_post_count', Number(($event.target as HTMLInputElement).value))" />
+          <input type="number" class="xh-input xh-input--number" min="3" max="20" :value="(settings.home_post_count as number) ?? 6" @input="emit('update', 'home_post_count', Number(($event.target as HTMLInputElement).value))" />
       </div>
       <template v-if="settings.show_shuoshuo_section">
         <div class="xh-field xh-field--compact">
           <label class="xh-field__label">首页说说数量</label>
-          <input type="number" class="xh-input xh-input--number" min="0" max="12" :value="(settings.home_shuoshuo_count as number) || 3" @input="emit('update', 'home_shuoshuo_count', Number(($event.target as HTMLInputElement).value))" />
+          <input type="number" class="xh-input xh-input--number" min="0" max="12" :value="(settings.home_shuoshuo_count as number) ?? 3" @input="emit('update', 'home_shuoshuo_count', Number(($event.target as HTMLInputElement).value))" />
         </div>
         <div class="xh-field xh-field--compact">
           <label class="xh-field__label">说说每页数量</label>
-          <input type="number" class="xh-input xh-input--number" min="6" max="24" :value="(settings.shuoshuo_page_size as number) || 12" @input="emit('update', 'shuoshuo_page_size', Number(($event.target as HTMLInputElement).value))" />
+          <input type="number" class="xh-input xh-input--number" min="6" max="24" :value="(settings.shuoshuo_page_size as number) ?? 12" @input="emit('update', 'shuoshuo_page_size', Number(($event.target as HTMLInputElement).value))" />
         </div>
       </template>
     </div>
@@ -107,7 +107,7 @@ const emit = defineEmits<{
     <template v-if="settings.announcement_enabled">
       <div class="xh-field xh-field--compact" style="margin-top: 16px;">
         <label class="xh-field__label">显示模式</label>
-        <select class="xh-input" :value="(settings.announcement_mode as string) || 'modal'" @change="emit('update', 'announcement_mode', ($event.target as HTMLSelectElement).value)">
+        <select class="xh-select" :value="(settings.announcement_mode as string) || 'modal'" @change="emit('update', 'announcement_mode', ($event.target as HTMLSelectElement).value)">
           <option value="modal">弹窗</option>
           <option value="capsule">胶囊横幅</option>
         </select>

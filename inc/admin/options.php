@@ -320,6 +320,9 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = is_email( (string) $value ) ? sanitize_email( (string) $value ) : '';
 		} elseif ( 'smtp_from_name' === $key ) {
 			$output[ $key ] = sanitize_text_field( (string) $value );
+		} elseif ( 'body_font' === $key || 'code_font' === $key ) {
+			$font_value = trim( (string) $value );
+			$output[ $key ] = '' !== $font_value ? sanitize_text_field( $font_value ) : $default_value;
 		} elseif ( 'email_template' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'simple', 'card', 'professional' ), true ) ? (string) $value : 'simple';
 		} elseif ( 'announcement_mode' === $key ) {
@@ -358,6 +361,11 @@ function simple_theme_sanitize_options( $input ) {
 function simple_theme_get_settings() {
 	$options = get_option( 'simple_theme_options', array() );
 	$defaults = function_exists( 'simple_theme_get_default_options' ) ? simple_theme_get_default_options() : array();
+	// Return the effective, sanitized option set so the admin UI never has to
+	// infer missing values from an old or partially migrated installation.
+	if ( function_exists( 'simple_theme_sanitize_options' ) ) {
+		$options = simple_theme_sanitize_options( $options );
+	}
 	$options = apply_filters( 'simple_theme_after_get_settings', $options );
 	return new WP_REST_Response(
 		array(

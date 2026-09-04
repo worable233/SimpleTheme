@@ -392,6 +392,115 @@ body.sta-theme-active .search-box input[type='search'] {
   margin-right: 6px;
 }
 
+/* 经典小工具编辑器：让实例配置成为清晰、可扫描的工作区。 */
+body.sta-theme-active.widgets-php #widgets-right .widgets-holder-wrap,
+body.sta-theme-active.widgets-php #widgets-left .widgets-holder-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+body.sta-theme-active.widgets-php #widgets-right .widgets-holder-wrap h2,
+body.sta-theme-active.widgets-php #widgets-left .widgets-holder-wrap h2 {
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+body.sta-theme-active.widgets-php #widgets-right .widgets-sortables,
+body.sta-theme-active.widgets-php #widgets-left .widgets-sortables {
+  min-height: 72px;
+  padding: 12px;
+  background: var(--background);
+}
+
+body.sta-theme-active.widgets-php .widget {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+  overflow: hidden;
+  margin: 0 0 10px;
+  background: var(--card);
+}
+
+body.sta-theme-active.widgets-php .widget:last-child {
+  margin-bottom: 0;
+}
+
+body.sta-theme-active.widgets-php .widget .widget-top {
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 2px 10px;
+}
+
+body.sta-theme-active.widgets-php .widget .widget-title h3,
+body.sta-theme-active.widgets-php .widget .widget-title h4 {
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+body.sta-theme-active.widgets-php .widget .widget-inside {
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  padding: 16px;
+}
+
+body.sta-theme-active.widgets-php .widget-inside p {
+  margin: 0 0 12px;
+}
+
+body.sta-theme-active.widgets-php .widget-inside p:last-child {
+  margin-bottom: 0;
+}
+
+body.sta-theme-active.widgets-php .widget-inside .description,
+body.sta-theme-active.widgets-php .widget-inside small.description {
+  color: var(--secondary);
+  line-height: 1.6;
+}
+
+body.sta-theme-active.widgets-php .widget-inside .widefat {
+  width: 100%;
+  margin-top: 6px;
+}
+
+body.sta-theme-active.widgets-php #available-widgets .widget-description {
+  color: var(--secondary);
+  line-height: 1.5;
+}
+
+body.sta-theme-active.widgets-php .widget-control-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 782px) {
+  body.sta-theme-active.widgets-php {
+    padding-left: 0;
+  }
+
+  body.sta-theme-active.widgets-php .wrap {
+    padding: 20px 16px 0;
+  }
+
+  body.sta-theme-active.widgets-php #widgets-right .widgets-holder-wrap,
+  body.sta-theme-active.widgets-php #widgets-left .widgets-holder-wrap {
+    margin-bottom: 12px;
+  }
+}
+
 /* 卡片（postbox / 欢迎面板 / 健康卡片） */
 body.sta-theme-active .postbox,
 body.sta-theme-active .welcome-panel,

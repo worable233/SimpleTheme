@@ -52,55 +52,34 @@
      so the settings panel reads as the same product. Light defaults here;
      dark values overridden below when <html data-theme="dark">. ── */
   #simple-theme-admin-app {
-    --xh-primary: #333;
-    --xh-primary-hover: #555;
-    --xh-primary-foreground: #fff;
-    --xh-primary-light: #f5f5f5;
-    --xh-primary-ring: rgba(51, 51, 51, 0.15);
-    --xh-bg: #f5f6f7;
-    --xh-card: #ffffff;
-    --xh-border: #e2e2e2;
-    --xh-border-light: #ececec;
-    --xh-text: #333;
-    --xh-text-secondary: #999;
-    --xh-text-tertiary: #bbb;
-    --xh-success: #67c23a;
-    --xh-success-bg: #f0f9eb;
-    --xh-warning: #e6a23c;
-    --xh-warning-bg: #fdf6ec;
-    --xh-error: #dd2424;
-    --xh-error-bg: #fef0ef;
-    --xh-radius: 8px;
-    --xh-radius-sm: 6px;
-    --xh-radius-xs: 4px;
-    --xh-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-    --xh-shadow-lg: 0 6px 12px rgb(0 0 0 / 0.1);
+    /* Aliases keep existing admin component classes on the same token source
+       as the public theme instead of maintaining a second visual system. */
+    --xh-primary: var(--primary);
+    --xh-primary-hover: color-mix(in srgb, var(--primary) 82%, var(--foreground));
+    --xh-primary-foreground: var(--primary-foreground);
+    --xh-primary-light: var(--muted);
+    --xh-primary-ring: color-mix(in srgb, var(--ring) 18%, transparent);
+    --xh-bg: var(--background);
+    --xh-card: var(--card);
+    --xh-border: var(--border);
+    --xh-border-light: color-mix(in srgb, var(--border) 72%, var(--card));
+    --xh-text: var(--foreground);
+    --xh-text-secondary: var(--muted-foreground);
+    --xh-text-tertiary: color-mix(in srgb, var(--muted-foreground) 68%, var(--card));
+    --xh-success: var(--success);
+    --xh-success-bg: color-mix(in srgb, var(--success) 12%, var(--card));
+    --xh-warning: var(--warning);
+    --xh-warning-bg: color-mix(in srgb, var(--warning) 12%, var(--card));
+    --xh-error: var(--danger);
+    --xh-error-bg: color-mix(in srgb, var(--danger) 10%, var(--card));
+    --xh-radius: var(--radius-large);
+    --xh-radius-sm: var(--radius-medium);
+    --xh-radius-xs: var(--radius-small);
+    --xh-shadow: var(--shadow-small);
+    --xh-shadow-lg: var(--shadow-large);
     --xh-sidebar-width: 220px;
     --xh-topbar-height: 60px;
     --xh-transition: 0.2s ease;
-  }
-
-  [data-theme='dark'] #simple-theme-admin-app {
-    --xh-primary: #e0e0e0;
-    --xh-primary-hover: #ffffff;
-    --xh-primary-foreground: #1a1a1a;
-    --xh-primary-light: #2a2a2a;
-    --xh-primary-ring: rgba(224, 224, 224, 0.22);
-    --xh-bg: #1a1a1a;
-    --xh-card: #222222;
-    --xh-border: #333333;
-    --xh-border-light: #2d2d2d;
-    --xh-text: #e0e0e0;
-    --xh-text-secondary: #999;
-    --xh-text-tertiary: #777;
-    --xh-success: #6cc070;
-    --xh-success-bg: rgba(108, 192, 112, 0.14);
-    --xh-warning: #f0a030;
-    --xh-warning-bg: rgba(240, 160, 48, 0.14);
-    --xh-error: #f4807b;
-    --xh-error-bg: rgba(244, 128, 123, 0.14);
-    --xh-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-    --xh-shadow-lg: 0 6px 16px rgb(0 0 0 / 0.5);
   }
 
   /* ── Root Layout ── */
@@ -108,9 +87,11 @@
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    min-height: calc(100vh - 32px);
+    min-height: 100vh;
     background: var(--xh-bg);
     margin: -10px -20px -20px;
+    color: var(--foreground);
+    font-family: var(--font-sans-serif, ui-sans-serif, system-ui, sans-serif);
   }
   .xh-root--centered {
     justify-content: center;
@@ -126,8 +107,8 @@
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: 32px;
-    height: calc(100vh - 32px);
+    top: 0;
+    height: 100vh;
     z-index: 50;
     overflow: hidden;
   }
@@ -234,7 +215,7 @@
     border-bottom: 1px solid var(--xh-border);
     background: var(--xh-card);
     position: sticky;
-    top: 32px;
+    top: 0;
     z-index: 30;
     flex-shrink: 0;
   }
@@ -304,7 +285,7 @@
   }
   .xh-body {
     flex: 1;
-    padding: 28px 32px;
+    padding: 28px 32px 48px;
     overflow-y: auto;
   }
 
@@ -502,7 +483,7 @@
   }
 
   /* ── Responsive: mobile ── */
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
     .xh-root {
       margin: -10px -10px -20px;
     }
@@ -571,6 +552,27 @@
       display: none;
     }
   }
+}
+
+/* The settings SPA owns the whole admin viewport. Reset WP's legacy content
+   offsets so the shell cannot drift when the native menu/admin bar changes. */
+body.toplevel_page_simple-theme #wpcontent,
+body.toplevel_page_simple-theme #wpbody-content {
+  margin-left: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+body.toplevel_page_simple-theme #wpadminbar {
+  display: none !important;
+}
+
+body.toplevel_page_simple-theme .xh-root {
+  margin: 0;
+}
+
+html.wp-toolbar:has(body.toplevel_page_simple-theme) {
+  padding-top: 0 !important;
 }
 
 /* ═══════════════════════════════════════════════════

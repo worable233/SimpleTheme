@@ -12,6 +12,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { getThemeConfig } from '@/lib/theme-config'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -44,12 +45,15 @@ const canRegister = computed(() => {
 // 表单数据
 const log = ref('')
 const pwd = ref('')
+const showLoginPassword = ref(false)
 const rememberme = ref(true)
 const regUser = ref('')
 const regEmail = ref('')
 const lostUser = ref('')
 const resetPass1 = ref('')
 const resetPass2 = ref('')
+const showResetPassword = ref(false)
+const showResetPasswordConfirm = ref(false)
 
 // 状态
 const loading = ref(false)
@@ -341,15 +345,26 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
           </div>
           <div class="mb-4">
             <label for="auth-pwd" :class="fieldLabel">密码</label>
-            <input
-              id="auth-pwd"
-              v-model="pwd"
-              type="password"
-              autocomplete="current-password"
-              placeholder="输入密码"
-              required
-              :class="fieldInput"
-            />
+            <div class="relative">
+              <input
+                id="auth-pwd"
+                v-model="pwd"
+                :type="showLoginPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                placeholder="输入密码"
+                required
+                :class="`${fieldInput} pr-10`"
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                :aria-label="showLoginPassword ? '隐藏密码' : '显示密码'"
+                :title="showLoginPassword ? '隐藏密码' : '显示密码'"
+                @click="showLoginPassword = !showLoginPassword"
+              >
+                <AppIcon :name="showLoginPassword ? 'eye-off' : 'eye'" :size="18" />
+              </button>
+            </div>
           </div>
           <div class="mb-4">
             <label
@@ -445,29 +460,51 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
           </p>
           <div class="mb-4">
             <label for="auth-reset-pass1" :class="fieldLabel">新密码</label>
-            <input
-              id="auth-reset-pass1"
-              v-model="resetPass1"
-              type="password"
-              autocomplete="new-password"
-              placeholder="输入新密码"
-              required
-              minlength="6"
-              :class="fieldInput"
-            />
+            <div class="relative">
+              <input
+                id="auth-reset-pass1"
+                v-model="resetPass1"
+                :type="showResetPassword ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="输入新密码"
+                required
+                minlength="6"
+                :class="`${fieldInput} pr-10`"
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                :aria-label="showResetPassword ? '隐藏密码' : '显示密码'"
+                :title="showResetPassword ? '隐藏密码' : '显示密码'"
+                @click="showResetPassword = !showResetPassword"
+              >
+                <AppIcon :name="showResetPassword ? 'eye-off' : 'eye'" :size="18" />
+              </button>
+            </div>
           </div>
           <div class="mb-4">
             <label for="auth-reset-pass2" :class="fieldLabel">确认新密码</label>
-            <input
-              id="auth-reset-pass2"
-              v-model="resetPass2"
-              type="password"
-              autocomplete="new-password"
-              placeholder="再次输入新密码"
-              required
-              minlength="6"
-              :class="fieldInput"
-            />
+            <div class="relative">
+              <input
+                id="auth-reset-pass2"
+                v-model="resetPass2"
+                :type="showResetPasswordConfirm ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="再次输入新密码"
+                required
+                minlength="6"
+                :class="`${fieldInput} pr-10`"
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                :aria-label="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
+                :title="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
+                @click="showResetPasswordConfirm = !showResetPasswordConfirm"
+              >
+                <AppIcon :name="showResetPasswordConfirm ? 'eye-off' : 'eye'" :size="18" />
+              </button>
+            </div>
           </div>
           <button type="submit" :class="primaryBtn" :disabled="loading">
             {{ loading ? '重置中...' : '重置密码' }}

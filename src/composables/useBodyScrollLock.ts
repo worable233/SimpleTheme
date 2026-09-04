@@ -1,5 +1,6 @@
 let activeLocks = 0
-let previousOverflow = ''
+let previousBodyStyles: Partial<Record<'position' | 'top' | 'width' | 'overflow', string>> = {}
+let lockedScrollY = 0
 
 export function useBodyScrollLock() {
   let locked = false
@@ -8,12 +9,22 @@ export function useBodyScrollLock() {
     if (locked || typeof document === 'undefined') return
 
     if (activeLocks === 0) {
-      previousOverflow = document.body.style.overflow
+      const body = document.body
+      lockedScrollY = window.scrollY
+      previousBodyStyles = {
+        position: body.style.position,
+        top: body.style.top,
+        width: body.style.width,
+        overflow: body.style.overflow,
+      }
+      body.style.position = 'fixed'
+      body.style.top = `-${lockedScrollY}px`
+      body.style.width = '100%'
+      body.style.overflow = 'hidden'
     }
 
     activeLocks += 1
     locked = true
-    document.body.style.overflow = 'hidden'
   }
 
   function unlockBodyScroll() {
@@ -23,7 +34,13 @@ export function useBodyScrollLock() {
     locked = false
 
     if (activeLocks === 0) {
-      document.body.style.overflow = previousOverflow
+      const body = document.body
+      body.style.position = previousBodyStyles.position || ''
+      body.style.top = previousBodyStyles.top || ''
+      body.style.width = previousBodyStyles.width || ''
+      body.style.overflow = previousBodyStyles.overflow || ''
+      window.scrollTo(0, lockedScrollY)
+      previousBodyStyles = {}
     }
   }
 

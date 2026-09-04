@@ -26,12 +26,12 @@ const emit = defineEmits<{
     </div>
     <div class="xh-field" style="margin-top: 16px;">
       <AppToggle
-        :modelValue="settings.hero_show_avatar !== false"
+        :modelValue="settings.hero_show_avatar === true"
         label="显示头像"
         @update:modelValue="emit('update', 'hero_show_avatar', $event)"
       />
     </div>
-    <div v-if="settings.hero_show_avatar !== false" class="xh-field">
+    <div v-if="settings.hero_show_avatar === true" class="xh-field">
       <label class="xh-field__label">头像</label>
       <AppImageUpload
         :modelValue="(settings.hero_avatar as string) || ''"
@@ -50,13 +50,13 @@ const emit = defineEmits<{
     </div>
   </AppCard>
 
-  <!-- Sidebar Widgets (now managed via 外观 → 小工具) -->
-  <AppCard title="侧边栏小工具" description="右侧栏已改为标准 WordPress 小工具，可自由增删/排序，也能放入搜索、最新文章、标签云等核心小工具。">
+  <!-- Sidebar Widgets (global data stays here; per-instance options live in WP Widgets) -->
+  <AppCard title="侧边栏数据与小工具" description="小工具的添加、排序和单个实例设置请在 WordPress 小工具编辑器中完成；这里仅维护所有小工具共享的全局数据。">
     <div class="xh-field">
       <a class="xh-btn xh-btn--primary" href="widgets.php" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
         前往外观 → 小工具配置
       </a>
-      <p class="xh-field__desc">在小工具页面拖拽“主题：个人资料卡 / 一言 / 站点信息”到“右侧栏”区域，并在卡片内勾选要显示的内容（统计/热力图/社交）。以下为这些卡片提供数据。</p>
+      <p class="xh-field__desc">拖拽“主题：个人资料卡 / 一言 / 站点信息”到“右侧栏”，并在每个实例展开面板后配置显示项或 API。下面的社交链接、技术信息会被所有对应实例共享。</p>
     </div>
     <div class="xh-field xh-field--full" style="margin-top: 16px;">
       <label class="xh-field__label">社交链接</label>
@@ -85,28 +85,28 @@ const emit = defineEmits<{
     <div class="xh-grid">
       <div class="xh-field xh-field--compact">
         <AppToggle
-          :modelValue="settings.comment_show_cookies !== false"
+          :modelValue="settings.comment_show_cookies === true"
           label="显示 Cookie 保存选项"
           @update:modelValue="emit('update', 'comment_show_cookies', $event)"
         />
       </div>
       <div class="xh-field xh-field--compact">
         <AppToggle
-          :modelValue="settings.comment_captcha_enabled !== false"
+          :modelValue="settings.comment_captcha_enabled === true"
           label="启用验证码"
           @update:modelValue="emit('update', 'comment_captcha_enabled', $event)"
         />
       </div>
       <div class="xh-field xh-field--compact">
         <AppToggle
-          :modelValue="settings.comment_show_private !== false"
+          :modelValue="settings.comment_show_private === true"
           label="显示私密评论选项"
           @update:modelValue="emit('update', 'comment_show_private', $event)"
         />
       </div>
       <div class="xh-field xh-field--compact">
         <AppToggle
-          :modelValue="settings.comment_show_markdown !== false"
+          :modelValue="settings.comment_show_markdown === true"
           label="支持 Markdown"
           @update:modelValue="emit('update', 'comment_show_markdown', $event)"
         />
@@ -127,20 +127,15 @@ const emit = defineEmits<{
 
     <div class="xh-field">
       <label class="xh-field__label">IP 归属地 API</label>
-      <div class="xh-select" style="display: inline-flex; align-items: center; gap: 16px; border: none; padding: 0; background: none; min-width: auto;">
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-          <input type="radio" value="xinyew" :checked="(settings.ip_location_api as string) === 'xinyew'" @change="emit('update', 'ip_location_api', 'xinyew')" style="accent-color: var(--xh-primary);" />
-          <span style="font-size: 14px;">新野API（百度数据）</span>
-        </label>
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-          <input type="radio" value="ip.sb" :checked="(settings.ip_location_api as string) === 'ip.sb'" @change="emit('update', 'ip_location_api', 'ip.sb')" style="accent-color: var(--xh-primary);" />
-          <span style="font-size: 14px;">ip.sb</span>
-        </label>
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-          <input type="radio" value="ip-api.com" :checked="(settings.ip_location_api as string) === 'ip-api.com'" @change="emit('update', 'ip_location_api', 'ip-api.com')" style="accent-color: var(--xh-primary);" />
-          <span style="font-size: 14px;">ip-api.com</span>
-        </label>
-      </div>
+      <select
+        class="xh-select"
+        :value="(settings.ip_location_api as string) || 'xinyew'"
+        @change="emit('update', 'ip_location_api', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="xinyew">新野 API（百度数据）</option>
+        <option value="ip.sb">ip.sb</option>
+        <option value="ip-api.com">ip-api.com</option>
+      </select>
     </div>
 
     <div class="xh-field xh-field--compact" style="margin-top: 8px;">
@@ -217,7 +212,7 @@ const emit = defineEmits<{
     </div>
     <div class="xh-field xh-field--compact">
       <AppToggle
-        :modelValue="settings.show_theme_credit !== false"
+        :modelValue="settings.show_theme_credit === true"
         label="显示主题版权信息"
         @update:modelValue="emit('update', 'show_theme_credit', $event)"
       />
