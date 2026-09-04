@@ -8,9 +8,9 @@ import CommentForm from '@/components/CommentForm.vue'
 import CommentsTreeItem from '@/components/CommentsTreeItem.vue'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { useAuth } from '@/composables/useAuth'
 import { createComment, fetchComments, getErrorMessage, pinComment, deleteComment, fetchUserPendingComments } from '@/lib/wordpress'
 import { showError, showLoadingToast, showToast, dismissToast } from '@/lib/toast'
-import { getThemeConfig } from '@/lib/theme-config'
 import type { CommentFormSettings, WordPressComment } from '@/types/wordpress'
 
 const props = defineProps<{
@@ -38,10 +38,12 @@ const formRef = ref<InstanceType<typeof CommentForm> | null>(null)
 const CONSENT_KEY = 'simple_theme_cookies_consent'
 
 const { siteInfo } = useSiteShell()
-const currentUser = computed(() => {
-  const cfg = getThemeConfig()
-  return siteInfo.value?.currentUser ?? cfg.currentUser ?? null
-})
+const { auth } = useAuth()
+const currentUser = computed(() =>
+  auth.user
+    ? { displayName: auth.user.displayName, email: auth.user.email, url: auth.user.url }
+    : null,
+)
 
 // Pagination state
 const currentPage = ref(1)

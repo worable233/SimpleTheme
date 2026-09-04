@@ -4,13 +4,13 @@
 import { reactive, readonly } from 'vue'
 import { apiClient } from '@/lib/api-client'
 import { apiFetchMe } from '@/lib/api-auth'
-import { getThemeConfig } from '@/lib/theme-config'
 
 export interface AuthUser {
   id: number
   displayName: string
   avatar: string
   email: string
+  url?: string
 }
 
 interface AuthState {
@@ -18,6 +18,7 @@ interface AuthState {
   user: AuthUser | null
   restNonce: string | null
   adminUrl: string | null
+  logoutUrl: string | null
   loading: boolean
 }
 
@@ -26,10 +27,20 @@ const state = reactive<AuthState>({
   user: null,
   restNonce: null,
   adminUrl: null,
+  logoutUrl: null,
   loading: true,
 })
 
 let initialized = false
+
+function clearAuthState() {
+  state.loggedIn = false
+  state.user = null
+  state.restNonce = null
+  state.adminUrl = null
+  state.logoutUrl = null
+  delete apiClient.defaults.headers.common['X-WP-Nonce']
+}
 
 export function useAuth() {
   /** 初始化：检查当前是否已登录 */
@@ -46,50 +57,44 @@ export function useAuth() {
           displayName: result.user.display_name,
           avatar: result.user.avatar,
           email: result.user.email,
+          url: result.user.url,
         }
         state.restNonce = result.rest_nonce || null
         state.adminUrl = result.admin_url || null
+        state.logoutUrl = result.logout_url || null
 
         // 同步更新 axios 实例的 nonce
         if (state.restNonce) {
           apiClient.defaults.headers.common['X-WP-Nonce'] = state.restNonce
         }
       } else {
-        state.loggedIn = false
-        state.user = null
-        state.restNonce = null
-        state.adminUrl = null
+        clearAuthState()
       }
     } catch {
-      state.loggedIn = false
-      state.user = null
+      clearAuthState()
     } finally {
       state.loading = false
     }
   }
 
   /** 登录成功后更新状态 */
-  function setLoggedIn(user: AuthUser, restNonce: string, adminUrl: string) {
+  function setLoggedIn(user: AuthUser, restNonce: string, adminUrl: string, logoutUrl?: string) {
     state.loggedIn = true
     state.user = { ...user }
     state.restNonce = restNonce
     state.adminUrl = adminUrl
+    state.logoutUrl = logoutUrl || null
+    apiClient.defaults.headers.common['X-WP-Nonce'] = restNonce
   }
 
   /** 退出登录 */
   function logout() {
-    state.loggedIn = false
-    state.user = null
-    state.restNonce = null
-    state.adminUrl = null
+    const logoutUrl = state.logoutUrl
+    clearAuthState()
 
-    // 清除 axios 的 nonce header，防止过期 nonce 污染后续请求
-    delete apiClient.defaults.headers.common['X-WP-Nonce']
-
-    // 使用 PHP 生成的 logout URL（包含 nonce）
-    const config = getThemeConfig()
-    if (config?.logoutUrl) {
-      window.location.href = config.logoutUrl
+    // auth/me returns this private, session-specific URL after cookie auth.
+    if (logoutUrl) {
+      window.location.href = logoutUrl
     } else {
       window.location.reload()
     }

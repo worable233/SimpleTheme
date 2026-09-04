@@ -15,6 +15,7 @@ import CookieConsent from '@/components/CookieConsent.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
+import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { showError } from '@/lib/toast'
 import type { SidebarWidget, ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
 
@@ -33,6 +34,13 @@ const sidebarWidgets = computed<SidebarWidget[]>(() =>
     : DEFAULT_SIDEBAR,
 )
 const showSubPage = ref(false)
+
+const safeFooterMenu = computed(() =>
+  (footerMenu.value || []).filter((item) => {
+    const target = item.path || item.url
+    return isSafeNavigationUrl(item.url) && isSafeNavigationUrl(target)
+  }),
+)
 
 const { init: initAuth } = useAuth()
 const { visible: authModalVisible } = useAuthModal()
@@ -170,9 +178,7 @@ watch(
       <div class="app-content flex">
         <main id="main-content" class="min-w-0 flex-1 bg-card">
           <router-view v-slot="{ Component }">
-            <transition name="page" mode="out-in">
-              <component :is="Component" :key="route.path" />
-            </transition>
+            <component :is="Component" :key="route.path" />
           </router-view>
         </main>
 
@@ -211,11 +217,22 @@ watch(
                     返回
                   </div>
                 </div>
-                <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
+                <div v-if="safeFooterMenu.length > 0" class="aside-card">
                   <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
                   <ul class="sub-page__menu-list">
-                    <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
-                      <router-link :to="item.path || item.url" @click="showSubPage = false">{{ item.title }}</router-link>
+                    <li v-for="item in safeFooterMenu" :key="item.id" class="sub-page__menu-item">
+                      <router-link
+                        v-if="!isExternalUrl(item.path || item.url)"
+                        :to="item.path || item.url"
+                        @click="showSubPage = false"
+                      >{{ item.title }}</router-link>
+                      <a
+                        v-else
+                        :href="item.url"
+                        :target="item.target || '_blank'"
+                        rel="noopener noreferrer"
+                        @click="showSubPage = false"
+                      >{{ item.title }}</a>
                     </li>
                   </ul>
                 </div>

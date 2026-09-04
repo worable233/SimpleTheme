@@ -70,7 +70,10 @@ function simple_theme_render_admin_page() {
 	// way to ensure window.SimpleThemeConfig is available before the Vue
 	// admin app mounts, regardless of wp_add_inline_script behavior.
 	$config = function_exists( 'simple_theme_get_frontend_config' )
-		? wp_json_encode( simple_theme_get_frontend_config() )
+		? wp_json_encode(
+			simple_theme_get_frontend_config(),
+			JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		)
 		: '{}';
 	if ( $config ) {
 		echo '<script>window.SimpleThemeConfig = ' . $config . ";</script>\n";

@@ -65,12 +65,29 @@ require_once __DIR__ . '/inc/core/email-templates.php';
 // 3. Service Worker - serve with root scope
 // ============================================================
 add_action( 'init', function () {
-    $request_path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+    $request_path = wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+    if ( ! is_string( $request_path ) ) {
+        return;
+    }
 
-    if ( $request_path === '/sw.js' ) {
+    // Serve the worker relative to the WordPress home path so subdirectory
+    // installs keep control inside their own site instead of claiming `/`.
+    $home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+    $home_path = '/' . trim( is_string( $home_path ) ? $home_path : '', '/' );
+    $relative_path = $request_path;
+    if ( '/' !== $home_path ) {
+        if ( $request_path === $home_path ) {
+            $relative_path = '/';
+        } elseif ( 0 === strpos( $request_path, trailingslashit( $home_path ) ) ) {
+            $relative_path = substr( $request_path, strlen( $home_path ) );
+        }
+    }
+    $worker_scope = trailingslashit( $home_path );
+
+    if ( $relative_path === '/sw.js' ) {
         $sw_path = __DIR__ . '/dist/sw.js';
         if ( file_exists( $sw_path ) ) {
-            header( 'Service-Worker-Allowed: /' );
+            header( 'Service-Worker-Allowed: ' . $worker_scope );
             header( 'Content-Type: application/javascript' );
             header( 'Cache-Control: no-cache, max-age=0' );
             readfile( $sw_path );
@@ -82,8 +99,8 @@ add_action( 'init', function () {
     }
 
     // Serve workbox dependency at root scope (imported by sw.js via importScripts)
-    if ( preg_match( '#^/workbox-\w+\.js$#', $request_path ) ) {
-        $filename = basename( $request_path );
+    if ( preg_match( '#^/workbox-\w+\.js$#', $relative_path ) ) {
+        $filename = basename( $relative_path );
         $wb_path  = __DIR__ . '/dist/' . $filename;
         if ( file_exists( $wb_path ) ) {
             header( 'Content-Type: application/javascript' );
@@ -97,7 +114,7 @@ add_action( 'init', function () {
     }
 
     // Serve manifest.webmanifest at root scope (precached by sw.js)
-    if ( $request_path === '/manifest.webmanifest' ) {
+    if ( $relative_path === '/manifest.webmanifest' ) {
         $mf_path = __DIR__ . '/dist/manifest.webmanifest';
         if ( file_exists( $mf_path ) ) {
             header( 'Content-Type: application/manifest+json' );

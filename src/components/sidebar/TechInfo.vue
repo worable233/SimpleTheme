@@ -52,9 +52,7 @@ const techVersions = computed<TechInfoItem[]>(() => {
     { label: 'Vue', value: vueVersion },
     { label: 'Tailwind CSS', value: '^4.3' },
     { label: 'Prism', value: '^1.30.0' },
-    { label: 'PHP', value: s.phpVersion || '8.x' },
-    { label: 'REST API', value: s.restApiVersion ? `simple-theme/${s.restApiVersion}` : 'v1' },
-    { label: 'OS', value: s.serverOs || 'Unknown' },
+	    { label: 'REST API', value: s.restApiVersion ? `simple-theme/${s.restApiVersion}` : 'v1' },
     { label: 'Build', value: new Date(__BUILD_TIME__).toISOString().replace('T', ' · ').replace(/\.\d{3}Z$/, ' UTC') },
   ]
 })

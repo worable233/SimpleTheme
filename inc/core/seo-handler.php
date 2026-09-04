@@ -28,6 +28,99 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Resolve frontend-only routes which WordPress does not otherwise know about.
+ *
+ * @return array{path:string,title:string,noindex:bool}|null
+ */
+function simple_theme_get_virtual_frontend_route() {
+	$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+	$request_path = wp_parse_url( $request_uri, PHP_URL_PATH );
+	$home_path    = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+	if ( ! is_string( $request_path ) || ! is_string( $home_path ) ) {
+		return null;
+	}
+
+	$relative_path = '/' . trim( $request_path, '/' );
+	$home_path     = '/' . trim( $home_path, '/' );
+	if ( '/' !== $home_path ) {
+		if ( $relative_path === $home_path ) {
+			$relative_path = '/';
+		} elseif ( 0 === strpos( $relative_path, trailingslashit( $home_path ) ) ) {
+			$relative_path = substr( $relative_path, strlen( $home_path ) );
+		}
+	}
+
+	$relative_path = '/' . trim( $relative_path, '/' );
+	$routes        = array(
+		'/go'        => array( 'title' => '外部链接跳转', 'noindex' => true ),
+		'/archives'  => array( 'title' => '归档', 'noindex' => false ),
+		'/about'     => array( 'title' => '关于', 'noindex' => false ),
+		'/links'     => array( 'title' => '友人帐', 'noindex' => false ),
+		'/shuoshuo'  => array( 'title' => '说说', 'noindex' => false ),
+	);
+
+	if ( isset( $routes[ $relative_path ] ) ) {
+		return array(
+			'path'    => $relative_path,
+			'title'   => $routes[ $relative_path ]['title'],
+			'noindex' => $routes[ $relative_path ]['noindex'],
+		);
+	}
+
+	if ( preg_match( '#^/categories/([^/]+)$#', $relative_path, $matches ) ) {
+		$slug = sanitize_title( rawurldecode( $matches[1] ) );
+		$term = $slug ? get_term_by( 'slug', $slug, 'category' ) : false;
+		if ( ! ( $term instanceof WP_Term ) ) {
+			return null;
+		}
+
+		return array(
+			'path'    => $relative_path,
+			'title'   => $term->name,
+			'noindex' => false,
+		);
+	}
+
+	return null;
+}
+
+/**
+ * Return a route only while it is acting as a WordPress 404 replacement.
+ * This prevents reserved SPA paths from overriding real Pages or archives.
+ *
+ * @return array{path:string,title:string,noindex:bool}|null
+ */
+function simple_theme_get_active_virtual_frontend_route() {
+	if ( isset( $GLOBALS['simple_theme_virtual_frontend_route'] ) && is_array( $GLOBALS['simple_theme_virtual_frontend_route'] ) ) {
+		return $GLOBALS['simple_theme_virtual_frontend_route'];
+	}
+
+	return is_404() ? simple_theme_get_virtual_frontend_route() : null;
+}
+
+/**
+ * Return the canonical permalink for a frontend-only route.
+ *
+ * @param array{path:string,title:string,noindex:bool} $route Route metadata.
+ */
+function simple_theme_get_virtual_frontend_route_url( array $route ): string {
+	return home_url( user_trailingslashit( ltrim( $route['path'], '/' ) ) );
+}
+
+/**
+ * Supply a meaningful browser title for a frontend-only route.
+ */
+add_filter( 'document_title_parts', 'simple_theme_virtual_frontend_document_title', 20 );
+function simple_theme_virtual_frontend_document_title( $parts ) {
+	$route = simple_theme_get_active_virtual_frontend_route();
+	if ( $route ) {
+		$parts['title'] = $route['title'];
+	}
+
+	return $parts;
+}
+
+/**
  * Generate a context-aware <meta name="description"> for the current page.
  *
  * - Homepage:     使用站点副标题（tagline）
@@ -36,6 +129,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - 其他:         使用站点副标题
  */
 function simple_theme_get_meta_description(): string {
+	$virtual_route = simple_theme_get_active_virtual_frontend_route();
+	if ( $virtual_route ) {
+		$site_description = get_bloginfo( 'description', 'display' );
+		return $site_description ? $virtual_route['title'] . ' - ' . $site_description : $virtual_route['title'];
+	}
+
 	if ( is_front_page() || is_home() ) {
 		$desc = get_bloginfo( 'description', 'display' );
 		if ( ! empty( $desc ) ) {
@@ -117,6 +216,26 @@ function simple_theme_get_share_image() {
 }
 
 /**
+ * Output canonical and robots directives for virtual frontend routes.
+ */
+add_action( 'wp_head', 'simple_theme_output_virtual_frontend_route_meta', 3 );
+function simple_theme_output_virtual_frontend_route_meta(): void {
+	if ( ! simple_theme_should_output_seo_meta() ) {
+		return;
+	}
+
+	$route = simple_theme_get_active_virtual_frontend_route();
+	if ( ! $route ) {
+		return;
+	}
+
+	echo '<link rel="canonical" href="' . esc_url( simple_theme_get_virtual_frontend_route_url( $route ) ) . '">' . "\n";
+	if ( $route['noindex'] ) {
+		echo '<meta name="robots" content="noindex, nofollow">' . "\n";
+	}
+}
+
+/**
  * Output <meta name="description"> in wp_head.
  */
 add_action( 'wp_head', 'simple_theme_output_meta_description', 4 );
@@ -146,9 +265,13 @@ function simple_theme_output_og_meta(): void {
 		return;
 	}
 
+	$virtual_route = simple_theme_get_active_virtual_frontend_route();
+
 	// 解析当前页 URL（与 core rel_canonical 逻辑对齐）
 	$url = '';
-	if ( is_singular() ) {
+	if ( $virtual_route ) {
+		$url = simple_theme_get_virtual_frontend_route_url( $virtual_route );
+	} elseif ( is_singular() ) {
 		$url = get_permalink();
 	} elseif ( is_category() || is_tag() || is_tax() ) {
 		$link = get_term_link( get_queried_object() );
@@ -254,7 +377,10 @@ function simple_theme_output_json_ld(): void {
 	}
 
 	echo '<script type="application/ld+json">' .
-		wp_json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) .
+		wp_json_encode(
+			$data,
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		) .
 		'</script>' . "\n";
 }
 
@@ -266,6 +392,35 @@ function simple_theme_output_json_ld(): void {
  * anything above reach this point.
  */
 add_action( 'template_redirect', 'simple_theme_seo_safety_net', 5 );
+
+/**
+ * Keep routes owned by the frontend SPA from inheriting WordPress' 404
+ * status when no matching Page exists in the database.
+ */
+add_action( 'template_redirect', 'simple_theme_mark_virtual_frontend_routes', 4 );
+function simple_theme_mark_virtual_frontend_routes() {
+	if ( is_admin() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || wp_doing_ajax() ) {
+		return;
+	}
+
+	// Existing Pages, archives, and unknown paths retain WordPress' own state.
+	if ( ! is_404() ) {
+		return;
+	}
+
+	$route = simple_theme_get_virtual_frontend_route();
+	if ( ! $route ) {
+		return;
+	}
+
+	$GLOBALS['simple_theme_virtual_frontend_route'] = $route;
+	global $wp_query;
+	if ( $wp_query instanceof WP_Query ) {
+		$wp_query->is_404 = false;
+	}
+	status_header( 200 );
+}
+
 function simple_theme_seo_safety_net() {
 	// Never interfere with admin, REST API, or AJAX
 	if ( is_admin() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || wp_doing_ajax() ) {

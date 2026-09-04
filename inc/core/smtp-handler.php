@@ -180,12 +180,14 @@ function simple_theme_smtp_test( WP_REST_Request $request ) {
 	$sent = wp_mail( $to, $subject, $message, $headers );
 
 	// Record test email in queue history
-	simple_theme_insert_mail_queue_record( array(
-		'to'      => $to,
-		'subject' => $subject,
-		'message' => $message,
-		'headers' => $headers,
-	), $sent ? 'sent' : 'failed' );
+	if ( simple_theme_ensure_mail_queue_table() ) {
+		simple_theme_insert_mail_queue_record( array(
+			'to'      => $to,
+			'subject' => $subject,
+			'message' => $message,
+			'headers' => $headers,
+		), $sent ? 'sent' : 'failed' );
+	}
 
 	if ( $sent ) {
 		return new WP_REST_Response( array(
@@ -255,20 +257,27 @@ function simple_theme_smtp_test( WP_REST_Request $request ) {
  * Ensure the mail queue database table exists.
  */
 function simple_theme_ensure_mail_queue_table() {
+	static $is_available = null;
+	if ( null !== $is_available ) {
+		return $is_available;
+	}
+
 	global $wpdb;
 	$table_name = $wpdb->prefix . 'simple_theme_mail_queue';
 	$version_option = 'simple_theme_mail_queue_db_version';
-	$current_version = (int) get_option( $version_option, 0 );
+	$schema_version = 2;
+	$table_exists = function () use ( $wpdb, $table_name ) {
+		return $table_name === $wpdb->get_var(
+			$wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table_name ) )
+		);
+	};
 
-	if ( $current_version >= 1 ) {
-		return;
-	}
+	if ( ! $table_exists() ) {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$charset_collate = $wpdb->get_charset_collate();
 
-	$charset_collate = $wpdb->get_charset_collate();
-
-	$sql = "CREATE TABLE {$table_name} (
+		$sql = "CREATE TABLE {$table_name} (
 		id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 		to_email VARCHAR(255) NOT NULL,
 		subject TEXT NOT NULL,
@@ -282,12 +291,52 @@ function simple_theme_ensure_mail_queue_table() {
 		error_message TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		next_retry_at DATETIME DEFAULT NULL,
+		processing_at DATETIME DEFAULT NULL,
+		processing_token VARCHAR(64) DEFAULT NULL,
 		INDEX idx_status (status),
-		INDEX idx_next_retry (next_retry_at)
-	) {$charset_collate};";
+		INDEX idx_next_retry (next_retry_at),
+		INDEX idx_processing_at (processing_at)
+		) {$charset_collate};";
 
-	dbDelta( $sql );
-	update_option( $version_option, 1, false );
+		dbDelta( $sql );
+	}
+
+	$is_available = $table_exists();
+	if ( $is_available ) {
+		$current_version       = (int) get_option( $version_option, 0 );
+		$has_processing_at     = $wpdb->get_var( "SHOW COLUMNS FROM {$table_name} LIKE 'processing_at'" );
+		$has_processing_token  = $wpdb->get_var( "SHOW COLUMNS FROM {$table_name} LIKE 'processing_token'" );
+		if ( $current_version < $schema_version || ! $has_processing_at || ! $has_processing_token ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			$charset_collate = $wpdb->get_charset_collate();
+			$schema_sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			to_email VARCHAR(255) NOT NULL,
+			subject TEXT NOT NULL,
+			message LONGTEXT NOT NULL,
+			headers TEXT,
+			attachments TEXT,
+			retry_count INT UNSIGNED DEFAULT 0,
+			max_retries INT UNSIGNED DEFAULT 3,
+			retry_interval INT UNSIGNED DEFAULT 300,
+			status VARCHAR(20) DEFAULT 'pending',
+			error_message TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			next_retry_at DATETIME DEFAULT NULL,
+			processing_at DATETIME DEFAULT NULL,
+			processing_token VARCHAR(64) DEFAULT NULL,
+			INDEX idx_status (status),
+			INDEX idx_next_retry (next_retry_at),
+			INDEX idx_processing_at (processing_at)
+			) {$charset_collate};";
+			dbDelta( $schema_sql );
+			// Old processing rows have no lease metadata and are safe to retry once.
+			$wpdb->query( "UPDATE {$table_name} SET status = 'pending', processing_token = NULL, processing_at = NULL WHERE status = 'processing' AND processing_at IS NULL" );
+			update_option( $version_option, $schema_version, false );
+		}
+	}
+
+	return $is_available;
 }
 
 add_action( 'admin_init', 'simple_theme_ensure_mail_queue_table' );
@@ -308,8 +357,11 @@ function simple_theme_maybe_queue_mail( $return, $atts ) {
 		return $return;
 	}
 
-	simple_theme_insert_mail_queue( $atts );
-	return true;
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
+		return $return;
+	}
+
+	return simple_theme_insert_mail_queue( $atts ) ? true : $return;
 }
 
 function simple_theme_insert_mail_queue( $atts ) {
@@ -325,10 +377,10 @@ function simple_theme_insert_mail_queue( $atts ) {
 	$atts = wp_parse_args( $atts, $defaults );
 
 	$options = get_option( 'simple_theme_options', array() );
-	$max_retries    = ! empty( $options['smtp_queue_retry_count'] ) ? min( 20, max( 0, (int) $options['smtp_queue_retry_count'] ) ) : 3;
+	$max_retries    = isset( $options['smtp_queue_retry_count'] ) && is_numeric( $options['smtp_queue_retry_count'] ) ? min( 20, max( 0, (int) $options['smtp_queue_retry_count'] ) ) : 3;
 	$retry_interval = ! empty( $options['smtp_queue_retry_interval'] ) ? min( 3600, max( 60, (int) $options['smtp_queue_retry_interval'] ) ) : 300;
 
-	$wpdb->insert(
+	return false !== $wpdb->insert(
 		$wpdb->prefix . 'simple_theme_mail_queue',
 		array(
 			'to_email'      => is_array( $atts['to'] ) ? implode( ',', $atts['to'] ) : $atts['to'],
@@ -349,6 +401,9 @@ function simple_theme_insert_mail_queue( $atts ) {
  */
 function simple_theme_insert_mail_queue_record( $atts, $status = 'sent' ) {
 	global $wpdb;
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
+		return false;
+	}
 
 	$defaults = array(
 		'to'          => '',
@@ -360,10 +415,10 @@ function simple_theme_insert_mail_queue_record( $atts, $status = 'sent' ) {
 	$atts = wp_parse_args( $atts, $defaults );
 
 	$options       = get_option( 'simple_theme_options', array() );
-	$max_retries    = ! empty( $options['smtp_queue_retry_count'] ) ? min( 20, max( 0, (int) $options['smtp_queue_retry_count'] ) ) : 3;
+	$max_retries    = isset( $options['smtp_queue_retry_count'] ) && is_numeric( $options['smtp_queue_retry_count'] ) ? min( 20, max( 0, (int) $options['smtp_queue_retry_count'] ) ) : 3;
 	$retry_interval = ! empty( $options['smtp_queue_retry_interval'] ) ? min( 3600, max( 60, (int) $options['smtp_queue_retry_interval'] ) ) : 300;
 
-	$wpdb->insert(
+	return false !== $wpdb->insert(
 		$wpdb->prefix . 'simple_theme_mail_queue',
 		array(
 			'to_email'       => is_array( $atts['to'] ) ? implode( ',', $atts['to'] ) : $atts['to'],
@@ -390,7 +445,7 @@ function simple_theme_get_pending_mails( $limit = 5 ) {
 		$wpdb->prepare(
 			"SELECT * FROM {$table}
 			WHERE status = 'pending'
-			  AND next_retry_at <= %s
+			  AND ( next_retry_at IS NULL OR next_retry_at <= %s )
 			ORDER BY created_at ASC
 			LIMIT %d",
 			current_time( 'mysql' ),
@@ -399,12 +454,115 @@ function simple_theme_get_pending_mails( $limit = 5 ) {
 	);
 }
 
+/**
+ * Atomically claim one pending message for this worker.
+ *
+ * The token is checked again when the message is finalized, so a stale worker
+ * cannot mark a message sent after another worker has recovered its lease.
+ */
+function simple_theme_claim_mail() {
+	global $wpdb;
+	$table = $wpdb->prefix . 'simple_theme_mail_queue';
+	$now   = current_time( 'mysql' );
+	// PHPMailer is capped at 120 seconds. Keep a generous lease window so a
+	// slow request is not recovered while it is still sending.
+	$stale_before = wp_date( 'Y-m-d H:i:s', time() - 10 * MINUTE_IN_SECONDS );
+	$wpdb->query(
+		$wpdb->prepare(
+			"UPDATE {$table}
+			 SET status = 'pending', processing_token = NULL, processing_at = NULL, next_retry_at = %s
+			 WHERE status = 'processing' AND ( processing_at IS NULL OR processing_at < %s )",
+			$now,
+			$stale_before
+		)
+	);
+
+	for ( $attempt = 0; $attempt < 3; $attempt++ ) {
+		$mail = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table}
+				 WHERE status = 'pending' AND ( next_retry_at IS NULL OR next_retry_at <= %s )
+				 ORDER BY created_at ASC, id ASC
+				 LIMIT 1",
+				$now
+			)
+		);
+		if ( ! $mail ) {
+			return null;
+		}
+
+		$token = wp_generate_uuid4();
+		$claimed = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table}
+				 SET status = 'processing', processing_token = %s, processing_at = %s
+				 WHERE id = %d AND status = 'pending' AND ( next_retry_at IS NULL OR next_retry_at <= %s )",
+				$token,
+				$now,
+				(int) $mail->id,
+				$now
+			)
+		);
+		if ( 1 !== (int) $claimed ) {
+			continue;
+		}
+
+		$mail->processing_token = $token;
+		$mail->processing_at = $now;
+		return $mail;
+	}
+
+	return null;
+}
+
+/**
+ * Update a claimed message only if this worker still owns its lease.
+ */
+function simple_theme_finalize_mail( $id, $token, $status, $retry_count = null, $next_retry_at = null, $error_message = '' ) {
+	global $wpdb;
+	$table = $wpdb->prefix . 'simple_theme_mail_queue';
+	$data  = array(
+		'status'           => $status,
+		'processing_token' => null,
+		'processing_at'    => null,
+	);
+	$formats = array( '%s', '%s', '%s' );
+	if ( null !== $retry_count ) {
+		$data['retry_count'] = (int) $retry_count;
+		$formats[] = '%d';
+	}
+	if ( null !== $next_retry_at ) {
+		$data['next_retry_at'] = $next_retry_at;
+		$formats[] = '%s';
+	}
+	if ( '' !== $error_message ) {
+		$data['error_message'] = $error_message;
+		$formats[] = '%s';
+	}
+
+	return 1 === (int) $wpdb->update(
+		$table,
+		$data,
+		array(
+			'id'               => (int) $id,
+			'status'           => 'processing',
+			'processing_token' => $token,
+		),
+		$formats,
+		array( '%d', '%s', '%s' )
+	);
+}
+
 function simple_theme_update_mail_status( $id, $status, $retry_count = null, $error_message = '' ) {
 	global $wpdb;
 	$table = $wpdb->prefix . 'simple_theme_mail_queue';
 
-	$data = array( 'status' => $status );
-	$types = array( '%s' );
+	$data = array(
+		'status'           => $status,
+		'processing_token' => null,
+		'processing_at'    => null,
+	);
+	$types = array( '%s', '%s', '%s' );
 
 	if ( null !== $retry_count ) {
 		$data['retry_count'] = (int) $retry_count;
@@ -461,24 +619,11 @@ function simple_theme_process_mail_queue() {
 	if ( defined( 'SIMPLE_THEME_MAIL_QUEUE_PROCESSING' ) && SIMPLE_THEME_MAIL_QUEUE_PROCESSING ) {
 		return;
 	}
-
-	// Prevent concurrent cron runs
-	if ( get_transient( 'simple_theme_mail_queue_locked' ) ) {
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
 		return;
 	}
-	set_transient( 'simple_theme_mail_queue_locked', 1, 120 );
 
 	define( 'SIMPLE_THEME_MAIL_QUEUE_PROCESSING', true );
-
-	// Recover mails stuck in 'processing' from a previous crashed run
-	global $wpdb;
-	$queue_table = $wpdb->prefix . 'simple_theme_mail_queue';
-	$wpdb->query(
-		$wpdb->prepare(
-			"UPDATE {$queue_table} SET status = 'pending', next_retry_at = %s WHERE status = 'processing'",
-			current_time( 'mysql' )
-		)
-	);
 
 	$options = get_option( 'simple_theme_options', array() );
 	if ( empty( $options['smtp_enabled'] ) || empty( $options['smtp_queue_enabled'] ) ) {
@@ -490,47 +635,28 @@ function simple_theme_process_mail_queue() {
 	$processed = 0;
 
 	while ( $processed < $max_total ) {
-		$mails = simple_theme_get_pending_mails( 5 );
-		if ( empty( $mails ) ) {
+		$mail = simple_theme_claim_mail();
+		if ( ! $mail ) {
 			break;
 		}
 
-		foreach ( $mails as $mail ) {
-			if ( $processed >= $max_total ) {
-				break 2;
-			}
+		$headers = $mail->headers ? maybe_unserialize( $mail->headers ) : array();
+		$attachments = $mail->attachments ? maybe_unserialize( $mail->attachments ) : array();
+		$sent = wp_mail( $mail->to_email, $mail->subject, $mail->message, $headers, $attachments );
 
-			simple_theme_update_mail_status( $mail->id, 'processing' );
-
-			$headers = $mail->headers ? maybe_unserialize( $mail->headers ) : array();
-			$attachments = $mail->attachments ? maybe_unserialize( $mail->attachments ) : array();
-
-			$sent = wp_mail( $mail->to_email, $mail->subject, $mail->message, $headers, $attachments );
-
-			if ( $sent ) {
-				simple_theme_update_mail_status( $mail->id, 'sent' );
+		if ( $sent ) {
+			simple_theme_finalize_mail( $mail->id, $mail->processing_token, 'sent' );
+		} else {
+			$new_retry = (int) $mail->retry_count + 1;
+			if ( $new_retry >= (int) $mail->max_retries ) {
+				simple_theme_finalize_mail( $mail->id, $mail->processing_token, 'failed', $new_retry, null, __( 'Max retries reached.' ) );
 			} else {
-				$new_retry = (int) $mail->retry_count + 1;
-				if ( $new_retry >= (int) $mail->max_retries ) {
-					simple_theme_update_mail_status( $mail->id, 'failed', $new_retry, __( 'Max retries reached.' ) );
-				} else {
-					$next = time() + (int) $mail->retry_interval;
-					$wpdb->update(
-						$queue_table,
-						array(
-							'status'        => 'pending',
-							'retry_count'   => $new_retry,
-							'next_retry_at' => wp_date( 'Y-m-d H:i:s', $next ),
-						),
-						array( 'id' => (int) $mail->id ),
-						array( '%s', '%d', '%s' ),
-						array( '%d' )
-					);
-				}
+				$next = wp_date( 'Y-m-d H:i:s', time() + (int) $mail->retry_interval );
+				simple_theme_finalize_mail( $mail->id, $mail->processing_token, 'pending', $new_retry, $next );
 			}
-
-			$processed++;
 		}
+
+		$processed++;
 	}
 }
 
@@ -584,6 +710,10 @@ function simple_theme_register_mail_queue_routes() {
 }
 
 function simple_theme_mail_queue_list() {
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
+		return new WP_REST_Response( array( 'error' => 'Mail queue unavailable' ), 503 );
+	}
+
 	global $wpdb;
 	$table = $wpdb->prefix . 'simple_theme_mail_queue';
 
@@ -606,6 +736,10 @@ function simple_theme_mail_queue_list() {
 }
 
 function simple_theme_mail_queue_retry( WP_REST_Request $request ) {
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
+		return new WP_REST_Response( array( 'error' => 'Mail queue unavailable' ), 503 );
+	}
+
 	global $wpdb;
 	$id    = (int) $request->get_param( 'id' );
 	$table = $wpdb->prefix . 'simple_theme_mail_queue';
@@ -622,9 +756,11 @@ function simple_theme_mail_queue_retry( WP_REST_Request $request ) {
 			'retry_count'   => 0,
 			'error_message' => '',
 			'next_retry_at' => current_time( 'mysql' ),
+			'processing_token' => null,
+			'processing_at' => null,
 		),
 		array( 'id' => $id ),
-		array( '%s', '%d', '%s', '%s' ),
+		array( '%s', '%d', '%s', '%s', '%s', '%s' ),
 		array( '%d' )
 	);
 
@@ -632,6 +768,10 @@ function simple_theme_mail_queue_retry( WP_REST_Request $request ) {
 }
 
 function simple_theme_mail_queue_clear( WP_REST_Request $request ) {
+	if ( ! simple_theme_ensure_mail_queue_table() ) {
+		return new WP_REST_Response( array( 'error' => 'Mail queue unavailable' ), 503 );
+	}
+
 	global $wpdb;
 	$table = $wpdb->prefix . 'simple_theme_mail_queue';
 

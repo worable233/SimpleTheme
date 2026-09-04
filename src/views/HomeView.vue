@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, fetchCategories, getErrorMessage, resolveThemePath, fetchContentByRestUrl } from '@/lib/wordpress'
 import { withCache } from '@/lib/api-cache'
@@ -17,12 +18,15 @@ import AppIcon from '@/components/AppIcon.vue'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
 const route = useRoute()
+const router = useRouter()
 
 const initialLoading = ref(false)
 const loadingMore = ref(false)
 const categoryLoading = ref(false)
 const latestPosts = ref<WordPressPost[]>([])
 const categories = ref<WordPressCategory[]>([])
+const categoriesLoaded = ref(false)
+const categoriesLoadFailed = ref(false)
 const page = ref(1)
 const totalPages = ref(0)
 const hasMore = ref(true)
@@ -31,6 +35,21 @@ const { staticFallbackHtml } = useStaticFallback()
 
 /** Local category slug; '' means 'all'. Initialized from route param on mount. */
 const categorySlug = ref((route.params.slug as string) || '')
+const categoryNotFound = computed(
+  () =>
+    !!categorySlug.value &&
+    categoriesLoaded.value &&
+    !categoriesLoadFailed.value &&
+    !categories.value.some((category) => category.slug === categorySlug.value),
+)
+
+const pageTitle = computed(() => {
+  if (!categorySlug.value) return '首页'
+  if (categoryNotFound.value) return '页面未找到'
+  return categories.value.find((category) => category.slug === categorySlug.value)?.name || '分类'
+})
+
+useHead({ title: pageTitle })
 
 const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ?? 6)
 
@@ -123,42 +142,47 @@ watch(
   () => route.params.slug,
   async (newSlug) => {
     categorySlug.value = (newSlug as string) || ''
+    errorMessage.value = ''
+    latestPosts.value = []
     page.value = 1
     hasMore.value = true
     totalPages.value = 0
-    await loadPage(1)
+    categoryLoading.value = true
+    try {
+      await loadPage(1)
+    } finally {
+      categoryLoading.value = false
+    }
   },
 )
 
-async function loadCategories() {
-  try {
-    categories.value = await withCache(fetchCategories, 'categories')()
-  } catch {
-    // silently fail — categories are optional
+let categoriesLoadPromise: Promise<void> | null = null
+
+function loadCategories(): Promise<void> {
+  if (!categoriesLoadPromise) {
+    categoriesLoadPromise = withCache(fetchCategories, 'categories')()
+      .then((data) => {
+        categories.value = data
+        categoriesLoadFailed.value = false
+      })
+      .catch(() => {
+        // Categories are optional on the home page. A category URL must still
+        // not fall back to an unfiltered post list when this request fails.
+        categories.value = []
+        categoriesLoadFailed.value = true
+      })
+      .finally(() => {
+        categoriesLoaded.value = true
+      })
   }
+
+  return categoriesLoadPromise
 }
 
 function onCategoryClick(slug: string) {
   const newSlug = slug === 'all' ? '' : slug
   if (newSlug === categorySlug.value) return
-  categorySlug.value = newSlug
-
-  // Clear current posts — old content disappears instantly
-  latestPosts.value = []
-  page.value = 1
-  hasMore.value = true
-  totalPages.value = 0
-  categoryLoading.value = true
-
-  loadPage(1)
-    .catch(() => {
-      // loadPage errors propagate; silently handled
-    })
-    .finally(() => {
-      categoryLoading.value = false
-      // 切换分类后检查是否需要立即加载更多
-      requestAnimationFrame(checkScrollAndLoad)
-    })
+  void router.push(newSlug ? `/categories/${encodeURIComponent(newSlug)}` : '/')
 }
 
 async function loadHomepageData() {
@@ -169,7 +193,7 @@ async function loadHomepageData() {
 
   try {
     await ensureLoaded()
-    // Fire categories in parallel with first page — they don't block post rendering
+    // Home can render immediately. A category route waits for its term ID below.
     const catPromise = loadCategories()
     await loadPage(1)
     await catPromise
@@ -200,10 +224,27 @@ async function loadPage(pageNum: number) {
   const capturedSlug = categorySlug.value
   const slug = capturedSlug || undefined
 
+  if (slug) {
+    await loadCategories()
+    if (capturedSlug !== categorySlug.value) return
+  }
+
   let termId: number | undefined
   if (slug) {
     const found = categories.value.find((c) => c.slug === slug)
     if (found) termId = found.id
+  }
+
+  // Never turn an unknown or unavailable category into the all-posts view.
+  if (slug && !termId) {
+    if (pageNum === 1) latestPosts.value = []
+    page.value = pageNum
+    totalPages.value = 0
+    hasMore.value = false
+    if (categoriesLoadFailed.value) {
+      errorMessage.value = '分类数据加载失败，请稍后再试。'
+    }
+    return
   }
 
   const postsResponse: PagedPostCollection = await fetchCollection('post', {
@@ -271,8 +312,8 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
     <!-- Page Header -->
     <header class="section-header">
       <h1>
-        <span class="section-header__title">首页</span>
-        <span class="section-header__subtitle">Home.</span>
+        <span class="section-header__title">{{ pageTitle }}</span>
+        <span class="section-header__subtitle">{{ categorySlug ? 'Category.' : 'Home.' }}</span>
       </h1>
     </header>
 
@@ -366,9 +407,9 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
         <!-- Empty state (not during initial load or category loading) -->
         <ErrorView
           v-if="!initialLoading && !categoryLoading && latestPosts.length === 0"
-          illustration="blank-canvas"
-          title="还没有文章"
-          description="还没有文章，稍后回来看看吧。"
+          :illustration="categoryNotFound ? 'searching' : 'blank-canvas'"
+          :title="categoryNotFound ? '未找到该分类' : '还没有文章'"
+          :description="categoryNotFound ? '这个分类不存在或已被删除。' : '还没有文章，稍后回来看看吧。'"
         />
 
         <!-- Loading more skeleton (appended below existing posts) -->

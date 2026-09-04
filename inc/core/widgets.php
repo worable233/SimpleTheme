@@ -34,6 +34,21 @@ function simple_theme_register_sidebars() {
 
 // ========== Theme Widgets ==========
 
+function simple_theme_get_safe_widget_api_url( $value ) {
+	$url    = esc_url_raw( trim( (string) $value ) );
+	$parsed = $url ? wp_parse_url( $url ) : false;
+	if (
+		! $parsed ||
+		empty( $parsed['host'] ) ||
+		empty( $parsed['scheme'] ) ||
+		! in_array( strtolower( $parsed['scheme'] ), array( 'http', 'https' ), true )
+	) {
+		return 'https://v1.hitokoto.cn';
+	}
+
+	return $url;
+}
+
 /**
  * 资料卡小工具 — 头像/站名/格言 + 可选统计、热力图、社交链接。
  */
@@ -124,7 +139,7 @@ class Simple_Theme_Hitokoto_Widget extends WP_Widget {
 
 	public function update( $new_instance, $old_instance ) {
 		return array(
-			'api' => esc_url_raw( $new_instance['api'] ?? '' ) ?: 'https://v1.hitokoto.cn',
+			'api' => simple_theme_get_safe_widget_api_url( $new_instance['api'] ?? '' ),
 		);
 	}
 }
@@ -164,7 +179,8 @@ class Simple_Theme_TechInfo_Widget extends WP_Widget {
  * 将 sidebar-right 区域的小工具序列转成结构化数组供前端渲染。
  *
  * 主题小工具 → 结构化 { type, settings }，前端用原生 Vue 组件渲染（保留交互）。
- * 核心/区块/第三方小工具 → { type:'html', idBase, html }，前端 v-html 渲染。
+ * 核心/区块/第三方小工具 → { type:'html', idBase, html }。小工具输出经
+ * wp_kses_post 清理后才会进入前端 v-html 容器。
  *
  * @return array
  */
@@ -208,7 +224,7 @@ function simple_theme_get_sidebar_data() {
 			$out[] = array(
 				'type'     => 'hitokoto',
 				'settings' => array(
-					'api' => esc_url_raw( (string) ( $instance['api'] ?? 'https://v1.hitokoto.cn' ) ) ?: 'https://v1.hitokoto.cn',
+					'api' => simple_theme_get_safe_widget_api_url( $instance['api'] ?? 'https://v1.hitokoto.cn' ),
 				),
 			);
 			continue;
@@ -223,6 +239,10 @@ function simple_theme_get_sidebar_data() {
 			continue;
 		}
 		$html = simple_theme_render_widget_html( $widget_id, $sidebar_args );
+		// Widget callbacks run server-side and may emit arbitrary markup. The SPA
+		// has a v-html sink for compatibility, so keep the public REST response to
+		// WordPress's post-safe HTML allowlist.
+		$html = wp_kses_post( $html );
 		if ( '' !== trim( $html ) ) {
 			$out[] = array(
 				'type'   => 'html',
@@ -306,7 +326,7 @@ function simple_theme_migrate_sidebar_widgets() {
 	// 一言：旧开关开启才预填
 	if ( (bool) ( $options['sidebar_show_hitokoto'] ?? true ) ) {
 		update_option( 'widget_simple_hitokoto', array(
-			1 => array( 'api' => esc_url_raw( (string) ( $options['hitokoto_api'] ?? 'https://v1.hitokoto.cn' ) ) ?: 'https://v1.hitokoto.cn' ),
+			1 => array( 'api' => simple_theme_get_safe_widget_api_url( $options['hitokoto_api'] ?? 'https://v1.hitokoto.cn' ) ),
 			'_multiwidget' => 1,
 		) );
 		$assigned[] = 'simple_hitokoto-1';

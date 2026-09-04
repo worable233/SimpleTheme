@@ -84,8 +84,7 @@ const nodeFilledEntries = Object.entries(nodesFilledOut)
   .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
   .join('\n')
 
-const out = `/* eslint-disable */
-// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
+const out = `// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
 // 数据源：src/lib/tabler-icon-map.json + @tabler/icons 节点数据。
 import type { Component } from 'vue'
 import {

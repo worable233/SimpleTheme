@@ -71,7 +71,11 @@ function getMenuItemIcon(iconEl: Element | null): string {
   if (!iconEl) return ''
   // 1. Inline SVG (WP 5.7+)
   const svg = iconEl.querySelector('svg')
-  if (svg) return svg.outerHTML
+  if (svg) {
+    // Preserve the native icon without forwarding raw markup to a Vue v-html sink.
+    // SVG loaded through <img> is handled as an isolated image document.
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`
+  }
 
   // 2. <img> tag
   const img = iconEl.querySelector('img')
@@ -103,9 +107,19 @@ function getMenuItemIcon(iconEl: Element | null): string {
   return ''
 }
 
-// Navigate to a new URL
+function isSafeAdminNavigationUrl(value: string): boolean {
+  try {
+    const target = new URL(value, window.location.href)
+    return target.protocol === 'http:' || target.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// Navigate to a URL parsed from WordPress's existing admin menu.
 function navigate(url: string) {
-  window.location.href = url
+  if (!isSafeAdminNavigationUrl(url)) return
+  window.location.assign(url)
 }
 
 onMounted(() => {
@@ -144,4 +158,3 @@ onMounted(() => {
     />
   </Teleport>
 </template>
-

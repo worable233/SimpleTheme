@@ -83,10 +83,27 @@ function simple_theme_render_notice_block( $attributes, $content ) {
 
 /**
  * Render a sakurairo/showcard-block.
- * Saved HTML is self-contained — just return it.
+ * Rebuild the small, attribute-driven card instead of returning saved HTML
+ * verbatim. This keeps image/link/icon attributes from becoming an HTML sink.
  */
 function simple_theme_render_showcard_block( $attributes, $content ) {
-	return empty( $content ) ? '' : $content;
+	if ( empty( $attributes ) ) {
+		return empty( $content ) ? '' : wp_kses_post( $content );
+	}
+
+	$icon_classes = preg_split( '/\s+/', (string) ( $attributes['icon'] ?? 'ti ti-bookmark' ) );
+	$icon_classes = array_filter( array_map( 'sanitize_html_class', $icon_classes ) );
+	$icon         = implode( ' ', $icon_classes ) ?: 'ti ti-bookmark';
+	$title        = esc_html( (string) ( $attributes['title'] ?? '' ) );
+	$color        = sanitize_hex_color( (string) ( $attributes['color'] ?? '' ) ) ?: '#ffffff';
+	$image        = esc_url( (string) ( $attributes['img'] ?? '' ), array( 'http', 'https' ) );
+	$link         = function_exists( 'simple_theme_get_safe_navigation_url' )
+		? simple_theme_get_safe_navigation_url( $attributes['link'] ?? '' )
+		: esc_url( (string) ( $attributes['link'] ?? '' ), array( 'http', 'https' ) );
+	$link = $link ?: '#';
+	$style = $image ? ' style="background:url(\'' . esc_url( $image ) . '\') center center / cover no-repeat"' : '';
+
+	return '<div class="showcard"><div class="img"' . $style . '><a href="' . esc_url( $link ) . '"><button class="showcard-button" style="color:' . esc_attr( $color ) . '"><i class="ti ti-play-circle" style="font-size:24px"></i></button></a></div><div class="icon-title"><i class="' . esc_attr( $icon ) . '" style="color:' . esc_attr( $color ) . ' !important;"></i><span class="title">' . $title . '</span></div></div>';
 }
 
 /**
@@ -94,7 +111,16 @@ function simple_theme_render_showcard_block( $attributes, $content ) {
  * Saved HTML is self-contained — just return it.
  */
 function simple_theme_render_conversations_block( $attributes, $content ) {
-	return empty( $content ) ? '' : $content;
+	if ( empty( $attributes ) ) {
+		return empty( $content ) ? '' : wp_kses_post( $content );
+	}
+
+	$avatar    = esc_url( (string) ( $attributes['avatar'] ?? '' ), array( 'http', 'https' ) );
+	$direction = in_array( $attributes['direction'] ?? 'row', array( 'row', 'row-reverse' ), true ) ? $attributes['direction'] : 'row';
+	$text      = wp_kses_post( (string) ( $attributes['content'] ?? $content ) );
+	$avatar_html = $avatar ? '<img src="' . esc_url( $avatar ) . '" alt="">' : '';
+
+	return '<div class="conversations-code" style="display:flex;flex-direction:' . esc_attr( $direction ) . ';">' . $avatar_html . '<div class="conversations-code-text">' . $text . '</div></div>';
 }
 
 /**
@@ -102,7 +128,18 @@ function simple_theme_render_conversations_block( $attributes, $content ) {
  * Saved HTML is self-contained — just return it.
  */
 function simple_theme_render_vbilibili_block( $attributes, $content ) {
-	return empty( $content ) ? '' : $content;
+	$video_id = trim( (string) ( $attributes['videoId'] ?? '' ) );
+	$src = '';
+	if ( preg_match( '/^av(\d+)$/i', $video_id, $matches ) ) {
+		$src = 'https://player.bilibili.com/player.html?avid=' . $matches[1] . '&page=1&autoplay=0&danmaku=0';
+	} elseif ( preg_match( '/^BV[a-zA-Z0-9]+$/', $video_id ) ) {
+		$src = 'https://player.bilibili.com/player.html?bvid=' . rawurlencode( $video_id ) . '&page=1&autoplay=0&danmaku=0';
+	}
+	if ( ! $src ) {
+		return '';
+	}
+
+	return '<div class="vbilibili" style="position:relative;padding:56.25% 0 0 0"><iframe src="' . esc_url( $src, array( 'https' ) ) . '" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts" allowfullscreen style="position:absolute;width:100%;height:100%;left:0;top:0;border:none;overflow:hidden"></iframe></div>';
 }
 
 // ============================================================
@@ -249,13 +286,13 @@ function simple_theme_sakurairo_editor_assets() {
 	// Pass locale data to the editor script (Sakurairo blocks use iroBlockEditor.language).
 	wp_add_inline_script(
 		'wp-blocks',
-		'window.iroBlockEditor = window.iroBlockEditor || ' . json_encode( array(
-			'siteTitle' => get_bloginfo( 'name' ),
-			'language'  => get_locale(),
-			'user'      => wp_get_current_user()->user_login,
-		) ) . ';',
-		'before'
-	);
+		'window.iroBlockEditor = window.iroBlockEditor || ' . wp_json_encode( array(
+				'siteTitle' => get_bloginfo( 'name' ),
+				'language'  => get_locale(),
+				'user'      => wp_get_current_user()->user_login,
+			), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';',
+			'before'
+		);
 
 	wp_enqueue_script(
 		'simple-theme-sakurairo-blocks-editor',

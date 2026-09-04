@@ -95,8 +95,8 @@ function simple_theme_retrieve_password_message( $message, $key, $user_login, $u
 	$reset_url = add_query_arg(
 		array(
 			'action' => 'resetpass',
-			'key'    => rawurlencode( $key ),
-			'login'  => rawurlencode( $user_login ),
+			'key'    => $key,
+			'login'  => $user_login,
 		),
 		home_url( '/' )
 	);
@@ -222,6 +222,37 @@ function simple_theme_register_auth_routes() {
 	) );
 }
 
+/**
+ * Apply a short-lived, site-specific IP limit to unauthenticated auth actions.
+ * The raw address is never persisted; only the HMAC-backed transient key is used.
+ */
+function simple_theme_auth_rate_limited( $action, $limit, $window ) {
+	$ip_hash = function_exists( 'simple_theme_hash_ip' ) ? simple_theme_hash_ip() : '';
+	if ( ! $ip_hash ) {
+		return false;
+	}
+
+	$key   = 'simple_theme_auth_' . sanitize_key( $action ) . '_' . substr( $ip_hash, 0, 32 );
+	$count = get_transient( $key );
+	$count = false === $count ? 0 : (int) $count;
+	if ( $count >= $limit ) {
+		return true;
+	}
+
+	set_transient( $key, $count + 1, $window );
+	return false;
+}
+
+function simple_theme_auth_rate_limit_response( $message = '' ) {
+	$response = new WP_REST_Response( array(
+		'success' => false,
+		'code'    => 'rate_limited',
+		'message' => $message ?: __( 'Too many attempts. Please try again later.' ),
+	), 429 );
+	$response->header( 'Retry-After', (string) ( 15 * MINUTE_IN_SECONDS ) );
+	return $response;
+}
+
 // ============================================================
 // 4. 登录回调
 // ============================================================
@@ -230,6 +261,10 @@ function simple_theme_auth_login( WP_REST_Request $request ) {
 	$log        = $request->get_param( 'log' );
 	$pwd        = $request->get_param( 'pwd' );
 	$rememberme = (bool) $request->get_param( 'rememberme' );
+
+	if ( simple_theme_auth_rate_limited( 'login', 10, 15 * MINUTE_IN_SECONDS ) ) {
+		return simple_theme_auth_rate_limit_response();
+	}
 
 	$credentials = array(
 		'user_login'    => $log,
@@ -241,12 +276,10 @@ function simple_theme_auth_login( WP_REST_Request $request ) {
 	$user = wp_signon( $credentials, is_ssl() );
 
 	if ( is_wp_error( $user ) ) {
-		$error_code = $user->get_error_code();
-		$messages   = $user->get_error_messages();
 		return new WP_REST_Response( array(
 			'success' => false,
-			'code'    => $error_code,
-			'message' => ! empty( $messages ) ? $messages[0] : __( 'Login failed. Please check your credentials.' ),
+			'code'    => 'invalid_credentials',
+			'message' => __( 'Invalid username or password.' ),
 		), 401 );
 	}
 
@@ -257,17 +290,22 @@ function simple_theme_auth_login( WP_REST_Request $request ) {
 	// 生成 REST API nonce
 	$nonce = wp_create_nonce( 'wp_rest' );
 
-	return new WP_REST_Response( array(
+	$response = new WP_REST_Response( array(
 		'success'       => true,
 		'user'          => array(
 			'id'           => $user->ID,
 			'display_name' => $user->display_name,
 			'avatar'       => get_avatar_url( $user->ID, array( 'size' => 80 ) ),
 			'email'        => $user->user_email,
+			'url'          => $user->user_url,
 		),
 		'rest_nonce'    => $nonce,
 		'redirect_to'   => admin_url(),
+		'logout_url'    => wp_logout_url( home_url( '/' ) ),
 	), 200 );
+	$response->header( 'Cache-Control', 'private, no-store, max-age=0' );
+	$response->header( 'Vary', 'Cookie' );
+	return $response;
 }
 
 // ============================================================
@@ -284,6 +322,10 @@ function simple_theme_auth_register( WP_REST_Request $request ) {
 		), 403 );
 	}
 
+	if ( simple_theme_auth_rate_limited( 'register', 5, HOUR_IN_SECONDS ) ) {
+		return simple_theme_auth_rate_limit_response( __( 'Too many registration attempts. Please try again later.' ) );
+	}
+
 	$user_login = $request->get_param( 'user_login' );
 	$user_email = $request->get_param( 'user_email' );
 
@@ -291,11 +333,10 @@ function simple_theme_auth_register( WP_REST_Request $request ) {
 	$result = register_new_user( $user_login, $user_email );
 
 	if ( is_wp_error( $result ) ) {
-		$messages = $result->get_error_messages();
 		return new WP_REST_Response( array(
 			'success' => false,
-			'code'    => $result->get_error_code(),
-			'message' => ! empty( $messages ) ? $messages[0] : __( 'Registration failed.' ),
+			'code'    => 'registration_failed',
+			'message' => __( 'Registration could not be completed. Please check your details and try again.' ),
 		), 400 );
 	}
 
@@ -312,21 +353,16 @@ function simple_theme_auth_register( WP_REST_Request $request ) {
 function simple_theme_auth_lost_password( WP_REST_Request $request ) {
 	$user_login = $request->get_param( 'user_login' );
 
-	// 使用 WordPress 原生 retrieve_password
-	$result = retrieve_password( $user_login );
-
-	if ( is_wp_error( $result ) ) {
-		$messages = $result->get_error_messages();
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => $result->get_error_code(),
-			'message' => ! empty( $messages ) ? $messages[0] : __( 'Password reset failed.' ),
-		), 400 );
+	if ( simple_theme_auth_rate_limited( 'lost_password', 5, HOUR_IN_SECONDS ) ) {
+		return simple_theme_auth_rate_limit_response( __( 'Too many password reset attempts. Please try again later.' ) );
 	}
+
+	// 使用 WordPress 原生 retrieve_password
+	retrieve_password( $user_login );
 
 	return new WP_REST_Response( array(
 		'success' => true,
-		'message' => __( 'Check your email for the confirmation link.' ),
+		'message' => __( 'If an account matches the information provided, a password reset email will be sent shortly.' ),
 	), 200 );
 }
 
@@ -337,6 +373,10 @@ function simple_theme_auth_lost_password( WP_REST_Request $request ) {
 function simple_theme_auth_validate_reset_key( WP_REST_Request $request ) {
 	$key   = $request->get_param( 'key' );
 	$login = $request->get_param( 'login' );
+
+	if ( simple_theme_auth_rate_limited( 'validate_reset_key', 20, HOUR_IN_SECONDS ) ) {
+		return simple_theme_auth_rate_limit_response();
+	}
 
 	$user = check_password_reset_key( $key, $login );
 
@@ -361,10 +401,6 @@ function simple_theme_auth_validate_reset_key( WP_REST_Request $request ) {
 	return new WP_REST_Response( array(
 		'success' => true,
 		'message' => __( 'Valid reset key. You can now reset your password.' ),
-		'user'    => array(
-			'display_name' => $user->display_name,
-			'user_email'   => $user->user_email,
-		),
 	), 200 );
 }
 
@@ -377,6 +413,10 @@ function simple_theme_auth_reset_password( WP_REST_Request $request ) {
 	$login = $request->get_param( 'login' );
 	$pass1 = $request->get_param( 'pass1' );
 	$pass2 = $request->get_param( 'pass2' );
+
+	if ( simple_theme_auth_rate_limited( 'reset_password', 10, HOUR_IN_SECONDS ) ) {
+		return simple_theme_auth_rate_limit_response();
+	}
 
 	// 验证两次密码一致
 	if ( $pass1 !== $pass2 ) {
@@ -393,6 +433,14 @@ function simple_theme_auth_reset_password( WP_REST_Request $request ) {
 			'success' => false,
 			'code'    => 'empty_password',
 			'message' => __( 'The password cannot be empty.' ),
+		), 400 );
+	}
+
+	if ( strlen( $pass1 ) < 6 || strlen( $pass1 ) > 4096 ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'invalid_password',
+			'message' => __( 'The password must be between 6 and 4096 characters.' ),
 		), 400 );
 	}
 
@@ -430,25 +478,33 @@ function simple_theme_auth_reset_password( WP_REST_Request $request ) {
 
 function simple_theme_auth_me() {
 	if ( ! is_user_logged_in() ) {
-		return new WP_REST_Response( array(
+		$response = new WP_REST_Response( array(
 			'logged_in' => false,
 			'user'      => null,
 		), 200 );
+		$response->header( 'Cache-Control', 'private, no-store, max-age=0' );
+		$response->header( 'Vary', 'Cookie' );
+		return $response;
 	}
 
 	$user = wp_get_current_user();
 
-	return new WP_REST_Response( array(
+	$response = new WP_REST_Response( array(
 		'logged_in'     => true,
 		'user'          => array(
 			'id'           => $user->ID,
 			'display_name' => $user->display_name,
 			'avatar'       => get_avatar_url( $user->ID, array( 'size' => 80 ) ),
 			'email'        => $user->user_email,
+			'url'          => $user->user_url,
 		),
 		'rest_nonce'    => wp_create_nonce( 'wp_rest' ),
 		'admin_url'     => admin_url(),
+		'logout_url'    => wp_logout_url( home_url( '/' ) ),
 	), 200 );
+	$response->header( 'Cache-Control', 'private, no-store, max-age=0' );
+	$response->header( 'Vary', 'Cookie' );
+	return $response;
 }
 
 // ============================================================

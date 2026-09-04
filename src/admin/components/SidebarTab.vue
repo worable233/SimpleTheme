@@ -111,13 +111,6 @@ const emit = defineEmits<{
           @update:modelValue="emit('update', 'comment_show_markdown', $event)"
         />
       </div>
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="settings.comment_image_upload_enabled !== false"
-          label="允许用户上传图片"
-          @update:modelValue="emit('update', 'comment_image_upload_enabled', $event)"
-        />
-      </div>
     </div>
 
     <div class="xh-field" style="margin-top: 8px;">

@@ -6,6 +6,8 @@
  */
 import type { RenderedText } from '@/types/wordpress'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import { RouterLink } from 'vue-router'
+import { toInternalPath } from '@/lib/theme-config'
 
 interface PostWithMeta {
   id: number
@@ -40,23 +42,29 @@ function onMaskClick(e: MouseEvent) {
         class="modal-mask"
         @click="onMaskClick"
       >
-        <div class="timeline-modal" @click.stop>
-          <ModalCloseButton class="modal-close" @click="emit('close')" />
+        <div
+          class="timeline-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="category-modal-title"
+          @click.stop
+        >
+          <ModalCloseButton class="modal-close" autofocus @click="emit('close')" />
           <div class="modal-content">
             <div class="modal-content-inner">
               <div class="category-modal-header">
-                <h2 class="modal-title" style="margin:0;">{{ name }}</h2>
+                <h2 id="category-modal-title" class="modal-title" style="margin:0">{{ name }}</h2>
               </div>
               <div class="modal-post-list">
-                <a
+                <RouterLink
                   v-for="post in posts"
                   :key="post.id"
-                  :href="post.link"
+                  :to="toInternalPath(post.link)"
                   class="modal-post-item"
                 >
                   <span class="modal-post-title">{{ (post.title as RenderedText).rendered }}</span>
                   <span class="modal-post-date">{{ post.displayDate }}</span>
-                </a>
+                </RouterLink>
               </div>
             </div>
           </div>

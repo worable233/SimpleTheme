@@ -1,7 +1,8 @@
 import { createApp } from 'vue'
-import { createHead } from '@vueuse/head'
+import { createHead } from '@unhead/vue/client'
 import App from './App.vue'
 import router from './router'
+import { getThemeConfig } from '@/lib/theme-config'
 import '@/styles/tailwind.css'
 import './styles/app.css'
 import './styles/prose.css'
@@ -11,7 +12,11 @@ import 'altcha'
 // Register Service Worker for full caching (production only)
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+    const homeUrl = getThemeConfig().homeUrl
+    const serviceWorkerUrl = new URL('sw.js', homeUrl)
+    const scope = new URL('./', homeUrl).pathname
+
+    navigator.serviceWorker.register(serviceWorkerUrl.href, { scope }).catch(() => {
       // SW registration failed — app works without it
     })
   })

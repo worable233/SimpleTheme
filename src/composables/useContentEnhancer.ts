@@ -1,6 +1,6 @@
 import { watch, nextTick, onMounted, onUnmounted, type Ref } from 'vue'
 import { useToc } from '@/composables/useToc'
-import { isExternalUrl } from '@/lib/theme-config'
+import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
@@ -346,16 +346,33 @@ function processCodeBlocks(container: Element) {
   container.setAttribute('data-prism-status', `highlighted=${highlighted} errors=${errors}`)
 }
 
-/** Transform external links to route through the /go redirect page. */
+/** Remove unsafe links, then route HTTP(S) external links through /go. */
 function transformExternalLinks(container: Element) {
   const links = container.querySelectorAll<HTMLAnchorElement>('a[href]')
   for (const link of links) {
     const href = link.getAttribute('href')
     if (!href) continue
+
+    if (!isSafeNavigationUrl(href)) {
+      link.removeAttribute('href')
+      link.removeAttribute('target')
+      link.removeAttribute('rel')
+      link.setAttribute('aria-disabled', 'true')
+      continue
+    }
+
+    let protocol = ''
+    try {
+      protocol = new URL(href, window.location.href).protocol.toLowerCase()
+    } catch {
+      link.removeAttribute('href')
+      continue
+    }
+
     if (
       href.startsWith('#') ||
-      href.startsWith('mailto:') ||
-      href.startsWith('tel:') ||
+      protocol === 'mailto:' ||
+      protocol === 'tel:' ||
       link.hasAttribute('download')
     ) continue
     // Skip already-transformed or go-page links
@@ -382,9 +399,17 @@ function initFancyboxImages(container: Element) {
     const src = img.getAttribute('src') || img.getAttribute('data-src') || ''
     if (!src || src.startsWith('data:')) continue
 
+    let imageUrl: URL
+    try {
+      imageUrl = new URL(src, window.location.origin)
+    } catch {
+      continue
+    }
+    if (!['http:', 'https:'].includes(imageUrl.protocol)) continue
+
     const wrapper = document.createElement('a')
-    // Normalize URL to ensure proper encoding of non-ASCII characters
-    try { wrapper.href = new URL(src, window.location.origin).href } catch { wrapper.href = src }
+    // Normalize URL to ensure proper encoding of non-ASCII characters.
+    wrapper.href = imageUrl.href
     wrapper.dataset.fancybox = 'article-gallery'
     const alt = img.getAttribute('alt') || ''
     if (alt) {

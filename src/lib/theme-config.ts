@@ -15,7 +15,7 @@ const fallbackConfig: SimpleThemeConfig = {
     collection: `${origin}/wp-json/simple-theme/v1/collection`,
     about: `${origin}/wp-json/simple-theme/v1/about`,
     links: `${origin}/wp-json/simple-theme/v1/links`,
-	  settings: `${origin}/wp-json/simple-theme/v1/settings`,
+    settings: `${origin}/wp-json/simple-theme/v1/settings`,
   },
   features: {
     prismHighlight: true,
@@ -77,7 +77,8 @@ if (themeConfig.siteUrl) themeConfig.siteUrl = normalizeOrigin(themeConfig.siteU
 if (themeConfig.homeUrl) themeConfig.homeUrl = normalizeOrigin(themeConfig.homeUrl)
 if (themeConfig.restRoot) themeConfig.restRoot = normalizeOrigin(themeConfig.restRoot)
 if (themeConfig.themeUrl) themeConfig.themeUrl = normalizeOrigin(themeConfig.themeUrl)
-if (themeConfig.illustrationsUrl) themeConfig.illustrationsUrl = normalizeOrigin(themeConfig.illustrationsUrl)
+if (themeConfig.illustrationsUrl)
+  themeConfig.illustrationsUrl = normalizeOrigin(themeConfig.illustrationsUrl)
 if (themeConfig.routes) {
   for (const key of Object.keys(themeConfig.routes) as (keyof typeof themeConfig.routes)[]) {
     const value = themeConfig.routes[key]
@@ -108,6 +109,14 @@ const trimTrailingSlash = (value: string) => {
 
 const siteBasePath = trimTrailingSlash(siteBaseUrl.pathname || '/')
 
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index)
+    if (code <= 0x1f || code === 0x7f) return true
+  }
+  return false
+}
+
 const stripSiteBase = (pathname: string) => {
   if ('/' === siteBasePath) {
     return pathname || '/'
@@ -133,16 +142,20 @@ export function getRouterBase() {
 }
 
 export function toInternalPath(value: string) {
-  if (!value) {
+  const normalizedValue = value.trim()
+  if (!normalizedValue || normalizedValue.startsWith('//')) {
     return '/'
   }
 
   try {
-    const targetUrl = new URL(value, themeConfig.homeUrl)
+    const targetUrl = new URL(normalizedValue, themeConfig.homeUrl)
+    if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+      return '/'
+    }
     const pathname = stripSiteBase(targetUrl.pathname)
     return `${pathname}${targetUrl.search}${targetUrl.hash}`
   } catch {
-    return value.startsWith('/') ? value : `/${value}`
+    return normalizedValue.startsWith('/') ? normalizedValue : `/${normalizedValue}`
   }
 }
 
@@ -165,8 +178,26 @@ export function toResolvablePath(value: string) {
   }
 }
 
+export function isSafeNavigationUrl(value: string) {
+  const normalizedValue = value.trim()
+  if (
+    !normalizedValue ||
+    normalizedValue.startsWith('//') ||
+    hasControlCharacter(normalizedValue)
+  ) {
+    return false
+  }
+
+  try {
+    const targetUrl = new URL(normalizedValue, themeConfig.homeUrl)
+    return ['http:', 'https:', 'mailto:', 'tel:'].includes(targetUrl.protocol)
+  } catch {
+    return false
+  }
+}
+
 export function isExternalUrl(value: string) {
-  if (!value) {
+  if (!isSafeNavigationUrl(value)) {
     return false
   }
 

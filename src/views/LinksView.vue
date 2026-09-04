@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import { fetchLinks, fetchPage, getErrorMessage } from '@/lib/wordpress'
 import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
@@ -11,6 +12,8 @@ import type { WordPressLinkCategory, WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 
 const { siteInfo } = useSiteShell()
+
+useHead({ title: '友人帐' })
 
 const linkCategories = ref<WordPressLinkCategory[]>([])
 const loading = ref(true)

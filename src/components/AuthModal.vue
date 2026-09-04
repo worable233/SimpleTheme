@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { apiLogin, apiRegister, apiLostPassword, apiValidateResetKey, apiResetPassword } from '@/lib/api-auth'
+import {
+  apiLogin,
+  apiRegister,
+  apiLostPassword,
+  apiValidateResetKey,
+  apiResetPassword,
+} from '@/lib/api-auth'
 import { useAuth } from '@/composables/useAuth'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { getThemeConfig } from '@/lib/theme-config'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
 const { setLoggedIn } = useAuth()
+const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
 
 /** 从 REST 错误响应中提取可读消息 */
 function apiErrorMessage(e: unknown): string | undefined {
@@ -123,9 +131,11 @@ async function handleLogin() {
           displayName: result.user.display_name,
           avatar: result.user.avatar,
           email: result.user.email,
+          url: result.user.url,
         },
         result.rest_nonce,
         result.redirect_to || '/wp-admin/',
+        result.logout_url,
       )
       emit('close')
       // 刷新页面以同步所有 cookie 和状态
@@ -206,7 +216,12 @@ async function handleResetPassword() {
   errorMsg.value = ''
   successMsg.value = ''
   try {
-    const result = await apiResetPassword(resetKey.value, resetLogin.value, resetPass1.value, resetPass2.value)
+    const result = await apiResetPassword(
+      resetKey.value,
+      resetLogin.value,
+      resetPass1.value,
+      resetPass2.value,
+    )
     if (result.success) {
       activeTab.value = 'message'
       successMsg.value = result.message || '密码已重置，请使用新密码登录。'
@@ -234,15 +249,11 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  lockBodyScroll()
 })
 
-// 打开弹窗时禁止 body 滚动
-import { onUnmounted } from 'vue'
-onMounted(() => {
-  document.body.style.overflow = 'hidden'
-})
 onUnmounted(() => {
-  document.body.style.overflow = ''
+  unlockBodyScroll()
   document.removeEventListener('keydown', onKeydown)
 })
 
@@ -300,8 +311,16 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
         <!-- ===== 消息页面（注册成功/发送邮件成功） ===== -->
         <div v-if="activeTab === 'message'" class="px-6 py-10 text-center">
           <div class="mb-4 text-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
-              <path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="48"
+              height="48"
+            >
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
             </svg>
           </div>
           <p class="m-0 mb-6 text-sm leading-[1.6] text-foreground">{{ successMsg }}</p>
@@ -312,14 +331,32 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
         <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" :class="formClass">
           <div class="mb-4">
             <label for="auth-log" :class="fieldLabel">用户名或邮箱</label>
-            <input id="auth-log" v-model="log" type="text" autocomplete="username" placeholder="输入用户名或邮箱" required :class="fieldInput" />
+            <input
+              id="auth-log"
+              v-model="log"
+              type="text"
+              autocomplete="username"
+              placeholder="输入用户名或邮箱"
+              required
+              :class="fieldInput"
+            />
           </div>
           <div class="mb-4">
             <label for="auth-pwd" :class="fieldLabel">密码</label>
-            <input id="auth-pwd" v-model="pwd" type="password" autocomplete="current-password" placeholder="输入密码" required :class="fieldInput" />
+            <input
+              id="auth-pwd"
+              v-model="pwd"
+              type="password"
+              autocomplete="current-password"
+              placeholder="输入密码"
+              required
+              :class="fieldInput"
+            />
           </div>
           <div class="mb-4">
-            <label class="flex cursor-pointer items-center gap-2 text-[13px] font-normal text-foreground">
+            <label
+              class="flex cursor-pointer items-center gap-2 text-[13px] font-normal text-foreground"
+            >
               <input v-model="rememberme" type="checkbox" class="h-4 w-4 accent-primary" />
               <span>记住我</span>
             </label>
@@ -329,7 +366,9 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
           </button>
           <div :class="formLinks">
             <a href="#" :class="formLink" @click.prevent="switchTo('lostpassword')">忘记密码？</a>
-            <a v-if="canRegister" href="#" :class="formLink" @click.prevent="switchTo('register')">注册账号</a>
+            <a v-if="canRegister" href="#" :class="formLink" @click.prevent="switchTo('register')"
+              >注册账号</a
+            >
           </div>
         </form>
 
@@ -337,11 +376,27 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
         <form v-if="activeTab === 'register'" @submit.prevent="handleRegister" :class="formClass">
           <div class="mb-4">
             <label for="auth-reg-user" :class="fieldLabel">用户名</label>
-            <input id="auth-reg-user" v-model="regUser" type="text" autocomplete="username" placeholder="输入用户名" required :class="fieldInput" />
+            <input
+              id="auth-reg-user"
+              v-model="regUser"
+              type="text"
+              autocomplete="username"
+              placeholder="输入用户名"
+              required
+              :class="fieldInput"
+            />
           </div>
           <div class="mb-4">
             <label for="auth-reg-email" :class="fieldLabel">邮箱</label>
-            <input id="auth-reg-email" v-model="regEmail" type="email" autocomplete="email" placeholder="输入邮箱" required :class="fieldInput" />
+            <input
+              id="auth-reg-email"
+              v-model="regEmail"
+              type="email"
+              autocomplete="email"
+              placeholder="输入邮箱"
+              required
+              :class="fieldInput"
+            />
           </div>
           <button type="submit" :class="primaryBtn" :disabled="loading">
             {{ loading ? '注册中...' : '注册' }}
@@ -353,11 +408,25 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
         </form>
 
         <!-- ===== 找回密码表单 ===== -->
-        <form v-if="activeTab === 'lostpassword'" @submit.prevent="handleLostPassword" :class="formClass">
-          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">输入您的用户名或邮箱地址，我们将向您发送重置密码的链接。</p>
+        <form
+          v-if="activeTab === 'lostpassword'"
+          @submit.prevent="handleLostPassword"
+          :class="formClass"
+        >
+          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">
+            输入您的用户名或邮箱地址，我们将向您发送重置密码的链接。
+          </p>
           <div class="mb-4">
             <label for="auth-lost-user" :class="fieldLabel">用户名或邮箱</label>
-            <input id="auth-lost-user" v-model="lostUser" type="text" autocomplete="username" placeholder="输入用户名或邮箱" required :class="fieldInput" />
+            <input
+              id="auth-lost-user"
+              v-model="lostUser"
+              type="text"
+              autocomplete="username"
+              placeholder="输入用户名或邮箱"
+              required
+              :class="fieldInput"
+            />
           </div>
           <button type="submit" :class="primaryBtn" :disabled="loading">
             {{ loading ? '发送中...' : '发送重置邮件' }}
@@ -368,15 +437,39 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
         </form>
 
         <!-- ===== 重置密码表单 ===== -->
-        <form v-if="activeTab === 'resetpassword'" @submit.prevent="handleResetPassword" :class="formClass">
-          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">请设置您的新密码。</p>
+        <form
+          v-if="activeTab === 'resetpassword'"
+          @submit.prevent="handleResetPassword"
+          :class="formClass"
+        >
+          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">
+            请设置您的新密码。
+          </p>
           <div class="mb-4">
             <label for="auth-reset-pass1" :class="fieldLabel">新密码</label>
-            <input id="auth-reset-pass1" v-model="resetPass1" type="password" autocomplete="new-password" placeholder="输入新密码" required minlength="6" :class="fieldInput" />
+            <input
+              id="auth-reset-pass1"
+              v-model="resetPass1"
+              type="password"
+              autocomplete="new-password"
+              placeholder="输入新密码"
+              required
+              minlength="6"
+              :class="fieldInput"
+            />
           </div>
           <div class="mb-4">
             <label for="auth-reset-pass2" :class="fieldLabel">确认新密码</label>
-            <input id="auth-reset-pass2" v-model="resetPass2" type="password" autocomplete="new-password" placeholder="再次输入新密码" required minlength="6" :class="fieldInput" />
+            <input
+              id="auth-reset-pass2"
+              v-model="resetPass2"
+              type="password"
+              autocomplete="new-password"
+              placeholder="再次输入新密码"
+              required
+              minlength="6"
+              :class="fieldInput"
+            />
           </div>
           <button type="submit" :class="primaryBtn" :disabled="loading">
             {{ loading ? '重置中...' : '重置密码' }}
@@ -397,8 +490,12 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
 }
 
 @keyframes auth-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .auth-modal__container {
@@ -406,8 +503,14 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
 }
 
 @keyframes auth-slide-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .auth-modal__spinner {
@@ -421,6 +524,8 @@ const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
 }
 
 @keyframes auth-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

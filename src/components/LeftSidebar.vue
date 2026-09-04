@@ -2,7 +2,7 @@
 import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { isExternalUrl } from '@/lib/theme-config'
+import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { resolveMenuIcon } from './sidebar/icon-map'
 import AppIcon from '@/components/AppIcon.vue'
 import SidebarProfile from './SidebarProfile.vue'
@@ -166,6 +166,14 @@ const menuItems = computed<MenuItem[]>(() => {
   return []
 })
 
+const safeFooterMenu = computed<MenuItem[]>(() =>
+  (footerMenu.value || []).filter((item) => isSafeNavigationUrl(item.url)),
+)
+
+function safeMenuChildren(item: MenuItem): MenuItem[] {
+  return (item.children || []).filter((child) => isSafeNavigationUrl(child.url))
+}
+
 // ========== Sub-menu helpers ==========
 
 function isCurrent(path: string): boolean {
@@ -328,11 +336,12 @@ function onRootTooltipHover(e: MouseEvent) {
                   返回
                 </div>
               </div>
-              <div v-if="footerMenu && footerMenu.length > 0" class="aside-card">
+              <div v-if="safeFooterMenu.length > 0" class="aside-card">
                 <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
                 <ul class="sub-page__menu-list">
-                  <li v-for="item in footerMenu" :key="item.id" class="sub-page__menu-item">
-                    <router-link :to="item.path || item.url" @click="closeAll">{{ item.title }}</router-link>
+                  <li v-for="item in safeFooterMenu" :key="item.id" class="sub-page__menu-item">
+                    <router-link v-if="!isExternalUrl(item.url)" :to="item.path || item.url" @click="closeAll">{{ item.title }}</router-link>
+                    <a v-else :href="item.url" :target="item.target || '_blank'" rel="noopener noreferrer" @click="closeAll">{{ item.title }}</a>
                   </li>
                 </ul>
               </div>
@@ -367,7 +376,7 @@ function onRootTooltipHover(e: MouseEvent) {
           }"
         >
           <li
-            v-for="child in item.children"
+            v-for="child in safeMenuChildren(item)"
             :key="child.id"
             :class="{ 'current-menu-item': isCurrent(child.path) }"
           >

@@ -29,17 +29,10 @@ function simple_theme_cors_handler() {
 	header( 'Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS' );
 	header( 'Access-Control-Allow-Credentials: true' );
 	header( 'Access-Control-Allow-Headers: Authorization, X-WP-Nonce, Content-Type, X-Requested-With' );
-	if ( 'OPTIONS' === $_SERVER['REQUEST_METHOD'] ) {
+	if ( 'OPTIONS' === ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) {
 		status_header( 204 );
 		exit;
 	}
-}
-
-add_filter( 'allowed_http_origins', 'simple_theme_allow_localhost_origin' );
-function simple_theme_allow_localhost_origin( $origin ) {
-	$origin[] = 'http://localhost:5173';
-	$origin[] = 'http://127.0.0.1:5173';
-	return $origin;
 }
 
 // WordPress 核心的 rest_send_cors_headers() 会无条件反射任意 Origin 且带
@@ -62,33 +55,6 @@ function simple_theme_rest_cors_headers( $value ) {
 	}
 	return $value;
 }
-
-// ========== REST API CSRF Bypass ==========
-//
-// Our SPA sends X-WP-Nonce for logged-in users, but some environments
-// (Vite dev proxy, mixed localhost/127.0.0.1, stale nonce after logout)
-// cause the nonce to be rejected.  Since all our custom routes already
-// have their own permission_callback, we simply skip the cookie nonce
-// check for simple-theme/v1/* — it never adds real security over our
-// own permission callbacks anyway.
-
-add_filter( 'rest_pre_dispatch', function ( $result, $server, $request ) {
-	if ( ! is_wp_error( $result ) ) {
-		return $result;
-	}
-	if ( 'rest_cookie_invalid_nonce' !== $result->get_error_code() ) {
-		return $result;
-	}
-	// 仅非生产环境（本地/开发）放宽；生产环境保留标准 CSRF 校验。
-	if ( 'production' === wp_get_environment_type() ) {
-		return $result;
-	}
-	$route = $request->get_route();
-	if ( 0 === strpos( $route, '/simple-theme/v1/' ) ) {
-		return null; // let our permission_callback decide
-	}
-	return $result;
-}, 15, 3 );
 
 // ========== Theme Setup ==========
 
@@ -162,7 +128,9 @@ function simple_theme_register_menu_item_meta() {
 		'type'              => 'string',
 		'single'            => true,
 		'sanitize_callback' => 'sanitize_text_field',
-		'auth_callback'     => '__return_true',
+		'auth_callback'     => function () {
+			return current_user_can( 'edit_theme_options' );
+		},
 		'show_in_rest'      => true,
 	) );
 }

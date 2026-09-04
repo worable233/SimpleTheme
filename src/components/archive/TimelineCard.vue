@@ -14,11 +14,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section
-    class="group flex cursor-pointer flex-col gap-4 rounded-large border-[1.5px] border-border bg-card p-[1.2rem] shadow-[0_4px_24px_0_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-primary hover:shadow-[0_12px_52px_-8px_rgba(0,0,0,0.18)] focus-visible:border-primary dark:shadow-[inset_0_1px_0_0_#fff3]"
-    tabindex="0"
+  <button
+    type="button"
+    class="group flex w-full cursor-pointer appearance-none flex-col gap-4 rounded-large border-[1.5px] border-border bg-card p-[1.2rem] text-left shadow-[0_4px_24px_0_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-primary hover:shadow-[0_12px_52px_-8px_rgba(0,0,0,0.18)] focus-visible:border-primary dark:shadow-[inset_0_1px_0_0_#fff3]"
+    :aria-label="`查看 ${year} 年的 ${total} 篇文章`"
+    aria-haspopup="dialog"
     @click="emit('select', year)"
-    @keydown.enter="emit('select', year)"
   >
     <div class="flex items-center justify-between">
       <span class="text-3xl leading-tight font-extrabold text-foreground">{{ year }}</span>
@@ -39,5 +40,5 @@ const emit = defineEmits<{
         >{{ m }}</span
       >
     </div>
-  </section>
+  </button>
 </template>

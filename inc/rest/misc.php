@@ -31,13 +31,21 @@ function simple_theme_get_links() {
 
 	$links = array();
 	foreach ( $bookmarks as $bookmark ) {
+		$url = function_exists( 'simple_theme_get_safe_navigation_url' )
+			? simple_theme_get_safe_navigation_url( $bookmark->link_url )
+			: esc_url_raw( $bookmark->link_url );
+		if ( ! $url ) {
+			continue;
+		}
+
+		$image = esc_url_raw( $bookmark->link_image, array( 'http', 'https' ) );
 		$cat_ids = wp_get_object_terms( $bookmark->link_id, 'link_category', array( 'fields' => 'ids' ) );
 		$links[] = array(
 			'id'          => $bookmark->link_id,
 			'name'        => $bookmark->link_name,
-			'url'         => $bookmark->link_url,
+			'url'         => $url,
 			'description' => $bookmark->link_description,
-			'image'       => $bookmark->link_image,
+			'image'       => $image,
 			'rating'      => $bookmark->link_rating,
 			'categories'  => $cat_ids ? array_map( 'intval', $cat_ids ) : array(),
 			'target'      => $bookmark->link_target,
@@ -85,6 +93,22 @@ function simple_theme_get_links() {
 
 // ========== Avatar Proxy ==========
 
+function simple_theme_get_gravatar_base_url() {
+	$options = get_option( 'simple_theme_options', array() );
+	$base    = rtrim( (string) ( $options['gravatar_base_url'] ?? 'https://weavatar.com/avatar/' ), '/' );
+	$parsed  = wp_parse_url( $base );
+
+	if (
+		empty( $parsed['host'] ) ||
+		empty( $parsed['scheme'] ) ||
+		! in_array( strtolower( $parsed['scheme'] ), array( 'http', 'https' ), true )
+	) {
+		return 'https://weavatar.com/avatar';
+	}
+
+	return $base;
+}
+
 function simple_theme_avatar_proxy( WP_REST_Request $request ) {
 	$qq   = $request->get_param( 'qq' );
 	$hash = $request->get_param( 'hash' );
@@ -93,30 +117,37 @@ function simple_theme_avatar_proxy( WP_REST_Request $request ) {
 	if ( $qq ) {
 		$url = "https://q1.qlogo.cn/g?b=qq&nk={$qq}&s={$size}";
 	} elseif ( $hash ) {
-		// Get configurable Gravatar base URL
-		$gravatar_base = rtrim(get_option('simple_theme_options', [])['gravatar_base_url'] ?? 'https://weavatar.com/avatar/', '/');
+		$gravatar_base = simple_theme_get_gravatar_base_url();
 		$url = "{$gravatar_base}/{$hash}?s={$size}&d=mp";
 	} else {
 		wp_die( 'Missing parameter', '', 400 );
 	}
 
-	$response = wp_remote_get( $url, array(
-		'timeout'    => 1,
-		'user-agent' => 'SimpleTheme Avatar Proxy',
+	$response = wp_safe_remote_get( $url, array(
+		'timeout'             => 3,
+		'redirection'         => 2,
+		'limit_response_size' => MB_IN_BYTES,
+		'user-agent'          => 'SimpleTheme Avatar Proxy',
 	) );
 
 	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 		wp_die( 'Failed to fetch avatar', '', 502 );
 	}
 
-	$content_type = wp_remote_retrieve_header( $response, 'content-type' ) ?: 'image/png';
-	$body         = wp_remote_retrieve_body( $response );
-
-	if ( ! empty( $_SERVER['HTTP_ORIGIN'] ) ) {
-		header( 'Access-Control-Allow-Origin: ' . esc_url_raw( $_SERVER['HTTP_ORIGIN'] ) );
-		header( 'Access-Control-Allow-Credentials: true' );
+	$content_type = strtolower( (string) wp_remote_retrieve_header( $response, 'content-type' ) );
+	$content_type = trim( strtok( $content_type, ';' ) );
+	$allowed_types = array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif' );
+	if ( ! in_array( $content_type, $allowed_types, true ) ) {
+		wp_die( 'Avatar response was not an image', '', 502 );
 	}
+
+	$body         = wp_remote_retrieve_body( $response );
+	if ( '' === $body ) {
+		wp_die( 'Empty avatar response', '', 502 );
+	}
+
 	header( 'Content-Type: ' . $content_type );
+	header( 'X-Content-Type-Options: nosniff' );
 	header( 'Cache-Control: public, max-age=86400' );
 	echo $body;
 	exit;
@@ -138,14 +169,7 @@ function simple_theme_mirror_gravatar_host( $args ) {
 	if ( empty( $args['url'] ) ) {
 		return $args;
 	}
-	$options = get_option( 'simple_theme_options', array() );
-	$base    = ( is_array( $options ) && ! empty( $options['gravatar_base_url'] ) )
-		? $options['gravatar_base_url']
-		: 'https://weavatar.com/avatar/';
-	$base = rtrim( $base, '/' );
-	if ( '' === $base ) {
-		return $args;
-	}
+	$base = simple_theme_get_gravatar_base_url();
 	$args['url'] = preg_replace(
 		'#^https?://(?:[a-z0-9-]+\.)*gravatar\.com/avatar#i',
 		$base,
@@ -167,15 +191,10 @@ function simple_theme_serve_illustration( WP_REST_Request $request ) {
 		wp_die( 'Illustration not found', '', 404 );
 	}
 
-	if ( ! empty( $_SERVER['HTTP_ORIGIN'] ) ) {
-		header( 'Access-Control-Allow-Origin: ' . esc_url_raw( $_SERVER['HTTP_ORIGIN'] ) );
-		header( 'Access-Control-Allow-Credentials: true' );
-	}
-
 	header( 'Content-Type: image/svg+xml' );
 	header( 'X-Content-Type-Options: nosniff' );
 	header( 'Cache-Control: public, max-age=31536000, immutable' );
-	echo file_get_contents( $file );
+	readfile( $file );
 	exit;
 }
 
@@ -199,14 +218,29 @@ function simple_theme_get_internal_path( $url ) {
 	}
 
 	if ( isset( $parsed_url['host'] ) ) {
-		if ( ( $parsed_home['host'] ?? '' ) !== $parsed_url['host'] ) {
+		$home_scheme = strtolower( $parsed_home['scheme'] ?? 'http' );
+		$url_scheme  = strtolower( $parsed_url['scheme'] ?? $home_scheme );
+		$default_port = function ( $scheme ) {
+			return 'https' === $scheme ? 443 : 80;
+		};
+		$home_port = isset( $parsed_home['port'] ) ? (int) $parsed_home['port'] : $default_port( $home_scheme );
+		$url_port  = isset( $parsed_url['port'] ) ? (int) $parsed_url['port'] : $default_port( $url_scheme );
+		if (
+			strtolower( $parsed_home['host'] ?? '' ) !== strtolower( $parsed_url['host'] ) ||
+			$url_scheme !== $home_scheme ||
+			$url_port !== $home_port
+		) {
 			return $safe_url;
 		}
 		$path = $parsed_url['path'] ?? '/';
 		// Strip home path (for subdirectory installs)
-		$home_path = $parsed_home['path'] ?? '/';
-		if ( '/' !== $home_path && 0 === strpos( $path, $home_path ) ) {
-			$path = substr( $path, strlen( $home_path ) - 1 );
+		$home_path = rtrim( $parsed_home['path'] ?? '/', '/' );
+		if ( '' !== $home_path && '/' !== $home_path ) {
+			if ( $path === $home_path || $path === $home_path . '/' ) {
+				$path = '/';
+			} elseif ( 0 === strpos( $path, $home_path . '/' ) ) {
+				$path = substr( $path, strlen( $home_path ) );
+			}
 		}
 	} else {
 		$path = $parsed_url['path'] ?? '/';
@@ -279,9 +313,12 @@ function simple_theme_find_post_by_path( $path, $post_types ) {
 }
 
 function simple_theme_resolve_path( WP_REST_Request $request ) {
-	$path = $request->get_param( 'path' );
+	$path = (string) $request->get_param( 'path' );
 	if ( ! $path ) {
 		return new WP_REST_Response( array( 'message' => 'Path required' ), 400 );
+	}
+	if ( strlen( $path ) > 2048 ) {
+		return new WP_REST_Response( array( 'message' => 'Path is too long' ), 400 );
 	}
 
 	// 先剥离 query string（如 /?s=test）：查询参数不参与路径解析，
@@ -309,8 +346,28 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 	);
 
 	$full_url = $safe_path;
+	$home_parts = wp_parse_url( $home_url );
+	$path_parts = wp_parse_url( $safe_path );
+	if ( ! $path_parts ) {
+		return new WP_REST_Response( array( 'message' => 'Invalid path' ), 400 );
+	}
 
-	if ( ! preg_match( '#^https?://#', $safe_path ) ) {
+	if ( ! empty( $path_parts['scheme'] ) || ! empty( $path_parts['host'] ) ) {
+		$is_http = isset( $path_parts['scheme'] ) && in_array( strtolower( $path_parts['scheme'] ), array( 'http', 'https' ), true );
+		$target_scheme = strtolower( $path_parts['scheme'] ?? '' );
+		$home_scheme   = strtolower( $home_parts['scheme'] ?? 'http' );
+		$target_port   = isset( $path_parts['port'] ) ? (int) $path_parts['port'] : ( 'https' === $target_scheme ? 443 : 80 );
+		$home_port     = isset( $home_parts['port'] ) ? (int) $home_parts['port'] : ( 'https' === $home_scheme ? 443 : 80 );
+		if (
+			! $is_http ||
+			empty( $path_parts['host'] ) ||
+			strtolower( $path_parts['host'] ) !== strtolower( $home_parts['host'] ?? '' ) ||
+			$target_scheme !== $home_scheme ||
+			$target_port !== $home_port
+		) {
+			return new WP_REST_Response( array( 'message' => 'Only local paths can be resolved' ), 400 );
+		}
+	} else {
 		$full_url = $home_url . ltrim( $safe_path, '/' );
 	}
 

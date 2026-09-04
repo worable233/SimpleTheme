@@ -68,7 +68,6 @@ export const mockSiteInfo = {
     showEmailField: true,
     showUrlField: true,
     showCookiesOptIn: true,
-    showImageUpload: true,
   },
   collections: {
     homePostCount: 6,

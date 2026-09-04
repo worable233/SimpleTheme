@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useHead } from '@unhead/vue'
 import { RouterLink } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchCollection, getErrorMessage } from '@/lib/wordpress'
@@ -15,6 +16,8 @@ const { siteInfo, ensureLoaded } = useSiteShell()
 const pageSize = computed(() => siteInfo.value.collections?.shuoshuoPageSize ?? 12)
 const sectionTitle = computed(() => siteInfo.value.collections?.shuoshuoTitle || '说说')
 const sectionSubtitle = computed(() => siteInfo.value.collections?.shuoshuoSubtitle || 'Shuoshuo.')
+
+useHead({ title: sectionTitle })
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 

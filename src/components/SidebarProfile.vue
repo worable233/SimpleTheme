@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { isSafeNavigationUrl } from '@/lib/theme-config'
 import AppIcon from '@/components/AppIcon.vue'
 import type { SocialLink, SiteStats } from '@/types/wordpress'
 
@@ -27,7 +28,9 @@ const siteName = computed(() => siteInfo.value.name || '')
 const motto = computed(() => siteInfo.value.hero?.subtitle || siteInfo.value.description || '')
 const coverUrl = computed(() => siteInfo.value.hero?.image || '')
 const stats = computed<SiteStats | undefined>(() => siteInfo.value.stats)
-const socialLinks = computed<SocialLink[] | undefined>(() => siteInfo.value.socialLinks)
+const socialLinks = computed<SocialLink[]>(() =>
+  (siteInfo.value.socialLinks || []).filter((link) => isSafeNavigationUrl(link.url)),
+)
 
 // ----- 贡献热力图 (GitHub-style heatmap) -----
 interface HeatmapEntry {

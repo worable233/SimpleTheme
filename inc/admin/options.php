@@ -84,7 +84,6 @@ function simple_theme_get_default_options() {
 		'gravatar_base_url'         => 'https://weavatar.com/avatar/',
 		'comment_show_private'      => true,
 		'comment_show_markdown'     => true,
-		'comment_image_upload_enabled' => true,
 		'ip_location_api'          => 'xinyew',
 		'ip_location_cache'        => true,
 
@@ -210,22 +209,53 @@ function simple_theme_migrate_from_customizer() {
 // ========== Sanitize ==========
 
 function simple_theme_sanitize_options( $input ) {
-	if ( ! is_array( $input ) ) {
-		return simple_theme_get_default_options();
-	}
-
 	$defaults = simple_theme_get_default_options();
-	$output   = array();
+	$existing = get_option( 'simple_theme_options', array() );
+	$existing = is_array( $existing ) ? $existing : array();
+	$input    = is_array( $input ) ? $input : array();
+
+	// Settings REST saves are partial. Keep existing values and legacy keys rather than
+	// silently resetting omitted fields to defaults.
+	$values = array_merge( $defaults, $existing, $input );
+	$output = $existing;
+	$integer_ranges = array(
+		'container_max_width'  => array( 960, 2000 ),
+		'article_max_width'    => array( 680, 1200 ),
+		'reading_speed'        => array( 100, 600 ),
+		'home_post_count'      => array( 3, 20 ),
+		'home_shuoshuo_count'  => array( 0, 12 ),
+		'shuoshuo_page_size'   => array( 6, 24 ),
+		'smtp_port'            => array( 1, 65535 ),
+		'smtp_timeout'         => array( 1, 120 ),
+		'smtp_queue_retry_count' => array( 0, 20 ),
+		'smtp_queue_retry_interval' => array( 60, 3600 ),
+	);
+
+	$sanitize_http_url = static function ( $value, $fallback = '' ) {
+		$url    = esc_url_raw( trim( (string) $value ) );
+		$parsed = $url ? wp_parse_url( $url ) : false;
+		if ( ! $parsed || empty( $parsed['host'] ) || empty( $parsed['scheme'] ) || ! in_array( strtolower( $parsed['scheme'] ), array( 'http', 'https' ), true ) ) {
+			return $fallback;
+		}
+		return $url;
+	};
+
+	$sanitize_json_array = static function ( $value, $item_callback ) {
+		$decoded = is_string( $value ) ? json_decode( $value, true ) : $value;
+		if ( ! is_array( $decoded ) ) {
+			return '';
+		}
+		$items = isset( $decoded[0] ) ? $decoded : array( $decoded );
+		$items = array_values( array_filter( array_map( $item_callback, array_slice( $items, 0, 50 ) ) ) );
+		return wp_json_encode( $items );
+	};
 
 	foreach ( $defaults as $key => $default_value ) {
-		if ( ! isset( $input[ $key ] ) ) {
-			$output[ $key ] = $default_value;
-			continue;
-		}
+		$value = $values[ $key ];
 
-		$value = $input[ $key ];
-
-		if ( is_bool( $default_value ) ) {
+		if ( isset( $integer_ranges[ $key ] ) ) {
+			$output[ $key ] = max( $integer_ranges[ $key ][0], min( $integer_ranges[ $key ][1], (int) $value ) );
+		} elseif ( is_bool( $default_value ) ) {
 			$output[ $key ] = ! empty( $value );
 		} elseif ( is_int( $default_value ) ) {
 			$output[ $key ] = (int) $value;
@@ -243,57 +273,84 @@ function simple_theme_sanitize_options( $input ) {
 		} elseif ( 'article_license' === $key ) {
 			$allowed_licenses = array( 'none', 'cc-by-40', 'cc-by-sa-40', 'cc-by-nc-40', 'cc-by-nc-sa-40', 'cc-by-nd-40', 'cc-by-nc-nd-40', 'cc0-10', 'mit', 'arr' );
 			$output[ $key ] = in_array( (string) $value, $allowed_licenses, true ) ? (string) $value : $default_value;
+		} elseif ( in_array( $key, array( 'hero_image', 'hero_avatar' ), true ) ) {
+			$output[ $key ] = $sanitize_http_url( $value, '' );
+		} elseif ( 'announcement_page_id' === $key ) {
+			$output[ $key ] = absint( $value );
+		} elseif ( 'ip_location_api' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'xinyew', 'ip.sb', 'ip-api.com' ), true ) ? (string) $value : $default_value;
 		} elseif ( 'social_links' === $key ) {
-			$decoded = json_decode( $value, true );
-			if ( is_array( $decoded ) ) {
-				// 自动将单个对象包装为数组
-				$normalized = isset( $decoded[0] ) ? $decoded : array( $decoded );
-				$output[ $key ] = wp_json_encode( $normalized );
-			} else {
+			$output[ $key ] = $sanitize_json_array( $value, static function ( $item ) use ( $sanitize_http_url ) {
+				if ( ! is_array( $item ) ) {
+					return null;
+				}
+				$url = $sanitize_http_url( $item['url'] ?? '' );
+				if ( ! $url ) {
+					return null;
+				}
+				return array(
+					'label'          => sanitize_text_field( $item['label'] ?? '' ),
+					'url'            => $url,
+					'icon'           => sanitize_key( $item['icon'] ?? '' ),
+					'sidebarEnabled' => ! isset( $item['sidebarEnabled'] ) || ! empty( $item['sidebarEnabled'] ),
+				);
+			} );
+			if ( '' === $output[ $key ] ) {
 				$output[ $key ] = $default_value;
 			}
 		} elseif ( 'tech_info_items' === $key ) {
-			$decoded = json_decode( $value, true );
-			$output[ $key ] = is_array( $decoded ) ? $value : $default_value;
-		} elseif ( 'smtp_host' === $key ) {
-			$output[ $key ] = sanitize_text_field( (string) $value );
-		} elseif ( 'smtp_port' === $key ) {
-			$output[ $key ] = min( 65535, max( 1, (int) $value ) );
-		} elseif ( 'smtp_encryption' === $key ) {
-			$output[ $key ] = in_array( (string) $value, array( 'none', 'ssl', 'tls' ), true ) ? (string) $value : $defaults[ $key ];
-		} elseif ( 'smtp_username' === $key ) {
+			$output[ $key ] = $sanitize_json_array( $value, static function ( $item ) {
+				if ( ! is_array( $item ) ) {
+					return null;
+				}
+				$label = sanitize_text_field( $item['label'] ?? '' );
+				$value = sanitize_text_field( $item['value'] ?? '' );
+				return ( '' !== $label || '' !== $value ) ? array( 'label' => $label, 'value' => $value ) : null;
+			} );
+			if ( '' === $output[ $key ] ) {
+				$output[ $key ] = $default_value;
+			}
+		} elseif ( 'smtp_host' === $key || 'smtp_username' === $key ) {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		} elseif ( 'smtp_password' === $key ) {
-			$output[ $key ] = $value;
+			$output[ $key ] = is_string( $value ) ? $value : '';
+		} elseif ( 'smtp_encryption' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'none', 'ssl', 'tls' ), true ) ? (string) $value : $defaults[ $key ];
 		} elseif ( 'smtp_from_email' === $key ) {
 			$output[ $key ] = is_email( (string) $value ) ? sanitize_email( (string) $value ) : '';
 		} elseif ( 'smtp_from_name' === $key ) {
 			$output[ $key ] = sanitize_text_field( (string) $value );
-		} elseif ( 'smtp_timeout' === $key ) {
-			$output[ $key ] = max( 1, min( 120, (int) $value ) );
-		} elseif ( 'smtp_queue_enabled' === $key ) {
-			$output[ $key ] = (bool) $value;
-		} elseif ( 'smtp_queue_retry_count' === $key ) {
-			$output[ $key ] = max( 0, min( 20, (int) $value ) );
-		} elseif ( 'smtp_queue_retry_interval' === $key ) {
-			$output[ $key ] = max( 60, min( 3600, (int) $value ) );
 		} elseif ( 'email_template' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'simple', 'card', 'professional' ), true ) ? (string) $value : 'simple';
 		} elseif ( 'announcement_mode' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'modal', 'capsule' ), true ) ? (string) $value : $defaults[ $key ];
 		} elseif ( 'announcement_buttons' === $key ) {
-			$decoded = json_decode( $value, true );
-			$output[ $key ] = is_array( $decoded ) ? $value : $defaults[ $key ];
-		} elseif ( 'hitokoto_api' === $key ) {
-			$url = esc_url_raw( trim( (string) $value ) );
-			// 仅允许 http(s) 地址，非法输入回退默认 API
-			$output[ $key ] = ( $url && preg_match( '#^https?://#i', $url ) ) ? $url : $default_value;
+			$output[ $key ] = $sanitize_json_array( $value, static function ( $item ) use ( $sanitize_http_url ) {
+				if ( ! is_array( $item ) ) {
+					return null;
+				}
+				$action = in_array( (string) ( $item['action'] ?? 'close' ), array( 'close', 'link' ), true ) ? (string) $item['action'] : 'close';
+				$url    = 'link' === $action ? $sanitize_http_url( $item['url'] ?? '' ) : '';
+				if ( 'link' === $action && ! $url ) {
+					return null;
+				}
+				return array(
+					'text'   => sanitize_text_field( $item['text'] ?? '' ),
+					'action' => $action,
+					'url'    => $url,
+				);
+			} );
+			if ( '' === $output[ $key ] ) {
+				$output[ $key ] = $default_value;
+			}
+		} elseif ( 'hitokoto_api' === $key || 'gravatar_base_url' === $key ) {
+			$output[ $key ] = $sanitize_http_url( $value, $default_value );
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );
 		}
-		}
+	}
 
-		return $output;
+	return $output;
 }
 
 // ========== Settings REST Endpoints ==========
@@ -317,9 +374,12 @@ function simple_theme_save_settings( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'error' => 'Invalid data' ), 400 );
 	}
 	$existing = get_option( 'simple_theme_options', array() );
+	$existing = is_array( $existing ) ? $existing : array();
 	$new_options = apply_filters( 'simple_theme_pre_save_settings', $new_options, $existing );
-	$new_options = simple_theme_sanitize_options( $new_options );
-	$merged = array_merge( $existing, $new_options );
-	update_option( 'simple_theme_options', $merged, false );
-	return new WP_REST_Response( $merged, 200 );
+	$merged_input = array_merge( simple_theme_get_default_options(), $existing, is_array( $new_options ) ? $new_options : array() );
+	$sanitized = simple_theme_sanitize_options( $merged_input );
+	update_option( 'simple_theme_options', $sanitized, false );
+	// Never return the encrypted SMTP secret to the admin SPA after saving.
+	$response_options = apply_filters( 'simple_theme_after_get_settings', $sanitized );
+	return new WP_REST_Response( $response_options, 200 );
 }

@@ -20,9 +20,10 @@ const progress = ref(0)
 const readingMode = computed(() => tocItems.value.length > 0 && progress.value > 0.01)
 // 章节间隙（未命中任何标题）时显示上次的标题，避免闪回站点名
 const displayText = ref('')
-const readingTitle = computed(() => {
-  if (activeText.value) displayText.value = activeText.value
-  return displayText.value || '文章目录'
+const readingTitle = computed(() => displayText.value || '文章目录')
+
+watch(activeText, (text) => {
+  if (text) displayText.value = text
 })
 
 // 切换文章（目录变化）时清掉残留的上一篇章节标题

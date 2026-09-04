@@ -65,8 +65,9 @@ function simple_theme_email_format_text( $text ) {
 // ============================================================
 
 function simple_theme_email_template_simple( $body, $subject ) {
-	$site_name   = get_bloginfo( 'name' );
-	$home_url    = home_url();
+	$site_name   = esc_html( get_bloginfo( 'name' ) );
+	$home_url    = esc_url( home_url( '/' ) );
+	$subject     = esc_html( $subject );
 	$year        = gmdate( 'Y' );
 	$header_bg   = '#333333';
 	$header_text = '#ffffff';
@@ -100,8 +101,9 @@ HTML;
 }
 
 function simple_theme_email_template_card( $body, $subject ) {
-	$site_name   = get_bloginfo( 'name' );
-	$home_url    = home_url();
+	$site_name   = esc_html( get_bloginfo( 'name' ) );
+	$home_url    = esc_url( home_url( '/' ) );
+	$subject     = esc_html( $subject );
 	$year        = gmdate( 'Y' );
 	$accent      = '#4f46e5';
 
@@ -138,8 +140,9 @@ HTML;
 }
 
 function simple_theme_email_template_professional( $body, $subject ) {
-	$site_name   = get_bloginfo( 'name' );
-	$home_url    = home_url();
+	$site_name   = esc_html( get_bloginfo( 'name' ) );
+	$home_url    = esc_url( home_url( '/' ) );
+	$subject     = esc_html( $subject );
 	$year        = gmdate( 'Y' );
 
 	return <<<HTML

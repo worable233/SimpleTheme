@@ -26,9 +26,7 @@ import type {
 /** 轻量端点：只获取服务端缓存版本号 */
 export async function fetchCacheVersion(): Promise<number> {
   if (shouldUseMock()) return 1
-  const { data } = await apiClient.get<{ version: number }>(
-    buildRestUrl('cache-version'),
-  )
+  const { data } = await apiClient.get<{ version: number }>(buildRestUrl('cache-version'))
   return data.version
 }
 
@@ -57,8 +55,9 @@ async function withSiteIconFallback(data: Partial<SiteInfo>): Promise<SiteInfo> 
     return { ...data, siteIcon: existingIcon.href } as SiteInfo
   }
 
-  // wp/v2/settings 需要 manage_options 权限，匿名访客请求必定 401 — 仅登录态（有 nonce）尝试
-  if (!getThemeConfig().restNonce) {
+  // wp/v2/settings requires a nonce. The frontend config deliberately no
+  // longer exposes one, so read the session-scoped value set by useAuth.
+  if (!apiClient.defaults.headers.common['X-WP-Nonce']) {
     return data as SiteInfo
   }
 
@@ -136,6 +135,7 @@ export async function resolveThemePath(path: string): Promise<ResolveResponse> {
   if (shouldUseMock()) return mockResolveThemePath(resolvablePath)
 
   const slug = resolvablePath.split('/').filter(Boolean).pop() || ''
+  const decodedSlug = decodeURIComponentSafely(slug)
 
   const results = await Promise.allSettled([
     (async () => {
@@ -148,18 +148,26 @@ export async function resolveThemePath(path: string): Promise<ResolveResponse> {
       if (!slug) throw new Error('no slug')
       try {
         const { data: pages } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/pages'), {
-          params: { slug: decodeURIComponent(slug), per_page: 1, _embed: 1 },
+          params: { slug: decodedSlug, per_page: 1, _embed: 1 },
         })
         if (pages?.[0]) {
-          return { type: 'page' as const, restUrl: buildRestUrl(`wp/v2/pages/${pages[0].id}?_embed=1`), id: pages[0].id }
+          return {
+            type: 'page' as const,
+            restUrl: buildRestUrl(`wp/v2/pages/${pages[0].id}?_embed=1`),
+            id: pages[0].id,
+          }
         }
       } catch {}
       try {
         const { data: posts } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/posts'), {
-          params: { slug: decodeURIComponent(slug), per_page: 1, _embed: 1 },
+          params: { slug: decodedSlug, per_page: 1, _embed: 1 },
         })
         if (posts?.[0]) {
-          return { type: 'post' as const, restUrl: buildRestUrl(`wp/v2/posts/${posts[0].id}?_embed=1`), id: posts[0].id }
+          return {
+            type: 'post' as const,
+            restUrl: buildRestUrl(`wp/v2/posts/${posts[0].id}?_embed=1`),
+            id: posts[0].id,
+          }
         }
       } catch {}
       throw new Error('slug not found')
@@ -185,4 +193,12 @@ export async function resolveThemePath(path: string): Promise<ResolveResponse> {
   }
 
   return { type: '404', message: '页面未找到' }
+}
+
+function decodeURIComponentSafely(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
 }

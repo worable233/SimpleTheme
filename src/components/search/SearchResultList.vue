@@ -20,10 +20,40 @@ const emit = defineEmits<{
   (e: 'update:activeIndex', index: number): void
 }>()
 
-function highlightText(text: string, query: string) {
-  if (!query) return text
+interface HighlightPart {
+  text: string
+  highlighted: boolean
+}
+
+function toPlainText(value: string): string {
+  const element = document.createElement('div')
+  element.innerHTML = value
+  return element.textContent || ''
+}
+
+function highlightText(text: string, query: string): HighlightPart[] {
+  const plainText = toPlainText(text)
+  if (!query) return [{ text: plainText, highlighted: false }]
+
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="search-highlight">$1</mark>')
+  const expression = new RegExp(escaped, 'gi')
+  const parts: HighlightPart[] = []
+  let cursor = 0
+  let match: RegExpExecArray | null
+
+  while ((match = expression.exec(plainText)) !== null) {
+    if (match.index > cursor) {
+      parts.push({ text: plainText.slice(cursor, match.index), highlighted: false })
+    }
+    parts.push({ text: match[0], highlighted: true })
+    cursor = match.index + match[0].length
+  }
+
+  if (cursor < plainText.length || parts.length === 0) {
+    parts.push({ text: plainText.slice(cursor), highlighted: false })
+  }
+
+  return parts
 }
 </script>
 
@@ -61,8 +91,18 @@ function highlightText(text: string, query: string) {
         @click="emit('navigate', index)"
         @mouseenter="emit('update:activeIndex', index)"
       >
-        <h4 class="search-modal__result-title" v-html="highlightText(result.title?.rendered || '(无标题)', query)"></h4>
-        <p v-if="result.excerpt?.rendered" class="search-modal__result-excerpt" v-html="highlightText(result.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0, 120), query)"></p>
+        <h4 class="search-modal__result-title">
+          <template v-for="(part, partIndex) in highlightText(result.title?.rendered || '(无标题)', query)" :key="partIndex">
+            <mark v-if="part.highlighted" class="search-highlight">{{ part.text }}</mark>
+            <template v-else>{{ part.text }}</template>
+          </template>
+        </h4>
+        <p v-if="result.excerpt?.rendered" class="search-modal__result-excerpt">
+          <template v-for="(part, partIndex) in highlightText(result.excerpt.rendered.slice(0, 120), query)" :key="partIndex">
+            <mark v-if="part.highlighted" class="search-highlight">{{ part.text }}</mark>
+            <template v-else>{{ part.text }}</template>
+          </template>
+        </p>
         <div class="search-modal__result-meta">
           <span class="search-modal__result-date">{{ new Date(result.date).toLocaleDateString('zh-CN') }}</span>
         </div>

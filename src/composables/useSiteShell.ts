@@ -93,7 +93,6 @@ const fallbackSiteInfo: SiteInfo = {
     showUrlField: true,
     showCookiesOptIn: true,
     captchaEnabled: false,
-    showImageUpload: true,
   },
   hero: fallbackHeroSettings,
   theme: fallbackThemeSettings,
@@ -107,10 +106,16 @@ const shellLoadingState = ref(false)
 const shellLoadedState = ref(false)
 const shellErrorState = ref('')
 
-const CACHE_KEY = 'st_shell_v1'
+const CACHE_KEY = 'st_shell_v2'
+
+// v1 persisted the complete site-info response, including current-user and
+// arbitrary widget HTML. Remove that legacy entry rather than leaving private
+// data behind in localStorage after an upgrade.
+try {
+  localStorage.removeItem('st_shell_v1')
+} catch { /* storage may be unavailable */ }
 
 interface CachedShell {
-  siteInfo: SiteInfo
   primaryMenu: MenuItem[]
   footerMenu: MenuItem[]
 }
@@ -138,8 +143,6 @@ function mergeSiteInfo(next: SiteInfo): SiteInfo {
         next.comments?.showCookiesOptIn ?? fallbackSiteInfo.comments!.showCookiesOptIn,
       captchaEnabled:
         next.comments?.captchaEnabled ?? fallbackSiteInfo.comments!.captchaEnabled,
-      showImageUpload:
-        next.comments?.showImageUpload ?? fallbackSiteInfo.comments!.showImageUpload,
     },
     stats: { ...fallbackSiteStats, ...next.stats },
     socialLinks:
@@ -148,7 +151,6 @@ function mergeSiteInfo(next: SiteInfo): SiteInfo {
 }
 
 function applyShellData(data: CachedShell) {
-  siteInfo.value = data.siteInfo
   primaryMenu.value = data.primaryMenu
   footerMenu.value = data.footerMenu
 }
@@ -180,10 +182,11 @@ export function useSiteShell() {
       ])
 
       const merged: CachedShell = {
-        siteInfo: mergeSiteInfo(nextSiteInfo),
         primaryMenu: nextPrimaryMenu,
         footerMenu: nextFooterMenu,
       }
+
+      siteInfo.value = mergeSiteInfo(nextSiteInfo)
 
       const newVersion = computeHash(JSON.stringify(merged))
 

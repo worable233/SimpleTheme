@@ -6,7 +6,7 @@
  * 这里只负责注入 HTML 并把内部链接点击转交给 vue-router（避免整页刷新）。
  */
 import { useRouter } from 'vue-router'
-import { isExternalUrl, toInternalPath } from '@/lib/theme-config'
+import { isExternalUrl, isSafeNavigationUrl, toInternalPath } from '@/lib/theme-config'
 
 defineProps<{
   html: string
@@ -17,13 +17,26 @@ const router = useRouter()
 function handleClick(event: MouseEvent) {
   const target = event.target
   if (!(target instanceof HTMLElement)) return
-  const anchor = target.closest('a')
+  const anchor = target.closest<HTMLAnchorElement>('a')
   if (!anchor) return
 
   const href = anchor.getAttribute('href')
+  if (!href || !isSafeNavigationUrl(href)) {
+    event.preventDefault()
+    return
+  }
+
   if (
-    !href || href.startsWith('#') || href.startsWith('mailto:') ||
-    href.startsWith('tel:') || anchor.target === '_blank' ||
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) return
+
+  if (
+    href.startsWith('#') || anchor.target ||
     anchor.hasAttribute('download') || isExternalUrl(href)
   ) return
 

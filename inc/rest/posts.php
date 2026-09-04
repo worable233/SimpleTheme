@@ -11,19 +11,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function simple_theme_get_collection( WP_REST_Request $request ) {
 	// If taxonomy params are provided, delegate to home-posts logic for filtered paginated results
-	$taxonomy = $request->get_param( 'taxonomy' );
+	$taxonomy = sanitize_key( (string) $request->get_param( 'taxonomy' ) );
 	$term_id  = (int) ( $request->get_param( 'termId' ) ?: 0 );
-	$page     = (int) ( $request->get_param( 'page' ) ?: 1 );
+	$page     = max( 1, min( 1000, (int) ( $request->get_param( 'page' ) ?: 1 ) ) );
 	$limit    = (int) ( $request->get_param( 'limit' ) ?: 0 );
 	$type     = $request->get_param( 'type' );
 
 	if ( $taxonomy && $term_id > 0 ) {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+		if ( ! $taxonomy_object || empty( $taxonomy_object->public ) ) {
+			return new WP_REST_Response( array( 'message' => 'Invalid taxonomy' ), 400 );
+		}
 		return simple_theme_get_home_posts( $request );
 	}
 
 	// If type is 'shuoshuo', query only shuoshuo posts (e.g. /shuoshuo page)
 	if ( 'shuoshuo' === $type ) {
-		$shuoshuo_limit = $limit > 0 ? $limit : 12;
+		$shuoshuo_limit = $limit > 0 ? max( 1, min( 50, $limit ) ) : 12;
 		$shuoshuo_posts = get_posts( array(
 			'post_type'      => 'shuoshuo',
 			'posts_per_page' => $shuoshuo_limit,
@@ -43,7 +47,7 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 	}
 
 	$theme_options = get_option( 'simple_theme_options', array() );
-	$post_count    = $limit > 0 ? $limit : simple_theme_get_option_number( 'home_post_count', 6, 3, 20 );
+	$post_count    = $limit > 0 ? max( 1, min( 50, $limit ) ) : simple_theme_get_option_number( 'home_post_count', 6, 3, 20 );
 	$shuoshuo_count = simple_theme_get_option_number( 'home_shuoshuo_count', 3, 0, 12 );
 	$show_shuoshuo = (bool) ( $theme_options['show_shuoshuo_section'] ?? True );
 	$total_posts   = (int) wp_count_posts( 'post' )->publish;
@@ -65,24 +69,24 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 	}
 	$sticky_count = count( $sticky_posts );
 
-	// 常规流（所有页）排除置顶，避免重复；用偏移量保证分页连续。
-	$regular_args = array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'post__not_in'        => $sticky_ids,
-		'ignore_sticky_posts' => true,
-		'suppress_filters'    => false,
-	);
+	// Treat sticky posts as the first part of one ordered stream. This keeps
+	// pagination continuous even when there are more sticky posts than fit on a page.
+	$offset          = $post_count * ( $page - 1 );
+	$sticky_for_page = array_slice( $sticky_posts, $offset, $post_count );
+	$regular_count   = $post_count - count( $sticky_for_page );
+	$posts           = $sticky_for_page;
 
-	if ( $page > 1 ) {
-		$regular_args['posts_per_page'] = $post_count;
-		$regular_args['offset']         = $post_count * ( $page - 1 ) - $sticky_count;
-		$posts = get_posts( $regular_args );
-	} else {
-		$regular_args['posts_per_page'] = max( 1, $post_count - $sticky_count );
-		$regular_args['offset']         = 0;
-		$regular = $sticky_count >= $post_count ? array() : get_posts( $regular_args );
-		$posts   = array_slice( array_merge( $sticky_posts, $regular ), 0, $post_count );
+	if ( $regular_count > 0 ) {
+		$regular = get_posts( array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'post__not_in'        => $sticky_ids,
+			'ignore_sticky_posts' => true,
+			'suppress_filters'    => false,
+			'posts_per_page'      => $regular_count,
+			'offset'              => max( 0, $offset - $sticky_count ),
+		) );
+		$posts = array_merge( $posts, $regular );
 	}
 	$total = $total_posts;
 
@@ -115,10 +119,11 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 
 function simple_theme_get_home_posts( WP_REST_Request $request ) {
 	$type     = $request->get_param( 'type' ) ?: 'post';
-	$page     = max( 1, (int) $request->get_param( 'page' ) ?: 1 );
+	$type     = in_array( $type, array( 'post', 'page', 'shuoshuo' ), true ) ? $type : 'post';
+	$page     = max( 1, min( 1000, (int) $request->get_param( 'page' ) ?: 1 ) );
 	$limit    = (int) ( $request->get_param( 'limit' ) ?: simple_theme_get_option_number( 'home_post_count', 6, 3, 20 ) );
 	$limit    = max( 1, min( 50, $limit ) );
-	$taxonomy = $request->get_param( 'taxonomy' );
+	$taxonomy = sanitize_key( (string) $request->get_param( 'taxonomy' ) );
 	$term_id  = (int) ( $request->get_param( 'termId' ) ?: 0 );
 
 	$args = array(
@@ -130,6 +135,10 @@ function simple_theme_get_home_posts( WP_REST_Request $request ) {
 	);
 
 	if ( $taxonomy && $term_id > 0 ) {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+		if ( ! $taxonomy_object || empty( $taxonomy_object->public ) ) {
+			return new WP_REST_Response( array( 'message' => 'Invalid taxonomy' ), 400 );
+		}
 		$args['tax_query'] = array(
 			array(
 				'taxonomy' => $taxonomy,
@@ -158,9 +167,28 @@ function simple_theme_track_post_view( WP_REST_Request $request ) {
 	if ( ! $post_id ) {
 		return new WP_REST_Response( array( 'message' => 'Invalid post ID' ), 400 );
 	}
+
+	$post = get_post( $post_id );
+	if ( ! $post || 'publish' !== $post->post_status || ! in_array( $post->post_type, array( 'post', 'shuoshuo' ), true ) ) {
+		return new WP_REST_Response( array( 'message' => 'Post not found' ), 404 );
+	}
+
+	// Keep anonymous view tracking useful without allowing a refresh loop to inflate
+	// counters. The raw address never leaves the request; only a site-specific HMAC
+	// is used in the short-lived transient key.
+	$ip_hash = function_exists( 'simple_theme_hash_ip' ) ? simple_theme_hash_ip() : '';
+	$dedupe_key = $ip_hash ? 'simple_theme_view_' . $post_id . '_' . substr( $ip_hash, 0, 32 ) : '';
+	if ( $dedupe_key && false !== get_transient( $dedupe_key ) ) {
+		return new WP_REST_Response( array( 'viewCount' => max( 0, (int) get_post_meta( $post_id, 'views', true ) ) ), 200 );
+	}
+
 	$count = (int) get_post_meta( $post_id, 'views', true );
-	update_post_meta( $post_id, 'views', $count + 1 );
-	return new WP_REST_Response( array( 'viewCount' => $count + 1 ), 200 );
+	$next_count = $count + 1;
+	update_post_meta( $post_id, 'views', $next_count );
+	if ( $dedupe_key ) {
+		set_transient( $dedupe_key, 1, HOUR_IN_SECONDS );
+	}
+	return new WP_REST_Response( array( 'viewCount' => $next_count ), 200 );
 }
 
 /**

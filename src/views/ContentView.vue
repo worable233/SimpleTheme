@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch, type Component } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, ref, watch, type Component } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { getThemeConfig, isExternalUrl, toInternalPath, toResolvablePath } from '@/lib/theme-config'
+import {
+  getThemeConfig,
+  isExternalUrl,
+  isSafeNavigationUrl,
+  toInternalPath,
+  toResolvablePath,
+} from '@/lib/theme-config'
 import {
   fetchContentByRestUrl,
   fetchPostCollectionByTaxonomy,
@@ -22,12 +28,36 @@ import NotFoundView from '@/views/NotFoundView.vue'
 import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
-
-import ShuoshuoView from '@/views/ShuoshuoView.vue'
-import ArchivesView from '@/views/ArchivesView.vue'
-import AboutView from '@/views/AboutView.vue'
-import LinksView from '@/views/LinksView.vue'
 import TermArchive from '@/views/TermArchive.vue'
+import { getPreloadedSpecialPage } from '@/lib/special-page-loader'
+
+const AsyncPageLoading = defineComponent({
+  name: 'AsyncPageLoading',
+  setup() {
+    return () => h('div', { class: 'content-view__loading', role: 'status' }, '正在加载…')
+  },
+})
+
+const ShuoshuoView = defineAsyncComponent({
+  loader: () => import('@/views/ShuoshuoView.vue'),
+  loadingComponent: AsyncPageLoading,
+  delay: 0,
+})
+const ArchivesView = defineAsyncComponent({
+  loader: () => import('@/views/ArchivesView.vue'),
+  loadingComponent: AsyncPageLoading,
+  delay: 0,
+})
+const AboutView = defineAsyncComponent({
+  loader: () => import('@/views/AboutView.vue'),
+  loadingComponent: AsyncPageLoading,
+  delay: 0,
+})
+const LinksView = defineAsyncComponent({
+  loader: () => import('@/views/LinksView.vue'),
+  loadingComponent: AsyncPageLoading,
+  delay: 0,
+})
 
 const specialPageMap: Record<string, Component> = {
   '/shuoshuo': ShuoshuoView,
@@ -68,12 +98,17 @@ const termPostsLoading = ref(false)
 
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric', month: 'long', day: 'numeric',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   }).format(new Date(dateString))
 
 const primaryCategory = computed<{ name: string; slug: string } | null>(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
-  const terms = (post?._embedded?.['wp:term'] as Array<Array<{ taxonomy?: string; name?: string; slug?: string }>> | undefined) || []
+  const terms =
+    (post?._embedded?.['wp:term'] as
+      | Array<Array<{ taxonomy?: string; name?: string; slug?: string }>>
+      | undefined) || []
   for (const group of terms) {
     const cat = group.find((term) => term?.taxonomy === 'category' && typeof term.name === 'string')
     if (cat?.name && cat?.slug) return { name: cat.name, slug: cat.slug }
@@ -83,19 +118,24 @@ const primaryCategory = computed<{ name: string; slug: string } | null>(() => {
 
 const featuredImageUrl = computed(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
-  return (post?._embedded?.['wp:featuredmedia'] as Array<{ source_url?: string }> | undefined)?.[0]?.source_url
-    || postData.value?.featuredImage
-    || ''
+  return (
+    (post?._embedded?.['wp:featuredmedia'] as Array<{ source_url?: string }> | undefined)?.[0]
+      ?.source_url ||
+    postData.value?.featuredImage ||
+    ''
+  )
 })
 
-const specialPageComponent = computed(() => {
-  return specialPageMap[normalizedPath.value] || null
-})
-
+const specialPageComponent = computed(
+  () => getPreloadedSpecialPage(normalizedPath.value) || specialPageMap[normalizedPath.value] || null,
+)
 
 const postTags = computed(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
-  const terms = (post?._embedded?.['wp:term'] as Array<Array<{ taxonomy?: string; name?: string; slug?: string; link?: string }>> | undefined) || []
+  const terms =
+    (post?._embedded?.['wp:term'] as
+      | Array<Array<{ taxonomy?: string; name?: string; slug?: string; link?: string }>>
+      | undefined) || []
   for (const group of terms) {
     const tags = group
       .filter((term) => term?.taxonomy === 'post_tag' && typeof term.name === 'string')
@@ -108,12 +148,13 @@ const postTags = computed(() => {
   return [] as { name: string; link: string }[]
 })
 
-const showMeta = computed(() => getThemeConfig().features?.articleMeta || {} as Record<string, boolean>)
-
+const showMeta = computed(
+  () => getThemeConfig().features?.articleMeta || ({} as Record<string, boolean>),
+)
 
 const authorName = computed(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
-  const authors = (post?._embedded?.['author'] as Array<{ name?: string }> | undefined)
+  const authors = post?._embedded?.['author'] as Array<{ name?: string }> | undefined
   return authors?.[0]?.name || ''
 })
 
@@ -160,14 +201,22 @@ const loadCurrentContent = async () => {
   loading.value = true
 
   try {
-    const resolved = await withCache(resolveThemePath, `resolve:${normalizedPath.value}`, 30_000)(route.path)
+    const resolved = await withCache(
+      resolveThemePath,
+      `resolve:${normalizedPath.value}`,
+      30_000,
+    )(route.path)
     contentType.value = resolved.type
 
     if (
       ('post' === resolved.type || 'page' === resolved.type || 'shuoshuo' === resolved.type) &&
       resolved.restUrl
     ) {
-      postData.value = await withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)(resolved.restUrl)
+      postData.value = await withCache(
+        fetchContentByRestUrl,
+        `post:${resolved.restUrl}`,
+        600_000,
+      )(resolved.restUrl)
       if (!postData.value) {
         contentType.value = '404'
         return
@@ -219,20 +268,37 @@ const loadCurrentContent = async () => {
   }
 }
 
-
 const handleContentClick = (event: MouseEvent) => {
   const target = event.target
   if (!(target instanceof HTMLElement)) return
 
-  const anchor = target.closest('a')
+  const anchor = target.closest<HTMLAnchorElement>('a')
   if (!anchor) return
 
   const href = anchor.getAttribute('href')
+  if (!href || !isSafeNavigationUrl(href)) {
+    event.preventDefault()
+    return
+  }
+
   if (
-    !href || href.startsWith('#') || 'mailto:' === href.slice(0, 7) ||
-    'tel:' === href.slice(0, 4) || '_blank' === anchor.target ||
-    anchor.hasAttribute('download') || anchor.hasAttribute('data-fancybox') || isExternalUrl(href)
-  ) return
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+
+  if (
+    href.startsWith('#') ||
+    anchor.target ||
+    anchor.hasAttribute('download') ||
+    anchor.hasAttribute('data-fancybox') ||
+    isExternalUrl(href)
+  )
+    return
 
   event.preventDefault()
   void router.push(toInternalPath(href))
@@ -240,22 +306,20 @@ const handleContentClick = (event: MouseEvent) => {
 
 watch(
   () => toResolvablePath(route.path),
-  () => { void loadCurrentContent() },
+  () => {
+    void loadCurrentContent()
+  },
   { immediate: true },
 )
 </script>
 
 <template>
   <section class="content-view" @click.capture="handleContentClick">
-
-    <!-- Special pages (shuoshuo, about, archives, links) always render — they handle their own errors and headers -->
     <template v-if="specialPageComponent">
       <component :is="specialPageComponent" />
     </template>
-
-    <!-- Non-special pages — mutually exclusive states chained with v-if/v-else-if/v-else -->
     <template v-else>
-     <StaticFallback
+      <StaticFallback
         v-if="'error' === contentType && staticFallbackHtml"
         :html="staticFallbackHtml"
       />
@@ -276,8 +340,24 @@ watch(
               <h1 v-html="preview.title"></h1>
             </div>
             <div class="single-post__cover-meta">
-              <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25); animation: pulse 1.5s ease-in-out infinite;"></div>
-              <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25); animation: pulse 1.5s ease-in-out infinite;"></div>
+              <div
+                style="
+                  height: 0.75rem;
+                  width: 6rem;
+                  border-radius: var(--radius-small, 4px);
+                  background: rgba(255, 255, 255, 0.25);
+                  animation: pulse 1.5s ease-in-out infinite;
+                "
+              ></div>
+              <div
+                style="
+                  height: 0.75rem;
+                  width: 4rem;
+                  border-radius: var(--radius-small, 4px);
+                  background: rgba(255, 255, 255, 0.25);
+                  animation: pulse 1.5s ease-in-out infinite;
+                "
+              ></div>
             </div>
           </div>
         </div>
@@ -285,33 +365,147 @@ watch(
         <header v-else-if="preview" class="single-post__header">
           <h1 class="single-post__header-title" v-html="preview.title"></h1>
           <div class="single-post__header-meta">
-            <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 6rem;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 4rem;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
           </div>
         </header>
         <!-- 无预览（直接进入/刷新）：保留通用 cover 骨架 -->
-        <div v-else class="single-post__cover" style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite;">
+        <div
+          v-else
+          class="single-post__cover"
+          style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite"
+        >
           <div class="single-post__cover-info">
             <div class="single-post__cover-title">
-              <div style="height: 1.5rem; width: 65%; margin: 0 auto; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
+              <div
+                style="
+                  height: 1.5rem;
+                  width: 65%;
+                  margin: 0 auto;
+                  border-radius: var(--radius-small, 4px);
+                  background: rgba(255, 255, 255, 0.25);
+                "
+              ></div>
             </div>
             <div class="single-post__cover-meta">
-              <div style="height: 0.75rem; width: 6rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
-              <div style="height: 0.75rem; width: 4rem; border-radius: var(--radius-small, 4px); background: rgba(255,255,255,0.25);"></div>
+              <div
+                style="
+                  height: 0.75rem;
+                  width: 6rem;
+                  border-radius: var(--radius-small, 4px);
+                  background: rgba(255, 255, 255, 0.25);
+                "
+              ></div>
+              <div
+                style="
+                  height: 0.75rem;
+                  width: 4rem;
+                  border-radius: var(--radius-small, 4px);
+                  background: rgba(255, 255, 255, 0.25);
+                "
+              ></div>
             </div>
           </div>
         </div>
         <div class="single-post__body">
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 85%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 60%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 70%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 100%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
-            <div style="height: 0.75rem; width: 90%; border-radius: var(--radius-small, 4px); background: var(--muted); animation: pulse 1.5s ease-in-out infinite;"></div>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem">
+            <div
+              style="
+                height: 0.75rem;
+                width: 100%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 100%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 85%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 100%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 60%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 100%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 70%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 100%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
+            <div
+              style="
+                height: 0.75rem;
+                width: 90%;
+                border-radius: var(--radius-small, 4px);
+                background: var(--muted);
+                animation: pulse 1.5s ease-in-out infinite;
+              "
+            ></div>
           </div>
         </div>
       </article>
@@ -350,17 +544,25 @@ watch(
                 <AppIcon name="edit" :size="16" />
                 <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
               </span>
-              <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
+              <span
+                v-if="showMeta?.showCommentCount && postData.commentCount !== undefined"
+                class="meta-item"
+              >
                 <AppIcon name="message-dots" :size="16" />
                 <span>{{ postData.commentCount }} 条评论</span>
               </span>
-              <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
+              <span
+                v-if="showMeta?.showViewCount && postData.viewCount !== undefined"
+                class="meta-item"
+              >
                 <AppIcon name="show" :size="16" />
                 <span>{{ postData.viewCount }} 次浏览</span>
               </span>
               <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
                 <AppIcon name="folder" :size="16" />
-                <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
+                <router-link :to="`/categories/${primaryCategory.slug}`">{{
+                  primaryCategory.name
+                }}</router-link>
               </span>
               <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
                 <AppIcon name="user" :size="16" />
@@ -376,49 +578,59 @@ watch(
         <div v-else class="single-post__header">
           <h1 class="single-post__header-title" v-html="postData.title.rendered"></h1>
           <div class="single-post__header-meta">
-              <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
-                <AppIcon name="time" :size="16" />
-                <span>{{ postData.readingTime }} 分钟</span>
-              </span>
-              <span v-if="showMeta?.showPublishDate" class="meta-item">
-                <AppIcon name="calendar" :size="16" />
-                <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
-              </span>
-              <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
-                <AppIcon name="file" :size="16" />
-                <span>{{ formatWordCount(postData.wordCount) }}</span>
-              </span>
-              <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
-                <AppIcon name="edit" :size="16" />
-                <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
-              </span>
-              <span v-if="showMeta?.showCommentCount && postData.commentCount !== undefined" class="meta-item">
-                <AppIcon name="message-dots" :size="16" />
-                <span>{{ postData.commentCount }} 条评论</span>
-              </span>
-              <span v-if="showMeta?.showViewCount && postData.viewCount !== undefined" class="meta-item">
-                <AppIcon name="show" :size="16" />
-                <span>{{ postData.viewCount }} 次浏览</span>
-              </span>
-              <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
-                <AppIcon name="folder" :size="16" />
-                <router-link :to="`/categories/${primaryCategory.slug}`">{{ primaryCategory.name }}</router-link>
-              </span>
-              <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
-                <AppIcon name="user" :size="16" />
-                <span>{{ authorName }}</span>
-              </span>
-              <span v-if="showMeta?.showEditLink && postData.editUrl" class="meta-item">
-                <AppIcon name="edit-alt" :size="16" />
-                <a :href="postData.editUrl" target="_blank" rel="noopener">编辑文章</a>
-              </span>
-            </div>
+            <span v-if="showMeta?.showReadingTime && postData.readingTime" class="meta-item">
+              <AppIcon name="time" :size="16" />
+              <span>{{ postData.readingTime }} 分钟</span>
+            </span>
+            <span v-if="showMeta?.showPublishDate" class="meta-item">
+              <AppIcon name="calendar" :size="16" />
+              <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+            </span>
+            <span v-if="showMeta?.showWordCount && postData.wordCount" class="meta-item">
+              <AppIcon name="file" :size="16" />
+              <span>{{ formatWordCount(postData.wordCount) }}</span>
+            </span>
+            <span v-if="showMeta?.showModifiedDate && postData.modified" class="meta-item">
+              <AppIcon name="edit" :size="16" />
+              <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
+            </span>
+            <span
+              v-if="showMeta?.showCommentCount && postData.commentCount !== undefined"
+              class="meta-item"
+            >
+              <AppIcon name="message-dots" :size="16" />
+              <span>{{ postData.commentCount }} 条评论</span>
+            </span>
+            <span
+              v-if="showMeta?.showViewCount && postData.viewCount !== undefined"
+              class="meta-item"
+            >
+              <AppIcon name="show" :size="16" />
+              <span>{{ postData.viewCount }} 次浏览</span>
+            </span>
+            <span v-if="showMeta?.showCategory && primaryCategory" class="meta-item">
+              <AppIcon name="folder" :size="16" />
+              <router-link :to="`/categories/${primaryCategory.slug}`">{{
+                primaryCategory.name
+              }}</router-link>
+            </span>
+            <span v-if="showMeta?.showAuthor && authorName" class="meta-item">
+              <AppIcon name="user" :size="16" />
+              <span>{{ authorName }}</span>
+            </span>
+            <span v-if="showMeta?.showEditLink && postData.editUrl" class="meta-item">
+              <AppIcon name="edit-alt" :size="16" />
+              <a :href="postData.editUrl" target="_blank" rel="noopener">编辑文章</a>
+            </span>
+          </div>
         </div>
         <div class="single-post__body">
           <div class="prose-content" v-html="postData.content?.rendered"></div>
           <footer class="single-post__footer">
             <div v-if="postTags.length > 0" class="single-post__tags">
-              <router-link v-for="tag in postTags" :key="tag.name" :to="toInternalPath(tag.link)">#{{ tag.name }}</router-link>
+              <router-link v-for="tag in postTags" :key="tag.name" :to="toInternalPath(tag.link)"
+                >#{{ tag.name }}</router-link
+              >
             </div>
           </footer>
         </div>
@@ -440,9 +652,22 @@ watch(
   --anim-duration-hover: 0.35s;
 }
 
+.content-view__loading {
+  min-height: 16rem;
+  display: grid;
+  place-items: center;
+  color: var(--secondary, #888);
+}
+
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Staggered entrance — cover/header, body, footer animate in sequence */

@@ -25,9 +25,10 @@
 	<body <?php body_class( 'simple-theme-shell' ); ?>>
 		<?php wp_body_open(); ?>
 		<style>#st-static{display:none}</style>
-		<div id="app"><div id="st-static">
+		<div id="st-static">
 			<?php get_template_part( 'templates/parts/static-content' ); ?>
-		</div></div>
+		</div>
+		<div id="app"></div>
 		<noscript>
 			<style>
 			#st-static{display:block}

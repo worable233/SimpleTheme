@@ -7,7 +7,7 @@ import EmojiPicker from '@/components/EmojiPicker.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
-import { showLoadingToast, dismissToast, showToast, showError } from '@/lib/toast'
+import { showError } from '@/lib/toast'
 import type { CommentFormSettings, CaptchaData, UserData } from '@/types/wordpress'
 
 defineOptions({ name: 'CommentForm' })
@@ -40,8 +40,6 @@ const emojiLeaving = ref(false)
 const emojiTab = ref<'bilibili' | 'tieba' | 'dinosaur' | 'kaomoji'>('bilibili')
 const editorRef = ref<HTMLDivElement | null>(null)
 const emojiPanelRef = ref<HTMLElement | null>(null)
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const uploading = ref(false)
 
 // Mobile bottom-sheet state
 const mobileExpanded = ref(false)
@@ -344,52 +342,6 @@ function toggleEmoji() {
   emojiOpen.value = !emojiOpen.value
 }
 
-function openFilePicker() {
-  fileInputRef.value?.click()
-}
-
-async function uploadImage() {
-  const input = fileInputRef.value
-  if (!input || !input.files || !input.files[0]) return
-  const file = input.files[0]
-  if (file.size > 10 * 1024 * 1024) {
-    showError('图片不能超过 10MB')
-    input.value = ''
-    return
-  }
-
-  uploading.value = true
-  const toastEl = showLoadingToast('正在上传图片...', '图片上传中')
-
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch('https://api.xinyew.cn/api/360tc', {
-      method: 'POST',
-      body: formData,
-    })
-
-    const result = await response.json()
-
-    if (result.errno === 0 && result.data?.url) {
-      dismissToast(toastEl)
-      showToast('图片上传成功', '成功', { variant: 'success' })
-      useMarkdown.value = true
-      insertEmoji(`![](${result.data.url})`)
-    } else {
-      dismissToast(toastEl)
-      showError(result.error || '图片上传失败')
-    }
-  } catch (e) {
-    dismissToast(toastEl)
-    showError('图片上传失败: ' + (e instanceof Error ? e.message : '网络异常'))
-  } finally {
-    uploading.value = false
-    input.value = ''
-  }
-}
-
 function onEmojiBeforeLeave() {
   emojiLeaving.value = true
 }
@@ -619,14 +571,6 @@ defineExpose({ clearForm })
               @select="insertEmoji"
             />
           </div>
-          <input ref="fileInputRef" type="file" accept="image/*" hidden @change="uploadImage" />
-          <button v-if="formSettings.showImageUpload" type="button" class="emoji-toggle-btn image-upload-btn" :disabled="uploading" @click="openFilePicker" title="上传图片">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-          </button>
           <button type="button" class="emoji-toggle-btn" @click="toggleEmoji" title="表情">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
@@ -1028,11 +972,6 @@ defineExpose({ clearForm })
 .emoji-toggle-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.image-upload-btn svg {
-  width: 18px;
-  height: 18px;
 }
 
 .emoji-toggle-btn:hover {
@@ -1836,4 +1775,3 @@ body[data-theme='dark'] .wizard-step__input:focus {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 </style>
-

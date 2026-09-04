@@ -50,9 +50,10 @@ class Simple_Theme_Local_Avatars {
 	}
 
 	private function inline_script( $user_id ) {
-		$ajaxurl   = admin_url( 'admin-ajax.php' );
-		$nonce     = wp_create_nonce( 'assign_simple_theme_avatar_nonce' );
-		$del_nonce = wp_create_nonce( 'remove_simple_theme_avatar_nonce' );
+		$ajaxurl   = wp_json_encode( admin_url( 'admin-ajax.php' ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$nonce     = wp_json_encode( wp_create_nonce( 'assign_simple_theme_avatar_nonce' ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$del_nonce = wp_json_encode( wp_create_nonce( 'remove_simple_theme_avatar_nonce' ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$user_id   = (int) $user_id;
 
 		return <<<JS
 (function($) {
@@ -81,11 +82,11 @@ class Simple_Theme_Local_Avatars {
 		frame.on('select', function() {
 			var att = frame.state().get('selection').first().toJSON();
 			lock();
-			$.post('{$ajaxurl}', {
-				action: 'assign_simple_theme_avatar',
-				user_id: {$user_id},
-				media_id: att.id,
-				_wpnonce: '{$nonce}'
+		$.post({$ajaxurl}, {
+			action: 'assign_simple_theme_avatar',
+			user_id: {$user_id},
+			media_id: att.id,
+			_wpnonce: {$nonce}
 			}).done(function(html) {
 				if (html) { \$photo.html(html); \$remove.show(); }
 			}).always(function() { unlock(); });
@@ -97,10 +98,10 @@ class Simple_Theme_Local_Avatars {
 		e.preventDefault();
 		if (busy) return;
 		lock();
-		$.get('{$ajaxurl}', {
+		$.get({$ajaxurl}, {
 			action: 'remove_simple_theme_avatar',
 			user_id: {$user_id},
-			_wpnonce: '{$del_nonce}'
+			_wpnonce: {$del_nonce}
 		}).done(function(html) {
 			if (html) { \$photo.html(html); \$remove.hide(); }
 		}).always(function() { unlock(); });
@@ -137,12 +138,12 @@ JS;
 			return '';
 		}
 
-		$local_avatars = get_user_meta( $user_id, $this->user_key, true );
+		$local_avatars = (array) get_user_meta( $user_id, $this->user_key, true );
 		if ( empty( $local_avatars['full'] ) ) {
 			return '';
 		}
 
-		$size = (int) $size;
+		$size = max( 16, min( 512, (int) $size ) );
 
 		// Return cached size if already generated.
 		if ( ! empty( $local_avatars[ $size ] ) ) {
@@ -166,9 +167,12 @@ JS;
 			);
 		}
 
-		if ( ! file_exists( $avatar_full_path ) ) {
+		$upload_base = realpath( $upload_path['basedir'] );
+		$source_path = realpath( $avatar_full_path );
+		if ( ! $upload_base || ! $source_path || 0 !== strpos( wp_normalize_path( $source_path ), trailingslashit( wp_normalize_path( $upload_base ) ) ) ) {
 			return '';
 		}
+		$avatar_full_path = $source_path;
 
 		// Dynamically generate the requested size.
 		$editor = wp_get_image_editor( $avatar_full_path );
@@ -182,6 +186,11 @@ JS;
 		}
 
 		$dest_file = $editor->generate_filename();
+		$normalized_dest = wp_normalize_path( $dest_file );
+		$normalized_base = trailingslashit( wp_normalize_path( $upload_base ) );
+		if ( 0 !== strpos( $normalized_dest, $normalized_base ) ) {
+			return $local_avatars['full'];
+		}
 		$saved     = $editor->save( $dest_file );
 		if ( is_wp_error( $saved ) ) {
 			return $local_avatars['full'];
@@ -276,8 +285,12 @@ JS;
 	// ========== Profile Update ==========
 
 	public function edit_user_profile_update( $user_id ) {
+		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+			return;
+		}
+
 		if ( empty( $_POST['_simple_theme_avatar_nonce'] ) ||
-			! wp_verify_nonce( $_POST['_simple_theme_avatar_nonce'], 'simple_theme_avatar_nonce' ) ) {
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_simple_theme_avatar_nonce'] ) ), 'simple_theme_avatar_nonce' ) ) {
 			return;
 		}
 
@@ -288,13 +301,13 @@ JS;
 		$file = $_FILES['simple-theme-avatar-file'];
 
 		// Validate upload error code.
-		if ( $file['error'] > 0 ) {
+		if ( ! is_array( $file ) || empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) || UPLOAD_ERR_OK !== (int) $file['error'] ) {
 			return;
 		}
 
 		// Validate MIME type.
 		$allowed = array( 'image/jpeg', 'image/gif', 'image/png', 'image/webp' );
-		$detected = wp_check_filetype( $file['name'], array(
+		$detected = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], array(
 			'jpg|jpeg|jpe' => 'image/jpeg',
 			'gif'          => 'image/gif',
 			'png'          => 'image/png',
@@ -374,11 +387,11 @@ JS;
 			wp_die();
 		}
 
-		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_user', $user_id ) ) {
+		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_user', $user_id ) || ! current_user_can( 'edit_post', $media_id ) ) {
 			wp_die();
 		}
 
-		if ( wp_attachment_is_image( $media_id ) ) {
+		if ( 'attachment' === get_post_type( $media_id ) && wp_attachment_is_image( $media_id ) ) {
 			$this->assign_new_avatar( $media_id, $user_id );
 		}
 
@@ -416,11 +429,13 @@ JS;
 
 		if ( ! empty( $old ) ) {
 			$upload_path = wp_upload_dir();
+			$upload_base = realpath( $upload_path['basedir'] );
 			foreach ( $old as $path ) {
 				if ( is_string( $path ) && 0 === strpos( $path, $upload_path['baseurl'] ) ) {
 					$file = str_replace( $upload_path['baseurl'], $upload_path['basedir'], $path );
-					if ( file_exists( $file ) ) {
-						unlink( $file );
+					$real_file = realpath( $file );
+					if ( $upload_base && $real_file && 0 === strpos( wp_normalize_path( $real_file ), trailingslashit( wp_normalize_path( $upload_base ) ) ) ) {
+						wp_delete_file( $real_file );
 					}
 				}
 			}

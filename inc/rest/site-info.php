@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function simple_theme_get_site_info() {
 	$theme_options     = get_option( 'simple_theme_options', array() );
+	if ( function_exists( 'simple_theme_sanitize_options' ) ) {
+		$theme_options = simple_theme_sanitize_options( $theme_options );
+	}
 	$comment_show_email   = true;
 	$comment_show_url     = true;
 	$comment_show_cookies = (bool) ( $theme_options['comment_show_cookies'] ?? (bool) get_option( 'show_comments_cookies_opt_in' ) );
@@ -34,7 +37,7 @@ function simple_theme_get_site_info() {
 	}
 	if ( $page && 'publish' === $page->post_status ) {
 		$page_title   = get_the_title( $page );
-		$page_content = apply_filters( 'the_content', $page->post_content );
+		$page_content = wp_kses_post( apply_filters( 'the_content', $page->post_content ) );
 	}
 
 	// ---- Announcement Buttons (decode, always array) ----
@@ -53,11 +56,9 @@ function simple_theme_get_site_info() {
 		}
 	}
 
-	return new WP_REST_Response(
+	$response = new WP_REST_Response(
 		array(
 			'wpVersion'     => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : '',
-			'phpVersion'    => PHP_VERSION,
-			'serverOs'      => PHP_OS,
 			'restApiVersion' => 'v1',
 			'name'          => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES, 'UTF-8' ),
 			'description'   => html_entity_decode( get_bloginfo( 'description' ), ENT_QUOTES, 'UTF-8' ),
@@ -122,7 +123,6 @@ function simple_theme_get_site_info() {
 				'captchaEnabled'   => (bool) ( $theme_options['comment_captcha_enabled'] ?? false ),
 				'showPrivateOption' => (bool) ( $theme_options['comment_show_private'] ?? true ),
 				'showMarkdownOption' => (bool) ( $theme_options['comment_show_markdown'] ?? true ),
-			'showImageUpload' => (bool) ( $theme_options['comment_image_upload_enabled'] ?? true ),
 			),
 			'collections'   => array(
 				'postsTitle'         => (string) ( $theme_options['posts_title'] ?? '最新文章' ),
@@ -141,7 +141,6 @@ function simple_theme_get_site_info() {
 			'icp'            => $icp_text,
 			'icpGov'         => $icp_gov_text,
 			'endNote'         => ! empty( $theme_options['end_note'] ) ? $theme_options['end_note'] : '',
-			'currentUser'     => simple_theme_get_current_commenter(),
 			'themeVersion'    => $theme_version,
 			'techInfoItems'   => $tech_info_items,
 			'page_id'       => $page_id,
@@ -162,6 +161,8 @@ function simple_theme_get_site_info() {
 		),
 		200
 	);
+	$response->header( 'Cache-Control', 'private, no-store, max-age=0' );
+	return $response;
 }
 
 function simple_theme_compute_site_stats() {

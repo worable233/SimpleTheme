@@ -93,62 +93,47 @@ function isCurrent(item: AdminMenuItem): boolean {
   return props.currentUrl === item.url || props.currentUrl.startsWith(item.slug + '&')
 }
 
-// Decode a data:image/svg+xml URL and force colors to inherit from CSS
-function normalizeSvgToCurrentColor(svgContent: string): string {
-  return svgContent
-    // Replace hex fills (but keep none/currentColor/transparent/inherit)
-    .replace(/\sfill="(?:#[0-9a-fA-F]{3,8}|black|white)"/gi, ' fill="currentColor"')
-    .replace(/\sstroke="(?:#[0-9a-fA-F]{3,8}|black|white)"/gi, ' stroke="currentColor"')
-    .replace(/\sfill='(?:#[0-9a-fA-F]{3,8}|black|white)'/gi, " fill='currentColor'")
-    .replace(/\sstroke='(?:#[0-9a-fA-F]{3,8}|black|white)'/gi, " stroke='currentColor'")
-}
+function getImageIconUrl(icon: string): string {
+  const value = icon.trim()
+  if (!value) return ''
 
-function decodeSvgDataUrl(url: string): string {
+  if (/^data:image\/svg\+xml(?:;charset=[^,;]+)?(?:;base64)?,/i.test(value)) {
+    return value
+  }
+
   try {
-    let svgContent: string
-    if (url.includes(';base64,')) {
-      svgContent = atob(url.split(';base64,')[1] || '')
-    } else {
-      svgContent = decodeURIComponent(url.split(',')[1] || '')
-    }
-    // Strip XML declaration
-    svgContent = svgContent.replace(/<\?xml[^>]*\?>/g, '')
-    // Force currentColor
-    svgContent = normalizeSvgToCurrentColor(svgContent)
-    return svgContent
+    const url = new URL(value, window.location.href)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : ''
   } catch {
     return ''
   }
 }
 
-function getIconHtml(icon: string): string {
-  if (!icon || icon === 'none' || icon === 'div') {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="3"/></svg>'
+function getDashiconClass(icon: string): string {
+  const value = icon.trim()
+  return /^dashicons-[a-z0-9-]+$/.test(value) ? value : ''
+}
+
+function isSafeAdminNavigationUrl(value: string): boolean {
+  try {
+    const target = new URL(value, window.location.href)
+    return target.protocol === 'http:' || target.protocol === 'https:'
+  } catch {
+    return false
   }
-  if (icon.startsWith('data:image/svg')) {
-    // Decode data URL SVG and force currentColor to match the theme
-    const inlined = decodeSvgDataUrl(icon)
-    if (inlined) return inlined
-    return `<img src="${icon}" alt="" width="22" height="22" />`
-  }
-  if (icon.startsWith('http')) {
-    return `<img src="${icon}" alt="" width="22" height="22" />`
-  }
-  if (icon.startsWith('<svg')) {
-    // Normalize inline SVGs to use currentColor so they inherit the link's text color
-    return normalizeSvgToCurrentColor(icon)
-  }
-  if (icon.startsWith('dashicons-')) {
-    return `<span class="dashicons dashicons-before ${icon}" style="font-family:dashicons"></span>`
-  }
-  return icon
+}
+
+function safeHref(value: string): string {
+  return isSafeAdminNavigationUrl(value) ? value : '#'
 }
 
 function handleClick(item: AdminMenuItem) {
+  if (!isSafeAdminNavigationUrl(item.url)) return
   emit('navigate', item.url)
 }
 
 function handleSubClick(child: { title: string; url: string }) {
+  if (!isSafeAdminNavigationUrl(child.url)) return
   emit('navigate', child.url)
 }
 </script>
@@ -182,7 +167,7 @@ function handleSubClick(child: { title: string; url: string }) {
           @mouseleave="item.children?.length && scheduleCloseSubMenu()"
         >
           <a
-            :href="item.url"
+            :href="safeHref(item.url)"
             :title="item.title"
             class="relative flex size-11 items-center justify-center rounded-(--radius-large) p-0 leading-none no-underline transition-colors duration-150"
             :class="isCurrent(item)
@@ -190,7 +175,17 @@ function handleSubClick(child: { title: string; url: string }) {
               : 'text-foreground hover:bg-menu-hover'"
             @click.prevent="handleClick(item)"
           >
-            <span class="sta-icon flex items-center justify-center leading-none" v-html="getIconHtml(item.icon)"></span>
+            <span class="sta-icon flex items-center justify-center leading-none">
+              <img v-if="getImageIconUrl(item.icon)" :src="getImageIconUrl(item.icon)" alt="" width="22" height="22" />
+              <span
+                v-else-if="getDashiconClass(item.icon)"
+                class="dashicons dashicons-before"
+                :class="getDashiconClass(item.icon)"
+              ></span>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
             <!-- Chevron for items with children -->
             <span
               v-if="item.children?.length"
@@ -222,7 +217,7 @@ function handleSubClick(child: { title: string; url: string }) {
           class="flex list-none"
         >
           <a
-            :href="child.url"
+            :href="safeHref(child.url)"
             class="sta-sub-link flex w-full items-center gap-2.5 rounded-[7px] px-3.5 py-[9px] text-[13px] whitespace-nowrap no-underline transition-colors duration-150"
             :class="currentUrl === child.url
               ? 'bg-primary text-primary-foreground hover:bg-primary'
@@ -246,8 +241,7 @@ function handleSubClick(child: { title: string; url: string }) {
 </template>
 
 <style scoped>
-/* Injected icon markup (v-html) can't take utility classes — size it here. */
-.sta-icon :deep(svg) {
+.sta-icon svg {
   width: 22px;
   height: 22px;
   display: block;

@@ -2,8 +2,8 @@
 /**
  * ArchivesView — 归档页面（数据编排，使用独立卡片/弹窗组件）
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useHead } from '@vueuse/head'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useHead } from '@unhead/vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { useLoading } from '../composables/useLoading'
 import { fetchCollection } from '../lib/wordpress'
@@ -13,6 +13,7 @@ import TimelineCard from '@/components/archive/TimelineCard.vue'
 import CategoryCard from '@/components/archive/CategoryCard.vue'
 import TimelineModal from '@/components/archive/TimelineModal.vue'
 import CategoryModal from '@/components/archive/CategoryModal.vue'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 
 export interface PostWithMeta extends WordPressPost {
   displayDate: string
@@ -30,6 +31,7 @@ interface CategoryCardData {
   name: string
   count: number
   posts: PostWithMeta[]
+  previewPosts: PostWithMeta[]
 }
 
 const { isLoading, error, withLoading } = useLoading()
@@ -37,6 +39,8 @@ const posts = ref<WordPressPost[]>([])
 const activeModal = ref<'timeline' | 'category' | null>(null)
 const selectedYear = ref<number | null>(null)
 const selectedCategory = ref<string | null>(null)
+const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
+let modalTrigger: HTMLElement | null = null
 
 useHead({ title: '归档' })
 
@@ -81,7 +85,10 @@ const yearGroups = computed<YearGroup[]>(() => {
 // Flat year list with post count for timeline cards
 const yearTimelineCards = computed(() => {
   return yearGroups.value.map((g) => {
-    const total = g.categories.reduce((s, c) => s + c.posts.length, 0)
+    const uniquePosts = new Set<number>()
+    for (const category of g.categories) {
+      for (const post of category.posts) uniquePosts.add(post.id)
+    }
     const activeMonths: boolean[] = Array.from({ length: 12 }, () => false)
     for (const cat of g.categories) {
       for (const post of cat.posts) {
@@ -89,7 +96,7 @@ const yearTimelineCards = computed(() => {
         activeMonths[m] = true
       }
     }
-    return { year: g.year, total, activeMonths }
+    return { year: g.year, total: uniquePosts.size, activeMonths }
   })
 })
 
@@ -109,11 +116,14 @@ const categoryCards = computed<CategoryCardData[]>(() => {
       count: rawPosts.length,
       posts: rawPosts
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5)
         .map((p) => ({
           ...p,
           displayDate: formatDate(p.date),
         })),
+      previewPosts: rawPosts.slice(0, 5).map((p) => ({
+        ...p,
+        displayDate: formatDate(p.date),
+      })),
     }))
     .sort((a, b) => b.count - a.count)
 })
@@ -123,7 +133,9 @@ const timelineModalData = computed(() => {
   if (selectedYear.value === null) return null
   const group = yearGroups.value.find((g) => g.year === selectedYear.value)
   if (!group) return null
-  const allPosts = group.categories.flatMap((c) => c.posts)
+  const allPosts = Array.from(
+    new Map(group.categories.flatMap((c) => c.posts).map((post) => [post.id, post])).values(),
+  )
   const total = allPosts.length
   const categories = group.categories.length
   const monthMap = new Map<string, PostWithMeta[]>()
@@ -157,11 +169,13 @@ function formatDate(dateString: string) {
 }
 
 function openTimelineModal(year: number) {
+  modalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
   selectedYear.value = year
   activeModal.value = 'timeline'
 }
 
 function openCategoryModal(name: string) {
+  modalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
   selectedCategory.value = name
   activeModal.value = 'category'
 }
@@ -170,12 +184,27 @@ function closeModal() {
   activeModal.value = null
   selectedYear.value = null
   selectedCategory.value = null
+  const trigger = modalTrigger
+  modalTrigger = null
+  void nextTick(() => trigger?.focus())
 }
+
+watch(activeModal, (modal) => {
+  if (modal) lockBodyScroll()
+  else unlockBodyScroll()
+})
 
 onMounted(async () => {
   await withLoading(async () => {
-    const res = await fetchCollection('post', { limit: 100 })
-    posts.value = res.items
+    const firstPage = await fetchCollection('post', { limit: 50, page: 1 })
+    const allPosts = [...firstPage.items]
+    const totalPages = Math.max(1, firstPage.totalPages || 1)
+    for (let page = 2; page <= totalPages; page += 1) {
+      const nextPage = await fetchCollection('post', { limit: 50, page })
+      allPosts.push(...nextPage.items)
+      if (nextPage.items.length === 0) break
+    }
+    posts.value = allPosts
   })
 })
 
@@ -186,7 +215,10 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  unlockBodyScroll()
+  window.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
@@ -202,13 +234,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="archives-skeleton">
       <div class="section-header">
-        <div role="status" class="skeleton" style="width: 140px; height: 28px;"></div>
+        <div role="status" class="skeleton" style="width: 140px; height: 28px"></div>
       </div>
       <div class="timeline-root">
         <div v-for="i in 3" :key="'sk-year-' + i" class="timeline-year-card">
           <div class="timeline-year-header">
-            <span role="status" class="skeleton" style="width: 60px; height: 38px; border-radius: 6px;"></span>
-            <span role="status" class="skeleton" style="width: 85px; height: 28px; border-radius: 9999px;"></span>
+            <span
+              role="status"
+              class="skeleton"
+              style="width: 60px; height: 38px; border-radius: 6px"
+            ></span>
+            <span
+              role="status"
+              class="skeleton"
+              style="width: 85px; height: 28px; border-radius: 9999px"
+            ></span>
           </div>
           <div class="timeline-year-calendar">
             <span
@@ -216,24 +256,40 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               :key="m"
               role="status"
               class="skeleton"
-              style="width: 100%; aspect-ratio: 1; border-radius: 6px;"
+              style="width: 100%; aspect-ratio: 1; border-radius: 6px"
             ></span>
           </div>
         </div>
       </div>
-      <div class="section-header" style="margin-top: 3rem;">
-        <div role="status" class="skeleton" style="width: 140px; height: 28px;"></div>
+      <div class="section-header" style="margin-top: 3rem">
+        <div role="status" class="skeleton" style="width: 140px; height: 28px"></div>
       </div>
       <div class="category-root">
         <div v-for="i in 4" :key="'sk-cat-' + i" class="category-card">
           <div class="category-header">
-            <span role="status" class="skeleton" style="width: 100px; height: 26px; border-radius: 6px;"></span>
-            <span role="status" class="skeleton" style="width: 56px; height: 26px; border-radius: 9999px;"></span>
+            <span
+              role="status"
+              class="skeleton"
+              style="width: 100px; height: 26px; border-radius: 6px"
+            ></span>
+            <span
+              role="status"
+              class="skeleton"
+              style="width: 56px; height: 26px; border-radius: 9999px"
+            ></span>
           </div>
           <div class="category-posts">
             <div v-for="j in 3" :key="j" class="category-post-item">
-              <span role="status" class="skeleton" style="width: 65%; height: 18px; border-radius: 4px;"></span>
-              <span role="status" class="skeleton" style="width: 64px; height: 16px; border-radius: 4px;"></span>
+              <span
+                role="status"
+                class="skeleton"
+                style="width: 65%; height: 18px; border-radius: 4px"
+              ></span>
+              <span
+                role="status"
+                class="skeleton"
+                style="width: 64px; height: 16px; border-radius: 4px"
+              ></span>
             </div>
           </div>
         </div>
@@ -270,7 +326,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         </div>
 
         <!-- Category Cards Section -->
-        <section class="section-header" style="margin-top: 3rem;">
+        <section class="section-header" style="margin-top: 3rem">
           <h2 class="section-title">
             <AppIcon name="folder" :size="21" class="archives-icon" />
             分类
@@ -282,7 +338,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             :key="cat.name"
             :name="cat.name"
             :count="cat.count"
-            :posts="cat.posts"
+            :posts="cat.previewPosts"
             @select="openCategoryModal"
           />
         </div>
@@ -353,9 +409,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 .archives-skeleton .timeline-year-card,
 .archives-skeleton .category-card {
-  background: var(--card, rgba(255,255,255,0.7));
+  background: var(--card, rgba(255, 255, 255, 0.7));
   border-radius: var(--radius-large, 8px);
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.07);
   padding: 1.2rem;
   display: flex;
   flex-direction: column;
@@ -368,7 +424,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .archives-skeleton .timeline-year-card:hover,
 .archives-skeleton .category-card:hover {
   transform: none;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.07);
   border-color: var(--border, #e0e0e0);
 }
 .archives-skeleton .timeline-year-header,
@@ -419,8 +475,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 /* ========== Animation ========== */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ========== Responsive ========== */

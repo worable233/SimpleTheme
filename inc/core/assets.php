@@ -45,19 +45,18 @@ function simple_theme_asset_uri( $path = '' ) {
 // ========== Frontend Config (injected into page) ==========
 
 function simple_theme_get_frontend_config() {
-	$current_user = null;
-	$user = wp_get_current_user();
-	if ( $user->ID !== 0 ) {
-		$current_user = array(
-			'displayName' => $user->display_name,
-			'email'       => $user->user_email,
-			'url'         => $user->user_url,
-		);
+	$theme_options = get_option( 'simple_theme_options', array() );
+	if ( function_exists( 'simple_theme_sanitize_options' ) ) {
+		$theme_options = simple_theme_sanitize_options( $theme_options );
 	}
 
-	$theme_options = get_option( 'simple_theme_options', array() );
+	// The frontend obtains a user-specific REST nonce from /auth/me after the
+	// SPA starts. Only the admin app needs it in the initial HTML document.
+	// This keeps cacheable public pages free of per-session tokens and logout
+	// nonces.
+	$is_admin_context = is_admin();
 
-	return array(
+	$config = array(
 		'siteUrl'  => trailingslashit( site_url( '/' ) ),
 		'homeUrl'  => trailingslashit( home_url( '/' ) ),
 		'restRoot' => esc_url_raw( trailingslashit( rest_url() ) ),
@@ -76,9 +75,6 @@ function simple_theme_get_frontend_config() {
 					'email_templates' => esc_url_raw( rest_url( 'simple-theme/v1/email-templates' ) ),
 					'email_preview'   => esc_url_raw( rest_url( 'simple-theme/v1/email-template-preview' ) ),
 		),
-		'currentUser' => $current_user,
-		'restNonce'  => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
-		'logoutUrl'  => wp_logout_url( home_url( '/' ) ),
 		'features'   => array(
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
 			'registration'   => (bool) get_option( 'users_can_register' ),
@@ -110,6 +106,12 @@ function simple_theme_get_frontend_config() {
 			),
 		),
 	);
+
+	if ( $is_admin_context && is_user_logged_in() ) {
+		$config['restNonce'] = wp_create_nonce( 'wp_rest' );
+	}
+
+	return $config;
 }
 
 // ========== Prism (loaded as regular <script> tags, not ES modules) ==========
@@ -246,7 +248,10 @@ function simple_theme_output_generator_meta() {
  */
 add_action( 'wp_head', 'simple_theme_output_frontend_config', 0 );
 function simple_theme_output_frontend_config() {
-	$config = wp_json_encode( simple_theme_get_frontend_config() );
+	$config = wp_json_encode(
+		simple_theme_get_frontend_config(),
+		JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+	);
 	if ( ! $config ) {
 		return;
 	}
@@ -290,7 +295,7 @@ function simple_theme_output_console_suppression() {
 	}
 
 	$patterns = array( 'wp-opt', 'WPOPT' );
-	$patterns_json = wp_json_encode( $patterns );
+	$patterns_json = wp_json_encode( $patterns, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
 	if ( ! $patterns_json ) {
 		return;
 	}
@@ -339,7 +344,10 @@ function simple_theme_enqueue_admin_assets( $hook ) {
 
 		wp_add_inline_script(
 			$admin_handle,
-			'window.SimpleThemeConfig = ' . wp_json_encode( simple_theme_get_frontend_config() ) . ';',
+				'window.SimpleThemeConfig = ' . wp_json_encode(
+					simple_theme_get_frontend_config(),
+					JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+				) . ';',
 			'before'
 		);
 

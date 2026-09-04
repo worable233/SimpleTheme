@@ -39,7 +39,24 @@ function buildSvg(name: string, filled: boolean, style: string | null): SVGEleme
     svg.setAttribute('stroke-linecap', 'round')
     svg.setAttribute('stroke-linejoin', 'round')
   }
-  if (style) svg.setAttribute('style', style)
+  if (style) {
+    const safeStyle = style
+      .split(';')
+      .map((declaration) => declaration.trim())
+      .filter(Boolean)
+      .map((declaration) => {
+        const separator = declaration.indexOf(':')
+        if (separator < 1) return null
+        const property = declaration.slice(0, separator).trim().toLowerCase()
+        const value = declaration.slice(separator + 1).trim()
+        if (!['color', 'font-size', 'width', 'height', 'opacity'].includes(property)) return null
+        if (!value || /[<>{};()]/.test(value)) return null
+        return `${property}:${value}`
+      })
+      .filter((declaration): declaration is string => !!declaration)
+      .join(';')
+    if (safeStyle) svg.setAttribute('style', safeStyle)
+  }
   // inner 是可信常量（生成于 @tabler/icons 节点数据），非用户动态输入
   svg.innerHTML = inner
   return svg

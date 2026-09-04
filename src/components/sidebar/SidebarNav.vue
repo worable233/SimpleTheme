@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { isExternalUrl } from '@/lib/theme-config'
+import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { resolveMenuIcon } from './icon-map'
 import AppIcon from '@/components/AppIcon.vue'
 import type { MenuItem } from '@/types/wordpress'
 
-defineProps<{
+const props = defineProps<{
   menuItems: MenuItem[]
   openMenus: Set<number>
 }>()
@@ -27,13 +28,17 @@ function isHome(url: string): boolean {
 function hasChildren(item: MenuItem): boolean {
   return !!(item.children && item.children.length > 0)
 }
+
+const safeMenuItems = computed(() =>
+  props.menuItems.filter((item) => hasChildren(item) || isSafeNavigationUrl(item.url)),
+)
 </script>
 
 <template>
   <nav class="left-sidebar__menu">
     <ul>
       <li
-        v-for="item in menuItems"
+        v-for="item in safeMenuItems"
         :key="item.id"
         :data-menu-id="item.id"
         :class="{
@@ -59,7 +64,7 @@ function hasChildren(item: MenuItem): boolean {
 
         <!-- 无子菜单项：普通链接 -->
         <RouterLink
-          v-else-if="!isExternalUrl(item.url) && !isHome(item.url)"
+          v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && !isHome(item.url)"
           :to="item.path || item.url"
           :aria-current="isCurrent(item.path) ? 'page' : undefined"
         >
@@ -67,7 +72,7 @@ function hasChildren(item: MenuItem): boolean {
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <RouterLink
-          v-else-if="!isExternalUrl(item.url) && isHome(item.url)"
+          v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && isHome(item.url)"
           to="/"
           :aria-current="isCurrent('/') ? 'page' : undefined"
         >
@@ -75,7 +80,7 @@ function hasChildren(item: MenuItem): boolean {
           <span class="menu-item-title">{{ item.title }}</span>
         </RouterLink>
         <a
-          v-else
+          v-else-if="isSafeNavigationUrl(item.url)"
           :href="item.url"
           :target="item.target || '_blank'"
           rel="noreferrer noopener"

@@ -46,7 +46,7 @@ function mapWPComment(item: WPCommentPayload): WordPressComment {
     avatar: item.avatar || item.author_avatar_urls?.['96'] || '',
     content: { rendered: item.content?.rendered || '' },
     likes: item.likes ?? 0,
-    metaInfo: item.metaInfo || { location: '', browser: '', os: '', ipMask: '' },
+    metaInfo: item.metaInfo || { location: '', browser: '', os: '' },
     children: (item.children || []).map(mapWPComment),
     isPinned: item.isPinned ?? false,
     isPrivate: item.isPrivate ?? false,

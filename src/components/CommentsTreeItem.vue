@@ -72,7 +72,10 @@ function initAvatarSources() {
 }
 
 function isValidUrl(url: string): boolean {
-  try { new URL(url); return true }
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  }
   catch { return false }
 }
 
@@ -86,7 +89,7 @@ function onAvatarError() {
 }
 
 const goUrl = computed(() => {
-  if (!props.item.authorUrl) return ''
+  if (!props.item.authorUrl || !isValidUrl(props.item.authorUrl)) return ''
   return '/go?url=' + encodeURIComponent(props.item.authorUrl)
 })
 
@@ -126,7 +129,7 @@ function togglePin() {
     <div class="comments-item__main">
       <div class="comments-item__avatar">
         <a
-          v-if="item.authorUrl"
+          v-if="goUrl"
           :href="goUrl"
           rel="nofollow noopener noreferrer"
           class="comments-item__avatar-link"
@@ -157,7 +160,7 @@ function togglePin() {
       <div class="comments-item__body">
         <div class="comments-item__meta">
           <a
-            v-if="item.authorUrl"
+            v-if="goUrl"
             :href="goUrl"
             rel="nofollow noopener noreferrer"
             class="comments-item__name"

@@ -20,9 +20,9 @@ const { staticFallbackHtml } = useStaticFallback()
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
 const subtitleMap: Record<string, string> = {
-  post_tag: '标签归档',
-  category: '分类归档',
-  date: '日期归档',
+  post_tag: 'Tag.',
+  category: 'Category.',
+  date: 'Date.',
 }
 
 const formatDate = (dateString: string) =>

@@ -17,9 +17,7 @@ export interface SimpleThemeConfig {
     email_templates?: string
     email_preview?: string
   }
-  currentUser?: CurrentUser | null
   restNonce?: string
-  logoutUrl?: string
   features?: {
     prismHighlight: boolean
     /** 是否开放用户注册（WP users_can_register） */
@@ -150,7 +148,6 @@ export interface CommentFormSettings {
   captchaEnabled?: boolean
   showPrivateOption?: boolean
   showMarkdownOption?: boolean
-  showImageUpload?: boolean
   showMailNotifyOption?: boolean
 }
 
@@ -233,9 +230,7 @@ export interface SiteInfo {
   url: string
   siteIcon?: string
   wpVersion?: string
-  phpVersion?: string
   restApiVersion?: string
-  serverOs?: string
   hero?: HeroSettings
   comments?: CommentFormSettings
   theme?: ThemeSettings
@@ -244,7 +239,6 @@ export interface SiteInfo {
   socialLinks?: SocialLink[]
   techInfoItems?: TechInfoItem[]
   loginUrl?: string
-  currentUser?: CurrentUser
   icp?: string
   icpGov?: string
   endNote?: string
@@ -298,7 +292,6 @@ export interface CommentMetaInfo {
   location: string
   browser: string
   os: string
-  ipMask: string
 }
 
 export interface WordPressComment {

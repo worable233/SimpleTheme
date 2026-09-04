@@ -13,6 +13,169 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/../lib/Parsedown.php';
 
+if ( ! defined( 'SIMPLE_THEME_COMMENT_OWNER_COOKIE' ) ) {
+	define( 'SIMPLE_THEME_COMMENT_OWNER_COOKIE', 'simple_theme_comment_owners' );
+}
+
+if ( ! defined( 'SIMPLE_THEME_COMMENT_OWNER_LIMIT' ) ) {
+	define( 'SIMPLE_THEME_COMMENT_OWNER_LIMIT', 20 );
+}
+
+/**
+ * Read anonymous comment ownership tokens from the HttpOnly browser cookie.
+ * The token itself is a bearer credential; WordPress comment cookies remain
+ * available only for form-field convenience and never authorize access.
+ *
+ * @return array<string, string>
+ */
+function simple_theme_get_comment_owner_tokens() {
+	global $simple_theme_comment_owner_tokens;
+
+	if ( isset( $simple_theme_comment_owner_tokens ) && is_array( $simple_theme_comment_owner_tokens ) ) {
+		return $simple_theme_comment_owner_tokens;
+	}
+
+	$simple_theme_comment_owner_tokens = array();
+	if ( empty( $_COOKIE[ SIMPLE_THEME_COMMENT_OWNER_COOKIE ] ) ) {
+		return $simple_theme_comment_owner_tokens;
+	}
+
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+	$encoded = wp_unslash( $_COOKIE[ SIMPLE_THEME_COMMENT_OWNER_COOKIE ] );
+	if ( ! is_string( $encoded ) || ! preg_match( '/\A[A-Za-z0-9_-]+\z/', $encoded ) ) {
+		return $simple_theme_comment_owner_tokens;
+	}
+
+	$encoded = strtr( $encoded, '-_', '+/' );
+	$padding = strlen( $encoded ) % 4;
+	if ( $padding ) {
+		$encoded .= str_repeat( '=', 4 - $padding );
+	}
+	$json = base64_decode( $encoded, true );
+	$data = is_string( $json ) ? json_decode( $json, true ) : null;
+	if ( ! is_array( $data ) ) {
+		return $simple_theme_comment_owner_tokens;
+	}
+
+	foreach ( $data as $comment_id => $token ) {
+		$comment_id = (string) $comment_id;
+		if (
+			! preg_match( '/\A[1-9]\d*\z/', $comment_id ) ||
+			! is_string( $token ) ||
+			! preg_match( '/\A[a-f0-9]{64}\z/i', $token )
+		) {
+			continue;
+		}
+
+		$simple_theme_comment_owner_tokens[ $comment_id ] = $token;
+		if ( count( $simple_theme_comment_owner_tokens ) >= SIMPLE_THEME_COMMENT_OWNER_LIMIT ) {
+			break;
+		}
+	}
+
+	return $simple_theme_comment_owner_tokens;
+}
+
+/** @param array<string, string> $tokens */
+function simple_theme_set_comment_owner_tokens( array $tokens ) {
+	global $simple_theme_comment_owner_tokens;
+
+	$tokens = array_slice( $tokens, -SIMPLE_THEME_COMMENT_OWNER_LIMIT, null, true );
+	$json   = wp_json_encode( $tokens );
+	if ( ! is_string( $json ) ) {
+		return false;
+	}
+
+	$value = rtrim( strtr( base64_encode( $json ), '+/', '-_' ), '=' );
+	$simple_theme_comment_owner_tokens = $tokens;
+	$_COOKIE[ SIMPLE_THEME_COMMENT_OWNER_COOKIE ] = $value;
+
+	if ( headers_sent() ) {
+		return false;
+	}
+
+	return setcookie(
+		SIMPLE_THEME_COMMENT_OWNER_COOKIE,
+		$value,
+		array(
+			'expires'  => time() + YEAR_IN_SECONDS,
+			'path'     => defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/',
+			'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
+			'secure'   => is_ssl(),
+			'httponly' => true,
+			'samesite' => 'Lax',
+		)
+	);
+}
+
+function simple_theme_assign_comment_owner_token( WP_Comment $comment ) {
+	if ( (int) $comment->user_id > 0 ) {
+		return false;
+	}
+
+	try {
+		$token = bin2hex( random_bytes( 32 ) );
+	} catch ( Exception $exception ) {
+		return false;
+	}
+
+	if ( false === update_comment_meta( $comment->comment_ID, 'st_owner_token_hash', wp_hash_password( $token ) ) ) {
+		return false;
+	}
+
+	$tokens = simple_theme_get_comment_owner_tokens();
+	$tokens[ (string) $comment->comment_ID ] = $token;
+	return simple_theme_set_comment_owner_tokens( $tokens );
+}
+
+function simple_theme_forget_comment_owner_token( int $comment_id ) {
+	$tokens = simple_theme_get_comment_owner_tokens();
+	unset( $tokens[ (string) $comment_id ] );
+	simple_theme_set_comment_owner_tokens( $tokens );
+}
+
+function simple_theme_user_owns_comment( WP_Comment $comment ): bool {
+	if ( is_user_logged_in() && (int) $comment->user_id === get_current_user_id() ) {
+		return true;
+	}
+
+	if ( (int) $comment->user_id > 0 ) {
+		return false;
+	}
+
+	$tokens = simple_theme_get_comment_owner_tokens();
+	$token  = $tokens[ (string) $comment->comment_ID ] ?? '';
+	$hash   = get_comment_meta( $comment->comment_ID, 'st_owner_token_hash', true );
+
+	return $token && is_string( $hash ) && $hash && wp_check_password( $token, $hash );
+}
+
+/**
+ * Return only comment IDs whose stored token hash matches the browser token.
+ *
+ * @return int[]
+ */
+function simple_theme_get_owned_comment_ids( int $post_id = 0 ) {
+	$owned = array();
+	foreach ( simple_theme_get_comment_owner_tokens() as $comment_id => $token ) {
+		$comment = get_comment( (int) $comment_id );
+		if (
+			! $comment ||
+			( $post_id > 0 && (int) $comment->comment_post_ID !== $post_id ) ||
+			(int) $comment->user_id > 0
+		) {
+			continue;
+		}
+
+		$hash = get_comment_meta( $comment->comment_ID, 'st_owner_token_hash', true );
+		if ( is_string( $hash ) && $hash && wp_check_password( $token, $hash ) ) {
+			$owned[] = (int) $comment->comment_ID;
+		}
+	}
+
+	return $owned;
+}
+
 // ========== Format / Helpers ==========
 
 function simple_theme_format_comment_item( WP_Comment $comment ) {
@@ -26,17 +189,15 @@ function simple_theme_format_comment_item( WP_Comment $comment ) {
 		'parent'        => (int) $comment->comment_parent,
 		'date'          => $comment->comment_date,
 		'authorName'    => $comment->comment_author,
-		'authorEmail'   => $comment->comment_author_email,
 		'authorUrl'     => $comment->comment_author_url,
 		'status'        => $comment->comment_approved,
 		'avatar'        => $avatar,
-		'content'       => array( 'rendered' => $comment->comment_content ),
+		'content'       => array( 'rendered' => wp_kses_post( $comment->comment_content ) ),
 		'likes'         => (int) get_comment_meta( $comment_id, 'st_likes', true ),
 		'metaInfo'      => array(
 			'location' => get_comment_meta( $comment_id, 'st_location', true ) ?: '',
 			'browser'  => get_comment_meta( $comment_id, 'st_browser', true ) ?: '',
 			'os'       => get_comment_meta( $comment_id, 'st_os', true ) ?: '',
-			'ipMask'   => get_comment_meta( $comment_id, 'st_ip_mask', true ) ?: '',
 		),
 		'children'      => array(),
 		'isPinned'      => simple_theme_is_comment_pinned( $comment_id ),
@@ -97,22 +258,10 @@ function simple_theme_save_comment_meta_info( int $comment_id ): void {
 		$browser = 'Safari' . ( isset( $m[1] ) ? ' ' . $m[1] : '' );
 	}
 
-	// IP mask (last two octets) + location
-	$ip_mask   = '';
-	$location  = '';
-	if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$ip = wp_unslash( $_SERVER['REMOTE_ADDR'] );
-		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-			$parts   = explode( '.', $ip );
-			$ip_mask = $parts[0] . '.' . $parts[1] . '.*.*';
-		} elseif ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
-			$parts   = explode( ':', $ip );
-			$ip_mask = $parts[0] . ':' . $parts[1] . ':*:*';
-		}
-		if ( function_exists( 'simple_theme_get_ip_location' ) ) {
-			$location = simple_theme_get_ip_location( $ip );
-		}
+	$location = '';
+	$ip       = function_exists( 'simple_theme_get_request_ip' ) ? simple_theme_get_request_ip() : '';
+	if ( $ip && function_exists( 'simple_theme_get_ip_location' ) ) {
+		$location = simple_theme_get_ip_location( $ip );
 	}
 
 	if ( $browser ) {
@@ -120,9 +269,6 @@ function simple_theme_save_comment_meta_info( int $comment_id ): void {
 	}
 	if ( $os ) {
 		update_comment_meta( $comment_id, 'st_os', $os );
-	}
-	if ( $ip_mask ) {
-		update_comment_meta( $comment_id, 'st_ip_mask', $ip_mask );
 	}
 	if ( $location ) {
 		update_comment_meta( $comment_id, 'st_location', $location );
@@ -162,24 +308,7 @@ function simple_theme_user_can_edit_comment( int $comment_id ): bool {
 	if ( ! $comment ) {
 		return false;
 	}
-	if ( is_user_logged_in() && (int) $comment->user_id === get_current_user_id() ) {
-		return true;
-	}
-	$cookie = simple_theme_get_commenter_cookie();
-	if ( $cookie && hash_equals( $cookie, $comment->comment_author_email ) ) {
-		return true;
-	}
-	return current_user_can( 'moderate_comments' );
-}
-
-/**
- * 读取 WordPress 原生评论者 cookie 中的邮箱（wp_set_comment_cookies 写入）。
- */
-function simple_theme_get_commenter_cookie(): string {
-	if ( ! isset( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) ) {
-		return '';
-	}
-	return sanitize_email( wp_unslash( $_COOKIE[ 'comment_author_email_' . COOKIEHASH ] ) );
+	return simple_theme_user_owns_comment( $comment ) || current_user_can( 'moderate_comments' );
 }
 
 function simple_theme_is_private_comment( int $comment_id ): bool {
@@ -190,12 +319,7 @@ function simple_theme_user_can_view_comment( WP_Comment $comment ): bool {
 	if ( ! simple_theme_is_private_comment( $comment->comment_ID ) ) {
 		return true;
 	}
-	if ( is_user_logged_in() && (int) $comment->user_id === get_current_user_id() ) {
-		return true;
-	}
-	// 匿名作者通过评论者 cookie 识别自己的私密评论
-	$cookie = simple_theme_get_commenter_cookie();
-	if ( $cookie && $comment->comment_author_email && hash_equals( $cookie, $comment->comment_author_email ) ) {
+	if ( simple_theme_user_owns_comment( $comment ) ) {
 		return true;
 	}
 	if ( current_user_can( 'moderate_comments' ) ) {
@@ -298,25 +422,37 @@ add_action( 'simple_theme_async_mail_notify', 'simple_theme_send_mail_notify' );
 
 function simple_theme_like_comment( WP_REST_Request $request ) {
 	$comment_id = (int) $request->get_param( 'commentId' );
-	if ( ! $comment_id || ! get_comment( $comment_id ) ) {
+	$comment    = get_comment( $comment_id );
+	if ( ! $comment || '1' !== (string) $comment->comment_approved || ! simple_theme_user_can_view_comment( $comment ) ) {
 		return new WP_REST_Response( array( 'message' => 'Invalid comment' ), 400 );
 	}
 
-	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-	$ip    = wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' );
+	$ip    = function_exists( 'simple_theme_get_request_ip' ) ? simple_theme_get_request_ip() : '';
+	$ip_hash = function_exists( 'simple_theme_hash_ip' ) ? simple_theme_hash_ip( $ip ) : '';
+	if ( ! $ip_hash ) {
+		return new WP_REST_Response( array( 'message' => 'Unable to identify request' ), 400 );
+	}
+
 	$liked = get_comment_meta( $comment_id, 'st_liked_ips', true ) ?: array();
 	if ( ! is_array( $liked ) ) {
 		$liked = array();
 	}
+	$legacy_match = $ip && in_array( $ip, $liked, true );
+	$liked = array_values( array_filter( $liked, function( $value ) {
+		return is_string( $value ) && preg_match( '/\A[a-f0-9]{64}\z/i', $value );
+	} ) );
+	if ( $legacy_match ) {
+		$liked[] = $ip_hash;
+	}
 	$count = (int) get_comment_meta( $comment_id, 'st_likes', true );
 
-	if ( in_array( $ip, $liked, true ) ) {
-		// Unlike — remove IP, decrement
-		$liked = array_values( array_filter( $liked, function( $v ) use ( $ip ) { return $v !== $ip; } ) );
+	if ( in_array( $ip_hash, $liked, true ) ) {
+		// Unlike — remove the non-reversible request identifier, decrement.
+		$liked = array_values( array_filter( $liked, function( $value ) use ( $ip_hash ) { return $value !== $ip_hash; } ) );
 		$count = max( 0, $count - 1 );
 	} else {
-		// Like — add IP, increment
-		$liked[] = $ip;
+		// Like — add a non-reversible request identifier, increment.
+		$liked[] = $ip_hash;
 		$liked = array_slice( $liked, -100 );
 		$count++;
 	}
@@ -353,8 +489,20 @@ function simple_theme_generate_captcha(): array {
 }
 
 function simple_theme_verify_altcha( string $payload ): bool {
-	$data = json_decode( base64_decode( $payload ), true );
-	if ( ! is_array( $data ) || ! isset( $data['challenge'], $data['number'], $data['salt'], $data['signature'] ) ) {
+	if ( strlen( $payload ) > 8192 || ! preg_match( '/\A[A-Za-z0-9+\/_=-]+\z/', $payload ) ) {
+		return false;
+	}
+	$decoded = base64_decode( $payload, true );
+	$data = is_string( $decoded ) ? json_decode( $decoded, true ) : null;
+	if (
+		! is_array( $data ) ||
+		! isset( $data['challenge'], $data['number'], $data['salt'], $data['signature'] ) ||
+		! preg_match( '/\A[a-f0-9]{64}\z/i', (string) $data['challenge'] ) ||
+		! preg_match( '/\A[a-f0-9]{24}\?expires=\d+\z/', (string) $data['salt'] ) ||
+		! preg_match( '/\A\d+\z/', (string) $data['number'] ) ||
+		(int) $data['number'] < 0 ||
+		(int) $data['number'] > ALTCHA_MAX_NUMBER
+	) {
 		return false;
 	}
 
@@ -428,6 +576,9 @@ function simple_theme_rest_pin_comment( WP_REST_Request $request ) {
 	if ( ! current_user_can( 'moderate_comments' ) ) {
 		return new WP_REST_Response( array( 'message' => '无权操作' ), 403 );
 	}
+	if ( ! get_comment( $comment_id ) ) {
+		return new WP_REST_Response( array( 'message' => '评论不存在' ), 404 );
+	}
 
 	update_comment_meta( $comment_id, 'st_pinned', $pin ? '1' : '0' );
 	return new WP_REST_Response( array( 'pinned' => $pin, 'id' => $comment_id ), 200 );
@@ -457,20 +608,12 @@ function simple_theme_delete_comment( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'message' => '只能删除待审核的评论' ), 403 );
 	}
 
-	// Check ownership
-	$can_delete = false;
-	if ( is_user_logged_in() ) {
-		$can_delete = (int) $comment->user_id === get_current_user_id();
-	} else {
-		$email = simple_theme_get_commenter_cookie();
-		$can_delete = $email && $comment->comment_author_email === $email;
-	}
-
-	if ( ! $can_delete && ! current_user_can( 'moderate_comments' ) ) {
+	if ( ! simple_theme_user_can_edit_comment( $comment_id ) ) {
 		return new WP_REST_Response( array( 'message' => '无权删除' ), 403 );
 	}
 
 	wp_delete_comment( $comment_id, true );
+	simple_theme_forget_comment_owner_token( $comment_id );
 	return new WP_REST_Response( array( 'deleted' => true ), 200 );
 }
 
@@ -482,25 +625,24 @@ function simple_theme_get_user_pending_comments( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'message' => 'Post ID required' ), 400 );
 	}
 
-	// Identify current user via auth or cookie
-	$email = '';
+	// Logged-in authors are bound to their user ID. Anonymous comments are
+	// selected only by a per-comment token verified server-side.
+	$query_args = array(
+		'post_id' => $post_id,
+		'status'  => 'hold',
+		'number'  => 20,
+	);
 	if ( is_user_logged_in() ) {
-		$user = wp_get_current_user();
-		$email = $user->user_email;
+		$query_args['user_id'] = get_current_user_id();
 	} else {
-		$email = simple_theme_get_commenter_cookie();
+		$owned_ids = simple_theme_get_owned_comment_ids( $post_id );
+		if ( empty( $owned_ids ) ) {
+			return new WP_REST_Response( array( 'items' => array() ), 200 );
+		}
+		$query_args['include'] = $owned_ids;
 	}
 
-	if ( ! $email ) {
-		return new WP_REST_Response( array( 'items' => array() ), 200 );
-	}
-
-	$pending = get_comments( array(
-		'post_id'      => $post_id,
-		'status'       => 'hold',
-		'author_email' => $email,
-		'number'       => 20,
-	) );
+	$pending = get_comments( $query_args );
 
 	$items = array();
 	foreach ( $pending as $comment ) {
@@ -514,7 +656,8 @@ function simple_theme_get_user_pending_comments( WP_REST_Request $request ) {
 
 /**
  * Filter comment query to exclude private comments from users who can't view them.
- * 登录用户按 user_id 匹配；匿名作者按 WordPress 评论者 cookie 的邮箱匹配。
+ * Logged-in users match by user ID; anonymous users match verified ownership
+ * tokens for their own comments only.
  */
 add_filter( 'comments_clauses', function( $clauses ) {
 	if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST ) {
@@ -524,16 +667,18 @@ add_filter( 'comments_clauses', function( $clauses ) {
 
 	if ( ! current_user_can( 'moderate_comments' ) ) {
 		$current_user_id = get_current_user_id();
-		$cookie_email    = simple_theme_get_commenter_cookie();
+		$owned_ids       = simple_theme_get_owned_comment_ids();
+		$owned_condition = '0=1';
+		if ( ! empty( $owned_ids ) ) {
+			$owned_condition = "{$wpdb->comments}.comment_ID IN (" . implode( ',', array_map( 'absint', $owned_ids ) ) . ')';
+		}
 		$clauses['join'] .= " LEFT JOIN {$wpdb->commentmeta} AS st_priv ON ( {$wpdb->comments}.comment_ID = st_priv.comment_id AND st_priv.meta_key = 'st_private' )";
 		$clauses['where'] .= $wpdb->prepare(
 			" AND ( st_priv.meta_id IS NULL OR st_priv.meta_value <> '1'" .
-			" OR ( %d > 0 AND {$wpdb->comments}.user_id = %d )" .
-			" OR ( %s <> '' AND {$wpdb->comments}.comment_author_email = %s ) )",
+				" OR ( %d > 0 AND {$wpdb->comments}.user_id = %d )" .
+				" OR ( {$owned_condition} ) )",
 			$current_user_id,
-			$current_user_id,
-			$cookie_email,
-			$cookie_email
+			$current_user_id
 		);
 	}
 	return $clauses;
@@ -593,11 +738,12 @@ add_action( 'rest_after_insert_comment', function( $comment, $request ) {
 
 	simple_theme_save_comment_meta_info( $comment_id );
 
-	// 用 WordPress 原生机制设置评论者 cookie（核心 REST 端点自己不设），
-	// 后续的“查看/删除自己的待审核评论”、私密评论自见都依赖它。
+	// Keep WordPress's commenter cookie for form prefill only. Anonymous
+	// authorization uses the separate HttpOnly ownership token above.
 	if ( ! is_user_logged_in() ) {
 		$consent = $request->get_param( 'cookiesConsent' );
 		wp_set_comment_cookies( $comment, wp_get_current_user(), null === $consent ? true : (bool) $consent );
+		simple_theme_assign_comment_owner_token( $comment );
 	}
 }, 10, 2 );
 
@@ -614,7 +760,6 @@ add_filter( 'rest_prepare_comment', function( $response, $comment ) {
 		'location' => get_comment_meta( $comment_id, 'st_location', true ) ?: '',
 		'browser'  => get_comment_meta( $comment_id, 'st_browser', true ) ?: '',
 		'os'       => get_comment_meta( $comment_id, 'st_os', true ) ?: '',
-		'ipMask'   => get_comment_meta( $comment_id, 'st_ip_mask', true ) ?: '',
 	);
 	$data['isPinned']  = '1' === get_comment_meta( $comment_id, 'st_pinned', true );
 	$data['isPrivate'] = '1' === get_comment_meta( $comment_id, 'st_private', true );
@@ -624,11 +769,13 @@ add_filter( 'rest_prepare_comment', function( $response, $comment ) {
 	$data['qqAvatar']  = simple_theme_get_qq_avatar_url( $comment->comment_author_email );
 	$data['avatar']    = simple_theme_get_comment_avatar( $comment->comment_author_email, $user_id );
 	$data['children']  = array();
+	// Never expose commenter email addresses through the public REST response.
+	unset( $data['author_email'], $data['authorEmail'] );
 
-	// Keep raw content so frontend renderCommentContent() handles emoji/markdown rendering
-	$data['content']['rendered'] = $comment->comment_content;
+	// Emoji rendering remains client-side, but the REST payload must never
+	// reintroduce unsanitized database content into a v-html container.
+	$data['content']['rendered'] = wp_kses_post( $comment->comment_content );
 
 	$response->set_data( $data );
 	return $response;
 }, 10, 2 );
-

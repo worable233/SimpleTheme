@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchPage, getErrorMessage } from '@/lib/wordpress'
 import { showError } from '@/lib/toast'
@@ -8,6 +9,8 @@ import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 
 const { siteInfo } = useSiteShell()
+
+useHead({ title: '关于' })
 
 const aboutPage = ref<WordPressPost | null>(null)
 const loading = ref(true)
