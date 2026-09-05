@@ -84,6 +84,7 @@ function simple_theme_get_default_options() {
 		'gravatar_base_url'         => 'https://weavatar.com/avatar/',
 		'comment_show_private'      => true,
 		'comment_show_markdown'     => true,
+		'comment_order'             => 'asc',
 		'ip_location_api'          => 'xinyew',
 		'ip_location_cache'        => true,
 
@@ -279,6 +280,8 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = absint( $value );
 		} elseif ( 'ip_location_api' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'xinyew', 'ip.sb', 'ip-api.com' ), true ) ? (string) $value : $default_value;
+		} elseif ( 'comment_order' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( 'asc', 'desc' ), true ) ? (string) $value : $default_value;
 		} elseif ( 'social_links' === $key ) {
 			$output[ $key ] = $sanitize_json_array( $value, static function ( $item ) use ( $sanitize_http_url ) {
 				if ( ! is_array( $item ) ) {

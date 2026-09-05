@@ -113,6 +113,19 @@ const emit = defineEmits<{
       </div>
     </div>
 
+    <div class="xh-field" style="margin-top: 8px">
+      <label class="xh-field__label">评论排序方式</label>
+      <select
+        class="xh-select"
+        :value="(settings.comment_order as string) || 'asc'"
+        @change="emit('update', 'comment_order', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="asc">正序：最早发布的评论在上方，回复按对话顺序阅读</option>
+        <option value="desc">倒序：最新发布的评论在上方，优先看到最新讨论</option>
+      </select>
+      <p class="xh-field__desc">正序适合按时间完整阅读讨论；倒序适合关注最近的留言。置顶评论仍会优先显示。</p>
+    </div>
+
     <div class="xh-field" style="margin-top: 8px;">
       <label class="xh-field__label">Gravatar 基础 URL</label>
       <input

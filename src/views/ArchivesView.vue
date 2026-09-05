@@ -120,7 +120,8 @@ const categoryCards = computed<CategoryCardData[]>(() => {
           ...p,
           displayDate: formatDate(p.date),
         })),
-      previewPosts: rawPosts.slice(0, 5).map((p) => ({
+      // Cards stay compact while the modal receives the complete sorted list.
+      previewPosts: rawPosts.slice(0, 10).map((p) => ({
         ...p,
         displayDate: formatDate(p.date),
       })),

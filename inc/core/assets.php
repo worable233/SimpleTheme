@@ -76,6 +76,7 @@ function simple_theme_get_frontend_config() {
 					'email_preview'   => esc_url_raw( rest_url( 'simple-theme/v1/email-template-preview' ) ),
 		),
 		'features'   => array(
+			'commentOrder' => ( 'desc' === (string) ( $theme_options['comment_order'] ?? 'asc' ) ? 'desc' : 'asc' ),
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
 			'registration'   => (bool) get_option( 'users_can_register' ),
 			'showStats'   => (bool) ($theme_options['sidebar_show_stats']   ?? true),

@@ -83,10 +83,11 @@ export async function fetchComments(
   _clientId?: string,
   page = 1,
   perPage = 50,
+  order: 'asc' | 'desc' = 'asc',
 ): Promise<CommentsResponse> {
   if (shouldUseMock()) return { items: [], total: 0, page: 1, perPage, totalPages: 0 }
   try {
-    const url = buildRestUrl('wp/v2/comments') + `?post=${postId}&page=${page}&per_page=${perPage}&order=asc`
+    const url = buildRestUrl('wp/v2/comments') + `?post=${postId}&page=${page}&per_page=${perPage}&order=${order}`
     const { data, headers } = await apiClient.get<WPCommentPayload[]>(url)
 
     const total = parseInt(headers['x-wp-total'] || '0')

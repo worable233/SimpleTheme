@@ -12,6 +12,7 @@ import { useAuth } from '@/composables/useAuth'
 import { createComment, fetchComments, getErrorMessage, pinComment, deleteComment, fetchUserPendingComments } from '@/lib/wordpress'
 import { showError, showLoadingToast, showToast, dismissToast } from '@/lib/toast'
 import type { CommentFormSettings, WordPressComment } from '@/types/wordpress'
+import { getThemeConfig } from '@/lib/theme-config'
 
 const props = defineProps<{
   postId: number
@@ -139,7 +140,8 @@ async function loadComments(page = 1) {
   if (page === 1) loading.value = true
   else loadingMore.value = true
   try {
-    const result = await fetchComments(props.postId, undefined, page, PER_PAGE)
+    const order = getThemeConfig().features?.commentOrder === 'desc' ? 'desc' : 'asc'
+    const result = await fetchComments(props.postId, undefined, page, PER_PAGE, order)
     totalComments.value = result.total
     totalPages.value = result.totalPages
     currentPage.value = result.page

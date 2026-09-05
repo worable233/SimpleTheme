@@ -29,6 +29,7 @@ export interface SimpleThemeConfig {
     showHitokoto?: boolean
     /** 一言 API 地址（默认 https://v1.hitokoto.cn） */
     hitokotoApi?: string
+    commentOrder?: 'asc' | 'desc'
     meta?: ArticleMeta
     articleMeta?: ArticleMeta
   }
