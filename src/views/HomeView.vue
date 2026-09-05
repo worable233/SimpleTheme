@@ -465,14 +465,19 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
     min-height: auto;
   }
   .post-card-skeleton__text {
+    width: auto;
     padding: 1rem;
     gap: 0.5rem;
   }
   .post-card-skeleton__cover {
+    position: relative;
+    inset-inline-end: auto;
+    top: auto;
     width: 100%;
     height: 140px;
     min-height: auto;
-    flex-shrink: 0;
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 </style>

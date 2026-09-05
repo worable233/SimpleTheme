@@ -84,7 +84,9 @@
 .post-card-skeleton__excerpt--short { width: 65%; }
 
 .post-card-skeleton__text {
-  flex: 1;
+  position: relative;
+  width: 60%;
+  min-height: 130px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -93,9 +95,14 @@
 }
 
   .post-card-skeleton__cover {
-  width: 320px;
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  width: calc(40% + 2em);
+  height: 100%;
   min-height: 130px;
-  flex-shrink: 0;
+  mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
   background: var(--muted);
   animation: card-pulse 1.5s ease-in-out infinite;
 }
@@ -105,6 +112,10 @@
   border-radius: var(--radius-small, 4px);
   background: var(--muted);
   animation: card-pulse 1.5s ease-in-out infinite;
+}
+
+.post-card-skeleton:not(:has(.post-card-skeleton__cover)) .post-card-skeleton__text {
+  width: 100%;
 }
 
 
