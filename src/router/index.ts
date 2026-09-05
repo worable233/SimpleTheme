@@ -15,12 +15,12 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/categories/:slug', name: 'category', component: HomeView },
     { path: '/go', name: 'go', component: GoRedirect },
-    { path: '/shuoshuo/:pathMatch(.*)*', name: 'shuoshuo', component: ShuoshuoView },
-    { path: '/about/:pathMatch(.*)*', name: 'about', component: AboutView },
+    { path: '/shuoshuo', name: 'shuoshuo', component: ShuoshuoView },
+    { path: '/about', name: 'about', component: AboutView },
     // Keep the reserved archive landing page exact. Article permalinks may
     // legitimately live below /archives/<slug>/ and must reach ContentView.
     { path: '/archives', name: 'archives', component: ArchivesView },
-    { path: '/links/:pathMatch(.*)*', name: 'links', component: LinksView },
+    { path: '/links', name: 'links', component: LinksView },
 
     { path: '/:pathMatch(.*)*', name: 'content', component: ContentView },
   ],
