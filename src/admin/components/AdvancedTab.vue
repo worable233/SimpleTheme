@@ -71,6 +71,48 @@ const emit = defineEmits<{
     </div>
   </AppCard>
 
+  <!-- External Link Redirect -->
+  <AppCard title="外链跳转" description="控制文章中的外部链接是否经过本站提示页。">
+    <div class="xh-field xh-field--compact">
+      <label class="xh-field__label">自动跳转</label>
+      <select
+        class="xh-select"
+        :value="settings.external_redirect_enabled === false ? 'disabled' : 'enabled'"
+        @change="emit('update', 'external_redirect_enabled', ($event.target as HTMLSelectElement).value === 'enabled')"
+      >
+        <option value="enabled">开启</option>
+        <option value="disabled">关闭</option>
+      </select>
+      <p class="xh-field__desc">关闭后仍会显示外链确认页，但需要用户点击“继续前往”。</p>
+    </div>
+    <div class="xh-field xh-field--compact" style="margin-top: 16px;">
+      <label class="xh-field__label">自动跳转等待时间（秒）</label>
+      <input
+        type="number"
+        class="xh-input xh-input--number"
+        min="1"
+        max="30"
+        :value="(settings.external_redirect_delay as number) ?? 5"
+        @input="emit('update', 'external_redirect_delay', Number(($event.target as HTMLInputElement).value))"
+      />
+      <p class="xh-field__desc">默认 5 秒，可设置为 1 到 30 秒。倒计时期间会显示提示 Toast。</p>
+    </div>
+    <div class="xh-field xh-field--compact" style="margin-top: 16px;">
+      <label class="xh-field__label">目标窗口</label>
+      <select
+        class="xh-select"
+        :value="(settings.external_redirect_target as string) || '_self'"
+        @change="emit('update', 'external_redirect_target', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="_self">当前窗口（_self）</option>
+        <option value="_blank">新标签页（_blank）</option>
+        <option value="_parent">父框架（_parent）</option>
+        <option value="_top">整个窗口（_top）</option>
+      </select>
+      <p class="xh-field__desc">决定确认页自动跳转和“继续前往”最终打开目标网站的位置。</p>
+    </div>
+  </AppCard>
+
   <!-- Local Avatars -->
   <AppCard title="本地头像" description="允许用户在个人资料页上传自定义头像替代 Gravatar。">
     <div class="xh-field xh-field--compact">

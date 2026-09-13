@@ -46,21 +46,6 @@ add_action( 'after_switch_theme', function () {
 	delete_option( 'simple_theme_cache_version' );
 } );
 
-// Hide WordPress admin chrome on the theme settings page via admin_head.
-add_action( 'admin_head', 'simple_theme_hide_admin_chrome' );
-function simple_theme_hide_admin_chrome() {
-	$screen = get_current_screen();
-	if ( ! $screen || 'toplevel_page_simple-theme' !== $screen->id ) {
-		return;
-	}
-	echo "<style>
-#wpfooter{display:none!important}
-.notice,.notice-warning,.update-nag,.clear,.inline{display:none!important}
-#screen-meta,#contextual-help-wrap,#screen-options-wrap{display:none!important}
-#wpbody-content{padding-bottom:0!important}
-</style>\n";
-}
-
 function simple_theme_render_admin_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( '你没有权限访问此页面。', 'simple-theme' ) );

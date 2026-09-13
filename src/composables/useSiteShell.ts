@@ -96,6 +96,7 @@ const fallbackSiteInfo: SiteInfo = {
   },
   hero: fallbackHeroSettings,
   theme: fallbackThemeSettings,
+  externalRedirect: { enabled: true, delay: 5, target: '_self' },
 }
 
 const siteInfo = ref<SiteInfo>(fallbackSiteInfo)
@@ -120,15 +121,25 @@ interface CachedShell {
   footerMenu: MenuItem[]
 }
 
+function normalizePixelSetting(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, Math.round(parsed)))
+}
+
 function mergeSiteInfo(next: SiteInfo): SiteInfo {
+  const nextTheme: Partial<ThemeSettings> = next.theme || {}
+
   return {
     ...fallbackSiteInfo,
     ...next,
     hero: { ...fallbackHeroSettings, ...next.hero },
     theme: {
       ...fallbackThemeSettings,
-      ...next.theme,
-      cardMeta: { ...fallbackThemeSettings.cardMeta!, ...next.theme?.cardMeta },
+      ...nextTheme,
+      containerMaxWidth: normalizePixelSetting(nextTheme.containerMaxWidth, 1500, 960, 2000),
+      articleMaxWidth: normalizePixelSetting(nextTheme.articleMaxWidth, 900, 680, 1200),
+      cardMeta: { ...fallbackThemeSettings.cardMeta!, ...nextTheme.cardMeta },
     },
     comments: {
       requireNameEmail:
@@ -143,6 +154,11 @@ function mergeSiteInfo(next: SiteInfo): SiteInfo {
         next.comments?.showCookiesOptIn ?? fallbackSiteInfo.comments!.showCookiesOptIn,
       captchaEnabled:
         next.comments?.captchaEnabled ?? fallbackSiteInfo.comments!.captchaEnabled,
+    },
+    externalRedirect: {
+      enabled: next.externalRedirect?.enabled ?? fallbackSiteInfo.externalRedirect!.enabled,
+      delay: next.externalRedirect?.delay ?? fallbackSiteInfo.externalRedirect!.delay,
+      target: next.externalRedirect?.target ?? fallbackSiteInfo.externalRedirect!.target,
     },
     stats: { ...fallbackSiteStats, ...next.stats },
     socialLinks:

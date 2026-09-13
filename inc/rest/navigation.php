@@ -77,6 +77,8 @@ function simple_theme_format_menu_items( array $items ) {
 		if ( ! $url ) {
 			continue;
 		}
+		$custom_target = get_post_meta( $item->ID, '_menu_item_target', true );
+		$target        = $custom_target ?: $item->target;
 
 		$formatted[] = array(
 			'id'          => $item->ID,
@@ -85,7 +87,7 @@ function simple_theme_format_menu_items( array $items ) {
 			'path'        => simple_theme_get_internal_path( $url ),
 			'description' => $item->description ?: '',
 			'current'     => false,
-			'target'      => in_array( $item->target, array( '_self', '_blank', '_parent', '_top' ), true ) ? $item->target : '_self',
+			'target'      => in_array( $target, array( '_self', '_blank', '_parent', '_top' ), true ) ? $target : '_self',
 			'parent'      => (int) $item->menu_item_parent,
 			'icon'        => $icon ?: '',
 			'order'       => (int) $item->menu_order,

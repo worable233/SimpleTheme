@@ -4,9 +4,11 @@ import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
 import { showToast, dismissToast } from '@/lib/toast'
+import { useSiteShell } from '@/composables/useSiteShell'
 
 const route = useRoute()
 const router = useRouter()
+const { siteInfo, ensureLoaded } = useSiteShell()
 
 const rawTargetUrl = computed(() => {
   const raw = typeof route.query.url === 'string' ? route.query.url : ''
@@ -42,6 +44,15 @@ const displayUrl = computed(() => {
   }
 })
 
+const redirectEnabled = computed(() => siteInfo.value.externalRedirect?.enabled ?? true)
+const redirectDelay = computed(() => {
+  const delay = Number(siteInfo.value.externalRedirect?.delay ?? 5)
+  return Number.isFinite(delay) ? Math.min(30, Math.max(1, Math.round(delay))) : 5
+})
+const redirectTarget = computed<'_self' | '_blank' | '_parent' | '_top'>(() => {
+  const target = siteInfo.value.externalRedirect?.target
+  return target === '_blank' || target === '_parent' || target === '_top' ? target : '_self'
+})
 const countdown = ref(5)
 const isRedirecting = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
@@ -51,7 +62,15 @@ function doRedirect() {
   if (!hasValidTarget.value || isRedirecting.value) return
   isRedirecting.value = true
   if (countdownToast) dismissToast(countdownToast)
-  window.location.href = targetUrl.value
+  if (redirectTarget.value === '_self') {
+    window.location.href = targetUrl.value
+    return
+  }
+
+  const opened = window.open(targetUrl.value, redirectTarget.value, 'noopener,noreferrer')
+  if (!opened) {
+    window.location.href = targetUrl.value
+  }
 }
 
 function goBack() {
@@ -63,10 +82,15 @@ function goBack() {
   }
 }
 
-onMounted(() => {
-  if (!hasValidTarget.value) return
+onMounted(async () => {
+  await ensureLoaded()
+  if (!hasValidTarget.value || !redirectEnabled.value) return
 
-  countdownToast = showToast('将在 5 秒后自动前往目标网站', undefined, { duration: 5000 })
+  countdown.value = redirectDelay.value
+
+  countdownToast = showToast(`将在 ${countdown.value} 秒后自动前往目标网站`, undefined, {
+    duration: redirectDelay.value * 1000,
+  })
 
   timer = setInterval(() => {
     countdown.value--

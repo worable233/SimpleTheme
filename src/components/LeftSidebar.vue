@@ -340,8 +340,8 @@ function onRootTooltipHover(e: MouseEvent) {
                 <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
                 <ul class="sub-page__menu-list">
                   <li v-for="item in safeFooterMenu" :key="item.id" class="sub-page__menu-item">
-                    <router-link v-if="!isExternalUrl(item.url)" :to="item.path || item.url" @click="closeAll">{{ item.title }}</router-link>
-                    <a v-else :href="item.url" :target="item.target || '_blank'" rel="noopener noreferrer" @click="closeAll">{{ item.title }}</a>
+                    <router-link v-if="!isExternalUrl(item.url)" :to="item.path || item.url" :target="item.target !== '_self' ? item.target : undefined" @click="closeAll">{{ item.title }}</router-link>
+                    <a v-else :href="item.url" :target="item.target || '_self'" rel="noopener noreferrer" @click="closeAll">{{ item.title }}</a>
                   </li>
                 </ul>
               </div>
@@ -383,6 +383,7 @@ function onRootTooltipHover(e: MouseEvent) {
             <RouterLink
               v-if="!isExternalUrl(child.url) && !isHome(child.url)"
               :to="child.path || child.url"
+              :target="child.target !== '_self' ? child.target : undefined"
               :aria-current="isCurrent(child.path) ? 'page' : undefined"
             >
               <AppIcon v-bind="resolveMenuIcon(child, isCurrent(child.path))" class="menu-icon" />
@@ -391,6 +392,7 @@ function onRootTooltipHover(e: MouseEvent) {
             <RouterLink
               v-else-if="!isExternalUrl(child.url) && isHome(child.url)"
               to="/"
+              :target="child.target !== '_self' ? child.target : undefined"
               :aria-current="isCurrent('/') ? 'page' : undefined"
             >
               <AppIcon v-bind="resolveMenuIcon(child, isCurrent('/'))" class="menu-icon" />
@@ -399,7 +401,7 @@ function onRootTooltipHover(e: MouseEvent) {
             <a
               v-else
               :href="child.url"
-              :target="child.target || '_blank'"
+              :target="child.target || '_self'"
               rel="noreferrer noopener"
             >
               <AppIcon v-bind="resolveMenuIcon(child)" class="menu-icon" />

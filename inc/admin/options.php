@@ -119,8 +119,14 @@ function simple_theme_get_default_options() {
 
 			// ---- Admin Bar ----
 			'hide_admin_bar'          => false,
-				// ---- Local Avatars ----
-				'local_avatars_enabled'   => false,
+
+			// ---- External Link Redirect ----
+			'external_redirect_enabled' => true,
+			'external_redirect_delay'   => 5,
+			'external_redirect_target'  => '_self',
+
+			// ---- Local Avatars ----
+			'local_avatars_enabled'   => false,
 
 			// ---- SMTP ----
 			'smtp_enabled'             => false,
@@ -228,6 +234,7 @@ function simple_theme_sanitize_options( $input ) {
 		'shuoshuo_page_size'   => array( 6, 24 ),
 		'smtp_port'            => array( 1, 65535 ),
 		'smtp_timeout'         => array( 1, 120 ),
+		'external_redirect_delay' => array( 1, 30 ),
 		'smtp_queue_retry_count' => array( 0, 20 ),
 		'smtp_queue_retry_interval' => array( 60, 3600 ),
 	);
@@ -328,6 +335,8 @@ function simple_theme_sanitize_options( $input ) {
 			$output[ $key ] = '' !== $font_value ? sanitize_text_field( $font_value ) : $default_value;
 		} elseif ( 'email_template' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'simple', 'card', 'professional' ), true ) ? (string) $value : 'simple';
+		} elseif ( 'external_redirect_target' === $key ) {
+			$output[ $key ] = in_array( (string) $value, array( '_self', '_blank', '_parent', '_top' ), true ) ? (string) $value : '_self';
 		} elseif ( 'announcement_mode' === $key ) {
 			$output[ $key ] = in_array( (string) $value, array( 'modal', 'capsule' ), true ) ? (string) $value : $defaults[ $key ];
 		} elseif ( 'announcement_buttons' === $key ) {

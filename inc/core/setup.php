@@ -166,6 +166,51 @@ function simple_theme_save_menu_item_icon( $menu_id, $menu_item_db_id, $args ) {
 	}
 }
 
+// ========== Menu Item Target ==========
+
+add_action( 'wp_nav_menu_item_custom_fields', 'simple_theme_menu_item_target_field', 11, 4 );
+function simple_theme_menu_item_target_field( $item_id, $item, $depth, $args ) {
+	if ( 'custom' !== $item->type ) {
+		return;
+	}
+
+	$target = get_post_meta( $item_id, '_menu_item_target', true );
+	if ( ! in_array( $target, array( '_self', '_blank', '_parent', '_top' ), true ) ) {
+		$target = '_self';
+	}
+	?>
+	<p class="field-target description description-wide">
+		<label for="edit-menu-item-target-<?php echo esc_attr( $item_id ); ?>">
+			<?php esc_html_e( '链接打开方式', 'simple-theme' ); ?><br>
+			<select
+				id="edit-menu-item-target-<?php echo esc_attr( $item_id ); ?>"
+				class="widefat edit-menu-item-target"
+				name="menu_item_target[<?php echo esc_attr( $item_id ); ?>]"
+			>
+				<option value="_self" <?php selected( $target, '_self' ); ?>>当前窗口（_self）</option>
+				<option value="_blank" <?php selected( $target, '_blank' ); ?>>新标签页（_blank）</option>
+				<option value="_parent" <?php selected( $target, '_parent' ); ?>>父框架（_parent）</option>
+				<option value="_top" <?php selected( $target, '_top' ); ?>>整个窗口（_top）</option>
+			</select>
+			<small style="color:#888;font-style:italic;">定义此自定义链接的打开方式</small>
+		</label>
+	</p>
+	<?php
+}
+
+add_action( 'wp_update_nav_menu_item', 'simple_theme_save_menu_item_target', 20, 3 );
+function simple_theme_save_menu_item_target( $menu_id, $menu_item_db_id, $args ) {
+	if ( ! isset( $_POST['menu_item_target'][ $menu_item_db_id ] ) ) {
+		return;
+	}
+
+	$target = sanitize_key( wp_unslash( $_POST['menu_item_target'][ $menu_item_db_id ] ) );
+	if ( ! in_array( $target, array( '_self', '_blank', '_parent', '_top' ), true ) ) {
+		$target = '_self';
+	}
+	update_post_meta( $menu_item_db_id, '_menu_item_target', $target );
+}
+
 // ========== Post View Count ==========
 //
 // 浏览量统一由前端 REST（simple-theme/v1/track-view）在真实访问时 +1。

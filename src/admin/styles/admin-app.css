@@ -1,0 +1,81 @@
+/* ═══════════════════════════════════════════════════════════
+ * Admin settings SPA scoped overrides
+ * Makes the theme's own tokens win over WordPress admin CSS
+ * that would otherwise bleed into #simple-theme-admin-app
+ * (e.g. #wpbody-content h2, button, input, select base styles).
+ *
+ * Everything here is strictly scoped to the app mount so the
+ * surrounding WP admin chrome is never affected. Utilities come
+ * from the shared frontend tailwind.css + variables.css tokens,
+ * so the panel reads as the same product as the public site.
+ * ═══════════════════════════════════════════════════════════ */
+
+#simple-theme-admin-app,
+#simple-theme-admin-app *,
+#simple-theme-admin-app *::before,
+#simple-theme-admin-app *::after {
+  box-sizing: border-box;
+}
+
+#simple-theme-admin-app {
+  font-family: var(--font-sans-serif);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Neutralize WP admin element selectors that outrank inherited tokens */
+#simple-theme-admin-app h1,
+#simple-theme-admin-app h2,
+#simple-theme-admin-app h3,
+#simple-theme-admin-app h4,
+#simple-theme-admin-app h5,
+#simple-theme-admin-app h6,
+#simple-theme-admin-app p,
+#simple-theme-admin-app label,
+#simple-theme-admin-app span,
+#simple-theme-admin-app div,
+#simple-theme-admin-app strong {
+  color: inherit;
+}
+
+#simple-theme-admin-app h1,
+#simple-theme-admin-app h2,
+#simple-theme-admin-app h3,
+#simple-theme-admin-app h4,
+#simple-theme-admin-app h5,
+#simple-theme-admin-app h6,
+#simple-theme-admin-app p,
+#simple-theme-admin-app ul,
+#simple-theme-admin-app ol,
+#simple-theme-admin-app figure {
+  margin: 0;
+  padding: 0;
+}
+
+#simple-theme-admin-app button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+#simple-theme-admin-app input,
+#simple-theme-admin-app select,
+#simple-theme-admin-app textarea {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--foreground);
+  background-color: var(--card);
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+}
+
+#simple-theme-admin-app a {
+  color: var(--primary);
+  text-decoration: none;
+}

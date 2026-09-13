@@ -374,13 +374,20 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
               @mouseenter="prefetchPost(post)"
               @mouseleave="cancelPrefetch(post)"
             >
-              <img
+              <router-link
                 v-if="post.featuredImage"
-                :src="post.featuredImage"
-                alt=""
-                loading="lazy"
-                class="post-card__cover"
-              />
+                :to="toInternalPath(post.link)"
+                class="post-card__cover-link"
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                <img
+                  :src="post.featuredImage"
+                  alt=""
+                  loading="lazy"
+                  class="post-card__cover"
+                />
+              </router-link>
               <div v-if="hasCardMeta(post)" class="post-card__meta">
                 <span v-if="metaConfig?.showCategory && post.categories?.[0]" class="post-card__meta-item">{{ post.categories[0] }}</span>
                 <time v-if="metaConfig?.showPublishDate" :datetime="post.date" class="post-card__meta-item">{{ formatDate(post.date) }}</time>

@@ -246,8 +246,15 @@ export interface SiteInfo {
   collections?: CollectionsSettings
   announcement?: AnnouncementSettings
   cookieConsent?: CookieConsentSettings
+  externalRedirect?: ExternalRedirectSettings
   /** 右侧栏小工具序列（外观→小工具 配置，按顺序渲染） */
   sidebar?: SidebarWidget[]
+}
+
+export interface ExternalRedirectSettings {
+  enabled: boolean
+  delay: number
+  target: '_self' | '_blank' | '_parent' | '_top'
 }
 
 /** 右侧栏小工具项：主题结构化卡片，或核心/区块小工具的 HTML */

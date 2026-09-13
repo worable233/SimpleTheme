@@ -158,6 +158,11 @@ function simple_theme_get_site_info() {
 				'enabled' => (bool) ( $theme_options['cookie_consent_enabled'] ?? false ),
 				'message' => (string) ( $theme_options['cookie_consent_message'] ?? '本站使用 Cookie 以改善您的访问体验。继续浏览即表示您同意我们的 Cookie 使用政策。' ),
 			),
+			'externalRedirect' => array(
+				'enabled' => (bool) ( $theme_options['external_redirect_enabled'] ?? true ),
+				'delay'   => simple_theme_get_option_number( 'external_redirect_delay', 5, 1, 30 ),
+				'target'  => in_array( (string) ( $theme_options['external_redirect_target'] ?? '_self' ), array( '_self', '_blank', '_parent', '_top' ), true ) ? (string) $theme_options['external_redirect_target'] : '_self',
+			),
 		),
 		200
 	);

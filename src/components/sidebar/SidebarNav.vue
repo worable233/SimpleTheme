@@ -66,6 +66,7 @@ const safeMenuItems = computed(() =>
         <RouterLink
           v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && !isHome(item.url)"
           :to="item.path || item.url"
+          :target="item.target !== '_self' ? item.target : undefined"
           :aria-current="isCurrent(item.path) ? 'page' : undefined"
         >
           <AppIcon v-bind="resolveMenuIcon(item, isCurrent(item.path))" class="menu-icon" />
@@ -74,6 +75,7 @@ const safeMenuItems = computed(() =>
         <RouterLink
           v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && isHome(item.url)"
           to="/"
+          :target="item.target !== '_self' ? item.target : undefined"
           :aria-current="isCurrent('/') ? 'page' : undefined"
         >
           <AppIcon v-bind="resolveMenuIcon(item, isCurrent('/'))" class="menu-icon" />
@@ -82,7 +84,7 @@ const safeMenuItems = computed(() =>
         <a
           v-else-if="isSafeNavigationUrl(item.url)"
           :href="item.url"
-          :target="item.target || '_blank'"
+          :target="item.target || '_self'"
           rel="noreferrer noopener"
         >
           <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />

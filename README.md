@@ -1,6 +1,6 @@
 # Simple Theme
 
-> Vue 3 SPA × WordPress REST API — 轻量、现代、SEO 友好的 WordPress 主题
+Simple Theme 是一个面向个人博客的 WordPress 主题。前台使用 Vue 3 和 WordPress REST API，后台保留 WordPress 的管理流程，并提供独立的主题设置面板。
 
 [![Release](https://img.shields.io/github/v/release/worable233/SimpleTheme?style=flat-square)](https://github.com/worable233/SimpleTheme/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/worable233/SimpleTheme/build.yml?style=flat-square)](https://github.com/worable233/SimpleTheme/actions)
@@ -8,54 +8,57 @@
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=flat-square&logo=wordpress&logoColor=white)](https://wordpress.org/)
 
-前端由 Vue 3 完全渲染，数据经 WordPress REST API 驱动；服务端同时直出静态 HTML，搜索引擎与无 JS 环境零损失。
+[在线预览](https://www.worable.top/) · [下载主题](https://github.com/worable233/SimpleTheme/releases) · [配置说明](docs/config-and-troubleshooting.md) · [REST API](docs/rest-api.md)
 
-**[在线预览](https://www.worable.top/)** · **[下载安装](https://github.com/worable233/SimpleTheme/releases)** · **[配置文档](docs/config-and-troubleshooting.md)** · **[REST API](docs/rest-api.md)**
+## 主要功能
 
-## 特性
-
-- ⚡ **单页应用** — Vue Router 无刷新导航，内存 LRU + Transients 双层缓存，精准骨架屏
-- 🎨 **现代 UI** — Tailwind CSS 4，响应式双栏布局，浅色/深色模式，自定义主题色
-- 💬 **完整评论** — 嵌套回复、点赞、Markdown、表情包、ALTCHA 验证码、IP 归属地
-- 🔍 **SEO 友好** — 服务端直出完整 HTML + OG/JSON-LD，兼容 Yoast / Rank Math
-- 🧩 **区块适配** — Gutenberg 核心区块全量样式适配，无缝兼容 Sakurairo 区块与数据
-- 🛠 **后台美化** — WordPress 后台 + 登录页 UI 重制，Vue 3 设置面板，明暗随前端同步
-- ✉️ **邮件通知** — SMTP + 异步队列，多套 HTML 模板
-- 📦 **开箱即用** — 公告弹窗、Cookie 合规、站点统计、一言、Prism 高亮、unDraw 插画
+- Vue 3 单页导航，文章、页面、分类、标签和日期归档统一处理
+- 响应式布局，支持浅色/深色模式和自定义主题色
+- 文章评论、嵌套回复、点赞、Markdown、表情和可选验证码
+- 服务端输出基础 HTML，兼顾搜索引擎、无 JavaScript 环境和社交分享信息
+- 适配 Gutenberg 常用区块，并兼容部分 Sakurairo 区块数据
+- 可配置的侧边栏小工具、公告、Cookie 提示、站点统计和一言
+- SMTP 邮件通知与异步发送队列
+- Prism 代码高亮、头像代理和本地头像支持
+- WordPress 后台主题设置页与登录页样式统一
 
 ## 安装
 
-从 [Releases](https://github.com/worable233/SimpleTheme/releases) 下载 `Simple-Theme-vX.Y.Z.zip`，
-后台 **外观 → 主题 → 上传主题** 安装启用即可。
+从 [Releases](https://github.com/worable233/SimpleTheme/releases) 下载 `Simple-Theme-vX.Y.Z.zip`，然后在 WordPress 后台打开 **外观 → 主题 → 添加新主题 → 上传主题**，安装并启用即可。
 
-要求：WordPress ≥ 6.0 · PHP ≥ 7.3
+运行环境：
 
-## 开发
+- WordPress 6.0 或更高版本
+- PHP 7.3 或更高版本
+
+启用主题后，建议到 **设置 → 固定链接** 保存一次，确保文章和归档链接正常工作。
+
+## 本地开发
 
 ```bash
-npm install        # 安装依赖（Node ≥ 20.19）
-npm run dev        # Vite HMR 开发（需 WordPress 后端）
-npm run build      # 类型检查 + 构建 → dist/
-npm run package    # 构建并打包主题 ZIP
+npm install        # 安装依赖（Node.js ≥ 20.19）
+npm run dev        # 启动 Vite 开发服务器，需要 WordPress 后端
+npm run build      # 类型检查并构建到 dist/
+npm run package    # 构建并生成主题 ZIP
 ```
 
-推送 `v*` 标签会由 GitHub Actions 自动构建并发布 Release。
+项目使用 Vite 构建前台和后台资源。推送 `v*` 标签后，GitHub Actions 会自动构建并发布 Release。
 
-## 架构
+## 项目结构
 
+```text
+src/    Vue 3 前台、组件、组合式函数、样式和后台设置面板
+inc/    PHP 集成代码：主题功能、REST API、SEO、后台选项和小工具
+dist/   构建产物，由 WordPress 根据 Vite manifest 加载
 ```
-src/    Vue 3 前端（views / components / composables / styles）+ 后台设置面板 SPA
-inc/    PHP 后端 —— core/ 资产与 SEO · rest/ API 端点 · admin/ 选项注册
-dist/   构建产物（由 PHP 按 manifest 注入）
-```
 
-路由采用 catch-all：任意 URL 经 REST 解析出类型（文章/页面/归档/标签/日期），由对应视图渲染；`/about`、`/archives` 等特殊页面内置于前端。
+前端通过 REST API 解析当前路径，再决定显示文章、页面、分类、标签或日期归档。`/about`、`/archives`、`/links` 和 `/shuoshuo` 是主题内置页面；其他路径仍按 WordPress 的固定链接规则解析。
 
 ## 致谢
 
-- [Sakurairo](https://github.com/mirai-mamori/Sakurairo)（GPL-2.0）— 参考其实现完成区块与数据兼容
-- [iEmo](https://github.com/kannafay/iEmo)（MIT）— v2 视觉设计的重要灵感来源，未使用其代码
+- [Sakurairo](https://github.com/mirai-mamori/Sakurairo)（GPL-2.0）：参考其部分区块和数据兼容实现
+- [iEmo](https://github.com/kannafay/iEmo)（MIT）：提供视觉设计方面的参考，未使用其代码
 
 ## 许可证
 
-[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名 · 非商业使用 · 禁止演绎
+[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名、非商业使用、禁止演绎

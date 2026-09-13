@@ -99,6 +99,66 @@ function simple_theme_get_active_virtual_frontend_route() {
 }
 
 /**
+ * Whether the current request is a virtual route that must not be indexed.
+ */
+function simple_theme_is_noindex_virtual_frontend_route(): bool {
+	$route = simple_theme_get_active_virtual_frontend_route();
+	return is_array( $route ) && ! empty( $route['noindex'] );
+}
+
+/**
+ * Keep the external-link gateway out of search indexes even when an SEO
+ * plugin takes over the theme's normal meta output.
+ */
+add_filter( 'wp_robots', 'simple_theme_force_virtual_frontend_noindex', 20 );
+function simple_theme_force_virtual_frontend_noindex( $robots ) {
+	if ( ! simple_theme_is_noindex_virtual_frontend_route() ) {
+		return $robots;
+	}
+
+	$robots['noindex']  = true;
+	$robots['nofollow'] = true;
+	unset( $robots['index'], $robots['follow'] );
+	return $robots;
+}
+
+/**
+ * Yoast SEO does not use WordPress' default wp_robots output for its robots
+ * tag, so override its value explicitly for the gateway route.
+ */
+add_filter( 'wpseo_robots', 'simple_theme_force_yoast_virtual_frontend_noindex', 20 );
+function simple_theme_force_yoast_virtual_frontend_noindex( $robots ) {
+	return simple_theme_is_noindex_virtual_frontend_route() ? 'noindex, nofollow' : $robots;
+}
+
+/**
+ * Add an HTTP-level fallback for crawlers and intermediaries that do not
+ * process the HTML head.
+ */
+add_filter( 'wp_headers', 'simple_theme_add_virtual_frontend_robots_header', 20 );
+function simple_theme_add_virtual_frontend_robots_header( $headers ) {
+	if ( simple_theme_is_noindex_virtual_frontend_route() ) {
+		$headers['X-Robots-Tag'] = 'noindex, nofollow';
+	}
+
+	return $headers;
+}
+
+/**
+ * Avoid indexing every query-string variant as a separate gateway URL in
+ * Yoast's canonical output.
+ */
+add_filter( 'wpseo_canonical', 'simple_theme_virtual_frontend_canonical', 20 );
+function simple_theme_virtual_frontend_canonical( $canonical ) {
+	$route = simple_theme_get_active_virtual_frontend_route();
+	if ( ! is_array( $route ) || empty( $route['noindex'] ) ) {
+		return $canonical;
+	}
+
+	return simple_theme_get_virtual_frontend_route_url( $route );
+}
+
+/**
  * Return the canonical permalink for a frontend-only route.
  *
  * @param array{path:string,title:string,noindex:bool} $route Route metadata.

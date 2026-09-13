@@ -70,11 +70,19 @@ const shadowMap: Record<ThemeShadow, { small: string; medium: string; large: str
   },
 }
 
+function normalizePixelSetting(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, Math.round(parsed)))
+}
+
 function applyThemeSettings(theme?: ThemeSettings) {
   if (!theme) return
   const root = document.documentElement
   const radius = radiusMap[theme.radius]
   const shadow = shadowMap[theme.shadow]
+  const containerMaxWidth = normalizePixelSetting(theme.containerMaxWidth, 1500, 960, 2000)
+  const articleMaxWidth = normalizePixelSetting(theme.articleMaxWidth, 900, 680, 1200)
 
   root.style.setProperty('--primary', theme.primaryColor)
   root.style.setProperty('--font-sans-serif', theme.bodyFont)
@@ -102,8 +110,8 @@ function applyThemeSettings(theme?: ThemeSettings) {
     if (value) root.style.setProperty(name, value)
     else root.style.removeProperty(name)
   }
-  root.style.setProperty('--container-max', `${theme.containerMaxWidth}px`)
-  root.style.setProperty('--article-max-width', `${theme.articleMaxWidth}px`)
+  root.style.setProperty('--container-max', `${containerMaxWidth}px`)
+  root.style.setProperty('--article-max-width', `${articleMaxWidth}px`)
 }
 
 onMounted(() => {
@@ -170,7 +178,7 @@ watch(
 
 <template>
   <div
-    class="app-container mx-auto flex min-h-screen max-w-(--container-max) border-x border-border bg-card max-xl:border-none"
+    class="app-container mx-auto flex min-h-screen w-full max-w-(--container-max) border-x border-border bg-card max-xl:border-none"
   >
     <LeftSidebar />
 
