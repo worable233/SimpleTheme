@@ -270,10 +270,17 @@
   --st-popover-shadow: var(--shadow-large);
   --st-overlay-bg: rgb(0 0 0 / 0.5);
 
-  /* 层级 */
-  --st-z-dropdown: 1000;
-  --st-z-modal: 1100;
-  --st-z-toast: 1200;
+  /* 层级
+   * 必须压过前台既有的临时 z-index 阶梯。前台历史上是各写各的：
+   * 9998(ScrollToTop) / 9999(ReadingProgress, DebugPanel, 侧栏 tooltip)
+   * / 10000(评论向导) / 10001(toast) / 99999(公告胶囊)。
+   * 组件库的浮层如果只给 1100，迁移后模态框会被这些层盖住
+   * —— 旧 AuthModal 用的是 z-[10000]，能压住，所以这是真实回退。
+   * 这里统一抬到 100000 以上留出余量；新代码请一律消费这三个令牌，
+   * 不要再往业务里塞裸 z-index。 */
+  --st-z-dropdown: 100000;
+  --st-z-modal: 100100;
+  --st-z-toast: 100200;
 
   /* 饱和色块上的前景色（徽标、实心按钮、进度条填充上的文字）。
    * 浅色主题的状态色是饱和深色 → 用白字；

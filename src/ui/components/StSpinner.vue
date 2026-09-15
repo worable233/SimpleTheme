@@ -12,19 +12,21 @@ defineOptions({ name: 'StSpinner' })
 
 const props = withDefaults(
   defineProps<{
+    /** 尺寸档位或像素值；省略时按 medium */
     size?: StSize | number
     /** 描边宽度（视图单位） */
     stroke?: number
   }>(),
   {
-    size: 'medium',
+    // size 是联合类型，字符串默认值会被 eslint 的
+    // vue/require-valid-default-prop 误判，故默认值在 px 里兜底
     stroke: 2,
   },
 )
 
 const px = computed(() => {
   if (typeof props.size === 'number') return props.size
-  return { tiny: 12, small: 14, medium: 16, large: 20 }[props.size]
+  return { tiny: 12, small: 14, medium: 16, large: 20 }[props.size ?? 'medium']
 })
 </script>
 

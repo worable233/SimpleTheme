@@ -5,6 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import { StButton, StInput } from '@/ui'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
 import { showError } from '@/lib/toast'
@@ -489,9 +490,7 @@ defineExpose({ clearForm })
     <!-- Reply indicator -->
     <div v-if="parentCommentId" class="comments-replying">
       正在回复 <strong>#{{ parentCommentId }}</strong>
-      <button type="button" class="comments-replying__cancel" @click="emit('cancel-reply')">
-        取消
-      </button>
+      <StButton text size="tiny" @click="emit('cancel-reply')">取消</StButton>
     </div>
 
     <!-- Input row: textarea + collapsed actions (inline on mobile) -->
@@ -590,17 +589,39 @@ defineExpose({ clearForm })
               @select="insertEmoji"
             />
           </div>
-          <button type="button" class="emoji-toggle-btn" @click="toggleEmoji" title="表情">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-              <line x1="9" y1="9" x2="9.01" y2="9" />
-              <line x1="15" y1="9" x2="15.01" y2="9" />
-            </svg>
-          </button>
-          <button type="submit" class="comments-form__submit" :disabled="submitting || loading">
+          <StButton
+            quaternary
+            circle
+            :size="isMobile ? 'large' : 'medium'"
+            title="表情"
+            aria-label="表情"
+            @click="toggleEmoji"
+          >
+            <template #icon>
+              <svg
+                :width="isMobile ? 22 : 20"
+                :height="isMobile ? 22 : 20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                <line x1="9" y1="9" x2="9.01" y2="9" />
+                <line x1="15" y1="9" x2="15.01" y2="9" />
+              </svg>
+            </template>
+          </StButton>
+          <StButton
+            attr-type="submit"
+            type="primary"
+            :round="isMobile"
+            :size="isMobile ? 'large' : 'medium'"
+            :disabled="submitting || loading"
+          >
             {{ submitting ? '提交中...' : '发表评论' }}
-          </button>
+          </StButton>
         </div>
       </div>
       </div>
@@ -648,13 +669,12 @@ defineExpose({ clearForm })
                 <h3 class="wizard-step__title">怎么称呼你？</h3>
                 <p class="wizard-step__desc">输入你想显示的名称</p>
                 <div class="wizard-step__field">
-                  <input
+                  <StInput
                     v-model="authorName"
-                    type="text"
-                    class="wizard-step__input"
+                    :size="isMobile ? 'large' : 'medium'"
                     placeholder="输入昵称"
-                    maxlength="40"
-                    @keydown.enter.prevent="isStepValid && nextStep()"
+                    :maxlength="40"
+                    @enter="isStepValid && nextStep()"
                   />
                 </div>
               </template>
@@ -670,14 +690,13 @@ defineExpose({ clearForm })
                 <h3 class="wizard-step__title">留下联系方式</h3>
                 <p class="wizard-step__desc">方便博主与你联系</p>
                 <div class="wizard-step__field">
-                  <input
+                  <StInput
                     v-model="authorEmail"
-                    type="text"
-                    class="wizard-step__input"
-                    :class="{ 'wizard-step__input--invalid': wizardStepError }"
+                    :size="isMobile ? 'large' : 'medium'"
+                    :status="wizardStepError ? 'error' : undefined"
                     placeholder="输入邮箱或 QQ 号"
-                    maxlength="80"
-                    @keydown.enter.prevent="isStepValid && nextStep()"
+                    :maxlength="80"
+                    @enter="isStepValid && nextStep()"
                   />
                   <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
                 </div>
@@ -694,14 +713,14 @@ defineExpose({ clearForm })
                 <h3 class="wizard-step__title">你的网站</h3>
                 <p class="wizard-step__desc">可选，点击头像时会用到</p>
                 <div class="wizard-step__field">
-                  <input
+                  <StInput
                     v-model="authorUrl"
                     type="url"
-                    class="wizard-step__input"
-                    :class="{ 'wizard-step__input--invalid': wizardStepError }"
+                    :size="isMobile ? 'large' : 'medium'"
+                    :status="wizardStepError ? 'error' : undefined"
                     placeholder="输入你的网站地址"
-                    maxlength="120"
-                    @keydown.enter.prevent="isStepValid && nextStep()"
+                    :maxlength="120"
+                    @enter="isStepValid && nextStep()"
                   />
                   <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
                 </div>
@@ -761,21 +780,20 @@ defineExpose({ clearForm })
 
           <!-- Navigation -->
           <div class="wizard-nav">
-            <button
+            <StButton
               v-if="currentStepIndex > 0"
-              type="button"
-              class="wizard-nav__btn wizard-nav__btn--prev"
+              :size="isMobile ? 'large' : 'medium'"
               @click="prevStep"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
               </svg>
               上一步
-            </button>
-            <button
+            </StButton>
+            <StButton
               v-if="currentStepIndex < totalWizardSteps - 1"
-              type="button"
-              class="wizard-nav__btn wizard-nav__btn--next"
+              type="primary"
+              :size="isMobile ? 'large' : 'medium'"
               :disabled="!isStepValid"
               @click="nextStep"
             >
@@ -783,18 +801,18 @@ defineExpose({ clearForm })
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>
-            </button>
-            <button
+            </StButton>
+            <StButton
               v-else
-              type="button"
-              class="wizard-nav__btn wizard-nav__btn--submit"
+              type="primary"
+              :size="isMobile ? 'large' : 'medium'"
               @click="finishWizard"
             >
               完成
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-            </button>
+            </StButton>
           </div>
         </div>
       </div>
@@ -912,26 +930,6 @@ defineExpose({ clearForm })
   color: var(--secondary);
 }
 
-.comments-replying__cancel {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--secondary);
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.15s;
-}
-
-.comments-replying__cancel:hover {
-  color: var(--danger);
-  background: rgba(221, 36, 36, 0.08);
-}
-
 .comments-form__footer {
   display: flex;
   align-items: center;
@@ -945,57 +943,6 @@ defineExpose({ clearForm })
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.comments-form__submit {
-  font-size: 13px;
-  padding: 5px 16px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 500;
-  transition: opacity 0.2s;
-}
-
-.comments-form__submit:hover {
-  opacity: 0.85;
-}
-
-.comments-form__submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.emoji-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  color: var(--secondary);
-  transition: all 0.15s;
-}
-
-.emoji-toggle-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.emoji-toggle-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.emoji-toggle-btn:hover {
-  background: var(--muted);
-  color: var(--foreground);
 }
 
 /* 桌面 dropdown 包装器保持 static，避免成为零尺寸锚点；
@@ -1289,25 +1236,6 @@ defineExpose({ clearForm })
 	    justify-content: flex-end;
 	  }
 
-	  .comments-form__expandable-inner .emoji-toggle-btn {
-	    width: 38px;
-	    height: 38px;
-	    border-radius: 10px;
-	  }
-
-	  .comments-form__expandable-inner .emoji-toggle-btn svg {
-	    width: 22px;
-	    height: 22px;
-	  }
-
-	  .comments-form__expandable-inner .comments-form__submit {
-	    padding: 9px 22px;
-	    font-size: 14px;
-	    font-weight: 600;
-	    border-radius: 20px;
-	    min-height: 38px;
-	  }
-
 		  /* ── Mobile emoji panel (inline inside form, full width) ── */
 		  .emoji-panel-wrapper--inline {
 		    padding: 0;
@@ -1478,42 +1406,11 @@ defineExpose({ clearForm })
   /* Input wrapper */
 }
 
-.wizard-step__input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  font-size: 15px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--faint);
-  color: var(--foreground);
-  font-family: inherit;
-  transition: all 0.2s;
-  outline: none;
-}
-
-.wizard-step__input:focus {
-  border-color: var(--primary);
-  background: var(--card);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
-}
-
-.wizard-step__input--invalid,
-.wizard-step__input--invalid:focus {
-  border-color: var(--danger, #dd2424);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #dd2424) 12%, transparent);
-}
-
 .wizard-step__error {
   margin: 8px 2px 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--danger, #dd2424);
-}
-
-.wizard-step__input::placeholder {
-  color: var(--secondary);
-  opacity: 0.6;
 }
 
 /* ── Options (step 4) ── */
@@ -1607,80 +1504,16 @@ defineExpose({ clearForm })
   }
 }
 
-.wizard-nav__btn {
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-@media (max-width: 500px) {
-  .wizard-nav__btn {
-    padding: 12px 18px;
-    min-height: 44px;
-    font-size: 15px;
-    flex: 1;
-    justify-content: center;
-  }
-}
-
-.wizard-nav__btn--prev {
-  background: var(--muted);
-  color: var(--secondary);
-}
-
-.wizard-nav__btn--prev:hover {
-  background: var(--border);
-  color: var(--foreground);
-}
-
-.wizard-nav__btn--next {
-  background: var(--primary);
-  color: var(--primary-foreground);
+/* 按钮外观与状态由 StButton 提供；此处只保留向导导航的几何排布：
+   最后一个可见按钮是主操作，靠右对齐；移动端两个按钮等宽撑满触控区。 */
+.wizard-nav > :last-child {
   margin-left: auto;
 }
 
-.wizard-nav__btn--next:hover {
-  filter: brightness(1.1);
-}
-
-.wizard-nav__btn--next:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: none;
-}
-
-.wizard-nav__btn--submit {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  padding: 10px 24px;
-  margin-left: auto;
-}
-
-.wizard-nav__btn--submit:hover {
-  filter: brightness(1.1);
-}
-
-.wizard-nav__btn--submit:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: none;
-}
-
 @media (max-width: 500px) {
-  .wizard-nav__btn--submit {
+  .wizard-nav > * {
     flex: 1;
-    justify-content: center;
-    padding: 12px 24px;
     min-height: 44px;
-    font-size: 15px;
   }
 }
 
@@ -1702,14 +1535,6 @@ body[data-theme='dark'] .wizard-step__option {
 }
 
 body[data-theme='dark'] .wizard-step__option:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-body[data-theme='dark'] .wizard-step__input {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-body[data-theme='dark'] .wizard-step__input:focus {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -1788,9 +1613,5 @@ body[data-theme='dark'] .comments-form--mobile.comments-form--emoji-open {
 
 body[data-theme='dark'] .wizard-mask {
   background: rgba(0, 0, 0, 0.7);
-}
-
-body[data-theme='dark'] .wizard-step__input:focus {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 </style>

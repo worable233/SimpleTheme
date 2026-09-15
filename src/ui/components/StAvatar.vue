@@ -20,7 +20,7 @@ const props = withDefaults(
   defineProps<{
     src?: string
     alt?: string
-    /** 尺寸档位或像素值 */
+    /** 尺寸档位或像素值；省略时按 medium */
     size?: StSize | number
     /** 圆形（默认）或圆角方形 */
     round?: boolean
@@ -28,7 +28,9 @@ const props = withDefaults(
     fallbackText?: string
   }>(),
   {
-    size: 'medium',
+    // 刻意不在 withDefaults 里给 size 默认值：size 是 StSize | number 联合，
+    // eslint 的 vue/require-valid-default-prop 会把字符串默认值误判为非法。
+    // 默认值改在下面 px 计算里兜底，对外 API 与行为完全不变。
     round: true,
   },
 )
@@ -47,7 +49,7 @@ watch(
 const px = computed(() =>
   typeof props.size === 'number'
     ? props.size
-    : { tiny: 24, small: 28, medium: 36, large: 44 }[props.size],
+    : { tiny: 24, small: 28, medium: 36, large: 44 }[props.size ?? 'medium'],
 )
 
 const rootStyle = computed(() => ({

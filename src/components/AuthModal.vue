@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+/**
+ * AuthModal — 登录 / 注册 / 找回密码 / 重置密码弹窗
+ *
+ * 外壳与控件已迁移到 src/ui（StModal / StInput / StButton / StCheckbox /
+ * StAlert / StSpinner / StStack）；本文件只保留业务逻辑与表单拼装。
+ * 焦点陷阱 / ESC / 遮罩点击 / 滚动锁定 / aria-modal 由 StModal 内部的
+ * reka-ui Dialog 负责，本组件不再自建。
+ */
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   apiLogin,
@@ -9,15 +17,16 @@ import {
   apiResetPassword,
 } from '@/lib/api-auth'
 import { useAuth } from '@/composables/useAuth'
-import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { getThemeConfig } from '@/lib/theme-config'
-import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import { StAlert, StButton, StCheckbox, StInput, StModal, StSpinner, StStack } from '@/ui'
 import AppIcon from '@/components/AppIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
+/** StModal 的受控开关；关闭动作统一由 @close 上抛给父组件（原语义不变） */
+const showModal = ref(true)
+
 const { setLoggedIn } = useAuth()
-const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
 
 /** 从 REST 错误响应中提取可读消息 */
 function apiErrorMessage(e: unknown): string | undefined {
@@ -243,324 +252,279 @@ function switchTo(tab: AuthTab) {
   errorMsg.value = ''
   successMsg.value = ''
 }
-
-// ESC 关闭
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
-  lockBodyScroll()
-})
-
-onUnmounted(() => {
-  unlockBodyScroll()
-  document.removeEventListener('keydown', onKeydown)
-})
-
-/* 表单共享 utilities（同模板内多处复用） */
-const fieldLabel = 'mb-1.5 block text-[13px] font-medium text-foreground'
-const fieldInput =
-  'w-full rounded-medium border border-input bg-card px-3.5 py-2.5 text-sm leading-normal text-foreground transition-[border-color,box-shadow] duration-150 focus:border-primary focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_20%,transparent)] focus:outline-none'
-const primaryBtn =
-  'w-full cursor-pointer rounded-medium border-none bg-primary px-6 py-2.5 text-sm leading-normal font-medium text-primary-foreground transition-all duration-150 hover:enabled:-translate-y-px hover:enabled:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
-const formLinks = 'mt-4 flex justify-between text-[13px]'
-const formLink =
-  'text-primary no-underline transition-opacity duration-150 hover:underline hover:opacity-70'
-const formClass = 'px-6 pt-5 pb-6 max-[480px]:p-4'
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="auth-modal__backdrop fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
-      @click.self="$emit('close')"
-    >
-      <div
-        class="auth-modal__container max-h-[90vh] w-full max-w-[420px] overflow-y-auto rounded-large bg-card shadow-large max-[480px]:max-w-full max-[480px]:rounded-medium"
-        @click.stop
-      >
-        <!-- 标题 -->
-        <div class="flex items-center justify-between px-6 pt-5 max-[480px]:px-4 max-[480px]:pt-4">
-          <h3 class="m-0 text-xl font-[650] tracking-[-0.3px] text-foreground">{{ tabTitle }}</h3>
-          <ModalCloseButton @click="$emit('close')" />
-        </div>
+  <StModal v-model:show="showModal" :title="tabTitle" size="small" @close="emit('close')">
+    <StStack gap="4">
+      <!-- 错误 / 成功消息 -->
+      <StAlert v-if="errorMsg" type="error">{{ errorMsg }}</StAlert>
+      <StAlert v-if="successMsg" type="success">{{ successMsg }}</StAlert>
 
-        <!-- 错误 / 成功消息 -->
-        <div
-          v-if="errorMsg"
-          class="mx-6 mt-4 rounded-medium bg-danger/[0.08] px-3.5 py-2.5 text-[13px] leading-normal text-danger max-[480px]:mx-4 max-[480px]:mt-3"
-        >
-          {{ errorMsg }}
-        </div>
-        <div
-          v-if="successMsg"
-          class="mx-6 mt-4 rounded-medium bg-success/[0.08] px-3.5 py-2.5 text-[13px] leading-normal text-success max-[480px]:mx-4 max-[480px]:mt-3"
-        >
-          {{ successMsg }}
-        </div>
+      <!-- 加载中 -->
+      <div v-if="loading && activeTab === 'resetpassword' && !errorMsg" class="auth-status">
+        <span class="auth-status__spinner"><StSpinner :size="32" /></span>
+        <p class="auth-status__text">正在验证...</p>
+      </div>
 
-        <!-- 加载中 -->
-        <div
-          v-if="loading && activeTab === 'resetpassword' && !errorMsg"
-          class="px-6 py-10 text-center text-muted-foreground"
-        >
-          <div class="auth-modal__spinner"></div>
-          <p>正在验证...</p>
+      <!-- ===== 消息页面（注册成功/发送邮件成功） ===== -->
+      <div v-if="activeTab === 'message'" class="auth-message">
+        <div class="auth-message__icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="48"
+            height="48"
+          >
+            <path d="M22 2L11 13" />
+            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+          </svg>
         </div>
+        <p class="auth-message__text">{{ successMsg }}</p>
+        <StButton type="primary" block @click="emit('close')">知道了</StButton>
+      </div>
 
-        <!-- ===== 消息页面（注册成功/发送邮件成功） ===== -->
-        <div v-if="activeTab === 'message'" class="px-6 py-10 text-center">
-          <div class="mb-4 text-primary">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="48"
-              height="48"
-            >
-              <path d="M22 2L11 13" />
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-            </svg>
-          </div>
-          <p class="m-0 mb-6 text-sm leading-[1.6] text-foreground">{{ successMsg }}</p>
-          <button :class="primaryBtn" @click="$emit('close')">知道了</button>
-        </div>
-
-        <!-- ===== 登录表单 ===== -->
-        <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" :class="formClass">
-          <div class="mb-4">
-            <label for="auth-log" :class="fieldLabel">用户名或邮箱</label>
-            <input
-              id="auth-log"
+      <!-- ===== 登录表单 ===== -->
+      <form v-if="activeTab === 'login'" @submit.prevent="handleLogin">
+        <StStack gap="4">
+          <label class="auth-field">
+            <span class="auth-field__label">用户名或邮箱</span>
+            <StInput
               v-model="log"
               type="text"
               autocomplete="username"
               placeholder="输入用户名或邮箱"
-              required
-              :class="fieldInput"
             />
-          </div>
-          <div class="mb-4">
-            <label for="auth-pwd" :class="fieldLabel">密码</label>
-            <div class="relative">
-              <input
-                id="auth-pwd"
-                v-model="pwd"
-                :type="showLoginPassword ? 'text' : 'password'"
-                autocomplete="current-password"
-                placeholder="输入密码"
-                required
-                :class="`${fieldInput} pr-10`"
-              />
-              <button
-                type="button"
-                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-                :aria-label="showLoginPassword ? '隐藏密码' : '显示密码'"
-                :title="showLoginPassword ? '隐藏密码' : '显示密码'"
-                @click="showLoginPassword = !showLoginPassword"
-              >
-                <AppIcon :name="showLoginPassword ? 'eye-off' : 'eye'" :size="18" />
-              </button>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label
-              class="flex cursor-pointer items-center gap-2 text-[13px] font-normal text-foreground"
+          </label>
+          <label class="auth-field">
+            <span class="auth-field__label">密码</span>
+            <StInput
+              v-model="pwd"
+              :type="showLoginPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="输入密码"
             >
-              <input v-model="rememberme" type="checkbox" class="h-4 w-4 accent-primary" />
-              <span>记住我</span>
-            </label>
-          </div>
-          <button type="submit" :class="primaryBtn" :disabled="loading">
+              <template #suffix>
+                <StButton
+                  quaternary
+                  circle
+                  size="small"
+                  :aria-label="showLoginPassword ? '隐藏密码' : '显示密码'"
+                  :title="showLoginPassword ? '隐藏密码' : '显示密码'"
+                  @click="showLoginPassword = !showLoginPassword"
+                >
+                  <AppIcon :name="showLoginPassword ? 'eye-off' : 'eye'" :size="18" />
+                </StButton>
+              </template>
+            </StInput>
+          </label>
+          <StCheckbox v-model="rememberme">记住我</StCheckbox>
+          <StButton type="primary" block attr-type="submit" :disabled="loading">
             {{ loading ? '登录中...' : '登录' }}
-          </button>
-          <div :class="formLinks">
-            <a href="#" :class="formLink" @click.prevent="switchTo('lostpassword')">忘记密码？</a>
-            <a v-if="canRegister" href="#" :class="formLink" @click.prevent="switchTo('register')"
+          </StButton>
+          <div class="auth-links">
+            <a href="#" class="auth-link" @click.prevent="switchTo('lostpassword')">忘记密码？</a>
+            <a
+              v-if="canRegister"
+              href="#"
+              class="auth-link"
+              @click.prevent="switchTo('register')"
               >注册账号</a
             >
           </div>
-        </form>
+        </StStack>
+      </form>
 
-        <!-- ===== 注册表单 ===== -->
-        <form v-if="activeTab === 'register'" @submit.prevent="handleRegister" :class="formClass">
-          <div class="mb-4">
-            <label for="auth-reg-user" :class="fieldLabel">用户名</label>
-            <input
-              id="auth-reg-user"
+      <!-- ===== 注册表单 ===== -->
+      <form v-if="activeTab === 'register'" @submit.prevent="handleRegister">
+        <StStack gap="4">
+          <label class="auth-field">
+            <span class="auth-field__label">用户名</span>
+            <StInput
               v-model="regUser"
               type="text"
               autocomplete="username"
               placeholder="输入用户名"
-              required
-              :class="fieldInput"
             />
-          </div>
-          <div class="mb-4">
-            <label for="auth-reg-email" :class="fieldLabel">邮箱</label>
-            <input
-              id="auth-reg-email"
-              v-model="regEmail"
-              type="email"
-              autocomplete="email"
-              placeholder="输入邮箱"
-              required
-              :class="fieldInput"
-            />
-          </div>
-          <button type="submit" :class="primaryBtn" :disabled="loading">
+          </label>
+          <label class="auth-field">
+            <span class="auth-field__label">邮箱</span>
+            <StInput v-model="regEmail" type="email" autocomplete="email" placeholder="输入邮箱" />
+          </label>
+          <StButton type="primary" block attr-type="submit" :disabled="loading">
             {{ loading ? '注册中...' : '注册' }}
-          </button>
-          <div :class="formLinks">
-            <span class="text-muted-foreground">已有账号？</span>
-            <a href="#" :class="formLink" @click.prevent="switchTo('login')">登录</a>
+          </StButton>
+          <div class="auth-links">
+            <span class="auth-links__hint">已有账号？</span>
+            <a href="#" class="auth-link" @click.prevent="switchTo('login')">登录</a>
           </div>
-        </form>
+        </StStack>
+      </form>
 
-        <!-- ===== 找回密码表单 ===== -->
-        <form
-          v-if="activeTab === 'lostpassword'"
-          @submit.prevent="handleLostPassword"
-          :class="formClass"
-        >
-          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">
-            输入您的用户名或邮箱地址，我们将向您发送重置密码的链接。
-          </p>
-          <div class="mb-4">
-            <label for="auth-lost-user" :class="fieldLabel">用户名或邮箱</label>
-            <input
-              id="auth-lost-user"
+      <!-- ===== 找回密码表单 ===== -->
+      <form v-if="activeTab === 'lostpassword'" @submit.prevent="handleLostPassword">
+        <StStack gap="4">
+          <p class="auth-hint">输入您的用户名或邮箱地址，我们将向您发送重置密码的链接。</p>
+          <label class="auth-field">
+            <span class="auth-field__label">用户名或邮箱</span>
+            <StInput
               v-model="lostUser"
               type="text"
               autocomplete="username"
               placeholder="输入用户名或邮箱"
-              required
-              :class="fieldInput"
             />
-          </div>
-          <button type="submit" :class="primaryBtn" :disabled="loading">
+          </label>
+          <StButton type="primary" block attr-type="submit" :disabled="loading">
             {{ loading ? '发送中...' : '发送重置邮件' }}
-          </button>
-          <div :class="formLinks">
-            <a href="#" :class="formLink" @click.prevent="switchTo('login')">返回登录</a>
+          </StButton>
+          <div class="auth-links">
+            <a href="#" class="auth-link" @click.prevent="switchTo('login')">返回登录</a>
           </div>
-        </form>
+        </StStack>
+      </form>
 
-        <!-- ===== 重置密码表单 ===== -->
-        <form
-          v-if="activeTab === 'resetpassword'"
-          @submit.prevent="handleResetPassword"
-          :class="formClass"
-        >
-          <p class="m-0 mb-4 text-[13px] leading-normal text-muted-foreground">
-            请设置您的新密码。
-          </p>
-          <div class="mb-4">
-            <label for="auth-reset-pass1" :class="fieldLabel">新密码</label>
-            <div class="relative">
-              <input
-                id="auth-reset-pass1"
-                v-model="resetPass1"
-                :type="showResetPassword ? 'text' : 'password'"
-                autocomplete="new-password"
-                placeholder="输入新密码"
-                required
-                minlength="6"
-                :class="`${fieldInput} pr-10`"
-              />
-              <button
-                type="button"
-                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-                :aria-label="showResetPassword ? '隐藏密码' : '显示密码'"
-                :title="showResetPassword ? '隐藏密码' : '显示密码'"
-                @click="showResetPassword = !showResetPassword"
-              >
-                <AppIcon :name="showResetPassword ? 'eye-off' : 'eye'" :size="18" />
-              </button>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label for="auth-reset-pass2" :class="fieldLabel">确认新密码</label>
-            <div class="relative">
-              <input
-                id="auth-reset-pass2"
-                v-model="resetPass2"
-                :type="showResetPasswordConfirm ? 'text' : 'password'"
-                autocomplete="new-password"
-                placeholder="再次输入新密码"
-                required
-                minlength="6"
-                :class="`${fieldInput} pr-10`"
-              />
-              <button
-                type="button"
-                class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-                :aria-label="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
-                :title="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
-                @click="showResetPasswordConfirm = !showResetPasswordConfirm"
-              >
-                <AppIcon :name="showResetPasswordConfirm ? 'eye-off' : 'eye'" :size="18" />
-              </button>
-            </div>
-          </div>
-          <button type="submit" :class="primaryBtn" :disabled="loading">
+      <!-- ===== 重置密码表单 ===== -->
+      <form v-if="activeTab === 'resetpassword'" @submit.prevent="handleResetPassword">
+        <StStack gap="4">
+          <p class="auth-hint">请设置您的新密码。</p>
+          <label class="auth-field">
+            <span class="auth-field__label">新密码</span>
+            <StInput
+              v-model="resetPass1"
+              :type="showResetPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              placeholder="输入新密码"
+            >
+              <template #suffix>
+                <StButton
+                  quaternary
+                  circle
+                  size="small"
+                  :aria-label="showResetPassword ? '隐藏密码' : '显示密码'"
+                  :title="showResetPassword ? '隐藏密码' : '显示密码'"
+                  @click="showResetPassword = !showResetPassword"
+                >
+                  <AppIcon :name="showResetPassword ? 'eye-off' : 'eye'" :size="18" />
+                </StButton>
+              </template>
+            </StInput>
+          </label>
+          <label class="auth-field">
+            <span class="auth-field__label">确认新密码</span>
+            <StInput
+              v-model="resetPass2"
+              :type="showResetPasswordConfirm ? 'text' : 'password'"
+              autocomplete="new-password"
+              placeholder="再次输入新密码"
+            >
+              <template #suffix>
+                <StButton
+                  quaternary
+                  circle
+                  size="small"
+                  :aria-label="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
+                  :title="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
+                  @click="showResetPasswordConfirm = !showResetPasswordConfirm"
+                >
+                  <AppIcon :name="showResetPasswordConfirm ? 'eye-off' : 'eye'" :size="18" />
+                </StButton>
+              </template>
+            </StInput>
+          </label>
+          <StButton type="primary" block attr-type="submit" :disabled="loading">
             {{ loading ? '重置中...' : '重置密码' }}
-          </button>
-          <div :class="formLinks">
-            <a href="#" :class="formLink" @click.prevent="switchTo('login')">返回登录</a>
+          </StButton>
+          <div class="auth-links">
+            <a href="#" class="auth-link" @click.prevent="switchTo('login')">返回登录</a>
           </div>
-        </form>
-      </div>
-    </div>
-  </Teleport>
+        </StStack>
+      </form>
+    </StStack>
+  </StModal>
 </template>
 
 <style scoped>
-/* Entry animations + spinner (keyframes stay in CSS — utility exception) */
-.auth-modal__backdrop {
-  animation: auth-fade-in 0.2s ease;
+/* ==================== 表单 ==================== */
+label.auth-field {
+  display: block;
 }
 
-@keyframes auth-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.auth-field__label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
-.auth-modal__container {
-  animation: auth-slide-up 0.25s ease;
+.auth-hint {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-@keyframes auth-slide-up {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
 }
 
-.auth-modal__spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--border);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: auth-spin 0.7s linear infinite;
-  margin: 0 auto 12px;
+.auth-links__hint {
+  color: var(--muted-foreground);
 }
 
-@keyframes auth-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.auth-link {
+  color: var(--primary);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+  opacity: 0.7;
+}
+
+/* ==================== 状态区 ==================== */
+.auth-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.auth-status__spinner {
+  color: var(--primary);
+}
+
+.auth-status__text {
+  margin: 0;
+}
+
+/* ==================== 消息页 ==================== */
+.auth-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.auth-message__icon {
+  color: var(--primary);
+}
+
+.auth-message__text {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.6;
 }
 </style>
