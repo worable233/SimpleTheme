@@ -11,14 +11,16 @@
  * 把间距收敛成 --st-space-* 的有限刻度后，调用方只能从刻度里选，不再各写各的 px。
  */
 import { computed } from 'vue'
+import type { StSpace } from '../types'
 
 defineOptions({ name: 'StStack' })
 
 const props = withDefaults(
   defineProps<{
     direction?: 'vertical' | 'horizontal'
-    /** 间距刻度，映射 --st-space-N；0 表示紧贴 */
-    gap?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8
+    /** 间距刻度，映射 --st-space-N；0 表示紧贴。
+     * 数字与数字字符串都接受 —— 模板里 `gap="4"` 传的是字符串。 */
+    gap?: StSpace
     align?: 'start' | 'center' | 'end' | 'stretch' | 'baseline'
     justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'
     /** 允许换行（横向时才有意义） */

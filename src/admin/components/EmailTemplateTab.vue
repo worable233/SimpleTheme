@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import AppCard from './AppCard.vue'
+import { StCard } from '@/ui'
 
 interface Template {
   id: string
@@ -78,7 +78,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AppCard title="邮件模板" description="选择邮件模板样式，所有通过 WordPress 发出的邮件（评论回复通知、密码重置等）将使用选中模板渲染。">
+  <StCard
+    title="邮件模板"
+    subtitle="选择邮件模板样式，所有通过 WordPress 发出的邮件（评论回复通知、密码重置等）将使用选中模板渲染。"
+  >
     <div class="email-template-grid">
       <div
         v-for="tpl in templates"
@@ -88,7 +91,10 @@ onMounted(async () => {
         @click="selectTemplate(tpl.id)"
       >
         <div class="email-template-card__selector">
-          <div class="email-template-card__radio" :class="{ 'email-template-card__radio--checked': currentTemplate === tpl.id }">
+          <div
+            class="email-template-card__radio"
+            :class="{ 'email-template-card__radio--checked': currentTemplate === tpl.id }"
+          >
             <div v-if="currentTemplate === tpl.id" class="email-template-card__dot"></div>
           </div>
         </div>
@@ -98,10 +104,13 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-  </AppCard>
+  </StCard>
 
   <!-- Preview -->
-  <AppCard title="预览" :description="'当前预览: ' + (templates.find(t => t.id === currentTemplate)?.name || '')">
+  <StCard
+    title="预览"
+    :subtitle="'当前预览: ' + (templates.find((t) => t.id === currentTemplate)?.name || '')"
+  >
     <div v-if="previewLoading" class="email-preview-loading">加载预览中...</div>
     <div v-else-if="previewHtml" class="email-preview-wrapper">
       <iframe
@@ -112,7 +121,7 @@ onMounted(async () => {
       ></iframe>
     </div>
     <div v-else class="email-preview-empty">请选择一个模板查看预览</div>
-  </AppCard>
+  </StCard>
 </template>
 
 <style scoped>
@@ -128,18 +137,18 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  border: 2px solid var(--xh-border, #e2e2e2);
-  border-radius: var(--xh-radius, 8px);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-large);
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--xh-card, #fff);
+  background: var(--card);
 }
 .email-template-card:hover {
-  border-color: var(--xh-primary, #333);
+  border-color: var(--primary);
 }
 .email-template-card--active {
-  border-color: var(--xh-primary, #333);
-  background: var(--xh-primary-light, #f5f5f5);
+  border-color: var(--primary);
+  background: var(--muted);
 }
 
 .email-template-card__selector {
@@ -150,20 +159,20 @@ onMounted(async () => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--xh-border, #ccc);
+  border: 2px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
 }
 .email-template-card__radio--checked {
-  border-color: var(--xh-primary, #333);
+  border-color: var(--primary);
 }
 .email-template-card__dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--xh-primary, #333);
+  background: var(--primary);
 }
 
 .email-template-card__info {
@@ -173,12 +182,12 @@ onMounted(async () => {
 .email-template-card__name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--xh-text, #333);
+  color: var(--foreground);
   margin-bottom: 4px;
 }
 .email-template-card__desc {
   font-size: 13px;
-  color: var(--xh-text-secondary, #888);
+  color: var(--muted-foreground);
   line-height: 1.5;
 }
 
@@ -186,13 +195,13 @@ onMounted(async () => {
 .email-preview-empty {
   text-align: center;
   padding: 48px 16px;
-  color: var(--xh-text-secondary, #888);
+  color: var(--muted-foreground);
   font-size: 14px;
 }
 
 .email-preview-wrapper {
-  border: 1px solid var(--xh-border, #e2e2e2);
-  border-radius: var(--xh-radius-sm, 6px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
   overflow: hidden;
 }
 
@@ -201,6 +210,6 @@ onMounted(async () => {
   height: 520px;
   border: none;
   display: block;
-  background: #fff;
+  background: var(--card);
 }
 </style>

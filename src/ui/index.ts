@@ -65,5 +65,6 @@ export { useToast, showToast, removeToast, clearToasts, toasts } from './composa
 
 // ── 类型契约 ──
 export type { StSize, StStatus, StIntent, StPlacement, StOption } from './types'
+export type { StSpace, StSpaceScale, StCols, StColsInput } from './types'
 export type { StToastType, StToastItem, StToastApi } from './composables/useToast'
 export { ST_SIZES } from './types'

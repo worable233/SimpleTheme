@@ -1,7 +1,17 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import AppCard from './AppCard.vue'
-import AppToggle from './AppToggle.vue'
+import {
+  StButton,
+  StCard,
+  StFormItem,
+  StGrid,
+  StInput,
+  StNumberInput,
+  StSelect,
+  StStack,
+  StSwitch,
+} from '@/ui'
+import type { StOption } from '@/ui'
 
 const props = defineProps<{
   settings: Record<string, unknown>
@@ -15,7 +25,20 @@ const emit = defineEmits<{
 
 const smtpEnabled = computed(() => !!props.settings.smtp_enabled)
 
+/** 加密方式是有限枚举，reka-ui 的 value 不接受空字符串，用 'none' 表达"无" */
+const encryptionOptions: StOption[] = [
+  { label: '无', value: 'none' },
+  { label: 'SSL', value: 'ssl' },
+  { label: 'TLS', value: 'tls' },
+]
+
 const testEmail = ref('')
+
+/** StInput 的 modelValue 是 string | number | undefined，收敛回本地 string 状态 */
+function setTestEmail(value: string | number | undefined) {
+  testEmail.value = value == null ? '' : String(value)
+}
+
 const testStatus = ref<'idle' | 'sending' | 'success' | 'error'>('idle')
 const testMessage = ref('')
 
@@ -109,7 +132,11 @@ async function retryMail(id: number) {
   if (nonce) headers['X-WP-Nonce'] = nonce
 
   try {
-    const res = await fetch(`${url}/retry/${id}`, { method: 'POST', credentials: 'same-origin', headers })
+    const res = await fetch(`${url}/retry/${id}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers,
+    })
     if (res.ok) {
       emit('toast', '已加入重试队列', 'success')
       await fetchQueue()
@@ -167,207 +194,216 @@ const statusColors: Record<string, string> = {
 
 <template>
   <!-- Enable SMTP -->
-  <AppCard title="SMTP 服务" description="配置 SMTP 发送邮件，用于 WordPress 的密码重置、通知等功能。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.smtp_enabled"
-        label="启用 SMTP"
-        @update:modelValue="emit('update', 'smtp_enabled', $event)"
-      />
-    </div>
-  </AppCard>
+  <StCard title="SMTP 服务" subtitle="配置 SMTP 发送邮件，用于 WordPress 的密码重置、通知等功能。">
+    <StSwitch
+      :model-value="!!settings.smtp_enabled"
+      @update:model-value="emit('update', 'smtp_enabled', $event)"
+    >
+      启用 SMTP
+    </StSwitch>
+  </StCard>
 
   <!-- SMTP Settings -->
   <div class="smtp-sections" :class="{ 'smtp-sections--disabled': !smtpEnabled }">
-    <AppCard title="服务器设置" description="填写 SMTP 服务器连接信息。">
-      <div class="xh-grid">
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">SMTP 服务器</label>
-          <input
-            type="text"
-            class="xh-input"
+    <StCard title="服务器设置" subtitle="填写 SMTP 服务器连接信息。">
+      <StGrid :cols="2" :gap="4">
+        <StFormItem label="SMTP 服务器">
+          <StInput
             placeholder="smtp.example.com"
-            :value="(settings.smtp_host as string) || ''"
-            @input="emit('update', 'smtp_host', ($event.target as HTMLInputElement).value)"
+            :model-value="(settings.smtp_host as string) || ''"
+            @update:model-value="emit('update', 'smtp_host', $event)"
           />
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">端口</label>
-          <input
-            type="number"
-            class="xh-input xh-input--number"
-            min="1" max="65535"
-            :value="(settings.smtp_port as number) || 587"
-            @input="emit('update', 'smtp_port', Number(($event.target as HTMLInputElement).value))"
+        </StFormItem>
+
+        <StFormItem label="端口">
+          <StNumberInput
+            :min="1"
+            :max="65535"
+            :model-value="(settings.smtp_port as number) ?? 587"
+            @update:model-value="emit('update', 'smtp_port', $event)"
           />
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">加密方式</label>
-          <select
-            class="xh-select"
-            :value="(settings.smtp_encryption as string) || 'tls'"
-            @change="emit('update', 'smtp_encryption', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="none">无</option>
-            <option value="ssl">SSL</option>
-            <option value="tls">TLS</option>
-          </select>
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">连接超时（秒）</label>
-          <input
-            type="number"
-            class="xh-input xh-input--number"
-            min="1" max="120"
-            :value="(settings.smtp_timeout as number) ?? 30"
-            @input="emit('update', 'smtp_timeout', Number(($event.target as HTMLInputElement).value))"
+        </StFormItem>
+
+        <StFormItem label="加密方式">
+          <StSelect
+            :options="encryptionOptions"
+            :model-value="(settings.smtp_encryption as string) || 'tls'"
+            @update:model-value="emit('update', 'smtp_encryption', $event)"
           />
-          <p class="xh-field__desc">PHPMailer 等待服务器响应的最大秒数，范围 1-120，SSL 连接建议 30 秒以上。</p>
-        </div>
-      </div>
-    </AppCard>
+        </StFormItem>
+
+        <StFormItem
+          label="连接超时（秒）"
+          description="PHPMailer 等待服务器响应的最大秒数，范围 1-120，SSL 连接建议 30 秒以上。"
+        >
+          <StNumberInput
+            :min="1"
+            :max="120"
+            :model-value="(settings.smtp_timeout as number) ?? 30"
+            @update:model-value="emit('update', 'smtp_timeout', $event)"
+          />
+        </StFormItem>
+      </StGrid>
+    </StCard>
 
     <!-- Authentication -->
-    <AppCard title="身份验证" description="配置 SMTP 登录凭据（大多数服务商需要）。">
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="!!settings.smtp_auth"
-          label="启用身份验证"
-          @update:modelValue="emit('update', 'smtp_auth', $event)"
-        />
-      </div>
-      <template v-if="settings.smtp_auth">
-        <div class="xh-grid" style="margin-top: 16px;">
-          <div class="xh-field xh-field--compact">
-            <label class="xh-field__label">用户名</label>
-            <input
-              type="text"
-              class="xh-input"
-              :value="(settings.smtp_username as string) || ''"
-              @input="emit('update', 'smtp_username', ($event.target as HTMLInputElement).value)"
+    <StCard title="身份验证" subtitle="配置 SMTP 登录凭据（大多数服务商需要）。">
+      <StStack :gap="4">
+        <StSwitch
+          :model-value="!!settings.smtp_auth"
+          @update:model-value="emit('update', 'smtp_auth', $event)"
+        >
+          启用身份验证
+        </StSwitch>
+
+        <StGrid v-if="settings.smtp_auth" :cols="2" :gap="4">
+          <StFormItem label="用户名">
+            <StInput
+              :model-value="(settings.smtp_username as string) || ''"
+              @update:model-value="emit('update', 'smtp_username', $event)"
             />
-          </div>
-          <div class="xh-field xh-field--compact">
-            <label class="xh-field__label">密码</label>
-            <input
+          </StFormItem>
+
+          <StFormItem
+            label="密码"
+            :description="
+              (settings.smtp_password as string) === '********'
+                ? '已设置密码，输入新值将替换。'
+                : undefined
+            "
+          >
+            <StInput
               type="password"
-              class="xh-input"
               placeholder="输入新密码以修改"
-              :value="(settings.smtp_password as string) === '********' ? '' : (settings.smtp_password as string)"
-              @input="emit('update', 'smtp_password', ($event.target as HTMLInputElement).value)"
+              :model-value="
+                (settings.smtp_password as string) === '********'
+                  ? ''
+                  : (settings.smtp_password as string)
+              "
+              @update:model-value="emit('update', 'smtp_password', $event)"
             />
-            <p class="xh-field__desc" v-if="(settings.smtp_password as string) === '********'">已设置密码，输入新值将替换。</p>
-          </div>
-        </div>
-      </template>
-    </AppCard>
+          </StFormItem>
+        </StGrid>
+      </StStack>
+    </StCard>
 
     <!-- From -->
-    <AppCard title="发件人信息" description="自定义发件人地址和名称（可选）。">
-      <div class="xh-grid">
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">发件人邮箱</label>
-          <input
+    <StCard title="发件人信息" subtitle="自定义发件人地址和名称（可选）。">
+      <StGrid :cols="2" :gap="4">
+        <StFormItem label="发件人邮箱">
+          <StInput
             type="email"
-            class="xh-input"
             placeholder="noreply@example.com"
-            :value="(settings.smtp_from_email as string) || ''"
-            @input="emit('update', 'smtp_from_email', ($event.target as HTMLInputElement).value)"
+            :model-value="(settings.smtp_from_email as string) || ''"
+            @update:model-value="emit('update', 'smtp_from_email', $event)"
           />
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">发件人名称</label>
-          <input
+        </StFormItem>
+
+        <StFormItem label="发件人名称">
+          <StInput
             type="text"
-            class="xh-input"
             :placeholder="(defaults.smtp_from_name as string) || '站点名称'"
-            :value="(settings.smtp_from_name as string) || ''"
-            @input="emit('update', 'smtp_from_name', ($event.target as HTMLInputElement).value)"
+            :model-value="(settings.smtp_from_name as string) || ''"
+            @update:model-value="emit('update', 'smtp_from_name', $event)"
           />
-        </div>
-      </div>
-    </AppCard>
+        </StFormItem>
+      </StGrid>
+    </StCard>
 
     <!-- Test Email -->
-    <AppCard title="测试邮件" description="保存设置后，发送一封测试邮件验证 SMTP 配置是否生效。">
-      <div class="xh-field">
-        <label class="xh-field__label">收件地址</label>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <input
+    <StCard title="测试邮件" subtitle="保存设置后，发送一封测试邮件验证 SMTP 配置是否生效。">
+      <StFormItem
+        label="收件地址"
+        :feedback="testMessage && testStatus === 'error' ? '错误详情: ' + testMessage : undefined"
+        :validation-status="testStatus === 'error' ? 'error' : undefined"
+      >
+        <StStack direction="horizontal" :gap="2" align="center" wrap block>
+          <StInput
             type="email"
-            class="xh-input"
-            style="flex: 1; min-width: 200px;"
             placeholder="输入您的邮箱地址"
-            v-model="testEmail"
-            @keyup.enter="sendTest"
+            :model-value="testEmail"
+            @update:model-value="setTestEmail"
+            @enter="sendTest"
           />
-          <button
-            class="xh-btn"
-            :class="{ 'xh-btn--primary': testStatus !== 'sending' }"
+          <StButton
+            :type="testStatus !== 'sending' ? 'primary' : 'default'"
             :disabled="!testEmail || testStatus === 'sending'"
             @click="sendTest"
           >
             {{ testStatus === 'sending' ? '发送中...' : '发送测试' }}
-          </button>
-        </div>
-        <p
-          v-if="testMessage && testStatus === 'error'"
-          class="xh-field__desc"
-          style="color: var(--xh-error, #dc2626); margin-top: 8px; word-break: break-word;"
-        >
-          错误详情: {{ testMessage }}
-        </p>
-      </div>
-    </AppCard>
+          </StButton>
+        </StStack>
+      </StFormItem>
+    </StCard>
 
     <!-- Queue Settings -->
-    <AppCard title="队列设置" description="启用后，邮件将进入队列逐个发送，避免阻塞页面响应。失败时会根据配置自动重试。">
-      <div class="xh-field xh-field--compact">
-        <AppToggle
-          :modelValue="!!settings.smtp_queue_enabled"
-          label="启用邮件队列"
-          @update:modelValue="emit('update', 'smtp_queue_enabled', $event)"
-        />
-      </div>
-      <div class="xh-grid" style="margin-top: 16px;">
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">失败重试次数</label>
-          <input
-            type="number"
-            class="xh-input xh-input--number"
-            min="0" max="20"
-            :value="(settings.smtp_queue_retry_count as number) ?? 3"
-            @input="emit('update', 'smtp_queue_retry_count', Number(($event.target as HTMLInputElement).value))"
-          />
-          <p class="xh-field__desc">最多重试次数（0 = 不重试），实际重试次数不会超过配置值。</p>
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">重试间隔（秒）</label>
-          <input
-            type="number"
-            class="xh-input xh-input--number"
-            min="60" max="3600" step="30"
-            :value="(settings.smtp_queue_retry_interval as number) ?? 300"
-            @input="emit('update', 'smtp_queue_retry_interval', Number(($event.target as HTMLInputElement).value))"
-          />
-          <p class="xh-field__desc">失败后等待多少秒再次发送。范围 60-3600 秒。</p>
-        </div>
-      </div>
-    </AppCard>
+    <StCard
+      title="队列设置"
+      subtitle="启用后，邮件将进入队列逐个发送，避免阻塞页面响应。失败时会根据配置自动重试。"
+    >
+      <StStack :gap="4">
+        <StSwitch
+          :model-value="!!settings.smtp_queue_enabled"
+          @update:model-value="emit('update', 'smtp_queue_enabled', $event)"
+        >
+          启用邮件队列
+        </StSwitch>
+
+        <StGrid :cols="2" :gap="4">
+          <StFormItem
+            label="失败重试次数"
+            description="最多重试次数（0 = 不重试），实际重试次数不会超过配置值。"
+          >
+            <StNumberInput
+              :min="0"
+              :max="20"
+              :model-value="(settings.smtp_queue_retry_count as number) ?? 3"
+              @update:model-value="emit('update', 'smtp_queue_retry_count', $event)"
+            />
+          </StFormItem>
+
+          <StFormItem
+            label="重试间隔（秒）"
+            description="失败后等待多少秒再次发送。范围 60-3600 秒。"
+          >
+            <StNumberInput
+              :min="60"
+              :max="3600"
+              :step="30"
+              :model-value="(settings.smtp_queue_retry_interval as number) ?? 300"
+              @update:model-value="emit('update', 'smtp_queue_retry_interval', $event)"
+            />
+          </StFormItem>
+        </StGrid>
+      </StStack>
+    </StCard>
   </div>
 
   <!-- Queue Status -->
-  <AppCard title="邮件队列" description="查看邮件队列中的发送状态和记录。">
+  <StCard title="邮件队列" subtitle="查看邮件队列中的发送状态和记录。">
     <div class="queue-stats">
-      <div class="queue-stat" v-for="(label, key) in { pending: '待发送', processing: '发送中', sent: '已发送', failed: '失败' }" :key="key">
-        <span class="queue-stat__value" :style="{ color: statusColors[key] }">{{ queueStats[key] ?? 0 }}</span>
+      <div
+        class="queue-stat"
+        v-for="(label, key) in {
+          pending: '待发送',
+          processing: '发送中',
+          sent: '已发送',
+          failed: '失败',
+        }"
+        :key="key"
+      >
+        <span class="queue-stat__value" :style="{ color: statusColors[key] }">
+          {{ queueStats[key] ?? 0 }}
+        </span>
         <span class="queue-stat__label">{{ label }}</span>
       </div>
     </div>
 
     <div class="queue-actions">
-      <button class="xh-btn" @click="fetchQueue" :disabled="queueLoading">{{ queueLoading ? '刷新中...' : '刷新' }}</button>
-      <button class="xh-btn" @click="clearQueue" v-if="queueItems.length > 0">清空已完成记录</button>
+      <StButton :disabled="queueLoading" @click="fetchQueue">
+        {{ queueLoading ? '刷新中...' : '刷新' }}
+      </StButton>
+      <StButton v-if="queueItems.length > 0" @click="clearQueue">清空已完成记录</StButton>
     </div>
 
     <div v-if="queueItems.length === 0 && !queueLoading" class="queue-empty">
@@ -380,27 +416,34 @@ const statusColors: Record<string, string> = {
           <div class="queue-item__to">{{ item.to_email }}</div>
           <div class="queue-item__subject">{{ item.subject }}</div>
           <div class="queue-item__meta">
-            <span class="queue-item__status" :style="{ background: statusColors[item.status] || '#999' }">
+            <span
+              class="queue-item__status"
+              :style="{ background: statusColors[item.status] || '#999' }"
+            >
               {{ statusLabels[item.status] || item.status }}
             </span>
-            <span v-if="item.retry_count > 0">重试 {{ item.retry_count }}/{{ item.max_retries }}</span>
+            <span v-if="item.retry_count > 0"
+              >重试 {{ item.retry_count }}/{{ item.max_retries }}</span
+            >
             <span>{{ item.created_at }}</span>
           </div>
           <div v-if="item.error_message" class="queue-item__error">{{ item.error_message }}</div>
         </div>
-        <button
-          v-if="item.status === 'failed'"
-          class="xh-btn xh-btn--small"
-          @click="retryMail(item.id)"
+        <StButton v-if="item.status === 'failed'" size="small" @click="retryMail(item.id)"
+          >重试</StButton
         >
-          重试
-        </button>
       </div>
     </div>
-  </AppCard>
+  </StCard>
 </template>
 
 <style scoped>
+.smtp-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .smtp-sections--disabled {
   opacity: 0.4;
   pointer-events: none;
@@ -417,8 +460,8 @@ const statusColors: Record<string, string> = {
 .queue-stat {
   text-align: center;
   padding: 16px 8px;
-  background: var(--xh-primary-light, #f5f5f5);
-  border-radius: var(--xh-radius-sm, 8px);
+  background: var(--muted);
+  border-radius: var(--radius-large);
 }
 
 .queue-stat__value {
@@ -431,7 +474,7 @@ const statusColors: Record<string, string> = {
 .queue-stat__label {
   display: block;
   font-size: 12px;
-  color: var(--xh-text-secondary, #666);
+  color: var(--muted-foreground);
   margin-top: 4px;
 }
 
@@ -443,7 +486,7 @@ const statusColors: Record<string, string> = {
 
 .queue-empty {
   text-align: center;
-  color: var(--xh-text-secondary, #888);
+  color: var(--muted-foreground);
   padding: 24px 0;
   font-size: 14px;
 }
@@ -462,8 +505,8 @@ const statusColors: Record<string, string> = {
   justify-content: space-between;
   gap: 8px;
   padding: 12px;
-  background: var(--xh-primary-light, #f9f9f9);
-  border-radius: var(--xh-radius-sm, 6px);
+  background: var(--muted);
+  border-radius: var(--radius-medium);
 }
 
 .queue-item__main {
@@ -474,13 +517,13 @@ const statusColors: Record<string, string> = {
 .queue-item__to {
   font-weight: 600;
   font-size: 13px;
-  color: var(--xh-text, #333);
+  color: var(--foreground);
   word-break: break-all;
 }
 
 .queue-item__subject {
   font-size: 12px;
-  color: var(--xh-text-secondary, #666);
+  color: var(--muted-foreground);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -493,14 +536,14 @@ const statusColors: Record<string, string> = {
   align-items: center;
   margin-top: 6px;
   font-size: 11px;
-  color: var(--xh-text-secondary, #888);
+  color: var(--muted-foreground);
 }
 
 .queue-item__status {
   display: inline-block;
   padding: 1px 8px;
   border-radius: 10px;
-  color: #fff;
+  color: var(--st-on-color);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.6;
@@ -509,7 +552,7 @@ const statusColors: Record<string, string> = {
 .queue-item__error {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--xh-error, #dc2626);
+  color: var(--danger);
   word-break: break-word;
 }
 </style>

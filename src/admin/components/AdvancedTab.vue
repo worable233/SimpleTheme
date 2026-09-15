@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import AppCard from './AppCard.vue'
-import AppToggle from './AppToggle.vue'
+import {
+  StCard,
+  StFormItem,
+  StGrid,
+  StInput,
+  StNumberInput,
+  StSelect,
+  StStack,
+  StSwitch,
+} from '@/ui'
+import type { StOption } from '@/ui'
 
-defineProps<{
+const props = defineProps<{
   settings: Record<string, unknown>
   defaults: Record<string, unknown>
 }>()
@@ -10,181 +19,258 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update', key: string, value: unknown): void
 }>()
+
+/** settings 是扁平 Record<string, unknown>，这里收敛读值，模板里不再各写一次断言 */
+function text(key: string) {
+  return (props.settings[key] as string) || ''
+}
+
+/** 数字用 ?? 而非 ||：0 是合法值（如公告页面 ID），不能被当成空 */
+function num(key: string, fallback: number) {
+  return (props.settings[key] as number | null | undefined) ?? fallback
+}
+
+function flag(key: string) {
+  return !!props.settings[key]
+}
+
+const redirectEnabledOptions: StOption[] = [
+  { value: 'enabled', label: '开启' },
+  { value: 'disabled', label: '关闭' },
+]
+
+const redirectTargetOptions: StOption[] = [
+  { value: '_self', label: '当前窗口（_self）' },
+  { value: '_blank', label: '新标签页（_blank）' },
+  { value: '_parent', label: '父框架（_parent）' },
+  { value: '_top', label: '整个窗口（_top）' },
+]
+
+const announcementModeOptions: StOption[] = [
+  { value: 'modal', label: '弹窗' },
+  { value: 'capsule', label: '胶囊横幅' },
+]
 </script>
 
 <template>
   <!-- Collections / Home -->
-  <AppCard title="首页集合" description="配置首页各区块的标题和显示数量。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.show_shuoshuo_section"
-        label="显示说说板块"
-        @update:modelValue="emit('update', 'show_shuoshuo_section', $event)"
-      />
-    </div>
+  <StCard title="首页集合" subtitle="配置首页各区块的标题和显示数量。">
+    <StStack :gap="5">
+      <StSwitch
+        :model-value="flag('show_shuoshuo_section')"
+        @update:model-value="emit('update', 'show_shuoshuo_section', $event)"
+      >
+        显示说说板块
+      </StSwitch>
 
-    <div class="xh-grid" style="margin-top: 20px;">
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">文章区块标题</label>
-        <input type="text" class="xh-input" :value="(settings.posts_title as string) || ''" @input="emit('update', 'posts_title', ($event.target as HTMLInputElement).value)" />
-      </div>
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">文章区块副标题</label>
-        <input type="text" class="xh-input" :value="(settings.posts_subtitle as string) || ''" @input="emit('update', 'posts_subtitle', ($event.target as HTMLInputElement).value)" />
-      </div>
-      <template v-if="settings.show_shuoshuo_section">
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">说说区块标题</label>
-          <input type="text" class="xh-input" :value="(settings.shuoshuo_title as string) || ''" @input="emit('update', 'shuoshuo_title', ($event.target as HTMLInputElement).value)" />
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">说说区块副标题</label>
-          <input type="text" class="xh-input" :value="(settings.shuoshuo_subtitle as string) || ''" @input="emit('update', 'shuoshuo_subtitle', ($event.target as HTMLInputElement).value)" />
-        </div>
-      </template>
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">首页文章数量</label>
-          <input type="number" class="xh-input xh-input--number" min="3" max="20" :value="(settings.home_post_count as number) ?? 6" @input="emit('update', 'home_post_count', Number(($event.target as HTMLInputElement).value))" />
-      </div>
-      <template v-if="settings.show_shuoshuo_section">
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">首页说说数量</label>
-          <input type="number" class="xh-input xh-input--number" min="0" max="12" :value="(settings.home_shuoshuo_count as number) ?? 3" @input="emit('update', 'home_shuoshuo_count', Number(($event.target as HTMLInputElement).value))" />
-        </div>
-        <div class="xh-field xh-field--compact">
-          <label class="xh-field__label">说说每页数量</label>
-          <input type="number" class="xh-input xh-input--number" min="6" max="24" :value="(settings.shuoshuo_page_size as number) ?? 12" @input="emit('update', 'shuoshuo_page_size', Number(($event.target as HTMLInputElement).value))" />
-        </div>
-      </template>
-    </div>
-  </AppCard>
+      <StGrid :cols="2" :gap="4">
+        <StFormItem label="文章区块标题">
+          <StInput
+            :model-value="text('posts_title')"
+            @update:model-value="emit('update', 'posts_title', $event)"
+          />
+        </StFormItem>
+
+        <StFormItem label="文章区块副标题">
+          <StInput
+            :model-value="text('posts_subtitle')"
+            @update:model-value="emit('update', 'posts_subtitle', $event)"
+          />
+        </StFormItem>
+
+        <template v-if="flag('show_shuoshuo_section')">
+          <StFormItem label="说说区块标题">
+            <StInput
+              :model-value="text('shuoshuo_title')"
+              @update:model-value="emit('update', 'shuoshuo_title', $event)"
+            />
+          </StFormItem>
+
+          <StFormItem label="说说区块副标题">
+            <StInput
+              :model-value="text('shuoshuo_subtitle')"
+              @update:model-value="emit('update', 'shuoshuo_subtitle', $event)"
+            />
+          </StFormItem>
+        </template>
+
+        <StFormItem label="首页文章数量">
+          <StNumberInput
+            :min="3"
+            :max="20"
+            aria-label="首页文章数量"
+            :model-value="num('home_post_count', 6)"
+            @update:model-value="emit('update', 'home_post_count', $event)"
+          />
+        </StFormItem>
+
+        <template v-if="flag('show_shuoshuo_section')">
+          <StFormItem label="首页说说数量">
+            <StNumberInput
+              :min="0"
+              :max="12"
+              aria-label="首页说说数量"
+              :model-value="num('home_shuoshuo_count', 3)"
+              @update:model-value="emit('update', 'home_shuoshuo_count', $event)"
+            />
+          </StFormItem>
+
+          <StFormItem label="说说每页数量">
+            <StNumberInput
+              :min="6"
+              :max="24"
+              aria-label="说说每页数量"
+              :model-value="num('shuoshuo_page_size', 12)"
+              @update:model-value="emit('update', 'shuoshuo_page_size', $event)"
+            />
+          </StFormItem>
+        </template>
+      </StGrid>
+    </StStack>
+  </StCard>
 
   <!-- Performance -->
-  <AppCard title="性能" description="性能与调试相关设置。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.suppress_console_warnings"
-        label="过滤控制台警告"
-        @update:modelValue="emit('update', 'suppress_console_warnings', $event)"
-      />
-      <p class="xh-field__desc">屏蔽插件（如 WPOPT）在浏览器控制台输出的广告/提示信息。</p>
-    </div>
-  </AppCard>
+  <StCard title="性能" subtitle="性能与调试相关设置。">
+    <StFormItem description="屏蔽插件（如 WPOPT）在浏览器控制台输出的广告/提示信息。">
+      <StSwitch
+        :model-value="flag('suppress_console_warnings')"
+        @update:model-value="emit('update', 'suppress_console_warnings', $event)"
+      >
+        过滤控制台警告
+      </StSwitch>
+    </StFormItem>
+  </StCard>
 
   <!-- External Link Redirect -->
-  <AppCard title="外链跳转" description="控制文章中的外部链接是否经过本站提示页。">
-    <div class="xh-field xh-field--compact">
-      <label class="xh-field__label">自动跳转</label>
-      <select
-        class="xh-select"
-        :value="settings.external_redirect_enabled === false ? 'disabled' : 'enabled'"
-        @change="emit('update', 'external_redirect_enabled', ($event.target as HTMLSelectElement).value === 'enabled')"
+  <StCard title="外链跳转" subtitle="控制文章中的外部链接是否经过本站提示页。">
+    <StStack :gap="4">
+      <StFormItem
+        label="自动跳转"
+        description="关闭后仍会显示外链确认页，但需要用户点击“继续前往”。"
       >
-        <option value="enabled">开启</option>
-        <option value="disabled">关闭</option>
-      </select>
-      <p class="xh-field__desc">关闭后仍会显示外链确认页，但需要用户点击“继续前往”。</p>
-    </div>
-    <div class="xh-field xh-field--compact" style="margin-top: 16px;">
-      <label class="xh-field__label">自动跳转等待时间（秒）</label>
-      <input
-        type="number"
-        class="xh-input xh-input--number"
-        min="1"
-        max="30"
-        :value="(settings.external_redirect_delay as number) ?? 5"
-        @input="emit('update', 'external_redirect_delay', Number(($event.target as HTMLInputElement).value))"
-      />
-      <p class="xh-field__desc">默认 5 秒，可设置为 1 到 30 秒。倒计时期间会显示提示 Toast。</p>
-    </div>
-    <div class="xh-field xh-field--compact" style="margin-top: 16px;">
-      <label class="xh-field__label">目标窗口</label>
-      <select
-        class="xh-select"
-        :value="(settings.external_redirect_target as string) || '_self'"
-        @change="emit('update', 'external_redirect_target', ($event.target as HTMLSelectElement).value)"
+        <StSelect
+          aria-label="自动跳转"
+          :model-value="props.settings.external_redirect_enabled === false ? 'disabled' : 'enabled'"
+          :options="redirectEnabledOptions"
+          @update:model-value="emit('update', 'external_redirect_enabled', $event === 'enabled')"
+        />
+      </StFormItem>
+
+      <StFormItem
+        label="自动跳转等待时间（秒）"
+        description="默认 5 秒，可设置为 1 到 30 秒。倒计时期间会显示提示 Toast。"
       >
-        <option value="_self">当前窗口（_self）</option>
-        <option value="_blank">新标签页（_blank）</option>
-        <option value="_parent">父框架（_parent）</option>
-        <option value="_top">整个窗口（_top）</option>
-      </select>
-      <p class="xh-field__desc">决定确认页自动跳转和“继续前往”最终打开目标网站的位置。</p>
-    </div>
-  </AppCard>
+        <StNumberInput
+          :min="1"
+          :max="30"
+          aria-label="自动跳转等待时间（秒）"
+          :model-value="num('external_redirect_delay', 5)"
+          @update:model-value="emit('update', 'external_redirect_delay', $event)"
+        />
+      </StFormItem>
+
+      <StFormItem
+        label="目标窗口"
+        description="决定确认页自动跳转和“继续前往”最终打开目标网站的位置。"
+      >
+        <StSelect
+          aria-label="目标窗口"
+          :model-value="text('external_redirect_target') || '_self'"
+          :options="redirectTargetOptions"
+          @update:model-value="emit('update', 'external_redirect_target', $event)"
+        />
+      </StFormItem>
+    </StStack>
+  </StCard>
 
   <!-- Local Avatars -->
-  <AppCard title="本地头像" description="允许用户在个人资料页上传自定义头像替代 Gravatar。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.local_avatars_enabled"
-        label="启用本地头像"
-        @update:modelValue="emit('update', 'local_avatars_enabled', $event)"
-      />
-      <p class="xh-field__desc">开启后，用户可以在 wp-admin/profile.php 上传自己的头像，将不再依赖 Gravatar。</p>
-    </div>
-  </AppCard>
+  <StCard title="本地头像" subtitle="允许用户在个人资料页上传自定义头像替代 Gravatar。">
+    <StFormItem
+      description="开启后，用户可以在 wp-admin/profile.php 上传自己的头像，将不再依赖 Gravatar。"
+    >
+      <StSwitch
+        :model-value="flag('local_avatars_enabled')"
+        @update:model-value="emit('update', 'local_avatars_enabled', $event)"
+      >
+        启用本地头像
+      </StSwitch>
+    </StFormItem>
+  </StCard>
 
   <!-- Admin Bar -->
-  <AppCard title="Admin Bar" description="控制顶部工具栏的显示。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.hide_admin_bar"
-        label="隐藏前台 Admin Bar"
-        @update:modelValue="emit('update', 'hide_admin_bar', $event)"
-      />
-      <p class="xh-field__desc">开启后，已登录用户在前台页面将不再显示 WordPress 顶部工具栏。</p>
-    </div>
-  </AppCard>
+  <StCard title="Admin Bar" subtitle="控制顶部工具栏的显示。">
+    <StFormItem description="开启后，已登录用户在前台页面将不再显示 WordPress 顶部工具栏。">
+      <StSwitch
+        :model-value="flag('hide_admin_bar')"
+        @update:model-value="emit('update', 'hide_admin_bar', $event)"
+      >
+        隐藏前台 Admin Bar
+      </StSwitch>
+    </StFormItem>
+  </StCard>
 
   <!-- Announcement -->
-  <AppCard title="公告弹窗" description="配置首页公告弹窗或胶囊横幅。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.announcement_enabled"
-        label="启用公告"
-        @update:modelValue="emit('update', 'announcement_enabled', $event)"
-      />
-    </div>
-    <template v-if="settings.announcement_enabled">
-      <div class="xh-field xh-field--compact" style="margin-top: 16px;">
-        <label class="xh-field__label">显示模式</label>
-        <select class="xh-select" :value="(settings.announcement_mode as string) || 'modal'" @change="emit('update', 'announcement_mode', ($event.target as HTMLSelectElement).value)">
-          <option value="modal">弹窗</option>
-          <option value="capsule">胶囊横幅</option>
-        </select>
-      </div>
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">页面 ID</label>
-        <input type="number" class="xh-input xh-input--number" min="0" :value="(settings.announcement_page_id as number) || 0" @input="emit('update', 'announcement_page_id', Number(($event.target as HTMLInputElement).value))" />
-        <p class="xh-field__desc">指定要展示内容的 WordPress 页面 ID。</p>
-      </div>
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">胶囊标题</label>
-        <input type="text" class="xh-input" :value="(settings.announcement_capsule_title as string) || ''" @input="emit('update', 'announcement_capsule_title', ($event.target as HTMLInputElement).value)" />
-      </div>
-      <div class="xh-field xh-field--compact">
-        <label class="xh-field__label">图标</label>
-        <input type="text" class="xh-input" :value="(settings.announcement_icon as string) || ''" @input="emit('update', 'announcement_icon', ($event.target as HTMLInputElement).value)" />
-        <p class="xh-field__desc">显示在胶囊标题前的 Emoji 或文本图标。</p>
-      </div>
-    </template>
-  </AppCard>
+  <StCard title="公告弹窗" subtitle="配置首页公告弹窗或胶囊横幅。">
+    <StStack :gap="4">
+      <StSwitch
+        :model-value="flag('announcement_enabled')"
+        @update:model-value="emit('update', 'announcement_enabled', $event)"
+      >
+        启用公告
+      </StSwitch>
+
+      <template v-if="flag('announcement_enabled')">
+        <StFormItem label="显示模式">
+          <StSelect
+            aria-label="显示模式"
+            :model-value="text('announcement_mode') || 'modal'"
+            :options="announcementModeOptions"
+            @update:model-value="emit('update', 'announcement_mode', $event)"
+          />
+        </StFormItem>
+
+        <StFormItem label="页面 ID" description="指定要展示内容的 WordPress 页面 ID。">
+          <StNumberInput
+            :min="0"
+            aria-label="页面 ID"
+            :model-value="num('announcement_page_id', 0)"
+            @update:model-value="emit('update', 'announcement_page_id', $event)"
+          />
+        </StFormItem>
+
+        <StFormItem label="胶囊标题">
+          <StInput
+            :model-value="text('announcement_capsule_title')"
+            @update:model-value="emit('update', 'announcement_capsule_title', $event)"
+          />
+        </StFormItem>
+
+        <StFormItem label="图标" description="显示在胶囊标题前的 Emoji 或文本图标。">
+          <StInput
+            :model-value="text('announcement_icon')"
+            @update:model-value="emit('update', 'announcement_icon', $event)"
+          />
+        </StFormItem>
+      </template>
+    </StStack>
+  </StCard>
 
   <!-- Cookie Consent -->
-  <AppCard title="Cookie 同意" description="配置 Cookie 同意横幅。">
-    <div class="xh-field xh-field--compact">
-      <AppToggle
-        :modelValue="!!settings.cookie_consent_enabled"
-        label="启用 Cookie 同意横幅"
-        @update:modelValue="emit('update', 'cookie_consent_enabled', $event)"
-      />
-    </div>
-    <template v-if="settings.cookie_consent_enabled">
-      <div class="xh-field xh-field--compact" style="margin-top: 16px;">
-        <label class="xh-field__label">提示文字</label>
-        <input type="text" class="xh-input" :value="(settings.cookie_consent_message as string) || ''" @input="emit('update', 'cookie_consent_message', ($event.target as HTMLInputElement).value)" />
-      </div>
-    </template>
-  </AppCard>
+  <StCard title="Cookie 同意" subtitle="配置 Cookie 同意横幅。">
+    <StStack :gap="4">
+      <StSwitch
+        :model-value="flag('cookie_consent_enabled')"
+        @update:model-value="emit('update', 'cookie_consent_enabled', $event)"
+      >
+        启用 Cookie 同意横幅
+      </StSwitch>
+
+      <StFormItem v-if="flag('cookie_consent_enabled')" label="提示文字">
+        <StInput
+          :model-value="text('cookie_consent_message')"
+          @update:model-value="emit('update', 'cookie_consent_message', $event)"
+        />
+      </StFormItem>
+    </StStack>
+  </StCard>
 </template>

@@ -33,4 +33,24 @@ export interface StOption {
   disabled?: boolean
 }
 
+/** 布局间距刻度，映射 --st-space-N（见 tokens.css） */
+export type StSpaceScale = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8
+
+/**
+ * 模板里可接受的间距写法。
+ *
+ * 必须同时接受 number 与数字字符串：模板里写静态属性 `gap="4"` 时，
+ * Vue 传进来的是**字符串** `"4"`，而 `:gap="4"` 传的是数字 `4`。
+ * 只声明 number 联合会导致 `gap="4"` 触发 TS2322 —— 而"能写 gap=\"4\""
+ * 恰恰是组件自己文档示例里的写法。这里放宽到两种都收，
+ * 由组件内部归一化成数字再拼 class。
+ */
+export type StSpace = StSpaceScale | `${StSpaceScale}`
+
+/** 栅格列数 */
+export type StCols = 1 | 2 | 3 | 4
+
+/** 模板里可接受的列数写法（理由同 StSpace） */
+export type StColsInput = StCols | `${StCols}`
+
 export const ST_SIZES: readonly StSize[] = ['tiny', 'small', 'medium', 'large'] as const

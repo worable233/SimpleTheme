@@ -10,15 +10,16 @@
  * （flex 布局在同样场景下会被内容顶开，这是旧 .xh-grid 从 flex 换 grid 的原因）。
  */
 import { computed } from 'vue'
+import type { StColsInput, StSpace } from '../types'
 
 defineOptions({ name: 'StGrid' })
 
 const props = withDefaults(
   defineProps<{
-    /** 列数 */
-    cols?: 1 | 2 | 3 | 4
-    /** 间距刻度，映射 --st-space-N */
-    gap?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8
+    /** 列数。数字与数字字符串都接受 —— 模板里 `cols="2"` 传的是字符串。 */
+    cols?: StColsInput
+    /** 间距刻度，映射 --st-space-N（理由同 cols） */
+    gap?: StSpace
     /** 窄屏（<640px）折叠为单列。断点固定在 640px：
      * 媒体查询吃不到 CSS 自定义属性，做成可配的 px 只会是个说了不算的 API。 */
     collapsible?: boolean

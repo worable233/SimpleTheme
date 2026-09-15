@@ -166,14 +166,17 @@ function main() {
     }
   }
 
-  // 全局扫描：src 下任何地方都不该再有 xh-*
+  // 全局扫描：src 下任何地方都不该再有 xh-* 类名。
+  // 只统计**代码**，不统计注释 —— 注释里引用旧类名是为了记录迁移缘由
+  // （如 StStack 里说明「旧后台 .xh-grid 连 CSS 定义都丢了」），
+  // 那是应该保留的信息，不能被当成残留。
   const xhGrep = []
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, entry.name)
       if (entry.isDirectory()) walk(p)
       else if (/\.(vue|css|ts|scss)$/.test(entry.name)) {
-        const text = readFileSync(p, 'utf8')
+        const text = stripComments(readFileSync(p, 'utf8'))
         const n = (text.match(/xh-[a-z0-9-]+/g) || []).length
         if (n) xhGrep.push(`${p.replace(ROOT + '/', '')}: ${n}`)
       }

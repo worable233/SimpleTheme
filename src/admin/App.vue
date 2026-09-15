@@ -2,9 +2,19 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
-import AdminSelect from './components/AdminSelect.vue'
-import AdminSwitch from './components/AdminSwitch.vue'
-import AdminColorPicker from './components/AdminColorPicker.vue'
+import {
+  StCard,
+  StColorPicker,
+  StFormItem,
+  StGrid,
+  StInput,
+  StNumberInput,
+  StSelect,
+  StStack,
+  StSwitch,
+  StToast,
+  useToast,
+} from '@/ui'
 
 type Tab = { key: string; label: string }
 
@@ -22,8 +32,7 @@ const saving = ref(false)
 const dirty = ref(false)
 const saved = ref(false)
 const error = ref('')
-const toast = ref('')
-let toastTimer: ReturnType<typeof setTimeout> | null = null
+const toast = useToast()
 
 const activeLabel = computed(() => tabs.find((tab) => tab.key === activeTab.value)?.label || '')
 
@@ -77,6 +86,12 @@ function value(key: string, fallback: unknown = '') {
 
 function text(key: string, fallback = '') {
   return String(value(key, fallback))
+}
+
+/** 旧 AdminColorPicker 有 fallback prop（空值时显示兜底色），StColorPicker 没有。
+ *  这里由调用方兜出非空色值，保证「未设置」不会出现在本该有默认色的位置。 */
+function colorText(key: string, fallback: string) {
+  return text(key, fallback) || fallback
 }
 
 function number(key: string, fallback: number) {
@@ -186,10 +201,9 @@ function update(key: string, next: unknown) {
   saved.value = false
 }
 
-function showToast(message: string) {
-  toast.value = message
-  if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => { toast.value = '' }, 2600)
+/** 原内联 toast 固定停留 2600ms；这里用 duration 对齐，迁移不改变可见节奏 */
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toast.show({ type, title: message, duration: 2600 })
 }
 
 async function load() {
@@ -217,7 +231,7 @@ async function save() {
     showToast('设置已保存')
     setTimeout(() => { saved.value = false }, 2200)
   } catch (err) {
-    showToast('保存失败: ' + (err instanceof Error ? err.message : String(err)))
+    showToast('保存失败: ' + (err instanceof Error ? err.message : String(err)), 'error')
   } finally {
     saving.value = false
   }
@@ -238,7 +252,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnload)
-  if (toastTimer) clearTimeout(toastTimer)
+  toast.clear()
 })
 </script>
 
@@ -295,71 +309,182 @@ onUnmounted(() => {
 
         <div class="mx-auto max-w-5xl space-y-5 p-5 sm:p-8">
           <template v-if="activeTab === 'appearance'">
-            <section class="rounded-large border border-border bg-card p-5 shadow-small sm:p-6">
-              <h2 class="m-0 text-base font-semibold">基础样式</h2>
-              <p class="mt-1 mb-5 text-sm text-secondary">前台和设置页面共用这套主题变量。</p>
-              <div class="grid gap-4 sm:grid-cols-2">
-                <label class="block text-sm"><span class="mb-2 block text-secondary">主色</span><AdminColorPicker :model-value="text('primary_color', '#333333')" :fallback="'#333333'" label="主色" @update:model-value="update('primary_color', $event)"></AdminColorPicker></label>
-                <label class="block text-sm"><span class="mb-2 block text-secondary">圆角</span><AdminSelect :model-value="text('radius', 'medium')" :options="radiusOptions" label="圆角" @update:model-value="update('radius', $event)"></AdminSelect></label>
-                <label class="block text-sm"><span class="mb-2 block text-secondary">阴影</span><AdminSelect :model-value="text('shadow', 'small')" :options="shadowOptions" label="阴影" @update:model-value="update('shadow', $event)"></AdminSelect></label>
-                <label class="block text-sm"><span class="mb-2 block text-secondary">容器最大宽度（px）</span><input type="number" min="960" max="2000" step="10" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="number('container_max_width', 1500)" @input="update('container_max_width', Number(($event.target as HTMLInputElement).value))"></label>
-                <label class="block text-sm"><span class="mb-2 block text-secondary">文章最大宽度（px）</span><input type="number" min="680" max="1200" step="10" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="number('article_max_width', 900)" @input="update('article_max_width', Number(($event.target as HTMLInputElement).value))"></label>
-              </div>
-            </section>
+            <StCard title="基础样式" subtitle="前台和设置页面共用这套主题变量。">
+              <StGrid :cols="2" :gap="4">
+                <StFormItem label="主色">
+                  <StColorPicker
+                    :model-value="colorText('primary_color', '#333333')"
+                    aria-label="主色"
+                    @update:model-value="update('primary_color', $event)"
+                  />
+                </StFormItem>
+                <StFormItem label="圆角">
+                  <StSelect
+                    :model-value="text('radius', 'medium')"
+                    :options="radiusOptions"
+                    aria-label="圆角"
+                    @update:model-value="update('radius', $event)"
+                  />
+                </StFormItem>
+                <StFormItem label="阴影">
+                  <StSelect
+                    :model-value="text('shadow', 'small')"
+                    :options="shadowOptions"
+                    aria-label="阴影"
+                    @update:model-value="update('shadow', $event)"
+                  />
+                </StFormItem>
+                <StFormItem label="容器最大宽度（px）">
+                  <StNumberInput
+                    :model-value="number('container_max_width', 1500)"
+                    :min="960"
+                    :max="2000"
+                    :step="10"
+                    aria-label="容器最大宽度（px）"
+                    @update:model-value="update('container_max_width', $event ?? 1500)"
+                  />
+                </StFormItem>
+                <StFormItem label="文章最大宽度（px）">
+                  <StNumberInput
+                    :model-value="number('article_max_width', 900)"
+                    :min="680"
+                    :max="1200"
+                    :step="10"
+                    aria-label="文章最大宽度（px）"
+                    @update:model-value="update('article_max_width', $event ?? 900)"
+                  />
+                </StFormItem>
+              </StGrid>
+            </StCard>
 
-            <section v-for="[title, colors] in colorGroups" :key="title" class="rounded-large border border-border bg-card p-5 shadow-small sm:p-6">
-              <h2 class="m-0 text-base font-semibold">{{ title }}</h2>
-              <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <label v-for="[key, label] in colors" :key="key" class="flex items-center justify-between gap-3 rounded-medium border border-border p-3 text-sm">
-                  <span>{{ label }}</span>
-                  <AdminColorPicker class="w-40 shrink-0" :model-value="text(key, String(defaults[key] || '#ffffff'))" :fallback="String(defaults[key] || '#ffffff')" :label="label" @update:model-value="update(key, $event)"></AdminColorPicker>
-                </label>
-              </div>
-            </section>
+            <StCard v-for="[title, colors] in colorGroups" :key="title" :title="title">
+              <StGrid :cols="3" :gap="4">
+                <StFormItem
+                  v-for="[key, label] in colors"
+                  :key="key"
+                  :label="label"
+                  label-placement="left"
+                >
+                  <StColorPicker
+                    :model-value="colorText(key, String(defaults[key] || '#ffffff'))"
+                    :aria-label="label"
+                    @update:model-value="update(key, $event)"
+                  />
+                </StFormItem>
+              </StGrid>
+            </StCard>
           </template>
 
           <template v-else-if="activeTab === 'home'">
-            <section class="rounded-large border border-border bg-card p-5 shadow-small sm:p-6">
-              <h2 class="m-0 text-base font-semibold">首页内容</h2>
-              <p class="mt-1 mb-5 text-sm text-secondary">控制首页区块标题、数量和显示状态。</p>
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div class="sm:col-span-2"><AdminSwitch :model-value="checked('show_shuoshuo_section', true)" label="显示说说板块" @update:model-value="update('show_shuoshuo_section', $event)"></AdminSwitch></div>
-                <label v-for="[key, label] in homeTextFields" :key="key" class="block text-sm"><span class="mb-2 block text-secondary">{{ label }}</span><input type="text" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="text(key)" @input="update(key, ($event.target as HTMLInputElement).value)"></label>
-                <label v-for="[key, label, min, max] in homeNumberFields" :key="key" class="block text-sm"><span class="mb-2 block text-secondary">{{ label }}</span><input type="number" :min="min" :max="max" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="number(key, Number(defaults[key] || min))" @input="update(key, Number(($event.target as HTMLInputElement).value))"></label>
-              </div>
-            </section>
+            <StCard title="首页内容" subtitle="控制首页区块标题、数量和显示状态。">
+              <StStack :gap="4">
+                <StSwitch
+                  :model-value="checked('show_shuoshuo_section', true)"
+                  @update:model-value="update('show_shuoshuo_section', $event)"
+                >
+                  显示说说板块
+                </StSwitch>
+                <StGrid :cols="2" :gap="4">
+                  <StFormItem v-for="[key, label] in homeTextFields" :key="key" :label="label">
+                    <StInput
+                      :model-value="text(key)"
+                      :aria-label="label"
+                      @update:model-value="update(key, $event)"
+                    />
+                  </StFormItem>
+                  <StFormItem
+                    v-for="[key, label, min, max] in homeNumberFields"
+                    :key="key"
+                    :label="label"
+                  >
+                    <StNumberInput
+                      :model-value="number(key, Number(defaults[key] || min))"
+                      :min="min"
+                      :max="max"
+                      :aria-label="label"
+                      @update:model-value="update(key, $event ?? Number(defaults[key] || min))"
+                    />
+                  </StFormItem>
+                </StGrid>
+              </StStack>
+            </StCard>
           </template>
 
           <template v-else>
-            <section class="rounded-large border border-border bg-card p-5 shadow-small sm:p-6">
-              <h2 class="m-0 text-base font-semibold">外链跳转</h2>
-              <p class="mt-1 mb-5 text-sm text-secondary">控制文章外链确认页的自动跳转行为。</p>
-              <div class="grid gap-4 sm:grid-cols-2">
-                <label class="block text-sm"><span class="mb-2 block text-secondary">自动跳转</span><AdminSelect :model-value="checked('external_redirect_enabled', true) ? 'enabled' : 'disabled'" :options="redirectEnabledOptions" label="自动跳转" @update:model-value="update('external_redirect_enabled', $event === 'enabled')"></AdminSelect></label>
-                <label class="block text-sm"><span class="mb-2 block text-secondary">等待时间（秒）</span><input type="number" min="1" max="30" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="number('external_redirect_delay', 5)" @input="update('external_redirect_delay', Number(($event.target as HTMLInputElement).value))"></label>
-                <label class="block text-sm sm:col-span-2"><span class="mb-2 block text-secondary">目标窗口</span><AdminSelect :model-value="text('external_redirect_target', '_self')" :options="redirectTargetOptions" label="目标窗口" @update:model-value="update('external_redirect_target', $event)"></AdminSelect></label>
-              </div>
-            </section>
+            <StCard title="外链跳转" subtitle="控制文章外链确认页的自动跳转行为。">
+              <StStack :gap="4">
+                <StGrid :cols="2" :gap="4">
+                  <StFormItem label="自动跳转">
+                    <StSelect
+                      :model-value="checked('external_redirect_enabled', true) ? 'enabled' : 'disabled'"
+                      :options="redirectEnabledOptions"
+                      aria-label="自动跳转"
+                      @update:model-value="update('external_redirect_enabled', $event === 'enabled')"
+                    />
+                  </StFormItem>
+                  <StFormItem label="等待时间（秒）">
+                    <StNumberInput
+                      :model-value="number('external_redirect_delay', 5)"
+                      :min="1"
+                      :max="30"
+                      aria-label="等待时间（秒）"
+                      @update:model-value="update('external_redirect_delay', $event ?? 5)"
+                    />
+                  </StFormItem>
+                </StGrid>
+                <StFormItem label="目标窗口">
+                  <StSelect
+                    :model-value="text('external_redirect_target', '_self')"
+                    :options="redirectTargetOptions"
+                    aria-label="目标窗口"
+                    @update:model-value="update('external_redirect_target', $event)"
+                  />
+                </StFormItem>
+              </StStack>
+            </StCard>
 
-            <section class="rounded-large border border-border bg-card p-5 shadow-small sm:p-6">
-              <h2 class="m-0 text-base font-semibold">通知与评论</h2>
-              <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                <AdminSwitch :model-value="checked('cookie_consent_enabled')" label="启用 Cookie 同意横幅" @update:model-value="update('cookie_consent_enabled', $event)"></AdminSwitch>
-                <AdminSwitch :model-value="checked('comment_captcha_enabled')" label="启用评论验证码" @update:model-value="update('comment_captcha_enabled', $event)"></AdminSwitch>
-                <AdminSwitch :model-value="checked('comment_show_private', true)" label="允许私密评论" @update:model-value="update('comment_show_private', $event)"></AdminSwitch>
-                <AdminSwitch :model-value="checked('comment_show_markdown', true)" label="支持 Markdown" @update:model-value="update('comment_show_markdown', $event)"></AdminSwitch>
-              </div>
-              <label class="mt-4 block text-sm"><span class="mb-2 block text-secondary">Cookie 提示文字</span><input type="text" class="w-full rounded-medium border border-input bg-card px-3 py-2.5 text-sm" :value="text('cookie_consent_message')" @input="update('cookie_consent_message', ($event.target as HTMLInputElement).value)"></label>
-            </section>
+            <StCard title="通知与评论">
+              <StStack :gap="4">
+                <StGrid :cols="2" :gap="3">
+                  <StSwitch
+                    :model-value="checked('cookie_consent_enabled')"
+                    @update:model-value="update('cookie_consent_enabled', $event)"
+                  >
+                    启用 Cookie 同意横幅
+                  </StSwitch>
+                  <StSwitch
+                    :model-value="checked('comment_captcha_enabled')"
+                    @update:model-value="update('comment_captcha_enabled', $event)"
+                  >
+                    启用评论验证码
+                  </StSwitch>
+                  <StSwitch
+                    :model-value="checked('comment_show_private', true)"
+                    @update:model-value="update('comment_show_private', $event)"
+                  >
+                    允许私密评论
+                  </StSwitch>
+                  <StSwitch
+                    :model-value="checked('comment_show_markdown', true)"
+                    @update:model-value="update('comment_show_markdown', $event)"
+                  >
+                    支持 Markdown
+                  </StSwitch>
+                </StGrid>
+                <StFormItem label="Cookie 提示文字">
+                  <StInput
+                    :model-value="text('cookie_consent_message')"
+                    aria-label="Cookie 提示文字"
+                    @update:model-value="update('cookie_consent_message', $event)"
+                  />
+                </StFormItem>
+              </StStack>
+            </StCard>
           </template>
         </div>
       </main>
     </div>
 
-    <Transition name="toast">
-      <div v-if="toast" class="fixed right-5 bottom-5 z-50 rounded-medium border border-border bg-card px-4 py-3 text-sm text-foreground shadow-large">
-        {{ toast }}
-      </div>
-    </Transition>
+    <StToast placement="bottom-right" />
   </div>
 </template>
