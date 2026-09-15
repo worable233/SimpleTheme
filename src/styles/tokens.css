@@ -241,6 +241,16 @@
   --st-pad-medium: 0 14px;
   --st-pad-large: 0 18px;
 
+  /* 布局间距刻度 —— StStack / StGrid 消费。
+   * 收敛成有限刻度，业务层不再各写各的 px（旧后台 .xh-grid/.xh-field 的教训）。 */
+  --st-space-1: 4px;
+  --st-space-2: 8px;
+  --st-space-3: 12px;
+  --st-space-4: 16px;
+  --st-space-5: 20px;
+  --st-space-6: 24px;
+  --st-space-8: 32px;
+
   /* 控件专属色 */
   --st-fill: var(--card);
   --st-fill-hover: var(--accent);

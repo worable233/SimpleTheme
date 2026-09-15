@@ -19,6 +19,8 @@ export { default as StDivider } from './components/StDivider.vue'
 
 // ── 布局容器 ──
 export { default as StCard } from './components/StCard.vue'
+export { default as StStack } from './components/StStack.vue'
+export { default as StGrid } from './components/StGrid.vue'
 
 // ── 数据录入 ──
 export { default as StInput } from './components/StInput.vue'
