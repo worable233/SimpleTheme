@@ -92,7 +92,7 @@ function applyThemeSettings(theme?: ThemeSettings) {
   root.style.setProperty('--shadow-small', shadow.small)
   root.style.setProperty('--shadow-medium', shadow.medium)
   root.style.setProperty('--shadow-large', shadow.large)
-  // Palette overrides consumed by variables.css semantic tokens
+  // Palette overrides consumed by src/styles/tokens.css semantic tokens
   // (skip empty values so var(--theme-*, fallback) keeps its default)
   const palette: Record<string, string | undefined> = {
     '--theme-bg-light': theme.backgroundLight,

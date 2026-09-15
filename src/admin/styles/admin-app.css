@@ -6,7 +6,7 @@
  *
  * Everything here is strictly scoped to the app mount so the
  * surrounding WP admin chrome is never affected. Utilities come
- * from the shared frontend tailwind.css + variables.css tokens,
+ * from the shared src/styles/tokens.css tokens,
  * so the panel reads as the same product as the public site.
  * ═══════════════════════════════════════════════════════════ */
 

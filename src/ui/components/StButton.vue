@@ -197,19 +197,19 @@ function handleClick(ev: MouseEvent) {
 }
 
 .st-button--success {
-  --st-button-color: #fff;
+  --st-button-color: var(--st-on-color);
   --st-button-bg: var(--success);
   --st-button-border: var(--success);
 }
 
 .st-button--warning {
-  --st-button-color: #fff;
+  --st-button-color: var(--st-on-color);
   --st-button-bg: var(--warning);
   --st-button-border: var(--warning);
 }
 
 .st-button--error {
-  --st-button-color: #fff;
+  --st-button-color: var(--st-on-color);
   --st-button-bg: var(--danger);
   --st-button-border: var(--danger);
 }
