@@ -1,0 +1,267 @@
+/* ==========================================================================
+ * Design Tokens — 唯一事实来源 (Single Source of Truth)
+ * ==========================================================================
+ *
+ * 前台 (src/main.ts) 与后台 (src/admin/*) 共用本文件。
+ * 任何颜色 / 圆角 / 阴影 / 动效的取值只允许在这里定义一次。
+ *
+ * 分层：
+ *   A. @theme        —— Tailwind 主题命名空间（决定哪些工具类会被生成）
+ *   B. 语义色板      —— [data-theme] 驱动，浅色为默认值
+ *   C. 静态令牌      —— 排版、布局、动效
+ *   D. 组件令牌      —— --st-* 供 src/ui/ 组件库消费
+ *
+ * 约定：
+ *   1. 组件只消费语义令牌或 --st-* 令牌，禁止硬编码颜色。
+ *   2. 新增工具类所依赖的取值必须放进 A 段，否则类名会静默失效。
+ *   3. 运行时覆盖（WordPress 主题设置）由 App.vue 写入行内样式，优先级高于
+ *      本文件，因此这里只放"出厂默认值"。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * A. Tailwind 主题命名空间
+ * ========================================================================== */
+
+/* 暗色模式由 index.html / AdminTopbar 写入的 [data-theme] 属性驱动 */
+@custom-variant dark ([data-theme='dark'] &);
+
+/* 语义色 → 运行时 [data-theme] 变量。
+ * inline 保证工具类直接输出 var(--primary) 而非快照值，明暗切换无需重算。 */
+@theme inline {
+  --font-sans: var(--font-sans-serif);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-menu-hover: var(--menu-hover);
+}
+
+/* static：这些值会被输出为 :root 自定义属性，供 var(--radius-*) 直接引用。
+ * 工具类（rounded-medium / shadow-small …）也由此生成 —— 前后台入口都必须
+ * 引入本文件，否则类名静默消失。 */
+@theme static {
+  /* 断点与历史媒体查询保持一致 */
+  --breakpoint-sm: 37.5rem; /* 600px  — 移动端阈值 */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 62.5rem; /* 1000px */
+  --breakpoint-xl: 75rem; /* 1200px — 侧栏折叠 */
+
+  --radius-xs: 2px;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.1);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --animate-skeleton-pulse: skeleton-pulse 1.5s infinite;
+  --animate-card-pulse: card-pulse 1.5s ease-in-out infinite;
+
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes card-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}
+
+/* ==========================================================================
+ * B. 语义色板 — 浅色（默认，未设置 data-theme 时同样成立）
+ * ========================================================================== */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* 站点外观设置注入（WordPress → 行内样式），留空则用 fallback */
+  --background: var(--theme-bg-light, #f5f6f7);
+  --foreground: var(--theme-fg-light, #333);
+  --card: var(--theme-card-light, #ffffff);
+  --card-foreground: var(--theme-fg-light, #333);
+  --accent: var(--theme-accent-light, #f5f5f5);
+  --accent-foreground: #333;
+  --border: var(--theme-border-light, #e2e2e2);
+  --input: var(--theme-border-light, #e2e2e2);
+
+  --primary: #333;
+  --primary-foreground: #fff;
+  --secondary: #999;
+  --secondary-foreground: #333;
+  --muted: #f5f5f5;
+  --muted-foreground: #999;
+  --faint: #fafafa;
+  --faint-foreground: #999;
+  --ring: #333;
+
+  --danger: #dd2424;
+  --success: #67c23a;
+  --warning: #e6a23c;
+
+  --menu-hover: #f5f5f5;
+  --social-hover: #fff;
+  --card-highlight: 0 0 0 0 transparent;
+
+  /* 内容层（正文 / 代码块 / 滚动条）遗留令牌 */
+  --theme-color: #333;
+  --theme-op-3: rgba(255 255 255 / 0.3);
+  --theme-bak: #333;
+  --post-cover: #00000000;
+  --scroll: rgba(0 0 0 / 0.2);
+  --title-color: rgba(0 0 0 / 0.1);
+  --code-bgc: rgba(0 0 0 / 0.05);
+}
+
+/* ==========================================================================
+ * B2. 语义色板 — 深色
+ * ========================================================================== */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background: var(--theme-bg-dark, #1a1a1a);
+  --foreground: var(--theme-fg-dark, #e0e0e0);
+  --card: var(--theme-card-dark, #222);
+  --card-foreground: var(--theme-fg-dark, #e0e0e0);
+  --accent: var(--theme-accent-dark, #2a2a2a);
+  --accent-foreground: #e0e0e0;
+  --border: var(--theme-border-dark, #333);
+  --input: var(--theme-border-dark, #333);
+
+  --primary: #e0e0e0;
+  --primary-foreground: #1a1a1a;
+  --secondary: #999;
+  --secondary-foreground: #e0e0e0;
+  --muted: #2a2a2a;
+  --muted-foreground: #999;
+  --faint: #252525;
+  --faint-foreground: #999;
+  --ring: #e0e0e0;
+
+  /* 深色下提亮状态色，保证在 #1a1a1a 上的对比度 */
+  --danger: #f4807b;
+  --success: #6cc070;
+  --warning: #f0a030;
+
+  --menu-hover: #2a2a2a;
+  --social-hover: #1a1a1a;
+  --card-highlight: inset 0 1px 0 0 rgba(255 255 255 / 0.06);
+
+  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.45);
+  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
+
+  --theme-color: #e0e0e0;
+  --theme-op-3: rgba(0 0 0 / 0.3);
+  --theme-bak: #e0e0e0;
+  --post-cover: #00000000;
+  --scroll: rgba(255 255 255 / 0.2);
+  --title-color: rgba(255 255 255 / 0.1);
+  --code-bgc: rgba(255 255 255 / 0.05);
+}
+
+/* ==========================================================================
+ * C. 静态令牌 — 排版 / 布局 / 动效
+ * ========================================================================== */
+:root {
+  --font-sans-serif:
+    'MiSans VF', 'OPPO Sans', 'SF Pro SC', HarmonyOS_Regular, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Noto Sans', 'Microsoft Yahei',
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-code:
+    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Consolas', 'Menlo', Monaco,
+    monospace;
+
+  --page-width: 75rem;
+  --container-max: 1500px;
+  --container-pad: 2rem;
+  --article-max-width: 900px;
+  --hero-top-offset: clamp(5.5rem, 8vw, 7rem);
+  --hero-overlay-opacity: 0.34;
+
+  --blur-lg: 12px;
+
+  --transition-fast: 0.15s var(--ease-standard);
+  --transition: 0.2s var(--ease-standard);
+}
+
+/* ==========================================================================
+ * D. 组件令牌 — src/ui/ 组件库消费
+ * ==========================================================================
+ * 语义色板描述"品牌色是什么"，组件令牌描述"控件长什么样"。
+ * 组件内部只读 --st-*，因此换肤只需改这一层。
+ * ========================================================================== */
+:root {
+  /* 控件尺寸基准 */
+  --st-height-tiny: 22px;
+  --st-height-small: 28px;
+  --st-height-medium: 34px;
+  --st-height-large: 40px;
+
+  --st-font-tiny: 12px;
+  --st-font-small: 13px;
+  --st-font-medium: 14px;
+  --st-font-large: 15px;
+
+  --st-pad-tiny: 0 7px;
+  --st-pad-small: 0 10px;
+  --st-pad-medium: 0 14px;
+  --st-pad-large: 0 18px;
+
+  /* 控件专属色 */
+  --st-fill: var(--card);
+  --st-fill-hover: var(--accent);
+  --st-fill-active: var(--muted);
+  --st-text: var(--foreground);
+  --st-text-disabled: var(--secondary);
+  --st-border: var(--border);
+  --st-border-hover: color-mix(in srgb, var(--foreground) 40%, transparent);
+  --st-placeholder: var(--muted-foreground);
+
+  /* 焦点反馈 */
+  --st-focus-ring: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
+
+  /* 浮层 */
+  --st-popover-bg: var(--card);
+  --st-popover-border: 1px solid var(--border);
+  --st-popover-shadow: var(--shadow-large);
+  --st-overlay-bg: rgb(0 0 0 / 0.5);
+
+  /* 层级 */
+  --st-z-dropdown: 1000;
+  --st-z-modal: 1100;
+  --st-z-toast: 1200;
+}

@@ -1,105 +1,24 @@
 /* ==================== Admin Tailwind Entry ====================
- * Embedded inside wp-admin pages — deliberately NO preflight import,
- * so WordPress admin chrome outside our mount points stays untouched.
- * Utilities are class-based and safe to include globally.
+ * 用于 wp-admin 内的挂载点（后台设置 SPA + AdminShell）。
  *
- * Single source of truth for admin-context design tokens.
- * Light values are the defaults; dark values apply when the shell
- * (AdminTopbar) sets data-theme="dark" on <html>.
- * Values mirror the frontend palette (src/styles/variables.css).
- * ================================================================ */
+ * 刻意不引入 Preflight：wp-admin 自身有完整样式，全局 reset 会破坏
+ * WP 后台外观。替代方案见本文件末尾的"最小化 reset"，只作用于我们自己的
+ * 挂载根节点。
+ *
+ * 设计令牌全部来自 ../styles/tokens.css（唯一事实来源）。
+ * 此前本文件手抄了一份调色板并且缺失 @theme 块（导致 rounded-medium /
+ * shadow-large 等工具类静默失效），均已修复 —— 不要再把取值写回这里。
+ * ============================================================== */
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
+@import '../../styles/tokens.css';
 
-@custom-variant dark ([data-theme='dark'] &);
-
-:root {
-  color-scheme: light;
-  --background: #f5f6f7;
-  --foreground: #333;
-  --card: #ffffff;
-  --card-foreground: #333;
-  --primary: #333;
-  --primary-foreground: #fff;
-  --secondary: #999;
-  --secondary-foreground: #333;
-  --muted: #f5f5f5;
-  --muted-foreground: #999;
-  --faint: #fafafa;
-  --faint-foreground: #999;
-  --accent: #f5f5f5;
-  --border: #e2e2e2;
-  --input: #e2e2e2;
-  --ring: #333;
-  --danger: #dd2424;
-  --success: #67c23a;
-  --warning: #e6a23c;
-  --menu-hover: #f0f0f0;
-  --radius-small: 4px;
-  --radius-medium: 6px;
-  --radius-large: 8px;
-  --radius-full: 9999px;
-  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.08);
-  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.08);
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-theme='dark'] {
-  color-scheme: dark;
-  --background: #1a1a1a;
-  --foreground: #e0e0e0;
-  --card: #222222;
-  --card-foreground: #e0e0e0;
-  --primary: #e0e0e0;
-  --primary-foreground: #1a1a1a;
-  --secondary: #999;
-  --secondary-foreground: #e0e0e0;
-  --muted: #2a2a2a;
-  --muted-foreground: #999;
-  --faint: #252525;
-  --faint-foreground: #999;
-  --accent: #2a2a2a;
-  --border: #333333;
-  --input: #333333;
-  --ring: #e0e0e0;
-  --danger: #f4807b;
-  --success: #6cc070;
-  --warning: #f0a030;
-  --menu-hover: #2a2a2a;
-  --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-  --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.45);
-  --shadow-large: 0 8px 30px rgb(0 0 0 / 0.5);
-}
-
-/* Map runtime tokens into Tailwind so utilities (bg-card, text-foreground …)
- * resolve the [data-theme] values above. */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-faint: var(--faint);
-  --color-faint-foreground: var(--faint-foreground);
-  --color-accent: var(--accent);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-danger: var(--danger);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-menu-hover: var(--menu-hover);
-}
-
-/* Minimal reset for shell roots only (Preflight is intentionally absent
- * in wp-admin, so normalize box model inside our own mount points). */
+/* ==================== 最小化 reset ====================
+ * 只在我们的挂载根内部生效，不触碰 WP 后台其余部分。 */
+#simple-theme-admin-app,
+#simple-theme-admin-app *,
+#simple-theme-admin-app *::before,
+#simple-theme-admin-app *::after,
 #simple-theme-admin-sidebar,
 #simple-theme-admin-sidebar *,
 #simple-theme-admin-sidebar *::before,
@@ -110,6 +29,8 @@
 #simple-theme-admin-topbar *::after,
 #simple-theme-admin-shell,
 #simple-theme-admin-shell *,
+#simple-theme-admin-shell *::before,
+#simple-theme-admin-shell *::after,
 .sta-shell-pop,
 .sta-shell-pop *,
 .sta-shell-pop *::before,
@@ -117,10 +38,28 @@
   box-sizing: border-box;
 }
 
+#simple-theme-admin-app h1,
+#simple-theme-admin-app h2,
+#simple-theme-admin-app h3,
+#simple-theme-admin-app h4,
+#simple-theme-admin-app h5,
+#simple-theme-admin-app h6,
+#simple-theme-admin-app p,
+#simple-theme-admin-app ul,
+#simple-theme-admin-app ol,
+#simple-theme-admin-app figure,
+#simple-theme-admin-sidebar ul,
+#simple-theme-admin-sidebar ol,
+#simple-theme-admin-topbar ul,
+#simple-theme-admin-topbar ol,
+.sta-shell-pop ul,
+.sta-shell-pop ol {
+  margin: 0;
+  padding: 0;
+}
+
 #simple-theme-admin-sidebar ul,
 #simple-theme-admin-topbar ul,
 .sta-shell-pop ul {
-  margin: 0;
-  padding: 0;
   list-style: none;
 }

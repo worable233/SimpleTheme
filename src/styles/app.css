@@ -1,4 +1,4 @@
-@import './variables.css';
+/* 设计令牌已上移到 ./tokens.css，由 ./tailwind.css 统一引入 */
 
 @import './skeleton.css';
 
