@@ -78,6 +78,38 @@ const model = defineModel<string>({ default: '' })
 | `--st-height-*`         | 22px | 28px  | 34px   | 40px  |
 | `--st-font-*`           | 12px | 13px  | 14px   | 15px  |
 
+## 布局原语
+
+不要再用裸 `div` + 手写 flex/gap 拼排布。用 `StStack`（一维）和 `StGrid`（等宽多列）：
+
+```vue
+<StStack :gap="4"><StInput /><StButton /></StStack>
+<StGrid :cols="2" :gap="4">…</StGrid>
+```
+
+间距只允许取 `--st-space-*` 刻度（`0/1/2/3/4/5/6/8`），不允许各写各的 px。
+
+> **`gap` / `cols` 同时接受数字与数字字符串。**
+> 模板里写静态属性 `gap="4"` 传进来的是**字符串** `"4"`，`:gap="4"` 传的是数字。
+> 两者都合法（类型 `StSpace` / `StColsInput`），组件内部归一化。
+> 早期版本只声明数字联合，`gap="4"` 会触发 TS2322 —— 而它恰恰是本文档
+> 自己给的示例写法，一次性污染了 22 处调用点。类型已放宽，不要再收窄。
+
+## 原生属性的透传约定
+
+输入类组件（`StInput` / `StTextarea` / `StNumberInput`）用
+`inheritAttrs: false` 做**属性分流**：
+
+- `class` / `style` → 留在组件根元素（保留布局钩子）
+- 其余非声明属性（`required` / `minlength` / `id` / `name` / `inputmode` /
+  `pattern` / `aria-describedby`…）→ 下沉到内层真正的原生控件
+
+否则原生表单校验与 `<label for>` 关联会静默失效。
+**新增输入类组件时必须沿用这个约定**，不然调用方会遇到"属性写了没反应"。
+
+> `StSelect` 尚未处理：它基于 reka-ui `SelectTrigger`，属性应落到触发器
+> 按钮而非隐藏 input，需要单独设计。
+
 ## 引入方式
 
 ```ts
