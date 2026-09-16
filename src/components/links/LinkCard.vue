@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { StAvatar } from '@/ui'
+
 defineProps<{
   link: {
     id: number
@@ -52,10 +54,7 @@ function decodeHtml(str: string): string {
     <!-- Hover tooltip -->
     <div class="link-card__tip">
       <div class="link-card__tip-top">
-        <div class="link-card__tip-avatar">
-          <img v-if="link.image" :src="link.image" alt="" />
-          <span v-else>{{ link.name.charAt(0) }}</span>
-        </div>
+        <StAvatar :src="link.image" alt="" :size="36" :fallback-text="link.name" />
         <div class="link-card__tip-info">
           <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
           <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
@@ -177,29 +176,6 @@ body[data-theme='dark'] .link-card__tip {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.08));
 }
 
-/* Tip avatar */
-.link-card__tip-avatar {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.link-card__tip-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
 .link-card__tip-info {
   flex: 1;
   min-width: 0;
@@ -240,7 +216,6 @@ body[data-theme='dark'] .link-card__tip {
 }
 
 /* Tip staggered entrance */
-.link-card__tip-avatar,
 .link-card__tip-name,
 .link-card__tip-url,
 .link-card__tip-desc {
@@ -248,12 +223,6 @@ body[data-theme='dark'] .link-card__tip {
   transform: translateY(4px);
   transition: all 0.2s cubic-bezier(0.55, 0, 0.8, 0.25);
   transition-delay: 0.2s;
-}
-
-.link-card:hover .link-card__tip-avatar {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0s;
 }
 
 .link-card:hover .link-card__tip-name {

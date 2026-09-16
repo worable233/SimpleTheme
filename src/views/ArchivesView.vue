@@ -14,6 +14,7 @@ import CategoryCard from '@/components/archive/CategoryCard.vue'
 import TimelineModal from '@/components/archive/TimelineModal.vue'
 import CategoryModal from '@/components/archive/CategoryModal.vue'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
+import { StSkeleton, StEmpty } from '@/ui'
 
 export interface PostWithMeta extends WordPressPost {
   displayDate: string
@@ -235,62 +236,34 @@ onUnmounted(() => {
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="archives-skeleton">
       <div class="section-header">
-        <div role="status" class="skeleton" style="width: 140px; height: 28px"></div>
+        <StSkeleton width="140px" height="28px" />
       </div>
       <div class="timeline-root">
         <div v-for="i in 3" :key="'sk-year-' + i" class="timeline-year-card">
           <div class="timeline-year-header">
-            <span
-              role="status"
-              class="skeleton"
-              style="width: 60px; height: 38px; border-radius: 6px"
-            ></span>
-            <span
-              role="status"
-              class="skeleton"
-              style="width: 85px; height: 28px; border-radius: 9999px"
-            ></span>
+            <StSkeleton width="60px" height="38px" />
+            <StSkeleton width="85px" height="28px" />
           </div>
           <div class="timeline-year-calendar">
-            <span
-              v-for="m in 12"
-              :key="m"
-              role="status"
-              class="skeleton"
-              style="width: 100%; aspect-ratio: 1; border-radius: 6px"
-            ></span>
+            <div v-for="m in 12" :key="m" class="timeline-skeleton-cell">
+              <StSkeleton width="100%" height="100%" />
+            </div>
           </div>
         </div>
       </div>
       <div class="section-header" style="margin-top: 3rem">
-        <div role="status" class="skeleton" style="width: 140px; height: 28px"></div>
+        <StSkeleton width="140px" height="28px" />
       </div>
       <div class="category-root">
         <div v-for="i in 4" :key="'sk-cat-' + i" class="category-card">
           <div class="category-header">
-            <span
-              role="status"
-              class="skeleton"
-              style="width: 100px; height: 26px; border-radius: 6px"
-            ></span>
-            <span
-              role="status"
-              class="skeleton"
-              style="width: 56px; height: 26px; border-radius: 9999px"
-            ></span>
+            <StSkeleton width="100px" height="26px" />
+            <StSkeleton width="56px" height="26px" />
           </div>
           <div class="category-posts">
             <div v-for="j in 3" :key="j" class="category-post-item">
-              <span
-                role="status"
-                class="skeleton"
-                style="width: 65%; height: 18px; border-radius: 4px"
-              ></span>
-              <span
-                role="status"
-                class="skeleton"
-                style="width: 64px; height: 16px; border-radius: 4px"
-              ></span>
+              <StSkeleton width="65%" height="18px" />
+              <StSkeleton width="64px" height="16px" />
             </div>
           </div>
         </div>
@@ -362,9 +335,7 @@ onUnmounted(() => {
     </template>
 
     <!-- Empty -->
-    <div v-else class="archives-empty">
-      <p>还没有文章</p>
-    </div>
+    <StEmpty v-else description="还没有文章" />
   </div>
 </template>
 
@@ -398,16 +369,6 @@ onUnmounted(() => {
 }
 
 /* ========== Loading / Empty ========== */
-.archives-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: var(--foreground, #666);
-  gap: 0.8rem;
-}
-
 .archives-skeleton .timeline-year-card,
 .archives-skeleton .category-card {
   background: var(--card, rgba(255, 255, 255, 0.7));
@@ -442,8 +403,10 @@ onUnmounted(() => {
   grid-template-columns: repeat(6, 1fr);
   gap: 0.5rem;
 }
-.archives-skeleton .timeline-year-calendar .skeleton {
-  border: 1.5px solid var(--border, #e0e0e0);
+.timeline-skeleton-cell {
+  display: flex;
+  width: 100%;
+  aspect-ratio: 1;
 }
 .archives-skeleton .category-posts {
   padding-top: 0.8rem;

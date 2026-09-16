@@ -10,6 +10,7 @@ import { useSkeletonSize } from '@/composables/useSkeletonSize'
 import { showError } from '@/lib/toast'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import { StSkeleton } from '@/ui'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
 
@@ -77,9 +78,9 @@ onMounted(() => {
     <div v-if="loading" class="shuoshuo-list">
       <div v-for="i in Math.min(pageSize, 8)" :key="'sk-' + i" class="shuoshuo-card-skeleton" :style="skeletonStyle">
         <div class="shuoshuo-card-skeleton__text">
-          <div class="sk-line" style="height: 1.125rem; width: 70%;"></div>
-          <div class="sk-line" style="height: 0.75rem; width: 100%;"></div>
-          <div class="sk-line" style="height: 0.75rem; width: 65%;"></div>
+          <StSkeleton width="70%" height="1.125rem" />
+          <StSkeleton width="100%" height="0.75rem" />
+          <StSkeleton width="65%" height="0.75rem" />
         </div>
         <div v-if="cardSize?.cover !== false" class="shuoshuo-card-skeleton__cover"></div>
       </div>
@@ -147,11 +148,6 @@ onMounted(() => {
     opacity: 1;
     transform: translateX(0);
   }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
 }
 
 .section-header {
@@ -353,12 +349,6 @@ body[data-theme='dark'] .shuoshuo-card__meta {
   justify-content: center;
   gap: 0.75rem;
   padding: 1.5rem 1.75rem;
-}
-
-.sk-line {
-  border-radius: 4px;
-  background: var(--muted);
-  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .shuoshuo-card-skeleton__cover {

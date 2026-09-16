@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { StButton } from '@/ui'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { resolveMenuIcon } from './sidebar/icon-map'
@@ -248,13 +249,9 @@ function onRootTooltipHover(e: MouseEvent) {
     <aside ref="leftSidebarRef" class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
       <!-- Search button -->
       <div class="flex w-full items-center justify-center border-b border-border px-2.5 py-3 max-xl:hidden">
-        <button
-          class="flex h-[50px] w-[50px] cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-foreground transition-colors duration-150 hover:bg-menu-hover"
-          @click="searchOpen = true"
-          aria-label="搜索"
-        >
-          <AppIcon name="search" :size="20" />
-        </button>
+        <StButton quaternary circle size="large" aria-label="搜索" @click="searchOpen = true">
+          <template #icon><AppIcon name="search" :size="20" /></template>
+        </StButton>
       </div>
 
       <!-- Navigation menu -->

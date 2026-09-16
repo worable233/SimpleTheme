@@ -10,6 +10,7 @@ import CommentsPanel from '@/components/CommentsPanel.vue'
 import LinkCard from '@/components/links/LinkCard.vue'
 import type { WordPressLinkCategory, WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import { StSkeleton } from '@/ui'
 
 const { siteInfo } = useSiteShell()
 
@@ -53,14 +54,14 @@ onMounted(async () => {
     <div v-if="loading" class="links-skeleton">
       <div v-for="c in 2" :key="'cat-' + c" class="sk-category">
         <div class="sk-category-header">
-          <span role="status" class="skeleton" style="width: 80px; height: 22px; border-radius: 6px;"></span>
-          <span role="status" class="skeleton" style="width: 100px; height: 16px; border-radius: 6px;"></span>
+          <StSkeleton width="80px" height="22px" />
+          <StSkeleton width="100px" height="16px" />
         </div>
         <div class="link-grid">
           <div v-for="i in 4" :key="'card-' + c + '-' + i" class="sk-link-card">
             <div class="link-card__inner">
-              <span role="status" class="skeleton" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; flex-shrink: 0;"></span>
-              <span role="status" class="skeleton" style="flex: 1; height: 16px; border-radius: 6px;"></span>
+              <StSkeleton circle width="2.5rem" />
+              <StSkeleton width="100%" height="16px" />
             </div>
           </div>
         </div>

@@ -110,6 +110,22 @@ const model = defineModel<string>({ default: '' })
 > `StSelect` 尚未处理：它基于 reka-ui `SelectTrigger`，属性应落到触发器
 > 按钮而非隐藏 input，需要单独设计。
 
+## 何时**不该**用 StButton
+
+`StButton` 把默认插槽包在 `.st-button__content`（`display:inline-block;
+overflow:hidden`）里，按钮本身是 `justify-content:center` 的 inline-flex。
+所以它**只适合"单一内容的按钮"**：文字、图标，或 `#icon` + 文字。
+
+以下情况请保留原生 `<button>`（并沿用业务 scoped CSS）：
+
+- 按钮内部要自己做复杂布局（如"左标题 + 右计数"的 `justify-between` 卡片头）；
+- 整块卡片即按钮，且依赖 `hover:-translate-y` / `scale` / 任意栅格几何；
+- 位于**共享全局 CSS**（`src/styles/*.css`）里的面板单元格（如表情面板的
+  36×36 固定格 + 选中下划线）——迁进组件会孤儿化那些全局规则。
+
+判断标准：如果替换后需要给 `St*` 传 `class` 才能还原布局，那就说明**不该换**
+（契约不允许 class 透传，且 scoped 样式会按 specificity 压掉）。
+
 ## 引入方式
 
 ```ts

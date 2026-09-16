@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
+import { StTag } from '@/ui'
 
 const props = defineProps<{
   pageData: WordPressPost
@@ -43,12 +44,7 @@ const pageTags = computed(() => {
       <div class="flex flex-wrap items-center gap-3 text-muted-foreground">
         <time :datetime="pageData.date">发布 {{ formatDate(pageData.date) }}</time>
         <span v-if="pageData.modified">修改 {{ formatDate(pageData.modified) }}</span>
-        <span
-          v-for="tag in pageTags"
-          :key="tag"
-          class="inline-block rounded border border-border px-2 py-0.5 text-xs"
-          >#{{ tag }}</span
-        >
+        <StTag v-for="tag in pageTags" :key="tag" size="tiny" bordered>#{{ tag }}</StTag>
       </div>
 
       <p class="text-sm text-muted-foreground">

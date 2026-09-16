@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { StButton } from '@/ui'
 import { useToc } from '@/composables/useToc'
 
 const props = defineProps<{
@@ -76,25 +77,23 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     class="fixed inset-x-0 top-0 z-[999] hidden h-14 w-full items-center justify-between overflow-hidden border-b border-border bg-card px-4 transition-transform duration-300 max-xl:flex"
     :class="{ '-translate-y-full': hidden }"
   >
-    <button
-      class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-foreground hover:bg-menu-hover"
-      @click="$emit('toggle-menu')"
-      aria-label="打开菜单"
-    >
-      <!-- ≤1000px: 汉堡菜单（两边都收起） -->
-      <svg class="hidden max-lg:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </svg>
-      <!-- 1001-1200px: 左侧面板图标（只收起左侧） -->
-      <svg class="block max-lg:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <line x1="9" y1="3" x2="9" y2="21" />
-        <line x1="3" y1="9" x2="9" y2="9" />
-        <line x1="3" y1="15" x2="9" y2="15" />
-      </svg>
-    </button>
+    <StButton quaternary circle size="large" aria-label="打开菜单" @click="$emit('toggle-menu')">
+      <template #icon>
+        <!-- ≤1000px: 汉堡菜单（两边都收起） -->
+        <svg class="hidden max-lg:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <!-- 1001-1200px: 左侧面板图标（只收起左侧） -->
+        <svg class="block max-lg:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+          <line x1="3" y1="9" x2="9" y2="9" />
+          <line x1="3" y1="15" x2="9" y2="15" />
+        </svg>
+      </template>
+    </StButton>
 
     <div class="absolute left-1/2 max-w-[55%] -translate-x-1/2">
       <Transition name="rm-fade" mode="out-in">
@@ -122,16 +121,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </Transition>
     </div>
 
-    <button
-      class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-foreground hover:bg-menu-hover"
-      @click="$emit('open-search')"
-      aria-label="搜索"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-        <circle cx="11" cy="11" r="8"></circle>
-        <path d="m21 21-4.35-4.35"></path>
-      </svg>
-    </button>
+    <StButton quaternary circle size="large" aria-label="搜索" @click="$emit('open-search')">
+      <template #icon>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </template>
+    </StButton>
 
     <!-- 阅读进度条（仅阅读模式显示） -->
     <div

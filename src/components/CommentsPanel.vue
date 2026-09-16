@@ -13,6 +13,7 @@ import { createComment, fetchComments, getErrorMessage, pinComment, deleteCommen
 import { showError, showLoadingToast, showToast, dismissToast } from '@/lib/toast'
 import type { CommentFormSettings, WordPressComment } from '@/types/wordpress'
 import { getThemeConfig } from '@/lib/theme-config'
+import { StButton, StSkeleton, StTag } from '@/ui'
 
 const props = defineProps<{
   postId: number
@@ -365,7 +366,7 @@ watch(
     <!-- Header -->
     <header v-if="enabled" class="comments-header">
       <h3 class="comments-header__title">评论区</h3>
-      <span class="comments-header__count">{{ totalComments }}</span>
+      <StTag size="tiny" :bordered="false">{{ totalComments }}</StTag>
     </header>
 
     <!-- Disabled: comments closed -->
@@ -405,9 +406,9 @@ watch(
     />
 
     <!-- Loading -->
-    <div v-if="loading" class="comments-loading">
-      <div class="skeleton skeleton--paragraph" role="status"></div>
-      <div class="skeleton skeleton--paragraph skeleton--w-75" role="status"></div>
+    <div v-if="loading" class="comments-loading" role="status" aria-label="评论加载中">
+      <StSkeleton width="100%" height="1rem" />
+      <StSkeleton width="75%" height="1rem" />
     </div>
 
     <!-- Empty -->
@@ -435,13 +436,9 @@ watch(
 
     <!-- Load More -->
     <div v-if="commentsLoaded && !loading && !allLoaded" class="flex justify-center py-4">
-      <button
-        class="cursor-pointer rounded-[20px] border border-border bg-transparent px-6 py-2 font-[inherit] text-[13px] text-primary transition-all duration-150 hover:border-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-        :disabled="loadingMore"
-        @click="loadMore"
-      >
+      <StButton type="primary" ghost round :disabled="loadingMore" @click="loadMore">
         {{ loadingMore ? '加载中...' : '加载更多评论' }}
-      </button>
+      </StButton>
     </div>
 
     <!-- End note -->

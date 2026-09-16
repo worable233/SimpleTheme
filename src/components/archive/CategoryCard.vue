@@ -4,6 +4,7 @@
  */
 import type { RenderedText } from '@/types/wordpress'
 import { RouterLink } from 'vue-router'
+import { StTag } from '@/ui'
 import { toInternalPath } from '@/lib/theme-config'
 
 interface PostWithMeta {
@@ -37,10 +38,7 @@ const emit = defineEmits<{
       @click="emit('select', name)"
     >
       <h3 class="m-0 text-xl font-bold text-foreground">{{ name }}</h3>
-      <span
-        class="rounded-full bg-border px-3 py-1 text-[0.9rem] whitespace-nowrap text-foreground dark:bg-white/10 dark:text-white/70"
-        >{{ count }} 篇</span
-      >
+      <StTag round>{{ count }} 篇</StTag>
     </button>
     <div class="border-t border-dashed border-border pt-3">
       <div

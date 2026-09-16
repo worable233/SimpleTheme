@@ -2,6 +2,8 @@
 /**
  * TimelineCard — 单个年份时间线卡片（含12月日历格）
  */
+import { StTag } from '@/ui'
+
 defineProps<{
   year: number
   total: number
@@ -23,10 +25,7 @@ const emit = defineEmits<{
   >
     <div class="flex items-center justify-between">
       <span class="text-3xl leading-tight font-extrabold text-foreground">{{ year }}</span>
-      <span
-        class="rounded-full bg-border px-3 py-1 text-[0.9rem] whitespace-nowrap text-foreground dark:bg-white/10 dark:text-white/70"
-        >{{ total }} 篇文章</span
-      >
+      <StTag round>{{ total }} 篇文章</StTag>
     </div>
     <div class="grid grid-cols-6 grid-rows-2 gap-2">
       <span

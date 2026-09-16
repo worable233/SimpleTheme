@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { likeComment } from '@/lib/wordpress'
 import { renderCommentContent } from '@/lib/emoji'
 import type { WordPressComment } from '@/types/wordpress'
+import { StButton, StTag } from '@/ui'
 
 defineOptions({ name: 'CommentsTreeItem' })
 
@@ -21,9 +22,6 @@ const emit = defineEmits<{
 
 const level = computed(() => props.depth || 0)
 
-/* Badge base utilities (shared by pinned / private / pending variants) */
-const badgeBase =
-  'mr-1 inline-flex items-center rounded-[3px] px-1.5 py-px align-middle text-[10px] leading-[1.4] font-semibold text-white'
 const liking = ref(false)
 const liked = ref(localStorage.getItem(`simple_theme_comment_liked_${props.item.id}`) === '1')
 
@@ -172,9 +170,9 @@ function togglePin() {
           </strong>
 
           <!-- Badges -->
-          <span v-if="item.isPinned" :class="[badgeBase, 'bg-primary']">置顶</span>
-          <span v-if="item.isPrivate" :class="[badgeBase, 'bg-[#f59e0b]']">私密</span>
-          <span v-if="item.status === 'hold'" :class="[badgeBase, 'bg-secondary']">待审核</span>
+          <StTag v-if="item.isPinned" type="primary" size="tiny" :bordered="false">置顶</StTag>
+          <StTag v-if="item.isPrivate" type="warning" size="tiny" :bordered="false">私密</StTag>
+          <StTag v-if="item.status === 'hold'" size="tiny" :bordered="false">待审核</StTag>
         </div>
 
         <!-- Normal content -->
@@ -187,45 +185,47 @@ function togglePin() {
         </span>
 
         <div class="comments-item__actions">
-          <button
+          <StButton
             v-if="item.status !== 'hold'"
-            class="comments-item__action"
-            :class="{ 'comments-item__action--liked': liked }"
-            type="button"
+            size="small"
+            :type="liked ? 'error' : 'default'"
+            :ghost="liked"
+            :quaternary="!liked"
             :disabled="liking"
             @click="handleLike"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-            </svg>
+            <template #icon>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+              </svg>
+            </template>
             <span v-if="item.likes > 0">{{ item.likes }}</span>
             <span v-else>赞</span>
-          </button>
-          <button class="comments-item__action" type="button" @click="emit('reply', item.id)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-            </svg>
+          </StButton>
+          <StButton size="small" quaternary @click="emit('reply', item.id)">
+            <template #icon>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+              </svg>
+            </template>
             回复
-          </button>
-          <button
+          </StButton>
+          <StButton
             v-if="item.status === 'hold'"
-            class="comments-item__action comments-item__action--delete"
-            type="button"
+            size="small"
+            quaternary
             @click="emit('delete', item.id)"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
+            <template #icon>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </template>
             删除
-          </button>
-          <button
-            v-if="item.canPin"
-            class="comments-item__action"
-            type="button"
-            @click="togglePin"
-          >
+          </StButton>
+          <StButton v-if="item.canPin" size="small" quaternary @click="togglePin">
             {{ item.isPinned ? '取消置顶' : '置顶' }}
-          </button>
+          </StButton>
         </div>
 
       </div>

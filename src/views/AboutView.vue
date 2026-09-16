@@ -7,6 +7,7 @@ import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
+import { StCard, StStack, StSkeleton } from '@/ui'
 
 const { siteInfo } = useSiteShell()
 
@@ -32,15 +33,13 @@ onMounted(async () => {
 
 <template>
   <div class="about-page">
-    <div v-if="loading" class="flex flex-col gap-3">
-      <div class="rounded-large border border-border bg-card p-6">
-        <div class="flex flex-col gap-2">
-          <div role="status" class="skeleton line"></div>
-          <div role="status" class="skeleton line"></div>
-          <div role="status" class="skeleton line" style="width: 60%;"></div>
-        </div>
-      </div>
-    </div>
+    <StCard v-if="loading">
+      <StStack gap="2">
+        <StSkeleton />
+        <StSkeleton />
+        <StSkeleton width="60%" />
+      </StStack>
+    </StCard>
 
     <template v-else-if="aboutPage">
       <div class="content-area">

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
 import { showToast, dismissToast } from '@/lib/toast'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { StButton } from '@/ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -108,13 +109,6 @@ onUnmounted(() => {
   if (timer) clearInterval(timer)
   if (countdownToast) dismissToast(countdownToast)
 })
-
-// ----- 按钮样式 -----
-const goBtnBase =
-  'min-w-[140px] flex-1 cursor-pointer rounded-[10px] px-6 py-3 text-center text-[0.9375rem] transition-all duration-200'
-const goBtnPrimary =
-  'border border-primary bg-primary text-primary-foreground hover:opacity-85 disabled:cursor-default disabled:opacity-50 disabled:hover:opacity-50'
-const goBtnGhost = 'border border-border bg-transparent text-foreground hover:bg-accent'
 </script>
 
 <template>
@@ -132,7 +126,7 @@ const goBtnGhost = 'border border-border bg-transparent text-foreground hover:bg
         {{ rawTargetUrl ? '仅支持 HTTP 或 HTTPS 链接。' : '缺少前往地址。' }}
       </p>
       <div class="flex w-full flex-wrap justify-center gap-3">
-        <button :class="[goBtnBase, goBtnGhost]" @click="goBack">返回首页</button>
+        <StButton tertiary size="large" @click="goBack">返回首页</StButton>
       </div>
     </div>
 
@@ -170,10 +164,10 @@ const goBtnGhost = 'border border-border bg-transparent text-foreground hover:bg
       </div>
 
       <div class="flex w-full flex-wrap justify-center gap-3">
-        <button :class="[goBtnBase, goBtnPrimary]" :disabled="isRedirecting" @click="doRedirect">
+        <StButton type="primary" size="large" :disabled="isRedirecting" @click="doRedirect">
           {{ isRedirecting ? '正在前往...' : '继续前往' }}
-        </button>
-        <button :class="[goBtnBase, goBtnGhost]" @click="goBack">返回首页</button>
+        </StButton>
+        <StButton tertiary size="large" @click="goBack">返回首页</StButton>
       </div>
 
       <p class="mt-6 max-w-[380px] text-xs leading-relaxed text-secondary opacity-75">

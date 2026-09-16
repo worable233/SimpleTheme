@@ -15,6 +15,7 @@ import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
 import AppIcon from '@/components/AppIcon.vue'
+import { StButton } from '@/ui'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
 const route = useRoute()
@@ -299,12 +300,6 @@ function cancelPrefetch(post: WordPressPost) {
   if (t) { clearTimeout(t); prefetchTimers.delete(post.id) }
 }
 
-// ----- 分类筛选按钮样式 -----
-const filterBtnBase =
-  'inline-flex cursor-pointer items-center rounded-full border-none px-3.5 py-[5px] text-[13px] font-medium transition-all duration-200 select-none dark:shadow-[inset_0_1px_0_0_#fff3]'
-const filterBtnInactive = `${filterBtnBase} bg-muted text-secondary hover:bg-[color-mix(in_srgb,var(--muted)_75%,var(--foreground))] hover:text-foreground dark:bg-[#333] dark:text-[#ccc] dark:hover:bg-[#444] dark:hover:text-foreground`
-const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90 dark:text-[#1a1a1a]`
-
 </script>
 
 <template>
@@ -321,20 +316,24 @@ const filterBtnActive = `${filterBtnBase} bg-primary text-white hover:opacity-90
     <section>
       <!-- Filter bar -->
       <div class="mb-6 flex flex-wrap gap-1.5">
-        <button
-          :class="categorySlug === '' ? filterBtnActive : filterBtnInactive"
+        <StButton
+          size="small"
+          round
+          :type="categorySlug === '' ? 'primary' : 'default'"
           @click="onCategoryClick('all')"
         >
           全部
-        </button>
-        <button
+        </StButton>
+        <StButton
           v-for="cat in categories"
           :key="cat.id"
-          :class="categorySlug === cat.slug ? filterBtnActive : filterBtnInactive"
+          size="small"
+          round
+          :type="categorySlug === cat.slug ? 'primary' : 'default'"
           @click="onCategoryClick(cat.slug)"
         >
           {{ cat.name }}
-        </button>
+        </StButton>
       </div>
 
       <!-- Error state overlays everything -->
