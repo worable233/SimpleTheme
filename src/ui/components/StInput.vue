@@ -69,10 +69,9 @@ const rootAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
 
 /** 其余非声明属性（required/minlength/id/name/inputmode/pattern/
  *  aria-describedby…）一律下沉到内层原生 input */
-const inputAttrs = computed(() => {
-  const { class: _class, style: _style, ...rest } = attrs
-  return rest
-})
+const inputAttrs = computed(() =>
+  Object.fromEntries(Object.entries(attrs).filter(([k]) => k !== 'class' && k !== 'style')),
+)
 
 const classes = computed(() => [
   'st-input',

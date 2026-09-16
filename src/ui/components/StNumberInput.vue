@@ -12,11 +12,13 @@
  * 受控：始终以 modelValue 为准；非法输入不会写回 model（不留 NaN），
  * 失焦时回退为上一个合法值。
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useAttrs, watch } from 'vue'
 import StIcon from './StIcon.vue'
 import type { StSize, StStatus } from '../types'
 
-defineOptions({ name: 'StNumberInput' })
+// inheritAttrs:false —— 理由同 StInput：非声明属性（required/id/name…）
+// 必须落到内层 <input>，否则原生校验与 <label for> 关联静默失效。
+defineOptions({ name: 'StNumberInput', inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -54,6 +56,17 @@ const emit = defineEmits<{
 }>()
 
 const inputEl = ref<HTMLInputElement | null>(null)
+
+const attrs = useAttrs()
+
+/** class/style 留在根 div */
+const rootAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
+
+/** 其余非声明属性下沉到内层 <input> */
+const inputAttrs = computed(() =>
+  Object.fromEntries(Object.entries(attrs).filter(([k]) => k !== 'class' && k !== 'style')),
+)
+
 /** 输入框文本态：允许 '-'、'1.' 这类中间态存在，不与 model 强绑定 */
 const text = ref('')
 /** 非法输入标红：只在编辑过程中成立，失焦即回退清除 */
@@ -194,9 +207,10 @@ defineExpose({ focus, el: inputEl })
 </script>
 
 <template>
-  <div :class="classes">
+  <div v-bind="rootAttrs" :class="classes">
     <input
       ref="inputEl"
+      v-bind="inputAttrs"
       class="st-number-input__el"
       type="text"
       inputmode="decimal"

@@ -10,10 +10,13 @@
  * 视觉与 StInput 完全一致（同边框 / 同焦点环 / 同 status 配色），只是多行。
  * 受控：始终以 modelValue 为准；未绑定 v-model 时输入不会回显。
  */
-import { computed, ref } from 'vue'
+import { computed, ref, useAttrs } from 'vue'
 import type { StSize, StStatus } from '../types'
 
-defineOptions({ name: 'StTextarea' })
+// inheritAttrs:false —— 理由同 StInput：默认透传会把 required / id / name
+// 等非声明属性落到根 div 上，内层 <textarea> 拿不到，原生校验与
+// <label for> 关联会静默失效。class/style 仍留在根元素。
+defineOptions({ name: 'StTextarea', inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -48,6 +51,16 @@ const emit = defineEmits<{
 
 const el = ref<HTMLTextAreaElement | null>(null)
 
+const attrs = useAttrs()
+
+/** class/style 留在根 div */
+const rootAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
+
+/** 其余非声明属性下沉到内层 <textarea> */
+const areaAttrs = computed(() =>
+  Object.fromEntries(Object.entries(attrs).filter(([k]) => k !== 'class' && k !== 'style')),
+)
+
 const classes = computed(() => [
   'st-textarea',
   `st-textarea--${props.size}`,
@@ -67,10 +80,11 @@ defineExpose({ focus, el })
 </script>
 
 <template>
-  <div :class="classes">
+  <div v-bind="rootAttrs" :class="classes">
     <textarea
       ref="el"
       v-model="model"
+      v-bind="areaAttrs"
       class="st-textarea__el"
       :rows="rows"
       :placeholder="placeholder"
