@@ -11,11 +11,15 @@
  *
  * 受控：始终以 modelValue 为准；未绑定 v-model 时输入不会回显。
  */
-import { computed, ref, useSlots } from 'vue'
+import { computed, ref, useAttrs, useSlots } from 'vue'
 import StIcon from './StIcon.vue'
 import type { StSize, StStatus } from '../types'
 
-defineOptions({ name: 'StInput' })
+// inheritAttrs:false —— 默认的透传会把属性落到根 div 上，导致 required /
+// minlength / id / name / inputmode 这类**非声明 prop** 永远到不了内层
+// 原生 <input>：浏览器原生校验静默失效，<label for> 也关联不上。
+// 这里手动分流：class/style 留根元素（布局钩子），其余给内层 input。
+defineOptions({ name: 'StInput', inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -58,6 +62,18 @@ const emit = defineEmits<{
 const slots = useSlots()
 const inputEl = ref<HTMLInputElement | null>(null)
 
+const attrs = useAttrs()
+
+/** class/style 留在根 div：调用方仍能传布局类（如给外层定宽） */
+const rootAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
+
+/** 其余非声明属性（required/minlength/id/name/inputmode/pattern/
+ *  aria-describedby…）一律下沉到内层原生 input */
+const inputAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs
+  return rest
+})
+
 const classes = computed(() => [
   'st-input',
   `st-input--${props.size}`,
@@ -94,7 +110,7 @@ defineExpose({ focus, el: inputEl })
 </script>
 
 <template>
-  <div :class="classes">
+  <div v-bind="rootAttrs" :class="classes">
     <span v-if="slots.prefix" class="st-input__affix st-input__affix--prefix">
       <slot name="prefix" />
     </span>
@@ -102,6 +118,7 @@ defineExpose({ focus, el: inputEl })
     <input
       ref="inputEl"
       v-model="model"
+      v-bind="inputAttrs"
       class="st-input__el"
       :type="type"
       :placeholder="placeholder"
