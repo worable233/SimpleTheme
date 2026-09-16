@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import type { AnnouncementSettings } from '@/types/wordpress'
+import { StButton } from '@/ui'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 
@@ -70,14 +71,14 @@ onUnmounted(() => {
           v-html="announcement.pageContent || ''"
         ></div>
         <div v-if="announcement.buttons?.length" class="flex justify-end gap-2 px-6 pb-5">
-          <button
+          <StButton
             v-for="(btn, i) in announcement.buttons"
             :key="i"
-            class="cursor-pointer rounded-lg border-none bg-primary px-5 py-2 text-sm text-primary-foreground"
+            type="primary"
             @click="handleButtonClick(btn)"
           >
             {{ btn.text }}
-          </button>
+          </StButton>
         </div>
       </div>
     </div>
