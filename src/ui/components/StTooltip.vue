@@ -119,11 +119,15 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
 
 /* 进出场：0.12s 淡入 + 4px 位移，与旧 .sidebar-global-tooltip 同节奏
  * （进场 easeOut、退场 easeIn 且略快）。reka 的 Presence 监听 data-state
- * 由 open → closed 时 animation-name 的变化来延迟卸载，因此退场必须写
+ * 由打开态 → closed 时 animation-name 的变化来延迟卸载，因此退场必须写
  * 在 [data-state='closed'] 上才生效。
+ * 注意：Tooltip 的打开态属性值不是 'open'，而是 instant-open / delayed-open
+ * （鼠标悬停走延时 → delayed-open；聚焦/受控立即打开 → instant-open），
+ * 只写 'open' 会静默不命中，进场变成直接闪现。
  * 动画只作用于内容根：定位用的 transform 在 reka 外层 popper wrapper 上，
  * 二者互不打架。 */
-:global(.st-tooltip[data-state='open']) {
+:global(.st-tooltip[data-state='instant-open']),
+:global(.st-tooltip[data-state='delayed-open']) {
   animation: st-tooltip-in 0.12s var(--ease-out);
 }
 
@@ -146,7 +150,8 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :global(.st-tooltip[data-state='open']),
+  :global(.st-tooltip[data-state='instant-open']),
+  :global(.st-tooltip[data-state='delayed-open']),
   :global(.st-tooltip[data-state='closed']) {
     animation: none;
   }
