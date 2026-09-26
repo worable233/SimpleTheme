@@ -209,11 +209,14 @@ function enhanceAudioPlayers(container: Element) {
     ui.append(track, inner)
     audio.after(ui)
 
-    const syncTime = () => {
-      const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0
-      cur.textContent = formatAudioTime(audio.currentTime)
-      total.textContent = formatAudioTime(audio.duration)
+    const renderAt = (t: number) => {
+      const p = audio.duration ? (t / audio.duration) * 100 : 0
+      cur.textContent = formatAudioTime(t)
       fill.style.width = `${p}%`
+    }
+    const syncTime = () => {
+      total.textContent = formatAudioTime(audio.duration)
+      renderAt(audio.currentTime)
     }
     const syncPlayState = () => {
       playIcon.icon = ICON_MORPH_NODES[audio.paused ? 'player-play' : 'player-pause']
@@ -233,8 +236,10 @@ function enhanceAudioPlayers(container: Element) {
       if (!audio.duration) return
       const r = rail.getBoundingClientRect()
       const ratio = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
-      audio.currentTime = ratio * audio.duration
-      syncTime()
+      const t = ratio * audio.duration
+      audio.currentTime = t
+      // 乐观更新：服务器不支持 Range（本地 Studio）时也跟手，松手由 syncTime 校正
+      renderAt(t)
     }
 
     playBtn.addEventListener('click', () => {
@@ -283,6 +288,8 @@ function enhanceAudioPlayers(container: Element) {
         track.removeEventListener('pointermove', move)
         track.removeEventListener('pointerup', up)
         track.removeEventListener('pointercancel', up)
+        // 松手校正到真实位置（seek 失败时收回乐观值）
+        syncTime()
       }
       track.addEventListener('pointermove', move)
       track.addEventListener('pointerup', up)
