@@ -14,6 +14,7 @@
  *   [E4] 根元素 class 含 st-<kebab-name>
  *   [E5] 无硬编码颜色字面量（#hex / rgb() / hsl()）
  *   [E6] 无遗留 .xh-* 类名
+ *   [E7] 浮层外壳 class 必须用 :global()（否则 scoped 静默失效）
  *   [W1] 模板中疑似 Tailwind 工具类
  *   [W2] v-bind="$attrs" 无条件透传（class 后门）
  */
@@ -115,6 +116,32 @@ function checkFile(file) {
   // [E6]
   const xh = [...src.matchAll(/xh-[a-z0-9-]+/g)].map((x) => x[0])
   if (xh.length) errors.push(`E6 残留 xh-* 类名 ${[...new Set(xh)].slice(0, 5).join(' ')}`)
+
+  // [E7] 浮层外壳必须 :global()
+  // reka-ui 的 Portal 把内容渲染到 body，内容根拿不到本组件作用域的
+  // data-v-*，普通 scoped 选择器会**静默**失效（面板变透明、无边框阴影）。
+  // DialogPortal 例外：Dialog 链路会把 scope 传到内容根，scoped 正常。
+  const portalRe = /<(?!DialogPortal)([A-Za-z][\w]*Portal)\b[^>]*>([\s\S]*?)<\/\1>/g
+  const e7 = []
+  let pm
+  while ((pm = portalRe.exec(src)) !== null) {
+    const child = pm[2].match(/^\s*<([A-Za-z][\w-]*)\b([^>]*)>/)
+    if (!child) continue
+    const classAttr = child[2].match(/(?<![:\w-])class\s*=\s*"([^"]*)"/)
+    if (!classAttr) continue
+    for (const token of classAttr[1].split(/\s+/)) {
+      if (!token.startsWith('st-')) continue
+      const esc = token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+      if (!new RegExp(`:global\\(\\s*\\.${esc}(?![\\w-])`).test(src)) {
+        e7.push(`${token}(${child[1]})`)
+      }
+    }
+  }
+  if (e7.length) {
+    errors.push(
+      `E7 浮层内容 class 未用 :global(): ${[...new Set(e7)].join(' ')} → Portal 内容拿不到 scoped 属性，改成 :global(.st-xxx)`,
+    )
+  }
 
   // [W1]
   // 只看"纯 class 字面量"里的 token。:class 的对象/数组语法里会混进

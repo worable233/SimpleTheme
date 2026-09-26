@@ -26,6 +26,14 @@ src/components/         ← 业务组件层：由基础层拼出来的文章卡�
    状态用 `is-<状态>` 或 `st-<组件名>--<变体>`。
    不使用 Tailwind 工具类（组件必须自包含，且前后台 Tailwind 配置不同）。
 
+   **例外：`reka-ui` Portal 渲染到 `body` 的浮层外壳必须用 `:global(.st-xxx)`。**
+   `TooltipContent` / `PopoverContent` / `SelectContent` / `DropdownMenuContent`
+   等经 Portal 逃逸出组件 DOM，内容根**拿不到**本组件的 `data-v-*`
+   作用域属性，普通 `.st-xxx` scoped 选择器会**静默匹配失败**
+   （浮层变透明、无边框阴影，且不报错）。`DialogPortal`（Modal / Drawer）
+   的链路会传递 scope，继续用普通 scoped 即可。
+   门禁 [E7] 会拦住漏网的写法。
+
 4. **无障碍是组件的职责，不是调用方的。**
    焦点管理、键盘交互、`aria-*`、`role` 由组件内部实现。
    复杂浮层（Modal / Select / Tabs / Tooltip）基于 `reka-ui` 实现，
