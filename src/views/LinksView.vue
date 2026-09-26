@@ -131,52 +131,14 @@ onMounted(async () => {
 <style scoped>
 /* ============ Page Layout ============ */
 .links-page {
-  --anim-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-duration-enter: 0.5s;
   padding: 25px;
 }
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.content-area .section-header,
-.content-area .link-category,
-.content-area .link-card,
-.content-area .comments-section {
-  animation: none;
-  opacity: 1;
-  transform: none;
-}
-
-.section-header {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-
-.sk-link-card {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-.sk-category:nth-child(1) .sk-link-card:nth-child(1) { animation-delay: 0.04s; }
-.sk-category:nth-child(1) .sk-link-card:nth-child(2) { animation-delay: 0.08s; }
-.sk-category:nth-child(1) .sk-link-card:nth-child(3) { animation-delay: 0.12s; }
-.sk-category:nth-child(1) .sk-link-card:nth-child(4) { animation-delay: 0.16s; }
-.sk-category:nth-child(2) .sk-link-card:nth-child(1) { animation-delay: 0.14s; }
-.sk-category:nth-child(2) .sk-link-card:nth-child(2) { animation-delay: 0.18s; }
-.sk-category:nth-child(2) .sk-link-card:nth-child(3) { animation-delay: 0.22s; }
-.sk-category:nth-child(2) .sk-link-card:nth-child(4) { animation-delay: 0.26s; }
 
 .links-skeleton {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
-
-.sk-category {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-.sk-category:nth-child(1) { animation-delay: 0s; }
-.sk-category:nth-child(2) { animation-delay: 0.1s; }
 
 .sk-category-header {
   display: flex;

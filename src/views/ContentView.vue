@@ -651,43 +651,11 @@ watch(
 </template>
 
 <style scoped>
-.content-view {
-  --anim-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-duration-enter: 0.5s;
-}
-
 .content-view__loading {
   min-height: 16rem;
   display: grid;
   place-items: center;
   color: var(--secondary, #888);
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Staggered entrance — cover/header, body, footer animate in sequence */
-.single-post__cover,
-.single-post__header {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-}
-
-.single-post__body {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-  animation-delay: 0.12s;
-}
-
-.single-post__footer {
-  animation: slideIn var(--anim-duration-enter) var(--anim-ease-enter) both;
-  animation-delay: 0.24s;
 }
 
 /* ----- Cover meta (on featured image) — white on dark overlay ----- */

@@ -73,8 +73,6 @@ onMounted(async () => {
 
 <style scoped>
 .about-page {
-  --anim-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-duration-enter: 0.5s;
   padding: 25px;
 }
 </style>

@@ -325,7 +325,6 @@ onMounted(async () => {
 <style scoped>
 /* ========== Layout ========== */
 .archives-page {
-  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   padding: 25px;
 }
 
@@ -418,18 +417,6 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
   margin: 0;
-}
-
-/* ========== Animation ========== */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 /* ========== Responsive ========== */

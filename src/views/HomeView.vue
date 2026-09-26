@@ -363,9 +363,9 @@ function cancelPrefetch(post: WordPressPost) {
           </div>
         </div>
 
-        <!-- Real post cards with fade-up transition -->
+        <!-- Real post cards -->
         <div v-else class="post-list">
-          <TransitionGroup name="fade-up" tag="div" class="post-list__grid">
+          <div class="post-list__grid">
             <article
               v-for="post in latestPosts"
               :key="post.id"
@@ -408,7 +408,7 @@ function cancelPrefetch(post: WordPressPost) {
                 <p v-if="post.excerpt?.rendered" class="post-card__excerpt" v-html="post.excerpt.rendered"></p>
               </div>
             </article>
-          </TransitionGroup>
+          </div>
         </div>
 
         <!-- Empty state (not during initial load or category loading) -->
@@ -442,9 +442,6 @@ function cancelPrefetch(post: WordPressPost) {
 
 <style scoped>
 .home-content {
-  --anim-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-duration-enter: 0.5s;
-
   padding: 25px;
 }
 
@@ -469,22 +466,6 @@ function cancelPrefetch(post: WordPressPost) {
 
 .post-list--more {
   margin-top: 24px;
-}
-
-/* Fade-up enter transition for category switch (each card fades in rising) */
-.fade-up-enter-active {
-  transition: opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.fade-up-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-/* Leave is instant — cards disappear immediately */
-.fade-up-leave-active {
-  position: absolute;
-  opacity: 0;
-  transition: none;
 }
 
 /* Responsive skeleton — stack vertically on mobile */

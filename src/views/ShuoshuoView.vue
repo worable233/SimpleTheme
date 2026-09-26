@@ -139,21 +139,6 @@ onMounted(() => {
   padding: 25px;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.section-header {
-  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
 /* ============ List container ============ */
 .shuoshuo-list {
   display: flex;
@@ -171,17 +156,7 @@ onMounted(() => {
   border: 1px solid var(--border);
   overflow: hidden;
   transition: all 0.35s var(--anim-ease-expand);
-  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-
-.shuoshuo-card:nth-child(1) { animation-delay: 0.06s; }
-.shuoshuo-card:nth-child(2) { animation-delay: 0.11s; }
-.shuoshuo-card:nth-child(3) { animation-delay: 0.16s; }
-.shuoshuo-card:nth-child(4) { animation-delay: 0.21s; }
-.shuoshuo-card:nth-child(5) { animation-delay: 0.26s; }
-.shuoshuo-card:nth-child(6) { animation-delay: 0.31s; }
-.shuoshuo-card:nth-child(7) { animation-delay: 0.36s; }
-.shuoshuo-card:nth-child(8) { animation-delay: 0.41s; }
 
 /* Stretched link: make the entire card clickable via the title link's pseudo-element */
 .shuoshuo-card__title a::after {
