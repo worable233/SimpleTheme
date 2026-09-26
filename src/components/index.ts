@@ -3,8 +3,6 @@
 export { default as SearchModal } from './SearchModal.vue'
 export { default as ReadingProgress } from './ReadingProgress.vue'
 export { default as ScrollToTop } from './ScrollToTop.vue'
-export { default as Skeleton } from './Skeleton.vue'
-export { default as ArticleSkeleton } from './ArticleSkeleton.vue'
 export { default as UndrawIllustration } from './UndrawIllustration.vue'
 export { default as CommentForm } from './CommentForm.vue'
 export { default as EmojiPicker } from './EmojiPicker.vue'
