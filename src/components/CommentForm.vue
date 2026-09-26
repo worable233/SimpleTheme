@@ -799,7 +799,7 @@ defineExpose({ clearForm })
               :size="isMobile ? 'large' : 'medium'"
               @click="prevStep"
             >
-              <AppIcon name="arrow-left" :size="16" :stroke="2.5" />
+              <template #icon><AppIcon name="arrow-left" :size="16" :stroke="2.5" /></template>
               上一步
             </StButton>
             <StButton
@@ -809,8 +809,8 @@ defineExpose({ clearForm })
               :disabled="!isStepValid"
               @click="nextStep"
             >
+              <template #icon><AppIcon name="arrow-right" :size="16" :stroke="2.5" /></template>
               下一步
-              <AppIcon name="arrow-right" :size="16" :stroke="2.5" />
             </StButton>
             <StButton
               v-else
@@ -818,8 +818,8 @@ defineExpose({ clearForm })
               :size="isMobile ? 'large' : 'medium'"
               @click="finishWizard"
             >
+              <template #icon><AppIcon name="check" :size="16" :stroke="2.5" /></template>
               完成
-              <AppIcon name="check" :size="16" :stroke="2.5" />
             </StButton>
           </div>
         </div>
