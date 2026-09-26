@@ -106,7 +106,7 @@ onBeforeUnmount(cancelClose)
 
     <PopoverPortal to="body">
       <PopoverContent
-        class="st-popover__content"
+        class="st-popover__content st-transition-fade-scale"
         :side="side"
         :align="align"
         :side-offset="8"

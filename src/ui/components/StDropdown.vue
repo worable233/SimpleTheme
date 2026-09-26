@@ -108,7 +108,7 @@ onBeforeUnmount(cancelClose)
 
     <DropdownMenuPortal to="body">
       <DropdownMenuContent
-        class="st-dropdown__menu"
+        class="st-dropdown__menu st-transition-fade-scale"
         :side="side"
         :align="align"
         :side-offset="6"

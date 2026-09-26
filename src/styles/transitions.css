@@ -1,0 +1,102 @@
+/* ===================================================================
+   共享过渡层 — 对齐 Naive UI 的可复用过渡
+   ===================================================================
+   Naive 把浮层/内容的进出场抽成一组可复用过渡
+   （naive-ui/src/_styles/transitions/）：
+     fade-in / fade-in-scale-up / fade-in-width-expand /
+     fade-up-width-expand / fade-in-height-expand /
+     slide-in-from-{top,right,bottom,left} / icon-switch
+   本文件把它们移植成主题通用类，供各浮层复用，避免每个组件各写一份
+   @keyframes。
+
+   用法（reka-ui Portal 浮层）：
+     <div class="st-transition-fade-in-scale" data-state="open">…</div>
+   reka 的 Presence 依据 data-state 从打开态 → closed 时 animation-name
+   的变化来延迟卸载，所以进场写在打开态、退场写在 [data-state='closed']。
+
+   节奏对齐 tokens.css：进场 --duration-enter + --ease-out，
+   退场 --duration-leave + --ease-in（Naive 约定「进慢出快」）。
+   =================================================================== */
+
+/* ==================== fade-in ==================== */
+.st-transition-fade[data-state='open'] {
+  animation: st-fade-in var(--duration-enter) var(--ease-out);
+}
+
+.st-transition-fade[data-state='closed'] {
+  animation: st-fade-out var(--duration-leave) var(--ease-in);
+}
+
+/* ==================== fade-in-scale-up ==================== */
+.st-transition-fade-scale[data-state='open'] {
+  animation: st-fade-in-scale-up var(--duration-enter) var(--ease-out);
+}
+
+.st-transition-fade-scale[data-state='closed'] {
+  animation: st-fade-out-scale-down var(--duration-leave) var(--ease-in);
+}
+
+/* ==================== slide-in-from-* ====================
+   方向由 --st-transition-shift-x / -y 给出，默认从上方 4px 处滑入，
+   调用方可覆写这两个变量来换方向。 */
+.st-transition-slide {
+  --st-transition-shift-x: 0px;
+  --st-transition-shift-y: 4px;
+}
+
+.st-transition-slide[data-state='open'] {
+  animation: st-slide-in var(--duration-enter) var(--ease-out);
+}
+
+.st-transition-slide[data-state='closed'] {
+  animation: st-slide-out var(--duration-leave) var(--ease-in);
+}
+
+/* ==================== 关键帧 ==================== */
+@keyframes st-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes st-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes st-fade-in-scale-up {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes st-fade-out-scale-down {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes st-slide-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--st-transition-shift-x), var(--st-transition-shift-y));
+  }
+}
+
+@keyframes st-slide-out {
+  to {
+    opacity: 0;
+    transform: translate(var(--st-transition-shift-x), var(--st-transition-shift-y));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-transition-fade[data-state],
+  .st-transition-fade-scale[data-state],
+  .st-transition-slide[data-state] {
+    animation: none;
+  }
+}

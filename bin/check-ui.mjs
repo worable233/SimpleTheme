@@ -121,6 +121,9 @@ function checkFile(file) {
   // reka-ui 的 Portal 把内容渲染到 body，内容根拿不到本组件作用域的
   // data-v-*，普通 scoped 选择器会**静默**失效（面板变透明、无边框阴影）。
   // DialogPortal 例外：Dialog 链路会把 scope 传到内容根，scoped 正常。
+  // st-transition-* 是 src/styles/transitions.css 里定义的**全局**过渡工具类，
+  // 本就写在全局样式表中，不需要（也不该）在组件里再声明 :global()。
+  const GLOBAL_UTILITY_PREFIXES = ['st-transition-']
   const portalRe = /<(?!DialogPortal)([A-Za-z][\w]*Portal)\b[^>]*>([\s\S]*?)<\/\1>/g
   const e7 = []
   let pm
@@ -131,6 +134,7 @@ function checkFile(file) {
     if (!classAttr) continue
     for (const token of classAttr[1].split(/\s+/)) {
       if (!token.startsWith('st-')) continue
+      if (GLOBAL_UTILITY_PREFIXES.some((p) => token.startsWith(p))) continue
       const esc = token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
       if (!new RegExp(`:global\\(\\s*\\.${esc}(?![\\w-])`).test(src)) {
         e7.push(`${token}(${child[1]})`)

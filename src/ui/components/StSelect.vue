@@ -6,11 +6,16 @@
  *   <StSelect v-model="layout" :options="options" />
  *   <StSelect v-model="id" :options="options" clearable placeholder="全部" />
  *   <StSelect v-model="type" :options="options" status="error" aria-label="类型" />
+ *   <StSelect v-model="q" :options="options" filterable placeholder="搜索…" />
  *
  * 基于 reka-ui Select：键盘导航、typeahead、浮层焦点管理全部交给它，
- * 本组件只补外观与 clearable 这层扩展。触发器视觉对齐 StInput。
+ * 本组件只补外观与 clearable / filterable 这层扩展。触发器视觉对齐 StInput。
+ *
+ * filterable 对齐 Naive Select 的 filterable：面板顶部有搜索框，按 label
+ * 做不区分大小写的包含匹配；过滤后为空时显示空态。匹配在当前 options 上
+ * 进行，远程搜索（Naive 的 remote）由调用方自行换 options 实现。
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   SelectContent,
   SelectIcon,
@@ -39,12 +44,21 @@ const props = withDefaults(
     clearable?: boolean
     /** 校验状态 */
     status?: StStatus
+    /** 面板顶部提供搜索框，按 label 过滤选项 */
+    filterable?: boolean
+    /** filterable 搜索框的占位文案 */
+    filterPlaceholder?: string
+    /** 过滤后无匹配时的空态文案 */
+    emptyText?: string
     /** 无障碍名称；无可见 label 时必填 */
     ariaLabel?: string
   }>(),
   {
     size: 'medium',
     placeholder: '请选择',
+    filterable: false,
+    filterPlaceholder: '搜索…',
+    emptyText: '无匹配项',
   },
 )
 
@@ -52,13 +66,26 @@ const model = defineModel<string | number | null>({ default: null })
 
 const emit = defineEmits<{
   (e: 'change', value: string | number | null): void
+  (e: 'search', keyword: string): void
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
+/** filterable 搜索框；浮层被 Portal 到 body，不能用 rootEl 查，须用模板 ref */
+const searchEl = ref<HTMLInputElement | null>(null)
+/** filterable 搜索关键词 */
+const keyword = ref('')
 
 const hasValue = computed(
   () => model.value !== '' && model.value !== null && model.value !== undefined,
 )
+
+/** filterable 时按 label 做包含匹配；否则原样透传 */
+const visibleOptions = computed(() => {
+  if (!props.filterable) return props.options
+  const q = keyword.value.trim().toLowerCase()
+  if (!q) return props.options
+  return props.options.filter((o) => o.label.toLowerCase().includes(q))
+})
 
 const showClear = computed(() => props.clearable && hasValue.value && !props.disabled)
 
@@ -72,11 +99,44 @@ const classes = computed(() => [
   },
 ])
 
+/** 面板关闭时清空关键词并复位到已选项，下次打开是干净列表 */
+watch(keyword, (v) => {
+  if (props.filterable) emit('search', v)
+})
+
+function onOpenChange(open: boolean) {
+  if (!open) {
+    keyword.value = ''
+    return
+  }
+  if (!props.filterable) return
+  // reka 在浮层定位完成（isPositioned）后才把焦点移到列表项，且这一步是
+  // 异步的；nextTick 会早于它执行导致焦点被抢走。这里等一帧再抢回来，
+  // 之后键盘输入才会落到搜索框（input 上已 keydown.stop，不会触发 reka
+  // 的 typeahead）。
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      searchEl.value?.focus()
+    })
+  })
+}
+
 /** reka-ui 的回调参数是宽泛的 AcceptableValue，这里收窄成组件契约里的值域 */
 function handleChange(value: unknown) {
   const next = (value ?? null) as string | number | null
   model.value = next
   emit('change', next)
+}
+
+/**
+ * 搜索框键盘策略：可打印字符只留给搜索框（否则会触发 reka 的 typeahead，
+ * 键盘输入即选中第一个匹配项，和「先筛选再确认」冲突）；方向键 / Enter /
+ * Escape / Tab 等导航键放行给 reka，由它把焦点移到列表项并完成选择。
+ */
+function onSearchKeydown(e: KeyboardEvent) {
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.stopPropagation()
+  }
 }
 
 function clear() {
@@ -89,7 +149,12 @@ function clear() {
 
 <template>
   <div ref="rootEl" :class="classes">
-    <SelectRoot :model-value="model" :disabled="disabled" @update:model-value="handleChange">
+    <SelectRoot
+      :model-value="model"
+      :disabled="disabled"
+      @update:model-value="handleChange"
+      @update:open="onOpenChange"
+    >
       <SelectTrigger
         class="st-select__trigger"
         :disabled="disabled"
@@ -105,16 +170,29 @@ function clear() {
       <!-- Teleport 到 body：脱离后台卡片的 overflow/层叠上下文 -->
       <SelectPortal to="body">
         <SelectContent
-          class="st-select__content"
+          class="st-select__content st-transition-fade"
           :class="`st-select__content--${size}`"
           position="popper"
           side="bottom"
           align="start"
           :side-offset="4"
+          @keydown.stop
         >
+          <div v-if="filterable" class="st-select__search-wrap">
+            <StIcon name="search" :size="14" class="st-select__search-icon" />
+            <input
+              ref="searchEl"
+              v-model="keyword"
+              class="st-select__search"
+              type="text"
+              :placeholder="filterPlaceholder"
+              :aria-label="filterPlaceholder"
+              @keydown="onSearchKeydown"
+            />
+          </div>
           <SelectViewport class="st-select__viewport">
             <SelectItem
-              v-for="option in options"
+              v-for="option in visibleOptions"
               :key="option.value"
               class="st-select__item"
               :class="{ 'is-selected': option.value === model }"
@@ -126,6 +204,9 @@ function clear() {
               </SelectItemIndicator>
               <SelectItemText>{{ option.label }}</SelectItemText>
             </SelectItem>
+            <div v-if="filterable && visibleOptions.length === 0" class="st-select__empty">
+              {{ emptyText }}
+            </div>
           </SelectViewport>
         </SelectContent>
       </SelectPortal>
@@ -348,24 +429,51 @@ function clear() {
   font-size: var(--st-font-large);
 }
 
-/* 只做透明度动画：定位由 popper 用 transform 完成，动 transform 会打架 */
-:global(.st-select__content[data-state='open']) {
-  animation: st-select-in 0.12s var(--ease-standard);
-}
-
-@keyframes st-select-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* 只做透明度动画：定位由 popper 用 transform 完成，动 transform 会打架。
+ * 进场动画改由 transitions.css 的 .st-transition-fade 提供。 */
 
 :global(.st-select__viewport) {
   padding: 4px;
   max-height: var(--reka-select-content-available-height, 320px);
   overflow-y: auto;
+}
+
+/* ==================== filterable 搜索框 ==================== */
+:global(.st-select__search-wrap) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.st-select__search-icon) {
+  flex: none;
+  color: var(--st-placeholder);
+}
+
+:global(.st-select__search) {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--st-text);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.4;
+  outline: none;
+}
+
+:global(.st-select__search::placeholder) {
+  color: var(--st-placeholder);
+}
+
+:global(.st-select__empty) {
+  padding: 12px 8px;
+  color: var(--st-placeholder);
+  font-size: inherit;
+  text-align: center;
 }
 
 .st-select__item {
@@ -409,10 +517,6 @@ function clear() {
   .st-select__trigger,
   .st-select__clear {
     transition: none;
-  }
-
-  :global(.st-select__content[data-state='open']) {
-    animation: none;
   }
 }
 </style>

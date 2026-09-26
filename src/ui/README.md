@@ -26,13 +26,16 @@ src/components/         ← 业务组件层：由基础层拼出来的文章卡�
    状态用 `is-<状态>` 或 `st-<组件名>--<变体>`。
    不使用 Tailwind 工具类（组件必须自包含，且前后台 Tailwind 配置不同）。
 
-   **例外：`reka-ui` Portal 渲染到 `body` 的浮层外壳必须用 `:global(.st-xxx)`。**
+   **例外 1：`reka-ui` Portal 渲染到 `body` 的浮层外壳必须用 `:global(.st-xxx)`。**
    `TooltipContent` / `PopoverContent` / `SelectContent` / `DropdownMenuContent`
    等经 Portal 逃逸出组件 DOM，内容根**拿不到**本组件的 `data-v-*`
    作用域属性，普通 `.st-xxx` scoped 选择器会**静默匹配失败**
    （浮层变透明、无边框阴影，且不报错）。`DialogPortal`（Modal / Drawer）
    的链路会传递 scope，继续用普通 scoped 即可。
    门禁 [E7] 会拦住漏网的写法。
+
+   **例外 2：`st-transition-*` 是全局过渡工具类（`src/styles/transitions.css`），
+   直接写在浮层根上即可，不需要 `:global()`——它本就定义在全局样式表里。**
 
 4. **无障碍是组件的职责，不是调用方的。**
    焦点管理、键盘交互、`aria-*`、`role` 由组件内部实现。
@@ -142,6 +145,25 @@ const model = defineModel<string>({ default: '' })
 > `Overlay` / `Content` **元素自身**上）；`StToast` 按 Naive
 > `fadeInHeightExpandTransition` 逐值实现的高度折叠；`StButton` 的
 > 图标↔spinner 交叉切换与点击波纹；`StSwitch` 的橡胶拉伸。
+
+**共享过渡层：`src/styles/transitions.css`。** 对齐 Naive
+`_styles/transitions/` 的可复用过渡类，供浮层直接复用，避免每个组件各写一份
+`@keyframes`。用法是把工具类加到 reka-ui Portal 浮层的**内容根**上：
+
+```vue
+<PopoverContent class="st-popover__content st-transition-fade-scale" />
+```
+
+| 类名                      | 效果                            |
+| ------------------------- | ------------------------------- |
+| `st-transition-fade`      | 纯淡入淡出                      |
+| `st-transition-fade-scale`| 淡入 + 轻微放大（浮层默认节奏） |
+| `st-transition-slide`     | 淡入 + 位移（方向由 `--st-transition-shift-x/-y` 给出） |
+
+进场用 `--duration-enter` + `--ease-out`，退场用 `--duration-leave` +
+`--ease-in`（Naive「进慢出快」约定）。退场写在 `[data-state='closed']` 上，
+reka 的 `Presence` 依据 `animationend` 延迟卸载。`st-transition-*` 是**全局**
+工具类，门禁 E7 已为其开例外，不需要 `:global()`。
 
 **所有动效都必须包一层 `@media (prefers-reduced-motion: reduce)` 关闭。**
 

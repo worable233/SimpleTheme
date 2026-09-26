@@ -5,6 +5,7 @@ import router from './router'
 import { getThemeConfig } from '@/lib/theme-config'
 import '@/styles/tailwind.css'
 import './styles/app.css'
+import './styles/transitions.css'
 import './styles/prose.css'
 import './styles/blocks.css'
 // ALTCHA Proof-of-Work CAPTCHA Web Component
