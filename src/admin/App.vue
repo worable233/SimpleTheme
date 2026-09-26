@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
 import {
@@ -8,22 +8,18 @@ import {
   StColorPicker,
   StFormItem,
   StGrid,
+  StIcon,
   StInput,
   StNumberInput,
   StSelect,
+  StSpinner,
   StStack,
   StSwitch,
+  StTabPane,
+  StTabs,
   StToast,
   useToast,
 } from '@/ui'
-
-type Tab = { key: string; label: string }
-
-const tabs: Tab[] = [
-  { key: 'appearance', label: '外观' },
-  { key: 'home', label: '首页' },
-  { key: 'advanced', label: '高级' },
-]
 
 const settings = ref<AdminSettings>({})
 const defaults = ref<AdminSettings>({})
@@ -34,8 +30,6 @@ const dirty = ref(false)
 const saved = ref(false)
 const error = ref('')
 const toast = useToast()
-
-const activeLabel = computed(() => tabs.find((tab) => tab.key === activeTab.value)?.label || '')
 
 const lightColors: Array<[string, string]> = [
   ['background_light', '背景色'],
@@ -121,7 +115,10 @@ const radiusMap: Record<'small' | 'medium' | 'large', { medium: string; large: s
   large: { medium: '0.625rem', large: '1rem' },
 }
 
-const shadowMap: Record<'none' | 'small' | 'medium' | 'large', { small: string; medium: string; large: string }> = {
+const shadowMap: Record<
+  'none' | 'small' | 'medium' | 'large',
+  { small: string; medium: string; large: string }
+> = {
   none: { small: 'none', medium: 'none', large: 'none' },
   small: {
     small: '0 1px 2px 0 rgb(0 0 0 / 0.06)',
@@ -164,8 +161,14 @@ function syncThemeTokens(data: AdminSettings) {
   root.style.setProperty('--shadow-small', shadow.small)
   root.style.setProperty('--shadow-medium', shadow.medium)
   root.style.setProperty('--shadow-large', shadow.large)
-  root.style.setProperty('--container-max', `${normalizePixel(data.container_max_width, 1500, 960, 2000)}px`)
-  root.style.setProperty('--article-max-width', `${normalizePixel(data.article_max_width, 900, 680, 1200)}px`)
+  root.style.setProperty(
+    '--container-max',
+    `${normalizePixel(data.container_max_width, 1500, 960, 2000)}px`,
+  )
+  root.style.setProperty(
+    '--article-max-width',
+    `${normalizePixel(data.article_max_width, 900, 680, 1200)}px`,
+  )
 
   const palette: Record<string, unknown> = {
     '--theme-bg-light': data.background_light,
@@ -241,7 +244,9 @@ async function save() {
     dirty.value = false
     saved.value = true
     showToast('设置已保存')
-    setTimeout(() => { saved.value = false }, 2200)
+    setTimeout(() => {
+      saved.value = false
+    }, 2200)
   } catch (err) {
     showToast('保存失败: ' + (err instanceof Error ? err.message : String(err)), 'error')
   } finally {
@@ -270,166 +275,182 @@ onUnmounted(() => {
 
 <template>
   <div class="admin-app">
-    <div v-if="loading" class="admin-app__loading">
-      正在加载设置...
+    <div v-if="loading" class="admin-app__state">
+      <StSpinner size="large" description="正在加载设置…" />
     </div>
 
-    <div v-else-if="error" class="admin-app__error">
+    <div v-else-if="error" class="admin-app__state">
       <section class="admin-app__error-card">
+        <span class="admin-app__error-icon"><StIcon name="alert-triangle" :size="22" /></span>
         <h1 class="admin-app__error-title">设置加载失败</h1>
         <p class="admin-app__error-desc">{{ error }}</p>
         <StButton type="primary" @click="load">重试</StButton>
       </section>
     </div>
 
-    <div v-else class="admin-app__layout">
-      <aside class="admin-app__aside">
-        <div class="admin-app__brand">
-          <strong class="admin-app__brand-name">Simple Theme</strong>
-          <span class="admin-app__brand-sub">主题设置</span>
+    <template v-else>
+      <header class="admin-app__bar">
+        <div class="admin-app__bar-inner">
+          <div class="admin-app__brand">
+            <span class="admin-app__brand-mark"><StIcon name="palette" :size="17" /></span>
+            <span class="admin-app__brand-text">
+              <strong class="admin-app__brand-name">Simple Theme</strong>
+              <span class="admin-app__brand-sub">主题设置</span>
+            </span>
+          </div>
+          <div class="admin-app__bar-actions">
+            <span v-if="dirty" class="admin-app__dirty">有未保存的更改</span>
+            <StButton
+              :type="saved ? 'success' : 'primary'"
+              :loading="saving"
+              :disabled="!dirty"
+              @click="save"
+            >
+              {{ saved ? '已保存' : '保存设置' }}
+            </StButton>
+          </div>
         </div>
-        <nav class="admin-app__tabs">
-          <StButton
-            v-for="tab in tabs"
-            :key="tab.key"
-            :type="activeTab === tab.key ? 'primary' : 'default'"
-            :secondary="activeTab !== tab.key"
-            block
-            @click="activeTab = tab.key"
-          >
-            {{ tab.label }}
-          </StButton>
-        </nav>
-      </aside>
+      </header>
 
       <main class="admin-app__main">
-        <header class="admin-app__topbar">
-          <div>
-            <h1 class="admin-app__topbar-title">{{ activeLabel }}</h1>
-            <p class="admin-app__topbar-desc">配置主题的展示与交互行为</p>
-          </div>
-          <StButton
-            :type="saved ? 'success' : 'primary'"
-            :disabled="saving || !dirty"
-            @click="save"
-          >
-            {{ saving ? '保存中...' : saved ? '已保存' : '保存设置' }}
-          </StButton>
-        </header>
-
-        <div class="admin-app__content">
-          <template v-if="activeTab === 'appearance'">
-            <StCard title="基础样式" subtitle="前台和设置页面共用这套主题变量。">
-              <StGrid :cols="2" :gap="4">
-                <StFormItem label="主色">
-                  <StColorPicker
-                    :model-value="colorText('primary_color', '#333333')"
-                    aria-label="主色"
-                    @update:model-value="update('primary_color', $event)"
-                  />
-                </StFormItem>
-                <StFormItem label="圆角">
-                  <StSelect
-                    :model-value="text('radius', 'medium')"
-                    :options="radiusOptions"
-                    aria-label="圆角"
-                    @update:model-value="update('radius', $event)"
-                  />
-                </StFormItem>
-                <StFormItem label="阴影">
-                  <StSelect
-                    :model-value="text('shadow', 'small')"
-                    :options="shadowOptions"
-                    aria-label="阴影"
-                    @update:model-value="update('shadow', $event)"
-                  />
-                </StFormItem>
-                <StFormItem label="容器最大宽度（px）">
-                  <StNumberInput
-                    :model-value="number('container_max_width', 1500)"
-                    :min="960"
-                    :max="2000"
-                    :step="10"
-                    aria-label="容器最大宽度（px）"
-                    @update:model-value="update('container_max_width', $event ?? 1500)"
-                  />
-                </StFormItem>
-                <StFormItem label="文章最大宽度（px）">
-                  <StNumberInput
-                    :model-value="number('article_max_width', 900)"
-                    :min="680"
-                    :max="1200"
-                    :step="10"
-                    aria-label="文章最大宽度（px）"
-                    @update:model-value="update('article_max_width', $event ?? 900)"
-                  />
-                </StFormItem>
-              </StGrid>
-            </StCard>
-
-            <StCard v-for="[title, colors] in colorGroups" :key="title" :title="title">
-              <StGrid :cols="3" :gap="4">
-                <StFormItem
-                  v-for="[key, label] in colors"
-                  :key="key"
-                  :label="label"
-                  label-placement="left"
-                >
-                  <StColorPicker
-                    :model-value="colorText(key, String(defaults[key] || '#ffffff'))"
-                    :aria-label="label"
-                    @update:model-value="update(key, $event)"
-                  />
-                </StFormItem>
-              </StGrid>
-            </StCard>
-          </template>
-
-          <template v-else-if="activeTab === 'home'">
-            <StCard title="首页内容" subtitle="控制首页区块标题、数量和显示状态。">
-              <StStack :gap="4">
-                <StSwitch
-                  :model-value="checked('show_shuoshuo_section', true)"
-                  @update:model-value="update('show_shuoshuo_section', $event)"
-                >
-                  显示说说板块
-                </StSwitch>
-                <StGrid :cols="2" :gap="4">
-                  <StFormItem v-for="[key, label] in homeTextFields" :key="key" :label="label">
-                    <StInput
-                      :model-value="text(key)"
-                      :aria-label="label"
-                      @update:model-value="update(key, $event)"
+        <StTabs v-model:value="activeTab" type="line" class="admin-app__tabs">
+          <StTabPane value="appearance" label="外观" icon="palette">
+            <StStack :gap="5">
+              <StCard title="基础样式" subtitle="前台与设置页共用的主题变量。">
+                <StGrid :cols="3" :gap="4">
+                  <StFormItem label="主色">
+                    <StColorPicker
+                      :model-value="colorText('primary_color', '#333333')"
+                      aria-label="主色"
+                      @update:model-value="update('primary_color', $event)"
                     />
                   </StFormItem>
-                  <StFormItem
-                    v-for="[key, label, min, max] in homeNumberFields"
-                    :key="key"
-                    :label="label"
-                  >
-                    <StNumberInput
-                      :model-value="number(key, Number(defaults[key] || min))"
-                      :min="min"
-                      :max="max"
-                      :aria-label="label"
-                      @update:model-value="update(key, $event ?? Number(defaults[key] || min))"
+                  <StFormItem label="圆角">
+                    <StSelect
+                      :model-value="text('radius', 'medium')"
+                      :options="radiusOptions"
+                      aria-label="圆角"
+                      @update:model-value="update('radius', $event)"
+                    />
+                  </StFormItem>
+                  <StFormItem label="阴影">
+                    <StSelect
+                      :model-value="text('shadow', 'small')"
+                      :options="shadowOptions"
+                      aria-label="阴影"
+                      @update:model-value="update('shadow', $event)"
                     />
                   </StFormItem>
                 </StGrid>
-              </StStack>
-            </StCard>
-          </template>
+              </StCard>
 
-          <template v-else>
-            <StCard title="外链跳转" subtitle="控制文章外链确认页的自动跳转行为。">
-              <StStack :gap="4">
+              <StCard title="布局" subtitle="页面容器的宽度约束（单位 px）。">
                 <StGrid :cols="2" :gap="4">
+                  <StFormItem label="容器最大宽度">
+                    <StNumberInput
+                      :model-value="number('container_max_width', 1500)"
+                      :min="960"
+                      :max="2000"
+                      :step="10"
+                      aria-label="容器最大宽度"
+                      @update:model-value="update('container_max_width', $event ?? 1500)"
+                    />
+                  </StFormItem>
+                  <StFormItem label="文章最大宽度">
+                    <StNumberInput
+                      :model-value="number('article_max_width', 900)"
+                      :min="680"
+                      :max="1200"
+                      :step="10"
+                      aria-label="文章最大宽度"
+                      @update:model-value="update('article_max_width', $event ?? 900)"
+                    />
+                  </StFormItem>
+                </StGrid>
+              </StCard>
+
+              <StCard title="配色" subtitle="浅色与深色两套语义色板。">
+                <StGrid :cols="2" :gap="6">
+                  <div
+                    v-for="[title, colors] in colorGroups"
+                    :key="title"
+                    class="admin-app__palette"
+                  >
+                    <h3 class="admin-app__palette-title">{{ title }}</h3>
+                    <StStack :gap="3">
+                      <StFormItem
+                        v-for="[key, label] in colors"
+                        :key="key"
+                        :label="label"
+                        label-placement="left"
+                        label-width="64px"
+                      >
+                        <StColorPicker
+                          :model-value="colorText(key, String(defaults[key] || '#ffffff'))"
+                          :aria-label="label"
+                          @update:model-value="update(key, $event)"
+                        />
+                      </StFormItem>
+                    </StStack>
+                  </div>
+                </StGrid>
+              </StCard>
+            </StStack>
+          </StTabPane>
+
+          <StTabPane value="home" label="首页" icon="home">
+            <StStack :gap="5">
+              <StCard title="首页内容" subtitle="控制首页区块的标题、数量与显示状态。">
+                <StStack :gap="5">
+                  <StSwitch
+                    :model-value="checked('show_shuoshuo_section', true)"
+                    @update:model-value="update('show_shuoshuo_section', $event)"
+                  >
+                    显示说说板块
+                  </StSwitch>
+                  <StGrid :cols="2" :gap="4">
+                    <StFormItem v-for="[key, label] in homeTextFields" :key="key" :label="label">
+                      <StInput
+                        :model-value="text(key)"
+                        :aria-label="label"
+                        @update:model-value="update(key, $event)"
+                      />
+                    </StFormItem>
+                  </StGrid>
+                  <StGrid :cols="3" :gap="4">
+                    <StFormItem
+                      v-for="[key, label, min, max] in homeNumberFields"
+                      :key="key"
+                      :label="label"
+                    >
+                      <StNumberInput
+                        :model-value="number(key, Number(defaults[key] || min))"
+                        :min="min"
+                        :max="max"
+                        :aria-label="label"
+                        @update:model-value="update(key, $event ?? Number(defaults[key] || min))"
+                      />
+                    </StFormItem>
+                  </StGrid>
+                </StStack>
+              </StCard>
+            </StStack>
+          </StTabPane>
+
+          <StTabPane value="advanced" label="高级" icon="settings">
+            <StStack :gap="5">
+              <StCard title="外链跳转" subtitle="文章外链确认页的自动跳转行为。">
+                <StGrid :cols="3" :gap="4">
                   <StFormItem label="自动跳转">
                     <StSelect
-                      :model-value="checked('external_redirect_enabled', true) ? 'enabled' : 'disabled'"
+                      :model-value="
+                        checked('external_redirect_enabled', true) ? 'enabled' : 'disabled'
+                      "
                       :options="redirectEnabledOptions"
                       aria-label="自动跳转"
-                      @update:model-value="update('external_redirect_enabled', $event === 'enabled')"
+                      @update:model-value="
+                        update('external_redirect_enabled', $event === 'enabled')
+                      "
                     />
                   </StFormItem>
                   <StFormItem label="等待时间（秒）">
@@ -441,61 +462,59 @@ onUnmounted(() => {
                       @update:model-value="update('external_redirect_delay', $event ?? 5)"
                     />
                   </StFormItem>
+                  <StFormItem label="目标窗口">
+                    <StSelect
+                      :model-value="text('external_redirect_target', '_self')"
+                      :options="redirectTargetOptions"
+                      aria-label="目标窗口"
+                      @update:model-value="update('external_redirect_target', $event)"
+                    />
+                  </StFormItem>
                 </StGrid>
-                <StFormItem label="目标窗口">
-                  <StSelect
-                    :model-value="text('external_redirect_target', '_self')"
-                    :options="redirectTargetOptions"
-                    aria-label="目标窗口"
-                    @update:model-value="update('external_redirect_target', $event)"
-                  />
-                </StFormItem>
-              </StStack>
-            </StCard>
+              </StCard>
 
-            <StCard title="通知与评论">
-              <StStack :gap="4">
-                <StGrid :cols="2" :gap="3">
-                  <StSwitch
-                    :model-value="checked('cookie_consent_enabled')"
-                    @update:model-value="update('cookie_consent_enabled', $event)"
-                  >
-                    启用 Cookie 同意横幅
-                  </StSwitch>
-                  <StSwitch
-                    :model-value="checked('comment_captcha_enabled')"
-                    @update:model-value="update('comment_captcha_enabled', $event)"
-                  >
-                    启用评论验证码
-                  </StSwitch>
-                  <StSwitch
-                    :model-value="checked('comment_show_private', true)"
-                    @update:model-value="update('comment_show_private', $event)"
-                  >
-                    允许私密评论
-                  </StSwitch>
-                  <StSwitch
-                    :model-value="checked('comment_show_markdown', true)"
-                    @update:model-value="update('comment_show_markdown', $event)"
-                  >
-                    支持 Markdown
-                  </StSwitch>
-                </StGrid>
-                <StFormItem label="Cookie 提示文字">
-                  <StInput
-                    :model-value="text('cookie_consent_message')"
-                    aria-label="Cookie 提示文字"
-                    @update:model-value="update('cookie_consent_message', $event)"
-                  />
-                </StFormItem>
-              </StStack>
-            </StCard>
+              <StCard title="评论与通知" subtitle="评论表单与 Cookie 同意条的行为。">
+                <StStack :gap="5">
+                  <StGrid :cols="2" :gap="4">
+                    <StSwitch
+                      :model-value="checked('cookie_consent_enabled')"
+                      @update:model-value="update('cookie_consent_enabled', $event)"
+                    >
+                      启用 Cookie 同意横幅
+                    </StSwitch>
+                    <StSwitch
+                      :model-value="checked('comment_captcha_enabled')"
+                      @update:model-value="update('comment_captcha_enabled', $event)"
+                    >
+                      启用评论验证码
+                    </StSwitch>
+                    <StSwitch
+                      :model-value="checked('comment_show_private', true)"
+                      @update:model-value="update('comment_show_private', $event)"
+                    >
+                      允许私密评论
+                    </StSwitch>
+                    <StSwitch
+                      :model-value="checked('comment_show_markdown', true)"
+                      @update:model-value="update('comment_show_markdown', $event)"
+                    >
+                      支持 Markdown
+                    </StSwitch>
+                  </StGrid>
+                  <StFormItem label="Cookie 提示文字">
+                    <StInput
+                      :model-value="text('cookie_consent_message')"
+                      aria-label="Cookie 提示文字"
+                      @update:model-value="update('cookie_consent_message', $event)"
+                    />
+                  </StFormItem>
+                </StStack>
+              </StCard>
 
-            <StCard
-              title="IP 归属地"
-              subtitle="评论提交时 WordPress 已记录访客 IP，前台显示时按此处配置解析并缓存。"
-            >
-              <StStack :gap="4">
+              <StCard
+                title="IP 归属地"
+                subtitle="评论提交时 WordPress 已记录访客 IP，前台显示时按此处配置解析并缓存。"
+              >
                 <StGrid :cols="2" :gap="4">
                   <StFormItem label="解析接口">
                     <StSelect
@@ -514,12 +533,12 @@ onUnmounted(() => {
                     />
                   </StFormItem>
                 </StGrid>
-              </StStack>
-            </StCard>
-          </template>
-        </div>
+              </StCard>
+            </StStack>
+          </StTabPane>
+        </StTabs>
       </main>
-    </div>
+    </template>
 
     <StToast placement="bottom-right" />
   </div>
@@ -535,25 +554,23 @@ onUnmounted(() => {
   font-family: var(--font-sans);
 }
 
-.admin-app__loading {
+/* ===== 加载 / 错误态 ===== */
+.admin-app__state {
   display: flex;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  color: var(--secondary);
-}
-
-.admin-app__error {
-  display: flex;
-  min-height: 100vh;
+  min-height: 60vh;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  color: var(--secondary);
 }
 
 .admin-app__error-card {
+  display: flex;
   width: 100%;
-  max-width: 28rem; /* max-w-md */
+  max-width: 26rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   padding: 32px;
   border: 1px solid var(--border);
   border-radius: var(--radius-large);
@@ -562,39 +579,82 @@ onUnmounted(() => {
   box-shadow: var(--shadow-small);
 }
 
+.admin-app__error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
 .admin-app__error-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .admin-app__error-desc {
-  margin: 12px 0 20px;
+  margin: 0;
   font-size: 13px;
   color: var(--secondary);
+  overflow-wrap: anywhere;
 }
 
-.admin-app__layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.admin-app__aside {
-  width: 100%;
-  flex-shrink: 0;
+/* ===== 顶栏：品牌 + 保存 ===== */
+.admin-app__bar {
+  position: sticky;
+  top: var(--wp-admin--admin-bar--height, 0);
+  z-index: 20;
   border-bottom: 1px solid var(--border);
-  background-color: var(--card);
+  background-color: color-mix(in srgb, var(--card) 82%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+/* 顶栏内容与下方内容列同宽同轴，避免左右贴边造成两套对齐 */
+.admin-app__bar-inner {
+  display: flex;
+  min-height: 60px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .admin-app__brand {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-app__brand-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-medium);
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.admin-app__brand-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.3;
 }
 
 .admin-app__brand-name {
-  display: block;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .admin-app__brand-sub {
@@ -602,87 +662,51 @@ onUnmounted(() => {
   color: var(--secondary);
 }
 
-.admin-app__tabs {
+.admin-app__bar-actions {
   display: flex;
-  gap: 4px;
-  padding: 12px;
-  overflow-x: auto;
-}
-
-.admin-app__main {
-  flex: 1;
-  min-width: 0;
-}
-
-.admin-app__topbar {
-  position: sticky;
-  top: 46px;
-  z-index: 10;
-  display: flex;
-  min-height: 64px;
+  flex: none;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  background-color: color-mix(in srgb, var(--background) 90%, transparent);
-  backdrop-filter: blur(24px);
+  gap: 12px;
 }
 
-.admin-app__topbar-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.admin-app__topbar-desc {
-  margin: 0;
+.admin-app__dirty {
   font-size: 12px;
   color: var(--secondary);
 }
 
-.admin-app__content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px; /* space-y-5 */
-  max-width: 64rem; /* max-w-5xl */
+/* ===== 内容列 ===== */
+.admin-app__main {
+  width: 100%;
+  max-width: 46rem;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 20px 72px;
 }
 
-/* lg (62.5rem / 1000px)：侧栏转为固定宽纵向栏，整体横向排布 */
-@media (min-width: 62.5rem) {
-  .admin-app__layout {
-    flex-direction: row;
-  }
-
-  .admin-app__aside {
-    width: 15rem; /* w-60 */
-    border-right: 1px solid var(--border);
-    border-bottom: none;
-  }
-
-  .admin-app__tabs {
-    display: block;
-  }
+/* StTabs 根节点会继承父级 scope 标记，可直接命中 */
+.admin-app__tabs {
+  width: 100%;
 }
 
-/* 783px：顶栏贴合 WordPress 管理栏高度 */
-@media (min-width: 48.9375rem) {
-  .admin-app__topbar {
-    top: 32px;
-  }
+.admin-app__palette {
+  min-width: 0;
+}
+
+.admin-app__palette-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--foreground);
 }
 
 /* sm (37.5rem / 600px)：顶栏与内容区使用更大内边距 */
 @media (min-width: 37.5rem) {
-  .admin-app__topbar {
-    padding-left: 32px;
-    padding-right: 32px;
+  .admin-app__bar-inner {
+    padding: 0 32px;
   }
 
-  .admin-app__content {
-    padding: 32px;
+  .admin-app__main {
+    padding: 32px 32px 96px;
   }
 }
 </style>

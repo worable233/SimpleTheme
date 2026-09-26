@@ -254,9 +254,12 @@ function clear() {
   width: 100%;
   height: var(--st-height-medium);
   padding: 0 10px;
-  border: 1px solid var(--st-border);
+  /* 与 StInput / StSelect 共用同一套皮肤令牌：三者是并列的输入类控件，
+   * 深色主题下必须一起从「边框盒」切到「半透明填充」，否则触发器之间会
+   * 一个显边、一个不显边。 */
+  border: 1px solid var(--st-input-border-color);
   border-radius: var(--radius-medium);
-  background-color: var(--st-fill);
+  background-color: var(--st-input-fill);
   color: var(--st-text);
   font-family: inherit;
   font-size: var(--st-font-medium);
@@ -268,13 +271,13 @@ function clear() {
 }
 
 .st-color-picker:hover:not(.st-color-picker--disabled) {
-  border-color: var(--st-border-hover);
+  border-color: var(--st-input-border-hover);
 }
 
 .st-color-picker:focus-visible {
   outline: none;
-  border-color: var(--ring);
-  box-shadow: var(--st-focus-ring);
+  border-color: var(--st-input-border-focus);
+  box-shadow: var(--st-input-shadow-focus);
 }
 
 .st-color-picker--disabled {
@@ -450,10 +453,10 @@ function clear() {
   width: 100%;
   height: var(--st-height-small);
   padding: 0 8px;
-  border: 1px solid var(--st-border);
+  border: 1px solid var(--st-input-border-color);
   border-radius: var(--radius-small);
   outline: none;
-  background-color: var(--st-fill);
+  background-color: var(--st-input-fill);
   color: var(--st-text);
   font-family: var(--font-code);
   font-size: var(--st-font-small);
@@ -463,8 +466,8 @@ function clear() {
 }
 
 .st-color-picker__hex:focus {
-  border-color: var(--ring);
-  box-shadow: var(--st-focus-ring);
+  border-color: var(--st-input-border-focus);
+  box-shadow: var(--st-input-shadow-focus);
 }
 
 .st-color-picker__hex.is-invalid {
