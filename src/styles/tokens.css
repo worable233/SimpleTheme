@@ -320,6 +320,17 @@
   --st-popover-shadow: var(--shadow-large);
   --st-overlay-bg: rgb(0 0 0 / 0.5);
 
+  /* Tooltip —— 深色毛玻璃提示，刻意区别于浅色 Popover 面板。
+   * 逐条对齐 Naive src/tooltip/styles/light.ts:16-17：
+   *   color     = composite(baseColor, rgba(0,0,0,.85))  → 近黑底
+   *   textColor = baseColor(=#fff)                        → 白字
+   * 本站历史（前台侧栏 / 后台侧栏 / 归档弹窗）一律为
+   * rgba(0,0,0,.5) + backdrop blur(10px) 的黑底白字玻璃条，故取 0.5。
+   * 深色主题下同为黑底白字，无需另开皮肤。 */
+  --st-tooltip-bg: rgb(0 0 0 / 0.5);
+  --st-tooltip-text: #fff;
+  --st-tooltip-blur: 10px;
+
   /* 层级
    * 必须压过前台既有的临时 z-index 阶梯。前台历史上是各写各的：
    * 9998(ScrollToTop) / 9999(ReadingProgress, DebugPanel, 侧栏 tooltip)

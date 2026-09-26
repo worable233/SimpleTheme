@@ -13,7 +13,6 @@
  */
 import { computed } from 'vue'
 import {
-  TooltipArrow,
   TooltipContent,
   TooltipPortal,
   TooltipProvider,
@@ -69,7 +68,6 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
           :collision-padding="8"
         >
           {{ content }}
-          <TooltipArrow class="st-tooltip__arrow" :width="10" :height="5" />
         </TooltipContent>
       </TooltipPortal>
     </TooltipRoot>
@@ -77,29 +75,24 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
 </template>
 
 <style scoped>
-/* 浮层内容经 reka-ui Portal 渲染到 body，拿不到本组件的 data-v-* 作用域属性，
- * 普通 scoped 选择器不会命中。这里用 :global() 命名空间化类名（st- 前缀已足够唯一）。 */
+/* 恢复到迁移前的深色毛玻璃提示外观（旧 .sidebar-global-tooltip /
+ * .admin-sidebar__tooltip / .stat-tooltip）：黑底半透明 + backdrop 模糊 +
+ * 白字，无边框无箭头，与浅色 Popover 面板区分开。
+ * 浮层经 reka-ui Portal 渲染到 body，拿不到本组件的 data-v-* 作用域属性，
+ * 因此选择器用 :global() 命名空间化（st- 前缀已足够唯一）。 */
 :global(.st-tooltip) {
   z-index: var(--st-z-dropdown);
   max-width: 260px;
-  padding: 6px 10px;
-  border: var(--st-popover-border);
+  padding: 5px 12px;
   border-radius: var(--radius-medium);
-  background-color: var(--st-popover-bg);
-  color: var(--st-text);
-  box-shadow: var(--st-popover-shadow);
-  font-size: var(--st-font-small);
-  line-height: 1.5;
+  background-color: var(--st-tooltip-bg);
+  color: var(--st-tooltip-text);
+  font-size: var(--st-font-medium);
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(var(--st-tooltip-blur));
+  backdrop-filter: blur(var(--st-tooltip-blur));
   overflow-wrap: anywhere;
-}
-
-/* reka 的箭头是 <span><svg>…，颜色靠 currentColor 传递 */
-:global(.st-tooltip__arrow) {
-  color: var(--st-popover-bg);
-  fill: currentColor;
-}
-
-:global(.st-tooltip__arrow) svg {
-  display: block;
 }
 </style>
