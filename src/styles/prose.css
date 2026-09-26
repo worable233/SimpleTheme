@@ -597,74 +597,41 @@
 }
 
 /* ==================== 自定义音频播放器（替代原生 audio 控件） ==================== */
+/* 顶部整宽细进度条 + 左时间 + 中走带 + 右工具，参考主流播放条排版 */
 .st-audio {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  position: relative;
   margin: 1.5em 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-small);
+  overflow: hidden;
 }
 
 [data-theme='dark'] .st-audio {
   box-shadow: var(--shadow-small), var(--card-highlight);
 }
 
-.st-audio__btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.15s;
-}
-
-.st-audio__btn:hover {
-  opacity: 0.85;
-  transform: scale(1.05);
-}
-
-/* 播放/暂停用实心（填充 Tabler 线性 path），音量保持线性描边 */
-.st-audio__btn svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-  stroke: none;
-}
-
-.st-audio__time {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--secondary);
-  min-width: 76px;
-  text-align: center;
-}
-
+/* 点击/拖动热区（视觉仍是细线） */
 .st-audio__track {
-  flex: 1;
-  height: 20px;
-  display: flex;
-  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
   cursor: pointer;
-  min-width: 0;
+  z-index: 1;
+  touch-action: none;
 }
 
 .st-audio__rail {
-  position: relative;
-  width: 100%;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--muted);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--border);
+  border-radius: var(--radius-large) var(--radius-large) 0 0;
   overflow: hidden;
 }
 
@@ -672,34 +639,157 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 0%;
-  border-radius: 999px;
   background: var(--primary);
-  transition: width 0.1s linear;
 }
 
-.st-audio__mute {
+.st-audio__inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.st-audio__meta {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.st-audio__time {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.st-audio__time-cur {
+  color: var(--foreground);
+}
+
+.st-audio__time-sep,
+.st-audio__time-total {
+  color: var(--secondary);
+}
+
+.st-audio__transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.st-audio__tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.st-audio__icon-btn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-medium);
   background: transparent;
   color: var(--secondary);
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s var(--ease-out),
+    background-color 0.15s var(--ease-out);
 }
 
-.st-audio__mute:hover {
-  background: var(--muted);
+.st-audio__icon-btn:hover {
+  background: var(--accent);
   color: var(--foreground);
 }
 
-.st-audio__mute svg {
-  width: 17px;
-  height: 17px;
+.st-audio__icon-btn.is-active {
+  color: var(--primary);
+}
+
+.st-audio__icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 主播放键：柔和药丸底 + 实心三角（填充 Tabler 线性 path） */
+.st-audio__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    background-color 0.15s var(--ease-out),
+    transform 0.15s var(--ease-out);
+}
+
+.st-audio__btn:hover {
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+}
+
+.st-audio__btn:active {
+  transform: scale(0.97);
+}
+
+.st-audio__btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.st-audio__btn:focus-visible,
+.st-audio__icon-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .st-audio__inner {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .st-audio__time {
+    font-size: 11px;
+  }
+
+  .st-audio__icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .st-audio__icon-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .st-audio__btn {
+    width: 54px;
+    height: 38px;
+  }
+}
+
+@media (max-width: 380px) {
+  .st-audio__dl {
+    display: none;
+  }
 }
 
 /* ==================== Heading anchors (Fumadocs-style) ==================== */

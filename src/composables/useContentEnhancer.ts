@@ -3,7 +3,7 @@ import { useToc } from '@/composables/useToc'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
 import { defineMorphIcon, type MorphIconElement } from 'morphicons/element'
-import { ICON_MORPH_NODES } from '@/lib/tabler-icons.generated'
+import { ICON_MORPH_NODES, ICON_NODES } from '@/lib/tabler-icons.generated'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
 declare const Prism: { highlightElement: (el: HTMLElement) => void } | undefined
@@ -67,16 +67,24 @@ function interceptSearchForms(container: Element) {
   }
 }
 
-// 正文音频播放器图标改用 morphicons 的 <morph-icon> 自定义元素：
-// 播放↔暂停、音量↔静音都走形变（图标数据取自 Tabler 白名单）。
-// 用自定义元素而非挂 Vue 应用——内容增强器是命令式 DOM，
-// 元素在 disconnectedCallback 里自行销毁控制器，随正文一起被回收，不会泄漏。
+// 正文音频播放器：播放/暂停、音量/静音、循环开关用 morphicons 的
+// <morph-icon> 自定义元素做形变；快退/快进/下载用静态 Tabler SVG。
+// 用自定义元素而非挂 Vue 应用——内容增强器是命令式 DOM，元素在
+// disconnectedCallback 里自行销毁控制器，随正文一起被回收，不会泄漏。
 defineMorphIcon()
 
-type AudioMorphName = 'player-play' | 'player-pause' | 'volume' | 'volume-off'
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+type AudioMorphName =
+  | 'player-play'
+  | 'player-pause'
+  | 'volume'
+  | 'volume-off'
+  | 'repeat'
+  | 'repeat-off'
 
 /** 建一个 `<morph-icon>`；实际尺寸由 CSS 覆盖（此处 16 仅兜底） */
-function createAudioIcon(name: AudioMorphName): MorphIconElement {
+function createMorphIcon(name: AudioMorphName): MorphIconElement {
   const el = document.createElement('morph-icon')
   el.setAttribute('size', '16')
   el.setAttribute('reduced-motion', 'user')
@@ -85,16 +93,31 @@ function createAudioIcon(name: AudioMorphName): MorphIconElement {
   return el
 }
 
+/** 用 ICON_NODES 里的内部节点串建一个静态 Tabler SVG（inner 来自生成的可信常量） */
+function createStaticIcon(name: string): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '2')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+  svg.innerHTML = ICON_NODES[name] || ''
+  return svg
+}
+
 function formatAudioTime(sec: number): string {
-  if (!isFinite(sec) || sec < 0) return '0:00'
+  if (!isFinite(sec) || sec < 0) return '00:00'
   const m = Math.floor(sec / 60)
   const s = Math.floor(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 /**
- * 把正文里的原生 <audio controls> 替换为主题风格的自定义播放器
- *（播放/暂停 + 时间 + 可点击进度条 + 静音），原 audio 隐藏作为音源。
+ * 把正文里的原生 <audio controls> 换掉，改成主题风格的播放条：
+ * 顶部整宽细进度条（点击/拖动跳转）+ 左时间 + 中走带（快退 10s / 播放暂停 /
+ * 快进 10s）+ 右工具（循环、静音、下载）。原 audio 隐藏作为音源。
  */
 function enhanceAudioPlayers(container: Element) {
   const audios = container.querySelectorAll<HTMLAudioElement>('audio')
@@ -108,17 +131,7 @@ function enhanceAudioPlayers(container: Element) {
     const ui = document.createElement('div')
     ui.className = 'st-audio'
 
-    const btn = document.createElement('button')
-    btn.type = 'button'
-    btn.className = 'st-audio__btn'
-    btn.setAttribute('aria-label', '播放')
-    const playIcon = createAudioIcon('player-play')
-    btn.appendChild(playIcon)
-
-    const time = document.createElement('span')
-    time.className = 'st-audio__time'
-    time.textContent = '0:00 / 0:00'
-
+    // ---- 顶部整宽进度条 ----
     const track = document.createElement('div')
     track.className = 'st-audio__track'
     const rail = document.createElement('div')
@@ -128,38 +141,152 @@ function enhanceAudioPlayers(container: Element) {
     rail.appendChild(fill)
     track.appendChild(rail)
 
-    const mute = document.createElement('button')
-    mute.type = 'button'
-    mute.className = 'st-audio__mute'
-    mute.setAttribute('aria-label', '静音')
-    const muteIcon = createAudioIcon('volume')
-    mute.appendChild(muteIcon)
+    const inner = document.createElement('div')
+    inner.className = 'st-audio__inner'
 
-    ui.append(btn, time, track, mute)
+    // ---- 左：时间 ----
+    const meta = document.createElement('div')
+    meta.className = 'st-audio__meta'
+    const time = document.createElement('span')
+    time.className = 'st-audio__time'
+    const cur = document.createElement('span')
+    cur.className = 'st-audio__time-cur'
+    cur.textContent = '00:00'
+    const sep = document.createElement('span')
+    sep.className = 'st-audio__time-sep'
+    sep.textContent = '/'
+    const total = document.createElement('span')
+    total.className = 'st-audio__time-total'
+    total.textContent = '00:00'
+    time.append(cur, sep, total)
+    meta.appendChild(time)
+
+    // ---- 中：走带 ----
+    const transport = document.createElement('div')
+    transport.className = 'st-audio__transport'
+    const backBtn = document.createElement('button')
+    backBtn.type = 'button'
+    backBtn.className = 'st-audio__icon-btn'
+    backBtn.setAttribute('aria-label', '后退 10 秒')
+    backBtn.appendChild(createStaticIcon('rewind-backward-10'))
+    const playBtn = document.createElement('button')
+    playBtn.type = 'button'
+    playBtn.className = 'st-audio__btn'
+    playBtn.setAttribute('aria-label', '播放')
+    const playIcon = createMorphIcon('player-play')
+    playBtn.appendChild(playIcon)
+    const fwdBtn = document.createElement('button')
+    fwdBtn.type = 'button'
+    fwdBtn.className = 'st-audio__icon-btn'
+    fwdBtn.setAttribute('aria-label', '前进 10 秒')
+    fwdBtn.appendChild(createStaticIcon('rewind-forward-10'))
+    transport.append(backBtn, playBtn, fwdBtn)
+
+    // ---- 右：工具 ----
+    const tools = document.createElement('div')
+    tools.className = 'st-audio__tools'
+    const loopBtn = document.createElement('button')
+    loopBtn.type = 'button'
+    loopBtn.className = 'st-audio__icon-btn'
+    loopBtn.setAttribute('aria-label', '单曲循环')
+    loopBtn.setAttribute('aria-pressed', 'false')
+    const loopIcon = createMorphIcon('repeat-off')
+    loopBtn.appendChild(loopIcon)
+    const muteBtn = document.createElement('button')
+    muteBtn.type = 'button'
+    muteBtn.className = 'st-audio__icon-btn'
+    muteBtn.setAttribute('aria-label', '静音')
+    const muteIcon = createMorphIcon('volume')
+    muteBtn.appendChild(muteIcon)
+    const dlBtn = document.createElement('button')
+    dlBtn.type = 'button'
+    dlBtn.className = 'st-audio__icon-btn st-audio__dl'
+    dlBtn.setAttribute('aria-label', '下载音频')
+    dlBtn.appendChild(createStaticIcon('download'))
+    tools.append(loopBtn, muteBtn, dlBtn)
+
+    inner.append(meta, transport, tools)
+    ui.append(track, inner)
     audio.after(ui)
 
     const syncTime = () => {
-      time.textContent = `${formatAudioTime(audio.currentTime)} / ${formatAudioTime(audio.duration)}`
-      fill.style.width = audio.duration ? `${(audio.currentTime / audio.duration) * 100}%` : '0%'
+      const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0
+      cur.textContent = formatAudioTime(audio.currentTime)
+      total.textContent = formatAudioTime(audio.duration)
+      fill.style.width = `${p}%`
     }
     const syncPlayState = () => {
       playIcon.icon = ICON_MORPH_NODES[audio.paused ? 'player-play' : 'player-pause']
-      btn.setAttribute('aria-label', audio.paused ? '播放' : '暂停')
+      playBtn.setAttribute('aria-label', audio.paused ? '播放' : '暂停')
+    }
+    const syncLoop = () => {
+      loopIcon.icon = ICON_MORPH_NODES[audio.loop ? 'repeat' : 'repeat-off']
+      loopBtn.setAttribute('aria-pressed', String(audio.loop))
+      loopBtn.classList.toggle('is-active', audio.loop)
+    }
+    const syncVolume = () => {
+      const off = audio.muted || audio.volume === 0
+      muteIcon.icon = ICON_MORPH_NODES[off ? 'volume-off' : 'volume']
+      muteBtn.setAttribute('aria-label', off ? '取消静音' : '静音')
+    }
+    const seekTo = (clientX: number) => {
+      if (!audio.duration) return
+      const r = rail.getBoundingClientRect()
+      const ratio = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
+      audio.currentTime = ratio * audio.duration
+      syncTime()
     }
 
-    btn.addEventListener('click', () => {
+    playBtn.addEventListener('click', () => {
       if (audio.paused) void audio.play()
       else audio.pause()
     })
-    mute.addEventListener('click', () => {
-      audio.muted = !audio.muted
-      muteIcon.icon = ICON_MORPH_NODES[audio.muted ? 'volume-off' : 'volume']
-    })
-    track.addEventListener('click', (e) => {
-      if (!audio.duration) return
-      const r = rail.getBoundingClientRect()
-      audio.currentTime = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * audio.duration
+    backBtn.addEventListener('click', () => {
+      audio.currentTime = Math.max(0, audio.currentTime - 10)
       syncTime()
+    })
+    fwdBtn.addEventListener('click', () => {
+      const end = isFinite(audio.duration) ? audio.duration : audio.currentTime + 10
+      audio.currentTime = Math.min(end, audio.currentTime + 10)
+      syncTime()
+    })
+    loopBtn.addEventListener('click', () => {
+      audio.loop = !audio.loop
+      syncLoop()
+    })
+    muteBtn.addEventListener('click', () => {
+      audio.muted = !audio.muted
+      syncVolume()
+    })
+    dlBtn.addEventListener('click', () => {
+      const src = audio.currentSrc || audio.src
+      if (!src) return
+      const a = document.createElement('a')
+      a.href = src
+      a.download = ''
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    })
+    // 进度条：按下即跳转，按住可拖动
+    track.addEventListener('pointerdown', (e) => {
+      seekTo(e.clientX)
+      // 合成事件/无效指针下 setPointerCapture 会抛 NotFoundError，忽略即可
+      try {
+        track.setPointerCapture(e.pointerId)
+      } catch {
+        /* noop */
+      }
+      const move = (ev: PointerEvent) => seekTo(ev.clientX)
+      const up = () => {
+        track.removeEventListener('pointermove', move)
+        track.removeEventListener('pointerup', up)
+        track.removeEventListener('pointercancel', up)
+      }
+      track.addEventListener('pointermove', move)
+      track.addEventListener('pointerup', up)
+      track.addEventListener('pointercancel', up)
     })
     audio.addEventListener('timeupdate', syncTime)
     audio.addEventListener('loadedmetadata', syncTime)
@@ -167,7 +294,11 @@ function enhanceAudioPlayers(container: Element) {
     audio.addEventListener('play', syncPlayState)
     audio.addEventListener('pause', syncPlayState)
     audio.addEventListener('ended', syncPlayState)
+    audio.addEventListener('volumechange', syncVolume)
     syncTime()
+    syncPlayState()
+    syncLoop()
+    syncVolume()
   }
 }
 

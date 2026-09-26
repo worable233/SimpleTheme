@@ -5,6 +5,7 @@
     "chevron-left", "chevron-right", "arrow-up", "arrow-down",
     "plus", "minus", "check", "player-play", "player-pause",
     "eye", "eye-off", "volume", "volume-off", "bell", "bell-off",
+    "repeat", "repeat-off",
     "layout-sidebar-left-collapse", "layout-sidebar-left-expand"
   ],
 
@@ -51,6 +52,8 @@
   "play": "player-play",
   "play-circle": "player-play",
   "pause": "player-pause",
+  "rewind-backward-10": "rewind-backward-10",
+  "rewind-forward-10": "rewind-forward-10",
   "music": "music",
   "microphone": "microphone",
   "headphone": "headphones",

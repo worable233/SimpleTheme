@@ -220,7 +220,7 @@ import { StButton, StCard } from '@/ui'
 | `StCheckbox` 半选态 | `minus↔check` | `snappy` |
 | `StCollapseItem` / `SidebarNav` 折叠箭头 | `chevron-down↔up` | `smooth` |
 | `TechInfo` 展开箭头 | `chevron-down↔right` | `smooth` |
-| `useContentEnhancer` 正文音频播放器 | `player-play↔player-pause`、`volume↔volume-off` | `snappy` |
+| `useContentEnhancer` 正文音频播放器 | `player-play↔player-pause`、`volume↔volume-off`、`repeat↔repeat-off` | `snappy` |
 
 > chevron 统一用 `smooth`（不越冲、减速落定），符合主题曲线约定。折叠/子菜单箭头原先靠
 > CSS `rotate()` 实现，现改为绑定展开态的形变，对应的 `rotate` 规则已从各组件与
@@ -229,7 +229,10 @@ import { StButton, StCard } from '@/ui'
 > 音频播放器不用 `StMorphIcon` 组件，而用 morphicons 的 `<morph-icon>` **自定义元素**
 > （`morphicons/element`）：内容增强器是命令式 DOM，元素在 `disconnectedCallback`
 > 里自行销毁控制器、随正文一起被回收，不会像挂 Vue 应用那样泄漏。播放/暂停沿用实心
-> （CSS `fill: currentColor; stroke: none` 填充 Tabler path），音量/静音保持线性描边。
+> （CSS `fill: currentColor; stroke: none` 填充 Tabler path），其余图标保持线性描边。
+> 版式参考主流音乐条：顶部整宽细进度条 + 左时间 + 中走带（快退 10s / 播放暂停 /
+> 快进 10s）+ 右工具（循环、静音、下载）；`rewind-backward-10`/`rewind-forward-10`
+> 为静态图标，已登记进 `tabler-icon-map.json`。
 
 ## 业务层门禁
 
