@@ -7,6 +7,7 @@
 import type { RenderedText } from '@/types/wordpress'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
+import { StTooltip } from '@/ui'
 import { RouterLink } from 'vue-router'
 import { toInternalPath } from '@/lib/theme-config'
 
@@ -61,30 +62,33 @@ function onMaskClick(e: MouseEvent) {
             <div class="modal-content-inner">
               <h2 id="timeline-modal-title" class="modal-title">{{ data.year }} 年</h2>
               <div class="modal-stats-grid">
-                <div class="modal-statbox">
-                  <div class="stat-tooltip">汇总</div>
-                  <div class="stat-icon">
-                    <AppIcon name="file-blank" :size="21" />
+                <StTooltip content="汇总" placement="top">
+                  <div class="modal-statbox">
+                    <div class="stat-head">
+                      <span class="stat-icon"><AppIcon name="file-blank" :size="18" /></span>
+                      <span class="stat-label">文章总数</span>
+                    </div>
+                    <div class="stat-value">{{ data.total }}</div>
                   </div>
-                  <div class="stat-label">文章总数</div>
-                  <div class="stat-value">{{ data.total }}</div>
-                </div>
-                <div class="modal-statbox">
-                  <div class="stat-tooltip">分类</div>
-                  <div class="stat-icon">
-                    <AppIcon name="folder" :size="21" />
+                </StTooltip>
+                <StTooltip content="分类" placement="top">
+                  <div class="modal-statbox">
+                    <div class="stat-head">
+                      <span class="stat-icon"><AppIcon name="folder" :size="18" /></span>
+                      <span class="stat-label">分类数</span>
+                    </div>
+                    <div class="stat-value">{{ data.categories }}</div>
                   </div>
-                  <div class="stat-label">分类数</div>
-                  <div class="stat-value">{{ data.categories }}</div>
-                </div>
-                <div class="modal-statbox">
-                  <div class="stat-tooltip">有文章的月份</div>
-                  <div class="stat-icon">
-                    <AppIcon name="calendar-check" :size="21" />
+                </StTooltip>
+                <StTooltip content="有文章的月份" placement="top">
+                  <div class="modal-statbox">
+                    <div class="stat-head">
+                      <span class="stat-icon"><AppIcon name="calendar-check" :size="18" /></span>
+                      <span class="stat-label">活跃月份</span>
+                    </div>
+                    <div class="stat-value">{{ data.months.length }}</div>
                   </div>
-                  <div class="stat-label">活跃月份</div>
-                  <div class="stat-value">{{ data.months.length }}</div>
-                </div>
+                </StTooltip>
               </div>
               <div class="modal-month-groups">
                 <div
@@ -189,12 +193,12 @@ function onMaskClick(e: MouseEvent) {
 /* ===== Transitions ===== */
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--st-duration-modal) var(--ease-out), backdrop-filter var(--st-duration-modal) var(--ease-out);
 }
 
 .modal-enter-active .timeline-modal,
 .modal-leave-active .timeline-modal {
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--st-duration-modal) var(--ease-out), opacity var(--st-duration-modal) var(--ease-out);
 }
 
 .modal-enter-from,
@@ -205,7 +209,7 @@ function onMaskClick(e: MouseEvent) {
 
 .modal-enter-from .timeline-modal,
 .modal-leave-to .timeline-modal {
-  transform: translateY(24px);
+  transform: translateY(8px);
   opacity: 0;
 }
 
@@ -218,89 +222,57 @@ function onMaskClick(e: MouseEvent) {
 }
 
 .modal-statbox {
-  background: var(--border, rgba(0,0,0,0.03));
-  border-radius: var(--radius-medium, 6px);
-  padding: 1rem;
-  text-align: center;
-  border: 1.5px solid var(--border, rgba(0,0,0,0.06));
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
-  animation: slideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--accent);
+  border-radius: var(--radius-large);
+  transition: background-color var(--transition);
+  animation: slideIn 0.45s var(--ease-out) both;
 }
 
-.modal-statbox:nth-child(2) { animation-delay: 0.08s; }
-.modal-statbox:nth-child(3) { animation-delay: 0.16s; }
+.modal-statbox:nth-child(2) { animation-delay: 0.06s; }
+.modal-statbox:nth-child(3) { animation-delay: 0.12s; }
 
-.modal-statbox .stat-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-10px);
-  background: rgba(0,0,0,0.85);
-  color: #fff;
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-small, 4px);
-  font-size: 0.7rem;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 999;
-}
-
-.modal-statbox .stat-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: rgba(0,0,0,0.85);
-}
-
-.modal-statbox:hover .stat-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-
-.modal-statbox:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+.stat-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--secondary);
 }
 
 .stat-icon {
-  font-size: 1.15rem;
-  margin-bottom: 0.4rem;
-  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary);
 }
 
 .stat-label {
-  font-size: 0.85rem;
-  color: var(--foreground, #888);
-  margin-bottom: 0.3rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1;
 }
 
 .stat-value {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--foreground, #222);
-  line-height: 1.2;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ===== Month Groups ===== */
 .modal-month-group {
   margin: 0 0 1.5rem;
-  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slideIn 0.35s var(--ease-out) both;
 }
 
-.modal-month-group:nth-child(2) { animation-delay: 0.06s; }
-.modal-month-group:nth-child(3) { animation-delay: 0.12s; }
-.modal-month-group:nth-child(4) { animation-delay: 0.18s; }
-.modal-month-group:nth-child(5) { animation-delay: 0.24s; }
+.modal-month-group:nth-child(2) { animation-delay: 0.04s; }
+.modal-month-group:nth-child(3) { animation-delay: 0.08s; }
+.modal-month-group:nth-child(4) { animation-delay: 0.12s; }
+.modal-month-group:nth-child(5) { animation-delay: 0.16s; }
 
 .modal-month-title {
   font-size: 1.15rem;
@@ -340,23 +312,23 @@ function onMaskClick(e: MouseEvent) {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background-color var(--transition), border-color var(--transition), box-shadow var(--transition);
+  animation: slideIn 0.3s var(--ease-out) both;
 }
 
-.modal-month-group:nth-child(1) .modal-post-item:nth-child(2) { animation-delay: 0.05s; }
-.modal-month-group:nth-child(1) .modal-post-item:nth-child(3) { animation-delay: 0.10s; }
-.modal-month-group:nth-child(2) .modal-post-item:nth-child(1) { animation-delay: 0.03s; }
-.modal-month-group:nth-child(2) .modal-post-item:nth-child(2) { animation-delay: 0.08s; }
-.modal-month-group:nth-child(2) .modal-post-item:nth-child(3) { animation-delay: 0.13s; }
-.modal-month-group:nth-child(3) .modal-post-item:nth-child(1) { animation-delay: 0.06s; }
-.modal-month-group:nth-child(3) .modal-post-item:nth-child(2) { animation-delay: 0.11s; }
-.modal-month-group:nth-child(3) .modal-post-item:nth-child(3) { animation-delay: 0.16s; }
+.modal-month-group:nth-child(1) .modal-post-item:nth-child(2) { animation-delay: 0.03s; }
+.modal-month-group:nth-child(1) .modal-post-item:nth-child(3) { animation-delay: 0.06s; }
+.modal-month-group:nth-child(2) .modal-post-item:nth-child(1) { animation-delay: 0.02s; }
+.modal-month-group:nth-child(2) .modal-post-item:nth-child(2) { animation-delay: 0.04s; }
+.modal-month-group:nth-child(2) .modal-post-item:nth-child(3) { animation-delay: 0.06s; }
+.modal-month-group:nth-child(3) .modal-post-item:nth-child(1) { animation-delay: 0.03s; }
+.modal-month-group:nth-child(3) .modal-post-item:nth-child(2) { animation-delay: 0.05s; }
+.modal-month-group:nth-child(3) .modal-post-item:nth-child(3) { animation-delay: 0.07s; }
 
 .modal-post-item:hover {
   background: var(--border, rgba(0,0,0,0.05));
-  transform: translateX(6px) scale(1.005);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .modal-post-title {
@@ -381,8 +353,8 @@ function onMaskClick(e: MouseEvent) {
 
 /* ===== Slide In Animation ===== */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Responsive ===== */
@@ -405,19 +377,6 @@ function onMaskClick(e: MouseEvent) {
 
 [data-theme='dark'] .modal-title {
   color: rgba(255,255,255,0.9);
-}
-
-[data-theme='dark'] .modal-statbox {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.08);
-}
-
-[data-theme='dark'] .stat-label {
-  color: rgba(255,255,255,0.5);
-}
-
-[data-theme='dark'] .stat-value {
-  color: rgba(255,255,255,0.95);
 }
 
 [data-theme='dark'] .modal-month-title {

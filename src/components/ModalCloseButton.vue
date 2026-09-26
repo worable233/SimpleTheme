@@ -52,7 +52,7 @@
   line-height: 1;
   box-shadow: 0 2px 0 var(--border, rgba(0, 0, 0, 0.12));
   user-select: none;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .modal-close-btn:hover {

@@ -59,13 +59,15 @@ const emit = defineEmits<{
   appearance: none;
   backdrop-filter: blur(24px);
   box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
-  transition: all 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--duration-enter) var(--ease-in-out),
+    border-color var(--duration-enter) var(--ease-in-out),
+    box-shadow var(--duration-enter) var(--ease-in-out);
 }
 
 .timeline-card:hover {
-  transform: translateY(-6px) scale(1.02);
+  transform: translateY(-2px);
   border-color: var(--primary);
-  box-shadow: 0 12px 52px -8px rgb(0 0 0 / 0.18);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
 }
 
 .timeline-card:focus-visible {
@@ -103,7 +105,8 @@ const emit = defineEmits<{
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--foreground);
-  transition: all 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--transition-fast), border-color var(--transition-fast),
+    background-color var(--transition-fast), color var(--transition-fast);
 }
 
 [data-theme='dark'] .timeline-card__month {
@@ -112,7 +115,7 @@ const emit = defineEmits<{
 }
 
 .timeline-card__month.is-active {
-  transform: scale(1.05);
+  transform: scale(1.02);
   border-color: var(--primary);
   background-color: var(--primary);
   color: #fff;

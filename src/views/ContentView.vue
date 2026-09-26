@@ -648,9 +648,7 @@ watch(
 <style scoped>
 .content-view {
   --anim-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-ease-hover: cubic-bezier(0.34, 1.56, 0.64, 1);
   --anim-duration-enter: 0.5s;
-  --anim-duration-hover: 0.35s;
 }
 
 .content-view__loading {

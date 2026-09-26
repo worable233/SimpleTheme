@@ -149,12 +149,12 @@ function onMaskClick(e: MouseEvent) {
 /* ===== Transitions ===== */
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--st-duration-modal) var(--ease-out), backdrop-filter var(--st-duration-modal) var(--ease-out);
 }
 
 .modal-enter-active .timeline-modal,
 .modal-leave-active .timeline-modal {
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--st-duration-modal) var(--ease-out), opacity var(--st-duration-modal) var(--ease-out);
 }
 
 .modal-enter-from,
@@ -165,7 +165,7 @@ function onMaskClick(e: MouseEvent) {
 
 .modal-enter-from .timeline-modal,
 .modal-leave-to .timeline-modal {
-  transform: translateY(24px);
+  transform: translateY(8px);
   opacity: 0;
 }
 
@@ -196,20 +196,20 @@ function onMaskClick(e: MouseEvent) {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background-color var(--transition), border-color var(--transition), box-shadow var(--transition);
+  animation: slideIn 0.3s var(--ease-out) both;
 }
 
-.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(1) { animation-delay: 0.15s; }
-.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(2) { animation-delay: 0.22s; }
-.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(3) { animation-delay: 0.29s; }
-.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(4) { animation-delay: 0.36s; }
-.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(5) { animation-delay: 0.43s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(1) { animation-delay: 0.06s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(2) { animation-delay: 0.09s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(3) { animation-delay: 0.12s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(4) { animation-delay: 0.15s; }
+.category-modal-header ~ .modal-post-list .modal-post-item:nth-child(5) { animation-delay: 0.18s; }
 
 .modal-post-item:hover {
   background: var(--border, rgba(0,0,0,0.05));
-  transform: translateX(6px) scale(1.005);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .modal-post-title {
@@ -234,8 +234,8 @@ function onMaskClick(e: MouseEvent) {
 
 /* ===== Slide In ===== */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Responsive ===== */

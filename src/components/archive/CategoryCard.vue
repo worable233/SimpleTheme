@@ -70,13 +70,15 @@ const emit = defineEmits<{
   background-color: var(--card);
   backdrop-filter: blur(24px);
   box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
-  transition: all 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--duration-enter) var(--ease-in-out),
+    border-color var(--duration-enter) var(--ease-in-out),
+    box-shadow var(--duration-enter) var(--ease-in-out);
 }
 
 .category-card:hover {
-  transform: perspective(800px) translateY(-5px) rotateX(2deg);
+  transform: translateY(-2px);
   border-color: var(--primary);
-  box-shadow: 0 10px 48px -4px rgb(0 0 0 / 0.13);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
 }
 
 .category-card:focus-within {

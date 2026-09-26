@@ -139,7 +139,7 @@ const techVersions = computed<TechInfoItem[]>(() => {
 
 .tech-info__chevron {
   color: var(--secondary);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--transition);
 }
 
 .tech-info__chevron.is-collapsed {
