@@ -13,6 +13,9 @@
  *   [B1] 裸 <button>（应优先用 StButton）
  *   [B2] 裸 <input> / <textarea> / <select>（应优先用 StInput / StTextarea / StSelect…）
  *   [B3] 静态 class="..." 里的 Tailwind 工具类
+ *   [B4] 手写浮层类名（*tooltip* / *mask* / *overlay* / *popover*，应优先用
+ *        StTooltip / StModal / StPopover）
+ *   [B5] 业务文件里直接写 role="dialog" / aria-modal（应交给 StModal）
  *
  * 为什么是登记制而不是"一刀切禁止"：
  *   README 已写明「何时不该用 StButton」（整块卡片即按钮、共享全局 CSS 的
@@ -83,6 +86,29 @@ const RAW_INPUT_ALLOW = new Map([
 
 /** Tailwind 工具类白名单（登记制；当前为空：页面级骨架也已收敛为 scoped CSS）。 */
 const TW_ALLOW = new Map([])
+
+/**
+ * 手写浮层类名白名单（[B4]）。
+ * 命中条件：静态 class 里出现 tooltip / mask / overlay / popover 子串。
+ * 这类名字几乎总是自建浮层，应改用 StTooltip / StModal / StPopover；
+ * 确需保留的在这里登记理由。
+ */
+const FLOATING_CLASS_ALLOW = new Map([
+  [
+    'src/components/CommentForm.vue',
+    '移动端评论向导 wizard-mask：多步表单 + 方向滑动切换，非 StModal 能表达的一次性流程壳',
+  ],
+  [
+    'src/components/TocWidget.vue',
+    '目录抽屉 toc-drawer-mask：文章内浮动目录的遮罩，随 TOC 状态而非独立对话框',
+  ],
+])
+
+/**
+ * role="dialog" / aria-modal 白名单（[B5]）。
+ * 对话框语义应由 StModal 内部 reka-ui 提供；业务文件直接写说明又在自建外壳。
+ */
+const DIALOG_ROLE_ALLOW = new Map([])
 
 /** 疑似 Tailwind 工具类（与 check-ui.mjs 保持一致的判定）。 */
 const TW_PATTERNS = [
@@ -160,6 +186,32 @@ function checkFile(abs) {
     }
   }
 
+  // [B4] 手写浮层类名
+  if (!FLOATING_CLASS_ALLOW.has(rel)) {
+    const hits = new Set()
+    for (const lit of classLiterals(src)) {
+      for (const token of lit.split(/\s+/)) {
+        if (/tooltip|mask|overlay|popover/i.test(token)) hits.add(token)
+      }
+    }
+    if (hits.size) {
+      errors.push(
+        `B4 手写浮层类名: ${[...hits].slice(0, 6).join(' ')} → 优先用 StTooltip / StModal / StPopover，或在白名单登记理由`,
+      )
+    }
+  }
+
+  // [B5] 对话框语义（role="dialog" / aria-modal）
+  if (!DIALOG_ROLE_ALLOW.has(rel)) {
+    const lines = []
+    src.split('\n').forEach((line, i) => {
+      if (/role\s*=\s*"dialog"|aria-modal\s*=/.test(line)) lines.push(i + 1)
+    })
+    if (lines.length) {
+      errors.push(`B5 手写对话框语义 ×${lines.length}（L${lines.slice(0, 6).join(',')}）→ 交给 StModal，或在白名单登记理由`)
+    }
+  }
+
   return { rel, errors }
 }
 
@@ -190,6 +242,7 @@ function main() {
   console.log(`\n${'─'.repeat(56)}`)
   console.log(`扫描 ${files.length} 个业务组件 · 错误 ${errorCount}`)
   console.log(`裸 button 白名单 ${RAW_BUTTON_ALLOW.size} · 裸输入白名单 ${RAW_INPUT_ALLOW.size} · 工具类白名单 ${TW_ALLOW.size}`)
+  console.log(`手写浮层白名单 ${FLOATING_CLASS_ALLOW.size} · 对话框语义白名单 ${DIALOG_ROLE_ALLOW.size}`)
 
   if (errorCount > 0 && !soft) process.exit(1)
 }
