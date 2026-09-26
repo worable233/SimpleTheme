@@ -16,6 +16,7 @@
  *   [B4] 手写浮层类名（*tooltip* / *mask* / *overlay* / *popover*，应优先用
  *        StTooltip / StModal / StPopover）
  *   [B5] 业务文件里直接写 role="dialog" / aria-modal（应交给 StModal）
+ *   [B6] 手写内联 <svg> 图标（应优先用 AppIcon / StIcon）
  *
  * 为什么是登记制而不是"一刀切禁止"：
  *   README 已写明「何时不该用 StButton」（整块卡片即按钮、共享全局 CSS 的
@@ -109,6 +110,25 @@ const FLOATING_CLASS_ALLOW = new Map([
  * 对话框语义应由 StModal 内部 reka-ui 提供；业务文件直接写说明又在自建外壳。
  */
 const DIALOG_ROLE_ALLOW = new Map([])
+
+/**
+ * 手写内联 <svg> 白名单（[B6]）。
+ * 常规图标应走 AppIcon / StIcon（统一 Tabler 图标表）；保留的都是非图标形状。
+ */
+const INLINE_SVG_ALLOW = new Map([
+  [
+    'src/components/ReadingProgress.vue',
+    '环形进度条：直径与 dashoffset 由进度实时驱动，非固定图标形状',
+  ],
+  [
+    'src/components/DebugPanel.vue',
+    '开发态调试浮层专属图形，仅开发构建加载',
+  ],
+  [
+    'src/admin/components/AdminSidebar.vue',
+    '无图标时的兜底占位圆，替代 dashicons 缺失场景',
+  ],
+])
 
 /** 疑似 Tailwind 工具类（与 check-ui.mjs 保持一致的判定）。 */
 const TW_PATTERNS = [
@@ -212,6 +232,19 @@ function checkFile(abs) {
     }
   }
 
+  // [B6] 手写内联 <svg> 图标
+  if (!INLINE_SVG_ALLOW.has(rel)) {
+    const lines = []
+    src.split('\n').forEach((line, i) => {
+      if (/<svg[\s>]/.test(line)) lines.push(i + 1)
+    })
+    if (lines.length) {
+      errors.push(
+        `B6 手写内联 <svg> ×${lines.length}（L${lines.slice(0, 6).join(',')}）→ 优先用 AppIcon / StIcon，或在白名单登记理由`,
+      )
+    }
+  }
+
   return { rel, errors }
 }
 
@@ -242,7 +275,7 @@ function main() {
   console.log(`\n${'─'.repeat(56)}`)
   console.log(`扫描 ${files.length} 个业务组件 · 错误 ${errorCount}`)
   console.log(`裸 button 白名单 ${RAW_BUTTON_ALLOW.size} · 裸输入白名单 ${RAW_INPUT_ALLOW.size} · 工具类白名单 ${TW_ALLOW.size}`)
-  console.log(`手写浮层白名单 ${FLOATING_CLASS_ALLOW.size} · 对话框语义白名单 ${DIALOG_ROLE_ALLOW.size}`)
+  console.log(`手写浮层白名单 ${FLOATING_CLASS_ALLOW.size} · 对话框语义白名单 ${DIALOG_ROLE_ALLOW.size} · 内联 svg 白名单 ${INLINE_SVG_ALLOW.size}`)
 
   if (errorCount > 0 && !soft) process.exit(1)
 }
