@@ -191,6 +191,26 @@ import { StButton, StCard } from '@/ui'
 
 按需具名引入，保留 tree-shaking。**不要**全局注册整个组件库。
 
+## 可形变图标（StMorphIcon）
+
+`StMorphIcon` 与 `StIcon` 同命名解析（语义名 / bx 类名 / fa 类名 / `<i>` HTML），
+但 `name` 变化时用弹簧物理**形变**到新图标，适用于运行时会两两切换的图标：
+主题 `sun↔moon`、汉堡 `menu↔close`、折叠 `chevron-down↔up`、播放 `play↔pause`。
+
+```vue
+<StMorphIcon :name="isDark ? 'sun' : 'moon'" :size="24" />
+```
+
+底层是 **morphicons**（形变动画引擎，非图标库）；图标数据仍来自 `@tabler/icons`。
+只有 `src/lib/tabler-icon-map.json` 的 `_morphIcons` 白名单里的图标才有形变数据
+（由 `bin/gen-tabler-icons.mjs` 生成 `ICON_MORPH_NODES`，避免全量多出 ~13KB gzip）；
+白名单外的图标自动降级为静态 `StIcon`，所以可以安全替换而不必担心。
+
+- `spring`：`smooth` / `snappy`(默认) / `bouncy`。
+- `reducedMotion`：默认 `"user"`，尊重系统 `prefers-reduced-motion`
+  （morphicons 出厂默认 `"never"`，与本主题动效规范不符，已在组件内改掉）。
+- 只在图标**真的会切换**的地方用它；静态图标用 `StIcon` 即可，否则纯亏体积。
+
 ## 业务层门禁
 
 组件库自身的契约由 `npm run check:ui` 强制（见 `bin/check-ui.mjs`）。

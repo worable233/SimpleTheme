@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { StAvatar, StButton } from '@/ui'
+import { StAvatar, StButton, StMorphIcon } from '@/ui'
 import AppIcon from '@/components/AppIcon.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
@@ -52,7 +52,7 @@ const { open: openAuthModal } = useAuthModal()
       @click="$emit('toggle-theme')"
     >
       <template #icon>
-        <AppIcon :name="currentTheme === 'dark' ? 'sun' : 'moon'" :size="24" />
+        <StMorphIcon :name="currentTheme === 'dark' ? 'sun' : 'moon'" :size="24" />
       </template>
     </StButton>
   </div>

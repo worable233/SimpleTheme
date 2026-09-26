@@ -13,6 +13,7 @@
 
 // ── 基础元件 ──
 export { default as StIcon } from './components/StIcon.vue'
+export { default as StMorphIcon } from './components/StMorphIcon.vue'
 export { default as StSpinner } from './components/StSpinner.vue'
 export { default as StButton } from './components/StButton.vue'
 export { default as StDivider } from './components/StDivider.vue'

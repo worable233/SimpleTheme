@@ -1,5 +1,12 @@
 {
   "_comment": "语义名/bx 基础名/别名 → Tabler 图标 kebab 名（outline）。由 icon-resolver 归一化后查表；bin/gen-tabler-icons.mjs 据此生成组件与节点数据。新增图标：在此加一行并重跑生成脚本。",
+  "_morphIcons": [
+    "menu-2", "x", "sun", "moon", "chevron-down", "chevron-up",
+    "chevron-left", "chevron-right", "arrow-up", "arrow-down",
+    "plus", "minus", "check", "player-play", "player-pause",
+    "eye", "eye-off", "volume", "volume-off", "bell", "bell-off",
+    "layout-sidebar-left-collapse", "layout-sidebar-left-expand"
+  ],
 
   "home": "home",
   "menu": "menu-2",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { StButton } from '@/ui'
+import { StButton, StMorphIcon } from '@/ui'
 import AppIcon from '@/components/AppIcon.vue'
 import { useToc } from '@/composables/useToc'
 
@@ -78,10 +78,21 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     class="mobile-header"
     :class="{ 'is-hidden': hidden }"
   >
-    <StButton quaternary circle size="large" aria-label="打开菜单" @click="$emit('toggle-menu')">
+    <StButton
+      quaternary
+      circle
+      size="large"
+      :aria-label="menuOpen ? '关闭菜单' : '打开菜单'"
+      :aria-expanded="menuOpen"
+      @click="$emit('toggle-menu')"
+    >
       <template #icon>
-        <!-- ≤1000px: 汉堡菜单（两边都收起） -->
-        <AppIcon class="mobile-header__icon-hamburger" name="menu-2" :size="24" />
+        <!-- ≤1000px: 汉堡菜单（两边都收起）；打开时形变为 × -->
+        <StMorphIcon
+          class="mobile-header__icon-hamburger"
+          :name="menuOpen ? 'close' : 'menu'"
+          :size="24"
+        />
         <!-- 1001-1200px: 左侧面板图标（只收起左侧） -->
         <AppIcon class="mobile-header__icon-panel" name="layout-sidebar" :size="24" />
       </template>

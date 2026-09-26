@@ -36,6 +36,7 @@
     "@unhead/vue": "^3.3.2",
     "altcha": "^3.0.9",
     "axios": "^1.19.0",
+    "morphicons": "^1.7.1",
     "prismjs": "^1.30.0",
     "reka-ui": "^2.10.4",
     "undraw-svg": "^1.0.0",
