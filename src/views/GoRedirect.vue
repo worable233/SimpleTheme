@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { StButton, useToast } from '@/ui'
 
@@ -140,21 +141,7 @@ onUnmounted(() => {
       <p class="go-redirect__desc">您即将访问以下链接：</p>
 
       <div class="go-redirect__url">
-        <svg
-          class="go-redirect__url-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          width="16"
-          height="16"
-        >
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
+        <AppIcon class="go-redirect__url-icon" name="external-link" :size="16" />
         <span :title="targetUrl">{{ displayUrl }}</span>
       </div>
 

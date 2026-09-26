@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import LeftSidebar from '@/components/LeftSidebar.vue'
 import SidebarProfile from '@/components/SidebarProfile.vue'
 import TechInfo from '@/components/sidebar/TechInfo.vue'
@@ -219,7 +220,7 @@ watch(
               <div class="sub-page right-sidebar__pane right-sidebar__pane--sub">
                 <div class="sub-page__header">
                   <div class="aside-btn-close" @click="showSubPage = false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                    <AppIcon name="chevron-left" :size="14" />
                     返回
                   </div>
                 </div>

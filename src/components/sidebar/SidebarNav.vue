@@ -75,9 +75,12 @@ const safeMenuItems = computed(() =>
           >
             <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
             <span class="menu-item-title">{{ item.title }}</span>
-            <svg class="sub-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <AppIcon
+              class="sub-menu-chevron"
+              name="chevron-down"
+              :size="10"
+              :stroke="3"
+            />
           </button>
         </template>
 

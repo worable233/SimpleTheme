@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { version as vueVersion } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import AppIcon from '@/components/AppIcon.vue'
 
 declare const __BUILD_TIME__: string
 
@@ -70,13 +71,13 @@ const techVersions = computed<TechInfoItem[]>(() => {
 
       <div class="tech-info__toggle" @click="expanded = !expanded">
         <span>{{ expanded ? '收起构建信息' : '展开构建信息' }}</span>
-        <svg
+        <AppIcon
           class="tech-info__chevron"
           :class="{ 'is-collapsed': !expanded }"
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+          name="chevron-down"
+          :size="12"
+          :stroke="3"
+        />
       </div>
     </div>
 

@@ -270,17 +270,7 @@ function switchTo(tab: AuthTab) {
       <!-- ===== 消息页面（注册成功/发送邮件成功） ===== -->
       <div v-if="activeTab === 'message'" class="auth-message">
         <div class="auth-message__icon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            width="48"
-            height="48"
-          >
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
+          <AppIcon name="send" :size="48" />
         </div>
         <p class="auth-message__text">{{ successMsg }}</p>
         <StButton type="primary" block @click="emit('close')">知道了</StButton>

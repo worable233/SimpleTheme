@@ -5,6 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { StButton, StCheckbox, StInput, useToast } from '@/ui'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
@@ -524,10 +525,7 @@ defineExpose({ clearForm })
     <div class="comments-form__expandable" :class="{ 'comments-form__expandable--open': !isMobile || mobileExpanded }">
       <div class="comments-form__expandable-inner">
       <div v-if="currentUser" class="comments-form__logged-in">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
+        <AppIcon name="user" :size="16" />
         <span>已登录为 <strong>{{ currentUser.displayName }}</strong></span>
       </div>
       <div v-else-if="!isMobile" class="comments-form__row">
@@ -622,19 +620,7 @@ defineExpose({ clearForm })
             @click="toggleEmoji"
           >
             <template #icon>
-              <svg
-                :width="isMobile ? 22 : 20"
-                :height="isMobile ? 22 : 20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                <line x1="9" y1="9" x2="9.01" y2="9" />
-                <line x1="15" y1="9" x2="15.01" y2="9" />
-              </svg>
+              <AppIcon name="smile" :size="isMobile ? 22 : 20" />
             </template>
           </StButton>
           <StButton
@@ -685,10 +671,7 @@ defineExpose({ clearForm })
               <!-- Step 1: name -->
               <template v-if="wizardStep === 'name'">
                 <div class="wizard-step__icon">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
+                  <AppIcon name="user" :size="28" :stroke="1.8" />
                 </div>
                 <h3 class="wizard-step__title">怎么称呼你？</h3>
                 <p class="wizard-step__desc">输入你想显示的名称</p>
@@ -706,10 +689,7 @@ defineExpose({ clearForm })
               <!-- Step 2: email -->
               <template v-else-if="wizardStep === 'email'">
                 <div class="wizard-step__icon">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/>
-                    <polyline points="2 4 12 13 22 4"/>
-                  </svg>
+                  <AppIcon name="mail" :size="28" :stroke="1.8" />
                 </div>
                 <h3 class="wizard-step__title">留下联系方式</h3>
                 <p class="wizard-step__desc">方便博主与你联系</p>
@@ -729,10 +709,7 @@ defineExpose({ clearForm })
               <!-- Step 3: url -->
               <template v-else-if="wizardStep === 'url'">
                 <div class="wizard-step__icon">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                  </svg>
+                  <AppIcon name="link" :size="28" :stroke="1.8" />
                 </div>
                 <h3 class="wizard-step__title">你的网站</h3>
                 <p class="wizard-step__desc">可选，点击头像时会用到</p>
@@ -753,10 +730,7 @@ defineExpose({ clearForm })
               <!-- Step 4: options + finish -->
               <template v-else>
                 <div class="wizard-step__icon">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                  </svg>
+                  <AppIcon name="settings" :size="28" :stroke="1.8" />
                 </div>
                 <h3 class="wizard-step__title">选项设置</h3>
                 <p class="wizard-step__desc">配置你的发布偏好</p>
@@ -825,9 +799,7 @@ defineExpose({ clearForm })
               :size="isMobile ? 'large' : 'medium'"
               @click="prevStep"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-              </svg>
+              <AppIcon name="arrow-left" :size="16" :stroke="2.5" />
               上一步
             </StButton>
             <StButton
@@ -838,9 +810,7 @@ defineExpose({ clearForm })
               @click="nextStep"
             >
               下一步
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-              </svg>
+              <AppIcon name="arrow-right" :size="16" :stroke="2.5" />
             </StButton>
             <StButton
               v-else
@@ -849,9 +819,7 @@ defineExpose({ clearForm })
               @click="finishWizard"
             >
               完成
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
+              <AppIcon name="check" :size="16" :stroke="2.5" />
             </StButton>
           </div>
         </div>

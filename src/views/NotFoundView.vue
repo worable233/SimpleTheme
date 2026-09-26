@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import ErrorView from '@/components/ErrorView.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { StButton, useToast } from '@/ui'
 
 const toast = useToast()
@@ -28,9 +29,7 @@ onMounted(() => {
     <template #actions>
       <StButton type="primary" round @click="goBack">
         <template #icon>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 12L10 6M4 12L10 18M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <AppIcon name="arrow-left" :size="16" />
         </template>
         返回上一页
       </StButton>

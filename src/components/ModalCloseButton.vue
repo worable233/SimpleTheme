@@ -6,6 +6,7 @@
  * 触屏设备显示常规圆形 ×（无键盘设备上 ESC 提示无意义）。
  * 定位交由使用方通过 class 控制；点击事件通过 attrs 透传。
  */
+import AppIcon from '@/components/AppIcon.vue'
 </script>
 
 <template>
@@ -15,19 +16,7 @@
   -->
   <button type="button" class="modal-close-btn" aria-label="关闭">
     <span class="modal-close-btn__esc" aria-hidden="true">ESC</span>
-    <svg
-      class="modal-close-btn__x"
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
+    <AppIcon class="modal-close-btn__x" name="x" :size="18" aria-hidden="true" />
   </button>
 </template>
 

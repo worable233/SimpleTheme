@@ -7,6 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToc } from '@/composables/useToc'
 import TocTree from './toc/TocTree.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import type { TocNode } from './toc/TocTree.vue'
 
@@ -151,14 +152,7 @@ onUnmounted(() => {
   >
     <div class="toc-content">
       <div class="toc-card__head">
-        <svg class="toc-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6" />
-          <line x1="8" y1="12" x2="21" y2="12" />
-          <line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" />
-          <line x1="3" y1="12" x2="3.01" y2="12" />
-          <line x1="3" y1="18" x2="3.01" y2="18" />
-        </svg>
+        <AppIcon class="toc-card__icon" name="list" :size="22" />
         文章目录
       </div>
       <nav>

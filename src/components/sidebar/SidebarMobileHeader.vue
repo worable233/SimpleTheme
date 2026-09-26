@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { StButton } from '@/ui'
+import AppIcon from '@/components/AppIcon.vue'
 import { useToc } from '@/composables/useToc'
 
 const props = defineProps<{
@@ -80,18 +81,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <StButton quaternary circle size="large" aria-label="打开菜单" @click="$emit('toggle-menu')">
       <template #icon>
         <!-- ≤1000px: 汉堡菜单（两边都收起） -->
-        <svg class="mobile-header__icon-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
+        <AppIcon class="mobile-header__icon-hamburger" name="menu-2" :size="24" />
         <!-- 1001-1200px: 左侧面板图标（只收起左侧） -->
-        <svg class="mobile-header__icon-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <line x1="9" y1="3" x2="9" y2="21" />
-          <line x1="3" y1="9" x2="9" y2="9" />
-          <line x1="3" y1="15" x2="9" y2="15" />
-        </svg>
+        <AppIcon class="mobile-header__icon-panel" name="layout-sidebar" :size="24" />
       </template>
     </StButton>
 
@@ -107,9 +99,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           @click="drawerOpen = true"
         >
           <span class="mobile-header__reading-title">{{ readingTitle }}</span>
-          <svg class="mobile-header__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <AppIcon class="mobile-header__caret" name="chevron-down" :size="14" />
         </button>
         <RouterLink
           v-else
@@ -124,12 +114,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     </div>
 
     <StButton quaternary circle size="large" aria-label="搜索" @click="$emit('open-search')">
-      <template #icon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-      </template>
+      <template #icon><AppIcon name="search" :size="20" /></template>
     </StButton>
 
     <!-- 阅读进度条（仅阅读模式显示） -->
