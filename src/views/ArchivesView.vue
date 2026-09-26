@@ -2,7 +2,7 @@
 /**
  * ArchivesView — 归档页面（数据编排，使用独立卡片/弹窗组件）
  */
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { useLoading } from '../composables/useLoading'
@@ -13,7 +13,6 @@ import TimelineCard from '@/components/archive/TimelineCard.vue'
 import CategoryCard from '@/components/archive/CategoryCard.vue'
 import TimelineModal from '@/components/archive/TimelineModal.vue'
 import CategoryModal from '@/components/archive/CategoryModal.vue'
-import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { StSkeleton, StEmpty } from '@/ui'
 
 export interface PostWithMeta extends WordPressPost {
@@ -40,7 +39,6 @@ const posts = ref<WordPressPost[]>([])
 const activeModal = ref<'timeline' | 'category' | null>(null)
 const selectedYear = ref<number | null>(null)
 const selectedCategory = ref<string | null>(null)
-const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
 let modalTrigger: HTMLElement | null = null
 
 useHead({ title: '归档' })
@@ -186,15 +184,12 @@ function closeModal() {
   activeModal.value = null
   selectedYear.value = null
   selectedCategory.value = null
+  // 打开弹窗的触发卡片不在 reka DialogTrigger 上，reka 无从得知归还目标，
+  // 因此仍由本组件记录并归还焦点。
   const trigger = modalTrigger
   modalTrigger = null
   void nextTick(() => trigger?.focus())
 }
-
-watch(activeModal, (modal) => {
-  if (modal) lockBodyScroll()
-  else unlockBodyScroll()
-})
 
 onMounted(async () => {
   await withLoading(async () => {
@@ -208,18 +203,6 @@ onMounted(async () => {
     }
     posts.value = allPosts
   })
-})
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && activeModal.value) {
-    closeModal()
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => {
-  unlockBodyScroll()
-  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
