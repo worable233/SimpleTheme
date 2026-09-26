@@ -252,6 +252,8 @@ body[data-theme='dark'] .post-card:hover {
   position: absolute;
   top: 8px;
   right: 8px;
+  /* 必须压过 z-index:2 的封面外层链接，否则有封面时右上角标签被盖住 */
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -285,6 +287,14 @@ body[data-theme='dark'] .post-card:hover {
    阈值取 440px：桌面三栏布局下中间栏卡片约 480-520px 仍保持横排（左文右图），
    仅真正窄屏（手机 ~360px）才堆叠为上图下文 */
 @container (max-width: 440px) {
+  /* 封面外层链接同时要复位：它是 position:absolute 的右侧浮层，
+     只复位内部 <img> 会让整块封面继续飘在正文上方、盖住文字 */
+  .post-card__cover-link {
+    position: revert;
+    width: 100%;
+    height: auto;
+  }
+
   .post-card__cover {
     position: revert;
     width: 100%;
