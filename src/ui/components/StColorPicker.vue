@@ -352,7 +352,9 @@ function clear() {
 }
 
 /* ==================== 浮层面板 ==================== */
-.st-color-picker__panel {
+/* reka-ui 把面板 Portal 到 body，面板根拿不到本组件的 data-v-*，
+ * scoped 选择器不命中；用 :global() 命名空间化（st- 前缀已足够唯一）。 */
+:global(.st-color-picker__panel) {
   z-index: var(--st-z-dropdown);
   display: flex;
   flex-direction: column;

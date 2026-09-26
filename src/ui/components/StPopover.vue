@@ -136,7 +136,10 @@ onBeforeUnmount(cancelClose)
   cursor: not-allowed;
 }
 
-.st-popover__content {
+/* reka-ui 把内容 Portal 到 body，内容根拿不到本组件的 data-v-*，
+ * scoped 选择器不命中；用 :global() 命名空间化（st- 前缀已足够唯一）。
+ * 注意：锚点 .st-popover__anchor 留在组件模板内，继续保持 scoped。 */
+:global(.st-popover__content) {
   z-index: var(--st-z-dropdown);
   box-sizing: border-box;
   min-width: 140px;
@@ -153,12 +156,12 @@ onBeforeUnmount(cancelClose)
 }
 
 /* reka 的箭头是 <span><svg>…，颜色靠 currentColor 传递 */
-.st-popover__arrow {
+:global(.st-popover__arrow) {
   color: var(--st-popover-bg);
   fill: currentColor;
 }
 
-.st-popover__arrow svg {
+:global(.st-popover__arrow) svg {
   display: block;
 }
 </style>

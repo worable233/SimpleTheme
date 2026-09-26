@@ -321,7 +321,7 @@ function clear() {
 
 /* ==================== 下拉面板 ==================== */
 /* 面板被 Teleport 到 body，拿不到 .st-select 上的私有变量，尺寸必须自带 */
-.st-select__content {
+:global(.st-select__content) {
   z-index: var(--st-z-dropdown);
   box-sizing: border-box;
   min-width: var(--reka-select-trigger-width);
@@ -332,24 +332,24 @@ function clear() {
   color: var(--st-text);
 }
 
-.st-select__content--tiny {
+:global(.st-select__content--tiny) {
   font-size: var(--st-font-tiny);
 }
 
-.st-select__content--small {
+:global(.st-select__content--small) {
   font-size: var(--st-font-small);
 }
 
-.st-select__content--medium {
+:global(.st-select__content--medium) {
   font-size: var(--st-font-medium);
 }
 
-.st-select__content--large {
+:global(.st-select__content--large) {
   font-size: var(--st-font-large);
 }
 
 /* 只做透明度动画：定位由 popper 用 transform 完成，动 transform 会打架 */
-.st-select__content[data-state='open'] {
+:global(.st-select__content[data-state='open']) {
   animation: st-select-in 0.12s var(--ease-standard);
 }
 
@@ -362,7 +362,7 @@ function clear() {
   }
 }
 
-.st-select__viewport {
+:global(.st-select__viewport) {
   padding: 4px;
   max-height: var(--reka-select-content-available-height, 320px);
   overflow-y: auto;
@@ -411,7 +411,7 @@ function clear() {
     transition: none;
   }
 
-  .st-select__content[data-state='open'] {
+  :global(.st-select__content[data-state='open']) {
     animation: none;
   }
 }

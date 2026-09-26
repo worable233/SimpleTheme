@@ -139,7 +139,9 @@ onBeforeUnmount(cancelClose)
   display: inline-flex;
 }
 
-.st-dropdown__menu {
+/* reka-ui 把菜单 Portal 到 body，菜单根拿不到本组件的 data-v-*，
+ * scoped 选择器不命中；用 :global() 命名空间化（st- 前缀已足够唯一）。 */
+:global(.st-dropdown__menu) {
   z-index: var(--st-z-dropdown);
   box-sizing: border-box;
   min-width: 160px;

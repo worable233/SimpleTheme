@@ -77,7 +77,9 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
 </template>
 
 <style scoped>
-.st-tooltip {
+/* 浮层内容经 reka-ui Portal 渲染到 body，拿不到本组件的 data-v-* 作用域属性，
+ * 普通 scoped 选择器不会命中。这里用 :global() 命名空间化类名（st- 前缀已足够唯一）。 */
+:global(.st-tooltip) {
   z-index: var(--st-z-dropdown);
   max-width: 260px;
   padding: 6px 10px;
@@ -92,12 +94,12 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
 }
 
 /* reka 的箭头是 <span><svg>…，颜色靠 currentColor 传递 */
-.st-tooltip__arrow {
+:global(.st-tooltip__arrow) {
   color: var(--st-popover-bg);
   fill: currentColor;
 }
 
-.st-tooltip__arrow svg {
+:global(.st-tooltip__arrow) svg {
   display: block;
 }
 </style>
