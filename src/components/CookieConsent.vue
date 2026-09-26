@@ -45,7 +45,7 @@ function accept() {
   align-items: center;
   gap: 12px;
   width: auto;
-  max-width: 520px;
+  max-width: min(calc(100vw - 32px), 44rem);
   padding: 10px 18px 10px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -66,10 +66,8 @@ function accept() {
 
 .cookie-consent__message {
   flex: 1;
+  min-width: 0;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 @media (max-width: 37.5rem) {
@@ -79,10 +77,6 @@ function accept() {
     gap: 10px;
     padding: 12px 16px;
     border-radius: var(--radius-large);
-  }
-
-  .cookie-consent__message {
-    white-space: normal;
   }
 }
 
