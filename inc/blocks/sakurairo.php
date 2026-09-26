@@ -297,7 +297,7 @@ add_action( 'enqueue_block_editor_assets', 'simple_theme_sakurairo_editor_assets
 function simple_theme_sakurairo_editor_assets() {
 	$asset_file = __DIR__ . '/sakurairo-editor.asset.php';
 	$deps       = array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-hooks', 'wp-dom-ready' );
-	$version    = '3.0.12';
+	$version    = '3.0.13';
 
 	if ( file_exists( $asset_file ) ) {
 		$asset  = include $asset_file;
@@ -350,7 +350,7 @@ function simple_theme_sakurairo_frontend_assets() {
 		'simple-theme-sakurairo-blocks',
 		get_theme_file_uri( '/inc/blocks/notice-block.css' ),
 		array(),
-		'3.0.12'
+		'3.0.13'
 	);
 }
 

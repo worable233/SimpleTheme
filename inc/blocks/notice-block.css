@@ -14,7 +14,7 @@
    结构：<div class="wp-block-sakurairo-notice-block shortcodestyle task">
            <span class="sc-title">TASK</span><span class="sc-content">…</span>
          </div>
-   类型通过同名类切换强调色，视觉对齐 StAlert（浅色底 + 同色描边）。 */
+   类型通过同名类切换强调色，视觉对齐 StAlert（浅色底 + 同色标题，无描边）。 */
 
 .shortcodestyle,
 .prose-content .shortcodestyle {
@@ -24,7 +24,7 @@
   margin: 24px 0;
   padding: 11px 14px;
   background: color-mix(in srgb, var(--sk-accent) 8%, var(--card));
-  border: 1px solid color-mix(in srgb, var(--sk-accent) 30%, var(--border));
+  border: 0;
   border-radius: var(--radius-medium, 6px);
   box-shadow: var(--card-highlight);
   font-size: var(--st-font-medium, 14px);
