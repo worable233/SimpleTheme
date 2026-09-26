@@ -186,10 +186,7 @@
 .single-post__cover-img img,
 .shuoshuo-item .post-card__cover,
 .aside-author__cover img,
-.aside-author__avatar img,
-.comments-item__avatar-img,
-.link-card__avatar-wrap img,
-.link-card__tip-avatar img {
+.aside-author__avatar img {
   animation: imgFadeIn 0.5s ease-in-out;
 }
 

@@ -70,35 +70,11 @@
 
 .comments-item__avatar {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--muted);
 }
 
-.comments-item__avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.comments-item__avatar-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--secondary);
-  background: var(--muted);
-}
-
+/* 头像本体由 StAvatar 渲染，这里只保留外链触摸区 */
 .comments-item__avatar-link {
   display: block;
-  width: 100%;
-  height: 100%;
   color: inherit;
   text-decoration: none;
 }

@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 import { likeComment } from '@/lib/wordpress'
 import { renderCommentContent } from '@/lib/emoji'
 import type { WordPressComment } from '@/types/wordpress'
-import { StButton, StTag } from '@/ui'
+import { StAvatar, StButton, StTag } from '@/ui'
+import AppIcon from '@/components/AppIcon.vue'
 
 defineOptions({ name: 'CommentsTreeItem' })
 
@@ -132,27 +133,20 @@ function togglePin() {
           rel="nofollow noopener noreferrer"
           class="comments-item__avatar-link"
         >
-          <img
-            v-if="avatarUrl"
-            :src="avatarUrl"
-            alt=""
-            class="comments-item__avatar-img"
-            loading="lazy"
+          <StAvatar
+            :src="avatarUrl || undefined"
+            :fallback-text="item.authorName"
+            :size="38"
             @error="onAvatarError"
           />
-          <span v-else class="comments-item__avatar-fallback">{{ item.authorName.charAt(0) }}</span>
         </a>
-        <template v-else>
-          <img
-            v-if="avatarUrl"
-            :src="avatarUrl"
-            alt=""
-            class="comments-item__avatar-img"
-            loading="lazy"
-            @error="onAvatarError"
-          />
-          <span v-else class="comments-item__avatar-fallback">{{ item.authorName.charAt(0) }}</span>
-        </template>
+        <StAvatar
+          v-else
+          :src="avatarUrl || undefined"
+          :fallback-text="item.authorName"
+          :size="38"
+          @error="onAvatarError"
+        />
       </div>
 
       <div class="comments-item__body">
@@ -195,18 +189,14 @@ function togglePin() {
             @click="handleLike"
           >
             <template #icon>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-              </svg>
+              <AppIcon name="thumb-up" :size="14" />
             </template>
             <span v-if="item.likes > 0">{{ item.likes }}</span>
             <span v-else>赞</span>
           </StButton>
           <StButton size="small" quaternary @click="emit('reply', item.id)">
             <template #icon>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-              </svg>
+              <AppIcon name="arrow-back-up" :size="14" />
             </template>
             回复
           </StButton>
@@ -217,9 +207,7 @@ function togglePin() {
             @click="emit('delete', item.id)"
           >
             <template #icon>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
+              <AppIcon name="trash" :size="14" />
             </template>
             删除
           </StButton>

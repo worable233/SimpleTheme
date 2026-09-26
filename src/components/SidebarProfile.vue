@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isSafeNavigationUrl } from '@/lib/theme-config'
 import AppIcon from '@/components/AppIcon.vue'
+import { StAvatar } from '@/ui'
 import type { SocialLink, SiteStats } from '@/types/wordpress'
 
 const props = defineProps<{
@@ -194,8 +195,13 @@ function socialIconName(icon: string): string {
 
       <div class="aside-author__info">
         <div class="aside-author__avatar">
-          <img v-if="showAvatar && avatarUrl" :src="avatarUrl" alt="" />
-          <abbr v-else-if="siteName" :title="siteName">{{ siteName.charAt(0) }}</abbr>
+          <StAvatar
+            v-if="siteName"
+            :src="showAvatar ? avatarUrl || undefined : undefined"
+            :fallback-text="siteName"
+            :size="80"
+            :title="siteName"
+          />
           <div v-else role="status" class="skeleton box" style="width:80px;height:80px;border-radius:50%;"></div>
         </div>
 
@@ -204,7 +210,7 @@ function socialIconName(icon: string): string {
 
         <div v-if="!noToggle" class="aside-btn-open profile-toggle" @click="$emit('toggle-sub')">
           查看更多
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+          <AppIcon name="chevron-right" :size="14" />
         </div>
       </div>
     </template>

@@ -307,35 +307,16 @@
 .aside-author__avatar {
   width: 80px;
   height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
   margin: 0 auto 10px;
+  /* 头像本体由 StAvatar 渲染（圆形 + 首字符回退 + 白描边） */
+  border-radius: 50%;
   box-shadow:
     0 0 8px rgb(28 31 35 / 4%),
     0 0 24px 8px rgb(28 31 35 / 6%);
 }
 
-.aside-author__avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+.aside-author__avatar .st-avatar {
   border: 2px solid var(--card);
-}
-
-.aside-author__avatar abbr {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-  background: var(--muted);
-  border-radius: 50%;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--foreground);
-  border: 2px solid var(--card);
-  text-decoration: none;
 }
 
 .aside-author__name {
