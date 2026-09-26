@@ -37,8 +37,10 @@ function scrollTo(id: string) {
   emit('scroll-to', id)
 }
 
-/** 各级标题的基础字号（px），激活时再 +1。 */
-const BASE_SIZE: Record<number, number> = { 2: 13, 3: 12.5, 4: 12 }
+/** 各级标题的基础字号（px），激活时再叠加 ACTIVE_SIZE_BUMP。 */
+const BASE_SIZE: Record<number, number> = { 2: 15, 3: 14, 4: 13 }
+/** 激活项额外放大的字号（px）。 */
+const ACTIVE_SIZE_BUMP = 2
 /** 每远离一档增加的模糊量（px）与上限。 */
 const BLUR_PER_STEP = 0.6
 const BLUR_MAX = 3
@@ -55,9 +57,9 @@ function linkStyle(node: TocNode) {
   const distance = hasActive ? Math.abs(node.order - props.activeIndex) : 0
   const isActive = hasActive && distance === 0
 
-  const base = BASE_SIZE[node.level] ?? 13
+  const base = BASE_SIZE[node.level] ?? 15
   return {
-    '--toc-size': `${isActive ? base + 1 : base}px`,
+    '--toc-size': `${isActive ? base + ACTIVE_SIZE_BUMP : base}px`,
     '--toc-blur': `${isActive ? 0 : Math.min(distance * BLUR_PER_STEP, BLUR_MAX)}px`,
     '--toc-opacity': isActive
       ? '1'
@@ -167,7 +169,7 @@ ol li {
   border-left: 0 solid transparent;
   border-radius: 12px;
   color: var(--secondary);
-  font-size: var(--toc-size, 13px);
+  font-size: var(--toc-size, 15px);
   font-weight: var(--toc-weight, 400);
   line-height: 24px;
   opacity: var(--toc-opacity, 1);
