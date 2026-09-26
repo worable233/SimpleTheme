@@ -195,7 +195,7 @@ function simple_theme_format_comment_item( WP_Comment $comment ) {
 		'content'       => array( 'rendered' => wp_kses_post( $comment->comment_content ) ),
 		'likes'         => (int) get_comment_meta( $comment_id, 'st_likes', true ),
 		'metaInfo'      => array(
-			'location' => get_comment_meta( $comment_id, 'st_location', true ) ?: '',
+			'location' => function_exists( 'simple_theme_get_comment_location' ) ? simple_theme_get_comment_location( $comment ) : '',
 			'browser'  => get_comment_meta( $comment_id, 'st_browser', true ) ?: '',
 			'os'       => get_comment_meta( $comment_id, 'st_os', true ) ?: '',
 		),
@@ -210,7 +210,12 @@ function simple_theme_format_comment_item( WP_Comment $comment ) {
 }
 
 /**
- * Save browser/OS/IP metadata from the current request onto a comment.
+ * Save browser/OS metadata from the current request onto a comment.
+ *
+ * The IP location is intentionally NOT resolved here: WordPress already stores
+ * the request address in wp_comments.comment_author_IP, and the location is
+ * resolved lazily (and cached) at display time so comment submission never
+ * blocks on an external API call.
  */
 function simple_theme_save_comment_meta_info( int $comment_id ): void {
 	$ua = '';
@@ -258,20 +263,11 @@ function simple_theme_save_comment_meta_info( int $comment_id ): void {
 		$browser = 'Safari' . ( isset( $m[1] ) ? ' ' . $m[1] : '' );
 	}
 
-	$location = '';
-	$ip       = function_exists( 'simple_theme_get_request_ip' ) ? simple_theme_get_request_ip() : '';
-	if ( $ip && function_exists( 'simple_theme_get_ip_location' ) ) {
-		$location = simple_theme_get_ip_location( $ip );
-	}
-
 	if ( $browser ) {
 		update_comment_meta( $comment_id, 'st_browser', $browser );
 	}
 	if ( $os ) {
 		update_comment_meta( $comment_id, 'st_os', $os );
-	}
-	if ( $location ) {
-		update_comment_meta( $comment_id, 'st_location', $location );
 	}
 }
 
@@ -757,7 +753,7 @@ add_filter( 'rest_prepare_comment', function( $response, $comment ) {
 
 	$data['likes']     = (int) get_comment_meta( $comment_id, 'st_likes', true );
 	$data['metaInfo']  = array(
-		'location' => get_comment_meta( $comment_id, 'st_location', true ) ?: '',
+		'location' => function_exists( 'simple_theme_get_comment_location' ) ? simple_theme_get_comment_location( $comment ) : '',
 		'browser'  => get_comment_meta( $comment_id, 'st_browser', true ) ?: '',
 		'os'       => get_comment_meta( $comment_id, 'st_os', true ) ?: '',
 	);

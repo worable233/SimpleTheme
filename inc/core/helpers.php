@@ -58,8 +58,7 @@ function simple_theme_get_request_ip() {
 /**
  * Create a non-reversible, site-specific identifier for an IP address.
  */
-function simple_theme_hash_ip( $ip = '' ) {
-	$ip = $ip ? $ip : simple_theme_get_request_ip();
+function simple_theme_hash_ip( $ip ) {
 	if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
 		return '';
 	}
@@ -122,29 +121,68 @@ function simple_theme_get_current_commenter() {
 
 // ========== IP Location (归属地) ==========
 
+/**
+ * Resolve an IP to a human-readable location, transparently cached.
+ *
+ * Resolution happens lazily at display time (not at comment-insert time) so
+ * that comments created before this feature existed still get a location.
+ * Results — including negatives — are cached by a hashed, site-specific key so
+ * the upstream API is never hit twice for the same address. Negative results
+ * use a shorter TTL to allow a later retry without hammering the API.
+ *
+ * @return string Location on success, or '' when it cannot be resolved.
+ */
 function simple_theme_get_ip_location( $ip ) {
 	if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-		return null;
+		return '';
 	}
 
 	$options = get_option( 'simple_theme_options', array() );
 	$api     = isset( $options['ip_location_api'] ) ? $options['ip_location_api'] : 'xinyew';
-	$cache   = isset( $options['ip_location_cache'] ) ? (bool) $options['ip_location_cache'] : true;
+	$cache   = ! isset( $options['ip_location_cache'] ) || (bool) $options['ip_location_cache'];
 
-	if ( $cache ) {
-		$cache_key = 'st_ip_' . simple_theme_hash_ip( $ip );
-		$location = get_transient( $cache_key );
-		if ( false !== $location ) {
-			return $location;
-		}
-		$location = simple_theme_query_ip_location( $ip, $api );
-		if ( $location ) {
-			set_transient( $cache_key, $location, DAY_IN_SECONDS );
-		}
-		return $location;
+	if ( ! $cache ) {
+		return (string) simple_theme_query_ip_location( $ip, $api );
 	}
 
-	return simple_theme_query_ip_location( $ip, $api );
+	$cache_key = 'st_ip_' . simple_theme_hash_ip( $ip );
+	$cached    = get_transient( $cache_key );
+	if ( is_string( $cached ) ) {
+		return $cached;
+	}
+
+	$location = (string) simple_theme_query_ip_location( $ip, $api );
+
+	// Cache the negative result too: for addresses the API cannot resolve
+	// (private/loopback/IPv6 gaps), this prevents a lookup on every page view.
+	$ttl = $location ? DAY_IN_SECONDS : HOUR_IN_SECONDS;
+	set_transient( $cache_key, $location, $ttl );
+
+	return $location;
+}
+
+/**
+ * Return the location for a comment, using the IP WordPress stored on insert
+ * (wp_comments.comment_author_IP). Resolved lazily and cached; the resolved
+ * value is persisted once to post meta to skip future transient lookups.
+ */
+function simple_theme_get_comment_location( WP_Comment $comment ) {
+	$stored = get_comment_meta( $comment->comment_ID, 'st_location', true );
+	if ( is_string( $stored ) && '' !== $stored ) {
+		return $stored;
+	}
+
+	$ip = isset( $comment->comment_author_IP ) ? (string) $comment->comment_author_IP : '';
+	if ( '' === $ip ) {
+		return '';
+	}
+
+	$location = simple_theme_get_ip_location( $ip );
+	if ( '' !== $location ) {
+		update_comment_meta( $comment->comment_ID, 'st_location', $location );
+	}
+
+	return $location;
 }
 
 function simple_theme_query_ip_location( $ip, $api = 'xinyew' ) {
@@ -171,7 +209,7 @@ function simple_theme_try_api_xinyew( $ip ) {
 	}
 	$body = wp_remote_retrieve_body( $response );
 	$data = json_decode( $body, true );
-	if ( ! empty( $data['status'] ) && '0' === $data['status'] && ! empty( $data['data'][0]['location'] ) ) {
+	if ( isset( $data['status'] ) && '0' === $data['status'] && ! empty( $data['data'][0]['location'] ) ) {
 		return $data['data'][0]['location'];
 	}
 	return null;

@@ -176,7 +176,9 @@ function simple_theme_track_post_view( WP_REST_Request $request ) {
 	// Keep anonymous view tracking useful without allowing a refresh loop to inflate
 	// counters. The raw address never leaves the request; only a site-specific HMAC
 	// is used in the short-lived transient key.
-	$ip_hash = function_exists( 'simple_theme_hash_ip' ) ? simple_theme_hash_ip() : '';
+	$ip_hash = function_exists( 'simple_theme_hash_ip' ) && function_exists( 'simple_theme_get_request_ip' )
+		? simple_theme_hash_ip( simple_theme_get_request_ip() )
+		: '';
 	$dedupe_key = $ip_hash ? 'simple_theme_view_' . $post_id . '_' . substr( $ip_hash, 0, 32 ) : '';
 	if ( $dedupe_key && false !== get_transient( $dedupe_key ) ) {
 		return new WP_REST_Response( array( 'viewCount' => max( 0, (int) get_post_meta( $post_id, 'views', true ) ) ), 200 );

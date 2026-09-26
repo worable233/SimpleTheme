@@ -227,7 +227,9 @@ function simple_theme_register_auth_routes() {
  * The raw address is never persisted; only the HMAC-backed transient key is used.
  */
 function simple_theme_auth_rate_limited( $action, $limit, $window ) {
-	$ip_hash = function_exists( 'simple_theme_hash_ip' ) ? simple_theme_hash_ip() : '';
+	$ip_hash = function_exists( 'simple_theme_hash_ip' ) && function_exists( 'simple_theme_get_request_ip' )
+		? simple_theme_hash_ip( simple_theme_get_request_ip() )
+		: '';
 	if ( ! $ip_hash ) {
 		return false;
 	}
