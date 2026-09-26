@@ -16,6 +16,8 @@ export interface StCollapseContext {
   unregisterItem: (name: string | number) => void
   /** 把 reka 的 string key 还原成调用方的原始 name */
   resolveName: (key: string) => string | number
+  /** 本项当前是否展开；供折叠箭头在 chevron-down↔up 间形变 */
+  isExpanded: (name: string | number) => boolean
 }
 
 export const ST_COLLAPSE_CONTEXT: InjectionKey<StCollapseContext> = Symbol('StCollapse')
@@ -98,6 +100,8 @@ provide<StCollapseContext>(ST_COLLAPSE_CONTEXT, {
   registerItem,
   unregisterItem,
   resolveName,
+  isExpanded: (name) =>
+    expanded.value.some((item) => String(item) === String(name)),
 })
 </script>
 

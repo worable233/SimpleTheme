@@ -194,8 +194,7 @@ import { StButton, StCard } from '@/ui'
 ## 可形变图标（StMorphIcon）
 
 `StMorphIcon` 与 `StIcon` 同命名解析（语义名 / bx 类名 / fa 类名 / `<i>` HTML），
-但 `name` 变化时用弹簧物理**形变**到新图标，适用于运行时会两两切换的图标：
-主题 `sun↔moon`、汉堡 `menu↔close`、折叠 `chevron-down↔up`、播放 `play↔pause`。
+但 `name` 变化时用弹簧物理**形变**到新图标。
 
 ```vue
 <StMorphIcon :name="isDark ? 'sun' : 'moon'" :size="24" />
@@ -210,6 +209,24 @@ import { StButton, StCard } from '@/ui'
 - `reducedMotion`：默认 `"user"`，尊重系统 `prefers-reduced-motion`
   （morphicons 出厂默认 `"never"`，与本主题动效规范不符，已在组件内改掉）。
 - 只在图标**真的会切换**的地方用它；静态图标用 `StIcon` 即可，否则纯亏体积。
+
+已铺开的切换点（其余静态图标保持 `StIcon`）：
+
+| 位置 | 形变 | spring |
+| --- | --- | --- |
+| `SidebarActions` / `admin/UserDropdown` | `sun↔moon` | `snappy` |
+| `SidebarMobileHeader` | `menu↔close` | `snappy` |
+| `StInput` / `AuthModal`（×3）密码可见性 | `eye↔eye-off` | `snappy` |
+| `StCheckbox` 半选态 | `minus↔check` | `snappy` |
+| `StCollapseItem` / `SidebarNav` 折叠箭头 | `chevron-down↔up` | `smooth` |
+| `TechInfo` 展开箭头 | `chevron-down↔right` | `smooth` |
+
+> chevron 统一用 `smooth`（不越冲、减速落定），符合主题曲线约定。折叠/子菜单箭头原先靠
+> CSS `rotate()` 实现，现改为绑定展开态的形变，对应的 `rotate` 规则已从各组件与
+> `src/styles/sidebar.css` 移除。
+> 未纳入：`useContentEnhancer.ts` 的正文音频播放器（`play↔pause` / `volume↔mute`）。
+> 它是命令式 `innerHTML` 注入、且当前用实心图标，改用 Tabler 线性图标会改变视觉，
+> 故有意跳过；白名单里的 `player-play` 等数据保留待用。
 
 ## 业务层门禁
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import AppIcon from '@/components/AppIcon.vue'
+import { StMorphIcon } from '@/ui'
 
 const props = defineProps<{
   visible: boolean
@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
             且需要图标 + 文字组合，迁 StButton 会引入不必要的按钮盒模型。
           -->
           <button class="user-dropdown__row user-dropdown__row--btn" @click="emit('toggleTheme')">
-            <AppIcon :name="currentTheme === 'dark' ? 'sun' : 'moon'" :size="16" />
+            <StMorphIcon :name="currentTheme === 'dark' ? 'sun' : 'moon'" :size="16" />
             <span>{{ currentTheme === 'dark' ? '浅色模式' : '深色模式' }}</span>
           </button>
         </div>

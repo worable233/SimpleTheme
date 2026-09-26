@@ -18,6 +18,7 @@
  */
 import { Comment, Fragment, computed, isVNode, nextTick, onBeforeUnmount, onMounted, ref, useAttrs, useSlots, watch } from 'vue'
 import StIcon from './StIcon.vue'
+import StMorphIcon from './StMorphIcon.vue'
 import StSpinner from './StSpinner.vue'
 import type { StSize, StStatus } from '../types'
 
@@ -506,7 +507,7 @@ onBeforeUnmount(() => {
           <slot :name="passwordVisible ? 'password-visible-icon' : 'password-invisible-icon'">
             <!-- Naive Input.tsx:1374-1387：可见时用 EyeIcon（睁眼），
                  不可见时用 EyeOffIcon（划线眼）。 -->
-            <StIcon :name="passwordVisible ? 'eye' : 'eye-off'" :size="16" />
+            <StMorphIcon :name="passwordVisible ? 'eye' : 'eye-off'" :size="16" />
           </slot>
         </span>
       </div>

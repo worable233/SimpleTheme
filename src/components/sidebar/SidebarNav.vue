@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { resolveMenuIcon } from './icon-map'
 import AppIcon from '@/components/AppIcon.vue'
-import { StTooltip } from '@/ui'
+import { StMorphIcon, StTooltip } from '@/ui'
 import type { MenuItem } from '@/types/wordpress'
 
 const props = defineProps<{
@@ -75,11 +75,12 @@ const safeMenuItems = computed(() =>
           >
             <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
             <span class="menu-item-title">{{ item.title }}</span>
-            <AppIcon
+            <StMorphIcon
               class="sub-menu-chevron"
-              name="chevron-down"
+              :name="openMenus.has(item.id) ? 'chevron-up' : 'chevron-down'"
               :size="10"
               :stroke="3"
+              spring="smooth"
             />
           </button>
         </template>

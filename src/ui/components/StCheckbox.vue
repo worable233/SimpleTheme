@@ -12,7 +12,7 @@
  */
 import { computed, useSlots } from 'vue'
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
-import StIcon from './StIcon.vue'
+import StMorphIcon from './StMorphIcon.vue'
 import type { StSize } from '../types'
 
 defineOptions({ name: 'StCheckbox' })
@@ -72,7 +72,7 @@ function handleChange(value: unknown) {
   >
     <span class="st-checkbox__box">
       <CheckboxIndicator class="st-checkbox__indicator">
-        <StIcon :name="indeterminate ? 'minus' : 'check'" :size="iconSize" :stroke="3" />
+        <StMorphIcon :name="indeterminate ? 'minus' : 'check'" :size="iconSize" :stroke="3" />
       </CheckboxIndicator>
     </span>
     <span v-if="slots.default" class="st-checkbox__label"><slot /></span>

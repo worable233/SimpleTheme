@@ -20,7 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from 'reka-ui'
-import StIcon from './StIcon.vue'
+import StMorphIcon from './StMorphIcon.vue'
 import { ST_COLLAPSE_CONTEXT } from './StCollapse.vue'
 
 defineOptions({ name: 'StCollapseItem' })
@@ -49,6 +49,9 @@ const itemValue = computed(() => String(props.name))
 // 无外框时去掉左右留白，让标题与内容同容器左边缘对齐
 const flush = computed(() => !collapse.bordered.value)
 
+/** 展开态由容器持有，箭头据此在 chevron-down↔up 间做形变 */
+const isOpen = computed(() => collapse.isExpanded(props.name))
+
 collapse.registerItem(props.name)
 onBeforeUnmount(() => collapse.unregisterItem(props.name))
 </script>
@@ -65,7 +68,12 @@ onBeforeUnmount(() => collapse.unregisterItem(props.name))
         <span class="st-collapse-item__title">
           <slot name="title">{{ title }}</slot>
         </span>
-        <StIcon class="st-collapse-item__arrow" name="chevron-down" :size="16" />
+        <StMorphIcon
+          class="st-collapse-item__arrow"
+          :name="isOpen ? 'chevron-up' : 'chevron-down'"
+          :size="16"
+          spring="smooth"
+        />
       </AccordionTrigger>
       <span v-if="$slots.extra" class="st-collapse-item__extra"><slot name="extra" /></span>
     </AccordionHeader>
@@ -156,12 +164,6 @@ onBeforeUnmount(() => collapse.unregisterItem(props.name))
 
 .st-collapse-item__arrow {
   color: var(--st-placeholder);
-  transition: transform var(--transition);
-}
-
-/* reka-ui 在触发器上写 data-state="open|closed" */
-.st-collapse-item__trigger[data-state='open'] .st-collapse-item__arrow {
-  transform: rotate(180deg);
 }
 
 .st-collapse-item__extra {
@@ -188,8 +190,7 @@ onBeforeUnmount(() => collapse.unregisterItem(props.name))
 
 @media (prefers-reduced-motion: reduce) {
   .st-collapse-item,
-  .st-collapse-item__trigger,
-  .st-collapse-item__arrow {
+  .st-collapse-item__trigger {
     transition: none;
   }
 }

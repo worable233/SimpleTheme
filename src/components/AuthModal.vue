@@ -18,7 +18,7 @@ import {
 } from '@/lib/api-auth'
 import { useAuth } from '@/composables/useAuth'
 import { getThemeConfig } from '@/lib/theme-config'
-import { StAlert, StButton, StCheckbox, StInput, StModal, StSpinner, StStack } from '@/ui'
+import { StAlert, StButton, StCheckbox, StInput, StModal, StMorphIcon, StSpinner, StStack } from '@/ui'
 import AppIcon from '@/components/AppIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -305,7 +305,7 @@ function switchTo(tab: AuthTab) {
                   :title="showLoginPassword ? '隐藏密码' : '显示密码'"
                   @click="showLoginPassword = !showLoginPassword"
                 >
-                  <AppIcon :name="showLoginPassword ? 'eye-off' : 'eye'" :size="18" />
+                  <StMorphIcon :name="showLoginPassword ? 'eye-off' : 'eye'" :size="18" />
                 </StButton>
               </template>
             </StInput>
@@ -396,7 +396,7 @@ function switchTo(tab: AuthTab) {
                   :title="showResetPassword ? '隐藏密码' : '显示密码'"
                   @click="showResetPassword = !showResetPassword"
                 >
-                  <AppIcon :name="showResetPassword ? 'eye-off' : 'eye'" :size="18" />
+                  <StMorphIcon :name="showResetPassword ? 'eye-off' : 'eye'" :size="18" />
                 </StButton>
               </template>
             </StInput>
@@ -418,7 +418,7 @@ function switchTo(tab: AuthTab) {
                   :title="showResetPasswordConfirm ? '隐藏密码' : '显示密码'"
                   @click="showResetPasswordConfirm = !showResetPasswordConfirm"
                 >
-                  <AppIcon :name="showResetPasswordConfirm ? 'eye-off' : 'eye'" :size="18" />
+                  <StMorphIcon :name="showResetPasswordConfirm ? 'eye-off' : 'eye'" :size="18" />
                 </StButton>
               </template>
             </StInput>

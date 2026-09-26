@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { version as vueVersion } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
-import AppIcon from '@/components/AppIcon.vue'
+import { StMorphIcon } from '@/ui'
 
 declare const __BUILD_TIME__: string
 
@@ -71,12 +71,12 @@ const techVersions = computed<TechInfoItem[]>(() => {
 
       <div class="tech-info__toggle" @click="expanded = !expanded">
         <span>{{ expanded ? '收起构建信息' : '展开构建信息' }}</span>
-        <AppIcon
+        <StMorphIcon
           class="tech-info__chevron"
-          :class="{ 'is-collapsed': !expanded }"
-          name="chevron-down"
+          :name="expanded ? 'chevron-down' : 'chevron-right'"
           :size="12"
           :stroke="3"
+          spring="smooth"
         />
       </div>
     </div>
@@ -140,11 +140,6 @@ const techVersions = computed<TechInfoItem[]>(() => {
 
 .tech-info__chevron {
   color: var(--secondary);
-  transition: transform var(--transition);
-}
-
-.tech-info__chevron.is-collapsed {
-  transform: rotate(-90deg);
 }
 
 /* 0fr → 1fr 的 grid 过渡实现展开动画 */
