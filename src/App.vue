@@ -16,6 +16,7 @@ import CookieConsent from '@/components/CookieConsent.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
+import { usePageTransition } from '@/composables/usePageTransition'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { StToast, useToast } from '@/ui'
 import type { SidebarWidget, ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
@@ -47,6 +48,8 @@ const safeFooterMenu = computed(() =>
 
 const { init: initAuth } = useAuth()
 const { visible: authModalVisible } = useAuthModal()
+const { pageTransitionName, onBeforeEnter, onAfterEnter, onBeforeLeave, onAfterLeave } =
+  usePageTransition()
 
 const radiusMap: Record<ThemeRadius, { medium: string; large: string }> = {
   small: { medium: '0.25rem', large: '0.5rem' },
@@ -187,7 +190,15 @@ watch(
       <div class="app-content">
         <main id="main-content" class="app-content__main">
           <router-view v-slot="{ Component }">
-            <component :is="Component" :key="route.path" />
+            <Transition
+              :name="pageTransitionName"
+              @before-enter="onBeforeEnter"
+              @after-enter="onAfterEnter"
+              @before-leave="onBeforeLeave"
+              @after-leave="onAfterLeave"
+            >
+              <component :is="Component" :key="route.path" />
+            </Transition>
           </router-view>
         </main>
 

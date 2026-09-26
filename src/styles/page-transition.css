@@ -1,0 +1,79 @@
+/* ==========================================================================
+ * Page transition — 移动端「二级页推进」（列表 ⇄ 文章详情）
+ * ==========================================================================
+ * 由 src/composables/usePageTransition.ts 在 ≤75rem 且导航为
+ * home/category ⇄ content 时挂上 .route-page--fixed 与 page-forward/back。
+ * 因为转场类由 Vue 加到子组件根元素（不带 App.vue 的 scope 属性），
+ * 这套样式必须是全局的，不能写进 <style scoped>。
+ * ========================================================================== */
+
+/* 转场期间把两个页面都钉成「内容列」尺寸的独立滚动容器，叠放于视口 */
+.route-page--fixed {
+  position: fixed;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  background-color: var(--card);
+  will-change: transform, filter;
+}
+
+/* ===== forward：列表 → 详情 ===== */
+/* 上层：详情自右滑入 */
+.page-forward-enter-active {
+  z-index: 2;
+  transition: transform 0.34s var(--ease-out);
+}
+.page-forward-enter-from {
+  transform: translateX(100%);
+}
+
+/* 底层：列表轻微左移并压暗（视差） */
+.page-forward-leave-active {
+  z-index: 1;
+  transition:
+    transform 0.34s var(--ease-out),
+    filter 0.34s var(--ease-out);
+}
+.page-forward-leave-to {
+  transform: translateX(-24%);
+  filter: brightness(0.72);
+}
+
+/* ===== back：详情 → 列表 ===== */
+/* 上层：详情右滑退出，逐渐露出列表 */
+.page-back-leave-active {
+  z-index: 2;
+  transition: transform 0.34s var(--ease-out);
+}
+.page-back-leave-to {
+  transform: translateX(100%);
+}
+
+/* 底层：列表自左归位并恢复亮度 */
+.page-back-enter-active {
+  z-index: 1;
+  transition:
+    transform 0.34s var(--ease-out),
+    filter 0.34s var(--ease-out);
+}
+.page-back-enter-from {
+  transform: translateX(-24%);
+  filter: brightness(0.72);
+}
+
+/* 系统开启「减少动态效果」时不播放位移动画 */
+@media (prefers-reduced-motion: reduce) {
+  .page-forward-enter-active,
+  .page-forward-leave-active,
+  .page-back-enter-active,
+  .page-back-leave-active {
+    transition-duration: 0.01ms;
+  }
+  .page-forward-enter-from,
+  .page-forward-leave-to,
+  .page-back-enter-from,
+  .page-back-leave-to {
+    transform: none;
+    filter: none;
+  }
+}

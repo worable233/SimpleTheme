@@ -4,6 +4,8 @@
 
 @import './layout.css';
 
+@import './page-transition.css';
+
 @import './sidebar.css';
 
 @import './home.css';
