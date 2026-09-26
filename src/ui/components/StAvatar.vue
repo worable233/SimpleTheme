@@ -26,14 +26,24 @@ const props = withDefaults(
     round?: boolean
     /** 无图 / 加载失败时的文字回退，取首字符 */
     fallbackText?: string
+    /** 原生 referrerpolicy；第三方图床防盗链需要 no-referrer */
+    referrerPolicy?: string
+    /** 原生 loading；默认 lazy */
+    loading?: 'lazy' | 'eager'
   }>(),
   {
     // 刻意不在 withDefaults 里给 size 默认值：size 是 StSize | number 联合，
     // eslint 的 vue/require-valid-default-prop 会把字符串默认值误判为非法。
     // 默认值改在下面 px 计算里兜底，对外 API 与行为完全不变。
     round: true,
+    loading: 'lazy',
   },
 )
+
+const emit = defineEmits<{
+  /** 图片加载失败；调用方可据此切换到下一个候选地址 */
+  (e: 'error'): void
+}>()
 
 const loadFailed = ref(false)
 
@@ -44,6 +54,11 @@ watch(
     loadFailed.value = false
   },
 )
+
+function onImgError() {
+  loadFailed.value = true
+  emit('error')
+}
 
 /** 档位映射沿用视觉尺寸，不复用 --st-height-*（头像高度与控件高度解耦） */
 const px = computed(() =>
@@ -72,7 +87,9 @@ const classes = computed(() => ['st-avatar', { 'st-avatar--round': props.round }
         class="st-avatar__img"
         :src="src"
         :alt="alt"
-        @error="loadFailed = true"
+        :referrerpolicy="referrerPolicy"
+        :loading="loading"
+        @error="onImgError"
       />
       <span v-else-if="initial" class="st-avatar__text">{{ initial }}</span>
       <StIcon v-else name="user" :size="Math.round(px * 0.6)" />

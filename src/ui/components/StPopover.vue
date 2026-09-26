@@ -35,12 +35,15 @@ const props = withDefaults(
     width?: string
     /** 是否显示箭头 */
     showArrow?: boolean
+    /** 锚点撑满父级（网格/整块触发器的场景） */
+    block?: boolean
   }>(),
   {
     placement: 'bottom-start',
     trigger: 'click',
     disabled: false,
     showArrow: false,
+    block: false,
   },
 )
 
@@ -93,7 +96,7 @@ onBeforeUnmount(cancelClose)
     <PopoverTrigger as-child>
       <span
         class="st-popover__anchor"
-        :class="{ 'is-disabled': disabled }"
+        :class="{ 'is-disabled': disabled, 'is-block': block }"
         @mouseenter="onTriggerEnter"
         @mouseleave="onTriggerLeave"
       >
@@ -122,6 +125,11 @@ onBeforeUnmount(cancelClose)
 <style scoped>
 .st-popover__anchor {
   display: inline-flex;
+}
+
+.st-popover__anchor.is-block {
+  display: block;
+  width: 100%;
 }
 
 .st-popover__anchor.is-disabled {
