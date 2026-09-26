@@ -3,7 +3,7 @@
  * ModalCloseButton — 全局统一的弹窗关闭按钮
  *
  * 桌面端显示 ESC 键帽（所有弹窗均有真实的 Escape 键处理），
- * 触屏设备显示常规圆形 ×（无键盘设备上 ESC 提示无意义）。
+ * 触屏设备或移动端（视口 ≤600px）显示常规圆形 ×（无键盘设备上 ESC 提示无意义）。
  * 定位交由使用方通过 class 控制；点击事件通过 attrs 透传。
  */
 import AppIcon from '@/components/AppIcon.vue'
@@ -62,8 +62,10 @@ import AppIcon from '@/components/AppIcon.vue'
   height: 18px;
 }
 
-/* ===== 触屏形态：圆形 × ===== */
-@media (hover: none), (pointer: coarse) {
+/* ===== 触屏/移动端形态：圆形 × =====
+   触屏硬件走 hover/pointer 查询；窄视口（响应式预览或小窗口）指针仍是鼠标，
+   hover/pointer 不命中，故并入主题统一的移动端断点（≤600px）。 */
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
   .modal-close-btn {
     min-width: 0;
     width: 34px;
