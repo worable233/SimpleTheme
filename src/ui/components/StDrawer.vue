@@ -124,7 +124,13 @@ function onPointerDownOutside(ev: Event) {
   inset: 0;
   z-index: var(--st-z-modal);
   background-color: var(--st-overlay-bg);
-  animation: st-drawer-fade 0.2s var(--ease-out-quart);
+  /* 对齐 Naive Drawer：遮罩 fade-in .2s（进入用 easeIn、退出用 easeOut） */
+  animation: st-drawer-overlay-in var(--duration-leave) var(--ease-in);
+}
+
+/* reka 关闭时置 data-state='closed'，Presence 等动画结束再卸载。 */
+.st-drawer__overlay[data-state='closed'] {
+  animation: st-drawer-overlay-out var(--duration-leave) var(--ease-out);
 }
 
 .st-drawer__content {
@@ -146,13 +152,21 @@ function onPointerDownOutside(ev: Event) {
 .st-drawer__content--right {
   right: 0;
   border-left: var(--st-popover-border);
-  animation: st-drawer-in-right 0.28s var(--ease-out-quart);
+  animation: st-drawer-in-right var(--duration-enter) var(--ease-out);
+}
+
+.st-drawer__content--right[data-state='closed'] {
+  animation: st-drawer-out-right var(--duration-leave) var(--ease-in);
 }
 
 .st-drawer__content--left {
   left: 0;
   border-right: var(--st-popover-border);
-  animation: st-drawer-in-left 0.28s var(--ease-out-quart);
+  animation: st-drawer-in-left var(--duration-enter) var(--ease-out);
+}
+
+.st-drawer__content--left[data-state='closed'] {
+  animation: st-drawer-out-left var(--duration-leave) var(--ease-in);
 }
 
 /* ==================== 分区 ==================== */
@@ -287,6 +301,13 @@ function onPointerDownOutside(ev: Event) {
   }
 }
 
+@keyframes st-drawer-out-right {
+  to {
+    opacity: 0.6;
+    translate: 100% 0;
+  }
+}
+
 @keyframes st-drawer-in-left {
   from {
     opacity: 0.6;
@@ -294,15 +315,30 @@ function onPointerDownOutside(ev: Event) {
   }
 }
 
-@keyframes st-drawer-fade {
+@keyframes st-drawer-out-left {
+  to {
+    opacity: 0.6;
+    translate: -100% 0;
+  }
+}
+
+@keyframes st-drawer-overlay-in {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes st-drawer-overlay-out {
+  to {
     opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .st-drawer__content,
-  .st-drawer__overlay {
+  .st-drawer__overlay,
+  .st-drawer__content[data-state='closed'],
+  .st-drawer__overlay[data-state='closed'] {
     animation: none;
   }
 

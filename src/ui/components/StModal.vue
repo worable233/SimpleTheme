@@ -140,9 +140,17 @@ function onPointerDownOutside(ev: Event) {
   inset: 0;
   z-index: var(--st-z-modal);
   background-color: var(--st-overlay-bg);
-  animation: st-modal-fade 0.2s var(--ease-out-quart);
+  /* 对齐 Naive Modal：遮罩 fade-in .25s easeOut（进出同值） */
+  animation: st-modal-overlay-in var(--st-duration-modal) var(--ease-out);
 }
 
+/* reka 在关闭时把 data-state 改为 closed；Presence 会等动画结束再卸载。 */
+.st-modal__overlay[data-state='closed'] {
+  animation: st-modal-overlay-out var(--st-duration-modal) var(--ease-out);
+}
+
+/* 对齐 Naive Modal：fade-in-scale-up .25s，enterScale .5
+ * 进场 easeOut、退场 easeIn（Naive fadeInScaleUpTransition 的取值） */
 .st-modal__content {
   position: fixed;
   top: 50%;
@@ -159,7 +167,12 @@ function onPointerDownOutside(ev: Event) {
   color: var(--st-text);
   box-shadow: var(--st-popover-shadow);
   outline: none;
-  animation: st-modal-in 0.2s var(--ease-out-quart);
+  animation: st-modal-content-in var(--st-duration-modal) var(--ease-out);
+}
+
+/* 退场用 easeIn：内容向中心缩放时先慢后快，收得干脆 */
+.st-modal__content[data-state='closed'] {
+  animation: st-modal-content-out var(--st-duration-modal) var(--ease-in);
 }
 
 /* ==================== 尺寸 ==================== */
@@ -331,22 +344,37 @@ function onPointerDownOutside(ev: Event) {
   }
 }
 
-@keyframes st-modal-in {
+@keyframes st-modal-content-in {
   from {
     opacity: 0;
-    scale: 0.96;
+    scale: 0.5;
   }
 }
 
-@keyframes st-modal-fade {
+@keyframes st-modal-content-out {
+  to {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+@keyframes st-modal-overlay-in {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes st-modal-overlay-out {
+  to {
     opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .st-modal__content,
-  .st-modal__overlay {
+  .st-modal__overlay,
+  .st-modal__content[data-state='closed'],
+  .st-modal__overlay[data-state='closed'] {
     animation: none;
   }
 

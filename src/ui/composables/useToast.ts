@@ -12,13 +12,14 @@
  */
 import { ref, type Ref } from 'vue'
 
-export type StToastType = 'success' | 'error' | 'warning' | 'info'
+export type StToastType = 'success' | 'error' | 'warning' | 'info' | 'loading'
 
 export interface StToastItem {
   id: number
   type: StToastType
   title: string
   message?: string
+  /** 停留毫秒数；<= 0 表示常驻，需调用方显式 remove（例如 loading 态） */
   duration: number
 }
 
@@ -28,11 +29,16 @@ export interface StToastApi {
   success(title: string, message?: string): number
   error(title: string, message?: string): number
   warning(title: string, message?: string): number
+  info(title: string, message?: string): number
+  /** 常驻进行中提示，需调用方以 remove(id) 收尾 */
+  loading(title: string, message?: string): number
+  /** 局部更新已存在的提示（例如倒计时改写文案） */
+  update(id: number, patch: Partial<Omit<StToastItem, 'id'>>): void
   remove(id: number): void
   clear(): void
 }
 
-/** 与 src/lib/toast.ts 的既有节奏保持一致：错误停留更久 */
+/** 节奏约定：错误停留更久 */
 const ERROR_DURATION = 6000
 const DEFAULT_DURATION = 4000
 
@@ -79,6 +85,25 @@ export function showToast(item: Partial<StToastItem> & { title: string }): numbe
   return id
 }
 
+/** 局部更新已存在的提示；若改了 duration 则重置计时器（0 表示改为常驻） */
+export function updateToast(id: number, patch: Partial<Omit<StToastItem, 'id'>>): void {
+  const target = toasts.value.find((t) => t.id === id)
+  if (!target) return
+
+  const durationChanged = patch.duration !== undefined && patch.duration !== target.duration
+  Object.assign(target, patch)
+
+  if (durationChanged) {
+    clearTimer(id)
+    if (target.duration > 0) {
+      timers.set(
+        id,
+        setTimeout(() => removeToast(id), target.duration),
+      )
+    }
+  }
+}
+
 export function useToast(): StToastApi {
   return {
     toasts,
@@ -86,6 +111,11 @@ export function useToast(): StToastApi {
     success: (title: string, message?: string) => showToast({ type: 'success', title, message }),
     error: (title: string, message?: string) => showToast({ type: 'error', title, message }),
     warning: (title: string, message?: string) => showToast({ type: 'warning', title, message }),
+    info: (title: string, message?: string) => showToast({ type: 'info', title, message }),
+    // 常驻：duration <= 0，由调用方 remove(id) 结束
+    loading: (title: string, message?: string) =>
+      showToast({ type: 'loading', title, message, duration: 0 }),
+    update: updateToast,
     remove: removeToast,
     clear: clearToasts,
   }

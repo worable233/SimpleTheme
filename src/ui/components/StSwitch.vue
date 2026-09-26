@@ -53,10 +53,13 @@ const classes = computed(() => [
 
 <style scoped>
 .st-switch {
-  /* 轨道尺寸随档位走；滑块位移由这些变量推导，避免写死 4 组 transform */
+  /* 轨道尺寸随档位走；滑块位移由这些变量推导，避免写死 4 组 transform。
+   * --st-switch-thumb-pressed 对齐 Naive：按下态宽度 = 常态 + 6px
+   * （Naive buttonWidthPressed - buttonWidth 固定为 6px，见 switch/styles/_common.ts）。*/
   --st-switch-track-w: 38px;
   --st-switch-track-h: 20px;
   --st-switch-thumb: 16px;
+  --st-switch-thumb-pressed: 22px;
 
   display: inline-flex;
   align-items: center;
@@ -89,6 +92,7 @@ const classes = computed(() => [
   --st-switch-track-w: 26px;
   --st-switch-track-h: 14px;
   --st-switch-thumb: 10px;
+  --st-switch-thumb-pressed: 16px;
 
   gap: 6px;
   font-size: var(--st-font-tiny);
@@ -98,6 +102,7 @@ const classes = computed(() => [
   --st-switch-track-w: 32px;
   --st-switch-track-h: 18px;
   --st-switch-thumb: 14px;
+  --st-switch-thumb-pressed: 20px;
 
   font-size: var(--st-font-small);
 }
@@ -106,6 +111,7 @@ const classes = computed(() => [
   --st-switch-track-w: 44px;
   --st-switch-track-h: 24px;
   --st-switch-thumb: 20px;
+  --st-switch-thumb-pressed: 26px;
 
   font-size: var(--st-font-large);
 }
@@ -117,9 +123,11 @@ const classes = computed(() => [
   box-sizing: border-box;
   width: var(--st-switch-track-w);
   height: var(--st-switch-track-h);
+  /* Naive 的 rail 会裁掉溢出：按下拉伸时滑块被轨道边缘裁切，形成"顶住"的感觉 */
+  overflow: hidden;
   border-radius: var(--radius-full);
   background-color: var(--st-fill-active);
-  transition: background-color var(--transition-fast);
+  transition: background-color 0.3s var(--ease-in-out);
 }
 
 .st-switch.is-checked .st-switch__track {
@@ -128,21 +136,36 @@ const classes = computed(() => [
 
 .st-switch__thumb {
   position: absolute;
-  top: 50%;
+  top: 2px;
   left: 2px;
   display: block;
+  /* Naive 的 rubber-band：滑块常态宽度 = thumb；
+   * 按下时把 max-width 放开到 thumb-pressed（= 常态 + 6px），于是横向拉伸。 */
   width: var(--st-switch-thumb);
   height: var(--st-switch-thumb);
+  max-width: var(--st-switch-thumb);
   border-radius: var(--radius-full);
   background-color: var(--card);
   box-shadow: var(--shadow-small);
-  transform: translateY(-50%);
-  transition: transform var(--transition-fast);
+  transition:
+    left 0.3s var(--ease-in-out),
+    max-width 0.3s var(--ease-in-out),
+    background-color 0.3s var(--ease-in-out);
 }
 
 .st-switch.is-checked .st-switch__thumb {
-  transform: translateY(-50%)
-    translateX(calc(var(--st-switch-track-w) - var(--st-switch-thumb) - 4px));
+  left: calc(var(--st-switch-track-w) - var(--st-switch-thumb) - 2px);
+}
+
+/* 橡胶动画：按下瞬间横向拉长（宽度而非 scale），松开回弹 */
+.st-switch:not(.st-switch--disabled) .st-switch__track:active .st-switch__thumb {
+  max-width: var(--st-switch-thumb-pressed);
+}
+
+.st-switch.is-checked:not(.st-switch--disabled)
+  .st-switch__track:active
+  .st-switch__thumb {
+  left: calc(var(--st-switch-track-w) - var(--st-switch-thumb-pressed) - 2px);
 }
 
 .st-switch__label {
@@ -153,6 +176,17 @@ const classes = computed(() => [
   .st-switch__track,
   .st-switch__thumb {
     transition: none;
+  }
+
+  /* 关闭橡胶拉伸：按下不再改变宽度与位移 */
+  .st-switch:not(.st-switch--disabled) .st-switch__track:active .st-switch__thumb {
+    max-width: var(--st-switch-thumb);
+  }
+
+  .st-switch.is-checked:not(.st-switch--disabled)
+    .st-switch__track:active
+    .st-switch__thumb {
+    left: calc(var(--st-switch-track-w) - var(--st-switch-thumb) - 2px);
   }
 }
 </style>

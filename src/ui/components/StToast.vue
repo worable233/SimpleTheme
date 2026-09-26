@@ -10,6 +10,7 @@
  */
 import { computed, watch } from 'vue'
 import StIcon from './StIcon.vue'
+import StSpinner from './StSpinner.vue'
 import { useToast, type StToastType } from '../composables/useToast'
 
 defineOptions({ name: 'StToast' })
@@ -31,7 +32,7 @@ const props = withDefaults(
 
 const { toasts, remove } = useToast()
 
-const ICONS: Record<StToastType, string> = {
+const ICONS: Record<Exclude<StToastType, 'loading'>, string> = {
   success: 'circle-check',
   error: 'circle-x',
   warning: 'alert-triangle',
@@ -55,7 +56,7 @@ const items = computed(() =>
 )
 
 function iconName(type: StToastType) {
-  return ICONS[type]
+  return type === 'loading' ? 'info-circle' : ICONS[type]
 }
 </script>
 
@@ -69,7 +70,10 @@ function iconName(type: StToastType) {
         :class="`st-toast__item--${item.type}`"
         :role="item.type === 'error' ? 'alert' : 'status'"
       >
-        <span class="st-toast__icon"><StIcon :name="iconName(item.type)" :size="18" /></span>
+        <span class="st-toast__icon">
+          <StSpinner v-if="item.type === 'loading'" :size="18" />
+          <StIcon v-else :name="iconName(item.type)" :size="18" />
+        </span>
 
         <div class="st-toast__content">
           <h6 class="st-toast__title">{{ item.title }}</h6>
@@ -123,6 +127,11 @@ function iconName(type: StToastType) {
   width: max-content;
   min-width: min(20rem, calc(100vw - 32px));
   max-width: min(26rem, calc(100vw - 32px));
+  /* 高度折叠过渡需要裁掉溢出内容（见下方 enter/leave 动效） */
+  max-height: 20rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow: hidden;
   padding: 12px 14px;
   border: var(--st-popover-border);
   border-radius: var(--radius-large);
@@ -153,6 +162,10 @@ function iconName(type: StToastType) {
 }
 
 .st-toast__item--info .st-toast__icon {
+  color: var(--primary);
+}
+
+.st-toast__item--loading .st-toast__icon {
   color: var(--primary);
 }
 
@@ -204,19 +217,49 @@ function iconName(type: StToastType) {
   box-shadow: var(--st-focus-ring);
 }
 
-/* ==================== 进场 / 退场 ==================== */
-.st-toast-enter-active,
-.st-toast-leave-active,
+/* ==================== 进场 / 退场 ====================
+ * 逐值对齐 Naive UI 的 fadeInHeightExpandTransition
+ * （src/_styles/transitions/fade-in-height-expand.cssr.ts）：
+ *   duration:  .3s（进出同一个 duration）
+ *   几何属性（max-height / margin / padding）: cubic-bezier(.4,0,.2,1) easeInOut
+ *   opacity:   进入用 easeIn、退出用 easeOut
+ * 目的：新增/移除时条目在高度上展开/折叠，让同屏其余条目平滑推开。 */
+.st-toast-enter-active {
+  transition:
+    max-height 0.3s var(--ease-in-out),
+    opacity 0.3s var(--ease-in),
+    margin-top 0.3s var(--ease-in-out),
+    margin-bottom 0.3s var(--ease-in-out),
+    padding-top 0.3s var(--ease-in-out),
+    padding-bottom 0.3s var(--ease-in-out);
+}
+
+.st-toast-leave-active {
+  transition:
+    max-height 0.3s var(--ease-in-out),
+    opacity 0.3s var(--ease-out),
+    margin-top 0.3s var(--ease-in-out),
+    margin-bottom 0.3s var(--ease-in-out),
+    padding-top 0.3s var(--ease-in-out),
+    padding-bottom 0.3s var(--ease-in-out);
+}
+
+/* 位移过渡：让被推开的其它条目一起动（Naive 用同样的几何曲线） */
 .st-toast-move {
   transition:
-    opacity var(--transition) var(--ease-out-quart),
-    translate var(--transition) var(--ease-out-quart);
+    translate 0.3s var(--ease-in-out),
+    margin-top 0.3s var(--ease-in-out);
 }
 
 .st-toast-enter-from,
 .st-toast-leave-to {
   opacity: 0;
   translate: 0 -10px;
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .st-toast--bottom-right .st-toast-enter-from,
@@ -224,6 +267,12 @@ function iconName(type: StToastType) {
   translate: 0 10px;
 }
 
+.st-toast-enter-to,
+.st-toast-leave-from {
+  max-height: 20rem;
+}
+
+/* 容器自身不折叠，靠 gap 保持间距 */
 .st-toast-leave-active {
   /* 退场期间不让出 DOM 位置，避免同屏其余条目二次位移 */
   pointer-events: none;
@@ -235,6 +284,11 @@ function iconName(type: StToastType) {
   .st-toast-move,
   .st-toast__close {
     transition: none;
+  }
+
+  .st-toast-enter-from,
+  .st-toast-leave-to {
+    max-height: none;
   }
 }
 </style>
