@@ -124,21 +124,17 @@
   margin-bottom: 15px;
 }
 
-.single-post__tags a {
-  font-size: 13px;
-  color: var(--secondary);
-  background: var(--muted);
-  padding: 3px 10px;
-  border-radius: 4px;
+/* 标签胶囊本体由 StTag 渲染，这里只管外层链接触摸区与悬停反馈 */
+.single-post__tag-link {
+  display: inline-flex;
   text-decoration: none;
-  transition: color 0.15s, background-color 0.15s;
+  color: var(--secondary);
 }
 
-.single-post__tags a:hover {
+.single-post__tag-link:hover .st-tag {
   color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
-
 /* End note / pagination */
 .end-note {
   padding-top: 25px;
