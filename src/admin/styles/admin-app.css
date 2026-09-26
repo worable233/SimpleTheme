@@ -25,54 +25,82 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Neutralize WP admin element selectors that outrank inherited tokens */
-#simple-theme-admin-app h1,
-#simple-theme-admin-app h2,
-#simple-theme-admin-app h3,
-#simple-theme-admin-app h4,
-#simple-theme-admin-app h5,
-#simple-theme-admin-app h6,
-#simple-theme-admin-app p,
-#simple-theme-admin-app label,
-#simple-theme-admin-app span,
-#simple-theme-admin-app div,
-#simple-theme-admin-app strong {
+/* The neutralizers below are scoped away from the component library.
+ *
+ * Every element inside this app is rendered by a theme component, so the only
+ * thing left for them to do is tame markup WordPress itself injects around the
+ * mount. Component elements carry an `st-` class, and this app owns its own
+ * reset, so we never let these rules touch them.
+ *
+ * The `:not()` guards are the fix for the panel looking broken: the previous
+ * generic `#id button { background: none; border: 0 }` outranked every
+ * component (`#id button` = 1,0,1 vs `.st-select__trigger` = 0,1,0) and
+ * stripped the chrome off buttons, selects and the colour picker.
+ * Class-token match (`^=` / ` st-`) avoids matching unrelated class names. */
+/* WP admin paints headings and defaults element colours from its own global
+ * palette; force inheritance so the panel keeps the theme's foreground. */
+#simple-theme-admin-app h1:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h2:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h3:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h4:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h5:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h6:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app p:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app label:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app span:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app div:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app strong:not([class^='st-']):not([class*=' st-']) {
   color: inherit;
 }
 
-#simple-theme-admin-app h1,
-#simple-theme-admin-app h2,
-#simple-theme-admin-app h3,
-#simple-theme-admin-app h4,
-#simple-theme-admin-app h5,
-#simple-theme-admin-app h6,
-#simple-theme-admin-app p,
-#simple-theme-admin-app ul,
-#simple-theme-admin-app ol,
-#simple-theme-admin-app figure {
+#simple-theme-admin-app h1:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h2:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h3:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h4:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h5:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app h6:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app p:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app ul:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app ol:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app figure:not([class^='st-']):not([class*=' st-']) {
   margin: 0;
   padding: 0;
 }
 
-#simple-theme-admin-app button {
+#simple-theme-admin-app button:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app input:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app select:not([class^='st-']):not([class*=' st-']),
+#simple-theme-admin-app textarea:not([class^='st-']):not([class*=' st-']) {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
   background: none;
   border: 0;
-  cursor: pointer;
   box-shadow: none;
 }
 
-#simple-theme-admin-app input,
-#simple-theme-admin-app select,
-#simple-theme-admin-app textarea {
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--foreground);
-  background-color: var(--card);
-  border-radius: var(--radius-medium);
+/* WordPress admin ships global form-element rules (wp-admin/css/forms.css)
+ * whose attribute selectors — `input[type="text"], select, textarea` — carry
+ * specificity 0,1,1 and therefore outrank the component classes (0,1,0).
+ * Left alone they stamp a native border/background/padding onto every field
+ * the components render. Reset those WP defaults on the component-owned
+ * fields so the components' own chrome is the only chrome.
+ *
+ * Only the properties WP sets are reset — never geometry (height/padding/
+ * line-height), which the components define themselves. */
+#simple-theme-admin-app input[class^='st-'],
+#simple-theme-admin-app input[class*=' st-'],
+#simple-theme-admin-app textarea[class^='st-'],
+#simple-theme-admin-app textarea[class*=' st-'],
+#simple-theme-admin-app select[class^='st-'],
+#simple-theme-admin-app select[class*=' st-'] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
+  color: inherit;
 }
 
 #simple-theme-admin-app a {
