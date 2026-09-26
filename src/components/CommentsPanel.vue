@@ -10,10 +10,11 @@ import UndrawIllustration from '@/components/UndrawIllustration.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { createComment, fetchComments, getErrorMessage, pinComment, deleteComment, fetchUserPendingComments } from '@/lib/wordpress'
-import { showError, showLoadingToast, showToast, dismissToast } from '@/lib/toast'
 import type { CommentFormSettings, WordPressComment } from '@/types/wordpress'
 import { getThemeConfig } from '@/lib/theme-config'
-import { StButton, StSkeleton, StTag } from '@/ui'
+import { StButton, StSkeleton, StTag, useToast } from '@/ui'
+
+const toast = useToast()
 
 const props = defineProps<{
   postId: number
@@ -130,7 +131,7 @@ function handleLiked(payload: { id: number; likes: number }) {
 }
 
 function handleLikeError(message: string) {
-  showToast(message, '评论通知', { variant: 'warning', duration: 3200 })
+  toast.warning('评论通知', message)
 }
 
 async function loadComments(page = 1) {
@@ -191,7 +192,7 @@ async function loadComments(page = 1) {
       }
     }
   } catch (error) {
-    showError(getErrorMessage(error, '评论加载失败，请稍后重试。'))
+    toast.error(getErrorMessage(error, '评论加载失败，请稍后重试。'))
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -226,12 +227,12 @@ async function handleFormSubmit(payload: {
     payload.email = currentUser.value.email ?? ''
     payload.url = currentUser.value.url ?? ''
     if (!payload.content.trim()) {
-      showToast('请填写评论内容。', '提示', { variant: 'warning' })
+      toast.warning('提示', '请填写评论内容。')
       return
     }
   } else {
     if (!payload.name.trim() || !payload.content.trim()) {
-      showToast('请填写必填项后再提交。', '提示', { variant: 'warning' })
+      toast.warning('提示', '请填写必填项后再提交。')
       return
     }
     if (
@@ -239,13 +240,13 @@ async function handleFormSubmit(payload: {
       props.formSettings.showEmailField &&
       !payload.email.trim()
     ) {
-      showToast('请填写邮箱。', '提示', { variant: 'warning' })
+      toast.warning('提示', '请填写邮箱。')
       return
     }
   }
 
   submitting.value = true
-  const loadingToast = showLoadingToast('正在提交评论...', '发送中')
+  const loadingToast = toast.loading('发送中', '正在提交评论...')
 
   try {
     const newComment = await createComment({
@@ -264,7 +265,7 @@ async function handleFormSubmit(payload: {
       cookiesConsent: props.formSettings.showCookiesOptIn ? payload.cookies : true,
     })
 
-    dismissToast(loadingToast)
+    toast.remove(loadingToast)
 
     if (payload.cookies) {
       localStorage.setItem(CONSENT_KEY, '1')
@@ -298,24 +299,20 @@ async function handleFormSubmit(payload: {
       comments.value = [newComment, ...comments.value]
     }
 
-    showToast(
-      isApproved ? '评论已发布。' : '评论提交成功，等待审核。',
-      '成功',
-      { variant: 'success', duration: 3200 },
-    )
+    toast.success('成功', isApproved ? '评论已发布。' : '评论提交成功，等待审核。')
   } catch (error) {
-    dismissToast(loadingToast)
-    showError(getErrorMessage(error, '评论提交失败，请稍后重试。'))
+    toast.remove(loadingToast)
+    toast.error(getErrorMessage(error, '评论提交失败，请稍后重试。'))
   } finally {
     submitting.value = false
   }
 }
 
 async function handleDeleteComment(commentId: number) {
-  const toast = showLoadingToast('正在删除评论...', '删除中')
+  const toastId = toast.loading('删除中', '正在删除评论...')
   try {
     await deleteComment(commentId)
-    dismissToast(toast)
+    toast.remove(toastId)
 
     // Remove from tree
     function removeItem(items: WordPressComment[]): boolean {
@@ -330,10 +327,10 @@ async function handleDeleteComment(commentId: number) {
       return false
     }
     removeItem(comments.value)
-    showToast('评论已删除。', '成功', { variant: 'success', duration: 2000 })
+    toast.success('成功', '评论已删除。')
   } catch {
-    dismissToast(toast)
-    showToast('删除失败，请稍后重试。', '错误', { variant: 'danger' })
+    toast.remove(toastId)
+    toast.error('错误', '删除失败，请稍后重试。')
   }
 }
 
@@ -342,9 +339,9 @@ async function handlePinToggle(commentId: number, pin: boolean) {
     await pinComment(commentId, pin)
     // Reload comments to reflect pinning order
     void loadComments(1)
-    showToast(pin ? '已置顶评论。' : '已取消置顶。', '成功', { variant: 'success', duration: 2000 })
+    toast.success('成功', pin ? '已置顶评论。' : '已取消置顶。')
   } catch {
-    showToast('操作失败。', '错误', { variant: 'danger' })
+    toast.error('错误', '操作失败。')
   }
 }
 
@@ -370,21 +367,21 @@ watch(
     </header>
 
     <!-- Disabled: comments closed -->
-    <div v-if="!enabled" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
-      <div class="mb-5 w-full max-w-[220px]">
-        <UndrawIllustration name="cancel" width="200" height="150" class="h-auto w-full" />
+    <div v-if="!enabled" class="comments-empty">
+      <div class="comments-empty__illustration">
+        <UndrawIllustration name="cancel" width="200" height="150" class="comments-empty__img" />
       </div>
-      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">评论未开启</h4>
-      <p class="text-sm leading-relaxed text-secondary">当前文章未开启评论。</p>
+      <h4 class="comments-empty__title">评论未开启</h4>
+      <p class="comments-empty__desc">当前文章未开启评论。</p>
     </div>
 
     <!-- Disabled: registration only (anonymous users only) -->
-    <div v-else-if="formSettings.registrationOnly && !currentUser" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
-      <div class="mb-5 w-full max-w-[220px]">
-        <UndrawIllustration name="access-denied" width="200" height="150" class="h-auto w-full" />
+    <div v-else-if="formSettings.registrationOnly && !currentUser" class="comments-empty">
+      <div class="comments-empty__illustration">
+        <UndrawIllustration name="access-denied" width="200" height="150" class="comments-empty__img" />
       </div>
-      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">仅注册用户可评论</h4>
-      <p class="text-sm leading-relaxed text-secondary">站点设置为仅注册用户可评论，请先登录。</p>
+      <h4 class="comments-empty__title">仅注册用户可评论</h4>
+      <p class="comments-empty__desc">站点设置为仅注册用户可评论，请先登录。</p>
     </div>
 
     <!-- Comment Form -->
@@ -412,12 +409,12 @@ watch(
     </div>
 
     <!-- Empty -->
-    <div v-else-if="enabled && comments.length === 0" class="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
-      <div class="mb-5 w-full max-w-[220px]">
-        <UndrawIllustration name="chatting" width="200" height="150" class="h-auto w-full" />
+    <div v-else-if="enabled && comments.length === 0" class="comments-empty">
+      <div class="comments-empty__illustration">
+        <UndrawIllustration name="chatting" width="200" height="150" class="comments-empty__img" />
       </div>
-      <h4 class="mb-1.5 text-lg leading-[1.4] font-[625] text-foreground">还没有评论</h4>
-      <p class="text-sm leading-relaxed text-secondary">还没有评论，来发第一条吧。</p>
+      <h4 class="comments-empty__title">还没有评论</h4>
+      <p class="comments-empty__desc">还没有评论，来发第一条吧。</p>
     </div>
 
     <!-- Comments List -->
@@ -435,15 +432,66 @@ watch(
     </div>
 
     <!-- Load More -->
-    <div v-if="commentsLoaded && !loading && !allLoaded" class="flex justify-center py-4">
+    <div v-if="commentsLoaded && !loading && !allLoaded" class="comments-more">
       <StButton type="primary" ghost round :disabled="loadingMore" @click="loadMore">
         {{ loadingMore ? '加载中...' : '加载更多评论' }}
       </StButton>
     </div>
 
     <!-- End note -->
-    <p v-if="commentsLoaded && allLoaded && comments.length > 0" class="end-note m-0 px-0 pt-6 pb-2 text-center text-[0.8125rem] text-secondary">
+    <p v-if="commentsLoaded && allLoaded && comments.length > 0" class="end-note comments-end-note">
       {{ siteInfo.endNote || '好像就这么多' }}
     </p>
   </section>
 </template>
+
+<style scoped>
+.comments-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.comments-empty__illustration {
+  width: 100%;
+  max-width: 220px;
+  margin-bottom: 20px;
+}
+
+.comments-empty__img {
+  width: 100%;
+  height: auto;
+}
+
+.comments-empty__title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 625;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.comments-empty__desc {
+  font-size: 13px;
+  line-height: 1.625;
+  color: var(--secondary);
+}
+
+.comments-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.comments-end-note {
+  margin: 0;
+  padding: 24px 0 8px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--secondary);
+}
+</style>

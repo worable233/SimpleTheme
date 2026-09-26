@@ -35,6 +35,11 @@ const kaomojiList = [
 </script>
 
 <template>
+  <!--
+    整块表情面板保留原生元素：36×36 固定格 + 选中下划线等规则定义在共享
+    全局 CSS（src/styles/comments.css）中，迁进 StButton 会孤儿化那些规则。
+    依据见 src/ui/README.md「何时不该用 StButton」。
+  -->
   <div class="comments-emoji" @click.stop>
     <div class="comments-emoji__tabs">
       <button

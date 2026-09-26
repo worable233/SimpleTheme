@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { showToast } from '@/lib/toast'
 import ErrorView from '@/components/ErrorView.vue'
-import { StButton } from '@/ui'
+import { StButton, useToast } from '@/ui'
+
+const toast = useToast()
 
 function goBack() {
   if (window.history.length > 1) {
@@ -13,11 +14,8 @@ function goBack() {
 }
 
 onMounted(() => {
-  showToast('这个地址没有匹配到站点内容，请检查链接是否正确。', '404', {
-    variant: 'danger',
-    placement: 'top-center',
-    duration: 6000,
-  })
+  // 404 提示：标题即正文，用 error 类型（停留更久、语义为告警）
+  toast.error('这个地址没有匹配到站点内容，请检查链接是否正确。')
 })
 </script>
 

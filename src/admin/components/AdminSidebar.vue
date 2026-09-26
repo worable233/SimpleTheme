@@ -139,29 +139,26 @@ function handleSubClick(child: { title: string; url: string }) {
 </script>
 
 <template>
-  <aside class="admin-sidebar relative flex h-full w-full shrink-0 flex-col items-center bg-card">
+  <aside class="admin-sidebar">
     <!-- Logo -->
-    <div class="flex h-[72px] w-full shrink-0 items-center justify-center">
-      <a href="./" title="返回前台" class="block size-[50px]">
-        <abbr
-          v-if="menuItems.length > 0"
-          class="flex size-[50px] items-center justify-center rounded-full bg-muted text-xl font-bold text-foreground no-underline [text-decoration:none]"
-        >S</abbr>
-        <span v-else class="block size-[50px] animate-pulse rounded-full bg-muted"></span>
+    <div class="admin-sidebar__logo">
+      <a href="./" title="返回前台" class="admin-sidebar__logo-link">
+        <abbr v-if="menuItems.length > 0" class="admin-sidebar__logo-mark">S</abbr>
+        <span v-else class="admin-sidebar__logo-skeleton"></span>
       </a>
     </div>
 
     <!-- Navigation -->
     <nav
-      class="flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto py-2 [scrollbar-width:thin]"
+      class="admin-sidebar__nav"
       @mouseover="onNavMouseOver"
       @mouseout="onNavMouseOut"
     >
-      <ul class="my-auto flex flex-col items-center gap-2">
+      <ul class="admin-sidebar__list">
         <li
           v-for="item in menuItems"
           :key="item.id"
-          class="admin-sidebar__item relative list-none"
+          class="admin-sidebar__item"
           :data-has-sub="item.children && item.children.length > 0 ? 'true' : 'false'"
           @mouseenter="item.children?.length && openSubMenu(item.id, $event)"
           @mouseleave="item.children?.length && scheduleCloseSubMenu()"
@@ -169,13 +166,11 @@ function handleSubClick(child: { title: string; url: string }) {
           <a
             :href="safeHref(item.url)"
             :title="item.title"
-            class="relative flex size-11 items-center justify-center rounded-(--radius-large) p-0 leading-none no-underline transition-colors duration-150"
-            :class="isCurrent(item)
-              ? 'bg-primary text-primary-foreground hover:bg-primary'
-              : 'text-foreground hover:bg-menu-hover'"
+            class="admin-sidebar__link"
+            :class="{ 'is-current': isCurrent(item) }"
             @click.prevent="handleClick(item)"
           >
-            <span class="sta-icon flex items-center justify-center leading-none">
+            <span class="sta-icon admin-sidebar__icon">
               <img v-if="getImageIconUrl(item.icon)" :src="getImageIconUrl(item.icon)" alt="" width="22" height="22" />
               <span
                 v-else-if="getDashiconClass(item.icon)"
@@ -190,7 +185,7 @@ function handleSubClick(child: { title: string; url: string }) {
             <span
               v-if="item.children?.length"
               aria-hidden="true"
-              class="absolute top-1/2 right-1 size-1.5 -translate-y-1/2 rotate-45 border-t-[1.5px] border-r-[1.5px] border-current opacity-45"
+              class="admin-sidebar__chevron"
             ></span>
           </a>
         </li>
@@ -201,10 +196,8 @@ function handleSubClick(child: { title: string; url: string }) {
     <template v-for="item in menuItems" :key="'sub-' + item.id">
       <ul
         v-if="item.children?.length"
-        class="sta-shell-pop fixed z-[10000] flex min-w-[170px] -translate-y-1/2 flex-col gap-px rounded-(--radius-large) border border-border bg-card p-1.5 shadow-(--shadow-large) transition-[opacity,translate] duration-200"
-        :class="hoveredItemId === item.id
-          ? 'pointer-events-auto translate-x-0 opacity-100'
-          : 'pointer-events-none -translate-x-2 opacity-0'"
+        class="sta-shell-pop admin-submenu"
+        :class="{ 'is-open': hoveredItemId === item.id }"
         :style="{
           left: (subMenuPositions[item.id]?.x ?? 0) + 'px',
           top: (subMenuPositions[item.id]?.y ?? 0) + 'px',
@@ -215,14 +208,12 @@ function handleSubClick(child: { title: string; url: string }) {
         <li
           v-for="child in item.children"
           :key="child.title + child.url"
-          class="flex list-none"
+          class="admin-submenu__item"
         >
           <a
             :href="safeHref(child.url)"
-            class="sta-sub-link flex w-full items-center gap-2.5 rounded-[7px] px-3.5 py-[9px] text-[13px] whitespace-nowrap no-underline transition-colors duration-150"
-            :class="currentUrl === child.url
-              ? 'bg-primary text-primary-foreground hover:bg-primary'
-              : 'text-foreground hover:bg-menu-hover'"
+            class="sta-sub-link admin-submenu__link"
+            :class="{ 'is-current': currentUrl === child.url }"
             @click.prevent="handleSubClick(child)"
           >{{ child.title }}</a>
         </li>
@@ -230,18 +221,217 @@ function handleSubClick(child: { title: string; url: string }) {
     </template>
 
     <!-- Bottom spacer -->
-    <div class="h-3 w-full"></div>
+    <div class="admin-sidebar__spacer"></div>
 
     <!-- Global tooltip (position:fixed escapes overflow clipping) -->
     <div
       v-if="tooltip.visible"
-      class="pointer-events-none fixed z-[9999] -translate-y-1/2 rounded-md bg-black/50 px-3 py-[5px] text-sm leading-normal whitespace-nowrap text-white backdrop-blur-[10px]"
+      class="admin-sidebar__tooltip"
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
     >{{ tooltip.text }}</div>
   </aside>
 </template>
 
 <style scoped>
+.admin-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  flex-shrink: 0;
+  background-color: var(--card);
+}
+
+.admin-sidebar__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.admin-sidebar__logo-link {
+  display: block;
+  width: 50px;
+  height: 50px;
+}
+
+.admin-sidebar__logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background-color: var(--muted);
+  color: var(--foreground);
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-sidebar__logo-skeleton {
+  display: block;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background-color: var(--muted);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.admin-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 8px 0;
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.admin-sidebar__list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: auto 0;
+}
+
+.admin-sidebar__item {
+  position: relative;
+  list-style: none;
+}
+
+.admin-sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-large);
+  line-height: 1;
+  text-decoration: none;
+  color: var(--foreground);
+  transition: background-color 0.15s;
+}
+
+.admin-sidebar__link:hover {
+  background-color: var(--menu-hover);
+}
+
+.admin-sidebar__link.is-current {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.admin-sidebar__link.is-current:hover {
+  background-color: var(--primary);
+}
+
+.admin-sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.admin-sidebar__chevron {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  opacity: 0.45;
+}
+
+.admin-submenu {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background-color: var(--card);
+  box-shadow: var(--shadow-large);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-8px);
+  transition:
+    opacity 0.2s,
+    translate 0.2s;
+}
+
+.admin-submenu.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.admin-submenu__item {
+  display: flex;
+  list-style: none;
+}
+
+.admin-submenu__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--foreground);
+  transition: background-color 0.15s;
+}
+
+.admin-submenu__link:hover {
+  background-color: var(--menu-hover);
+}
+
+.admin-submenu__link.is-current {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.admin-submenu__link.is-current:hover {
+  background-color: var(--primary);
+}
+
+.admin-sidebar__spacer {
+  width: 100%;
+  height: 12px;
+}
+
+.admin-sidebar__tooltip {
+  position: fixed;
+  z-index: 9999;
+  padding: 5px 12px;
+  border-radius: var(--radius-medium);
+  background-color: rgb(0 0 0 / 0.5);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+}
+
 .sta-icon svg {
   width: 22px;
   height: 22px;

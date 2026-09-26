@@ -221,7 +221,7 @@ function onRootTooltipHover(e: MouseEvent) {
 
 <template>
   <div
-    class="sidebar-root flex w-[100px] shrink-0 max-xl:w-0"
+    class="sidebar-root"
     @mouseleave="onSidebarMouseLeave"
     @mouseenter="onSidebarMouseEnter"
     @mouseover="onRootTooltipHover"
@@ -237,18 +237,18 @@ function onRootTooltipHover(e: MouseEvent) {
 
     <!-- Left drawer backdrop -->
     <Transition name="drawer-fade">
-      <div v-if="leftOpen" class="fixed inset-0 z-[998] bg-black/50" @click="closeAll" />
+      <div v-if="leftOpen" class="sidebar-backdrop" @click="closeAll" />
     </Transition>
 
     <!-- Right panel backdrop -->
     <Transition name="drawer-fade">
-      <div v-if="rightOpen" class="fixed inset-0 z-[998] bg-black/50" @click="closeAll" />
+      <div v-if="rightOpen" class="sidebar-backdrop" @click="closeAll" />
     </Transition>
 
     <!-- Desktop sidebar / Mobile narrow left drawer -->
     <aside ref="leftSidebarRef" class="left-sidebar" :class="{ 'left-sidebar--open': leftOpen }">
       <!-- Search button -->
-      <div class="flex w-full items-center justify-center border-b border-border px-2.5 py-3 max-xl:hidden">
+      <div class="left-sidebar__search">
         <StButton quaternary circle size="large" aria-label="搜索" @click="searchOpen = true">
           <template #icon><AppIcon name="search" :size="20" /></template>
         </StButton>
@@ -270,19 +270,17 @@ function onRootTooltipHover(e: MouseEvent) {
 
     <!-- Mobile right profile panel -->
     <aside
-      class="hidden max-lg:fixed max-lg:top-14 max-lg:bottom-0 max-lg:right-0 max-lg:z-[999] max-lg:block max-lg:h-[calc(100dvh-3.5rem)] max-lg:w-[260px] max-lg:translate-x-full max-lg:overflow-y-auto max-lg:border-l max-lg:border-border max-lg:bg-card max-lg:transition-transform max-lg:duration-[250ms]"
-      :class="{ 'max-lg:translate-x-0! max-lg:shadow-[-4px_0_24px_rgba(0,0,0,0.15)]': rightOpen }"
+      class="sidebar-drawer"
+      :class="{ 'is-open': rightOpen }"
     >
-      <div class="flex h-full flex-col">
-        <div
-          class="min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+      <div class="sidebar-drawer__inner">
+        <div class="sidebar-drawer__scroll">
           <div
-            class="relative flex w-[200%] flex-none overflow-clip transition-transform duration-300"
-            :class="{ '-translate-x-1/2': showRightSubPage }"
+            class="sidebar-drawer__slider"
+            :class="{ 'is-sub': showRightSubPage }"
           >
             <!-- Main page: profile + tech info -->
-            <div class="main-page w-1/2 shrink-0">
+            <div class="main-page sidebar-drawer__pane">
               <template v-if="shellLoading">
                 <div class="aside-author__cover" style="background:var(--muted);"></div>
                 <div class="aside-author__info">
@@ -326,7 +324,7 @@ function onRootTooltipHover(e: MouseEvent) {
             </div>
 
             <!-- Sub page: menu / links -->
-            <div class="sub-page flex w-1/2 shrink-0 flex-col">
+            <div class="sub-page sidebar-drawer__pane sidebar-drawer__pane--sub">
               <div class="sub-page__header">
                 <div class="aside-btn-close" @click="showRightSubPage = false">
                   <AppIcon name="chevron-left" :size="14" />
@@ -412,6 +410,111 @@ function onRootTooltipHover(e: MouseEvent) {
 </template>
 
 <style scoped>
+/* ===== 布局骨架（原先靠 Tailwind 工具类，现收敛为 scoped CSS + 令牌） ===== */
+.sidebar-root {
+  display: flex;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 75rem) {
+  .sidebar-root {
+    width: 0;
+  }
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background-color: rgb(0 0 0 / 0.5);
+}
+
+.left-sidebar__search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 75rem) {
+  .left-sidebar__search {
+    display: none;
+  }
+}
+
+/* ===== 移动端右侧资料抽屉（< 1000px） ===== */
+.sidebar-drawer {
+  display: none;
+}
+
+@media (max-width: 62.5rem) {
+  .sidebar-drawer {
+    position: fixed;
+    top: 56px;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    display: block;
+    width: 260px;
+    height: calc(100dvh - 3.5rem);
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    background-color: var(--card);
+    transform: translateX(100%);
+    transition: transform 250ms;
+  }
+
+  .sidebar-drawer.is-open {
+    transform: translateX(0) !important;
+    box-shadow: -4px 0 24px rgb(0 0 0 / 0.15);
+  }
+}
+
+.sidebar-drawer__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sidebar-drawer__scroll {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar-drawer__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-drawer__slider {
+  position: relative;
+  display: flex;
+  width: 200%;
+  flex: none;
+  overflow: clip;
+  transition: transform 300ms;
+}
+
+.sidebar-drawer__slider.is-sub {
+  transform: translateX(-50%);
+}
+
+.sidebar-drawer__pane {
+  width: 50%;
+  flex-shrink: 0;
+}
+
+.sidebar-drawer__pane--sub {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Vue <Transition> classes for drawer backdrops */
 .drawer-fade-enter-active,
 .drawer-fade-leave-active {

@@ -8,16 +8,16 @@ import { withCache } from '@/lib/api-cache'
 import { toInternalPath } from '@/lib/theme-config'
 import { rememberPreviews } from '@/lib/content-preview'
 import { useSkeletonSize } from '@/composables/useSkeletonSize'
-import { showError } from '@/lib/toast'
 import { getThemeConfig } from '@/lib/theme-config'
 import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
 import AppIcon from '@/components/AppIcon.vue'
-import { StButton } from '@/ui'
+import { StButton, useToast } from '@/ui'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 
@@ -200,7 +200,7 @@ async function loadHomepageData() {
     await catPromise
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '首页内容加载失败，请稍后再试。')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     initialLoading.value = false
   }
@@ -213,7 +213,7 @@ async function loadMorePosts() {
   try {
     await loadPage(page.value + 1)
   } catch (error) {
-    showError(getErrorMessage(error, '加载更多文章失败，请稍后再试。'))
+    toast.error(getErrorMessage(error, '加载更多文章失败，请稍后再试。'))
   } finally {
     loadingMore.value = false
     requestAnimationFrame(checkScrollAndLoad)
@@ -303,7 +303,7 @@ function cancelPrefetch(post: WordPressPost) {
 </script>
 
 <template>
-  <div class="home-content p-[25px] max-[800px]:p-5 max-sm:p-[15px]">
+  <div class="home-content">
     <!-- Page Header -->
     <header class="section-header">
       <h1>
@@ -315,7 +315,7 @@ function cancelPrefetch(post: WordPressPost) {
     <!-- Latest Posts -->
     <section>
       <!-- Filter bar -->
-      <div class="mb-6 flex flex-wrap gap-1.5">
+      <div class="home-content__filters">
         <StButton
           size="small"
           round
@@ -420,7 +420,7 @@ function cancelPrefetch(post: WordPressPost) {
         />
 
         <!-- Loading more skeleton (appended below existing posts) -->
-        <div v-if="loadingMore" class="post-list mt-6">
+        <div v-if="loadingMore" class="post-list post-list--more">
           <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton" :style="skeletonStyle">
             <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
             <div class="post-card-skeleton__meta"><span></span><span></span></div>
@@ -446,6 +446,31 @@ function cancelPrefetch(post: WordPressPost) {
   --anim-ease-hover: cubic-bezier(0.34, 1.56, 0.64, 1);
   --anim-duration-enter: 0.5s;
   --anim-duration-hover: 0.35s;
+
+  padding: 25px;
+}
+
+@media (max-width: 800px) {
+  .home-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 37.5rem) {
+  .home-content {
+    padding: 15px;
+  }
+}
+
+.home-content__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.post-list--more {
+  margin-top: 24px;
 }
 
 /* Fade-up enter transition for category switch (each card fades in rising) */

@@ -38,16 +38,16 @@ const pageTags = computed(() => {
 <template>
   <article class="single-post">
     <header class="single-post__header">
-      <span class="inline-block text-xs font-semibold tracking-[0.05em] text-primary uppercase">{{ primaryBadge }}</span>
+      <span class="page-view__badge">{{ primaryBadge }}</span>
       <h1 v-html="pageData.title.rendered"></h1>
 
-      <div class="flex flex-wrap items-center gap-3 text-muted-foreground">
+      <div class="page-view__meta">
         <time :datetime="pageData.date">发布 {{ formatDate(pageData.date) }}</time>
         <span v-if="pageData.modified">修改 {{ formatDate(pageData.modified) }}</span>
         <StTag v-for="tag in pageTags" :key="tag" size="tiny" bordered>#{{ tag }}</StTag>
       </div>
 
-      <p class="text-sm text-muted-foreground">
+      <p class="page-view__link-label">
         页面链接：
         <a :href="pageData.link">{{ pageData.link }}</a>
       </p>
@@ -56,3 +56,27 @@ const pageTags = computed(() => {
     <div class="single-post__body prose-content" v-html="pageData.content?.rendered"></div>
   </article>
 </template>
+
+<style scoped>
+.page-view__badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.page-view__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted-foreground);
+}
+
+.page-view__link-label {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+</style>

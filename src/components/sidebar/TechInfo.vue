@@ -62,20 +62,17 @@ const techVersions = computed<TechInfoItem[]>(() => {
   <div v-if="!shellLoading" class="aside-card">
     <h3 class="aside-card__title">信息 <span>Info.</span></h3>
 
-    <div class="mb-0.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+    <div class="tech-info__list">
       <template v-for="(item, index) in allItems" :key="index">
-        <div class="flex items-center text-sm text-secondary">{{ item.label }}</div>
-        <div class="flex items-center justify-end text-right text-sm text-foreground">{{ item.value }}</div>
+        <div class="tech-info__label">{{ item.label }}</div>
+        <div class="tech-info__value">{{ item.value }}</div>
       </template>
 
-      <div
-        class="col-span-full flex cursor-pointer items-center justify-between text-sm text-secondary transition-colors duration-150 select-none hover:text-foreground"
-        @click="expanded = !expanded"
-      >
+      <div class="tech-info__toggle" @click="expanded = !expanded">
         <span>{{ expanded ? '收起构建信息' : '展开构建信息' }}</span>
         <svg
-          class="text-secondary transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-          :class="{ '-rotate-90': !expanded }"
+          class="tech-info__chevron"
+          :class="{ 'is-collapsed': !expanded }"
           width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
         >
           <polyline points="6 9 12 15 18 9"/>
@@ -83,20 +80,110 @@ const techVersions = computed<TechInfoItem[]>(() => {
       </div>
     </div>
 
-    <div
-      class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-      :class="{ 'grid-rows-[1fr]': expanded }"
-    >
-      <div class="mt-3 flex flex-wrap gap-x-2 gap-y-3 overflow-hidden">
+    <div class="tech-info__collapsible" :class="{ 'is-expanded': expanded }">
+      <div class="tech-info__versions">
         <div
           v-for="(v, i) in techVersions"
           :key="i"
-          class="flex min-w-[calc(33.333%-6px)] flex-1 flex-col items-center text-center"
+          class="tech-info__version"
         >
-          <div class="mb-1 text-[13px] text-secondary">{{ v.label }}</div>
-          <div class="text-sm font-medium text-foreground">{{ v.value }}</div>
+          <div class="tech-info__version-label">{{ v.label }}</div>
+          <div class="tech-info__version-value">{{ v.value }}</div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.tech-info__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  row-gap: 8px;
+  margin-bottom: 2px;
+}
+
+.tech-info__label,
+.tech-info__value {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.tech-info__label {
+  color: var(--secondary);
+}
+
+.tech-info__value {
+  justify-content: flex-end;
+  text-align: right;
+  color: var(--foreground);
+}
+
+.tech-info__toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.tech-info__toggle:hover {
+  color: var(--foreground);
+}
+
+.tech-info__chevron {
+  color: var(--secondary);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tech-info__chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+/* 0fr → 1fr 的 grid 过渡实现展开动画 */
+.tech-info__collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tech-info__collapsible.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.tech-info__versions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 12px;
+  overflow: hidden;
+}
+
+.tech-info__version {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: calc(33.333% - 6px);
+  text-align: center;
+}
+
+.tech-info__version-label {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.tech-info__version-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+</style>

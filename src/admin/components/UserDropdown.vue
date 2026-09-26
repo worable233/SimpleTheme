@@ -81,34 +81,31 @@ onBeforeUnmount(() => {
       <div
         v-if="visible"
         ref="dropdownEl"
-        class="sta-shell-pop fixed min-w-[200px] overflow-hidden rounded-lg border border-border bg-card shadow-(--shadow-large)"
+        class="sta-shell-pop user-dropdown"
         :style="{ top: pos.top, right: pos.right, zIndex: 10001 }"
       >
-        <div class="flex items-center gap-3 border-b border-border px-4 py-3.5">
+        <div class="user-dropdown__head">
           <img
             v-if="userAvatar"
             :src="userAvatar"
             alt=""
-            class="size-10 shrink-0 rounded-full object-cover"
+            class="user-dropdown__avatar-img"
           />
-          <span
-            v-else
-            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground"
-          >{{ userName ? userName.charAt(0).toUpperCase() : 'U' }}</span>
-          <div class="flex-1">
-            <span class="text-sm font-semibold text-foreground">{{ userName }}</span>
+          <span v-else class="user-dropdown__avatar-letter">{{
+            userName ? userName.charAt(0).toUpperCase() : 'U'
+          }}</span>
+          <div class="user-dropdown__name-wrap">
+            <span class="user-dropdown__name">{{ userName }}</span>
           </div>
         </div>
 
-        <div class="border-b border-border py-2">
-          <a
-            :href="profileUrl"
-            class="block px-4 py-2 text-[13px] text-foreground no-underline transition-colors duration-150 hover:bg-menu-hover"
-          >个人资料</a>
-          <button
-            class="flex w-full cursor-pointer items-center gap-2 border-0 bg-transparent px-4 py-2 text-left text-[13px] text-foreground transition-colors duration-150 hover:bg-menu-hover"
-            @click="emit('toggleTheme')"
-          >
+        <div class="user-dropdown__group">
+          <a :href="profileUrl" class="user-dropdown__row">个人资料</a>
+          <!--
+            保留原生 <button>：与同级 <a> 菜单行共用 .user-dropdown__row 布局，
+            且需要图标 + 文字组合，迁 StButton 会引入不必要的按钮盒模型。
+          -->
+          <button class="user-dropdown__row user-dropdown__row--btn" @click="emit('toggleTheme')">
             <svg
               v-if="currentTheme === 'dark'"
               viewBox="0 0 24 24"
@@ -131,10 +128,10 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div class="py-2">
+        <div class="user-dropdown__group user-dropdown__group--last">
           <a
             :href="logoutUrl || 'wp-login.php?action=logout'"
-            class="block px-4 py-2 text-[13px] text-secondary no-underline transition-colors duration-150 hover:bg-menu-hover hover:text-danger"
+            class="user-dropdown__row user-dropdown__row--logout"
           >退出登录</a>
         </div>
       </div>
@@ -143,6 +140,97 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.user-dropdown {
+  position: fixed;
+  min-width: 200px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background-color: var(--card);
+  box-shadow: var(--shadow-large);
+}
+
+.user-dropdown__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-dropdown__avatar-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.user-dropdown__avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.user-dropdown__name-wrap {
+  flex: 1;
+}
+
+.user-dropdown__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.user-dropdown__group {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-dropdown__group--last {
+  border-bottom: none;
+}
+
+.user-dropdown__row {
+  display: block;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--foreground);
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.user-dropdown__row:hover {
+  background-color: var(--menu-hover);
+}
+
+.user-dropdown__row--btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-dropdown__row--logout {
+  color: var(--secondary);
+}
+
+.user-dropdown__row--logout:hover {
+  color: var(--danger);
+}
+
 .topbar-fade-enter-active,
 .topbar-fade-leave-active {
   transition: opacity 0.15s ease;

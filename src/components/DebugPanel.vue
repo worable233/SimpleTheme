@@ -24,6 +24,10 @@ function navigate(path: string) {
 </script>
 
 <template>
+  <!--
+    调试浮层专属 UI：整块面板几何 + 路由列表行布局，仅开发态使用，
+    迁 StButton 需为其开放 class 后门，契约不允许。
+  -->
   <div class="debug-panel">
     <button class="debug-panel__toggle" @click="toggle" aria-label="调试面板">
       <svg

@@ -3,13 +3,13 @@ import { computed, ref, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { fetchPage, getErrorMessage } from '@/lib/wordpress'
-import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
-import { StCard, StStack, StSkeleton } from '@/ui'
+import { StCard, StStack, StSkeleton, useToast } from '@/ui'
 
 const { siteInfo } = useSiteShell()
+const toast = useToast()
 
 useHead({ title: '关于' })
 
@@ -24,7 +24,7 @@ onMounted(async () => {
     aboutPage.value = await fetchPage('about')
   } catch (err) {
     errorMessage.value = getErrorMessage(err, '关于页面加载失败')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     loading.value = false
   }

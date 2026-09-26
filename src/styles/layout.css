@@ -101,20 +101,10 @@
   padding: 40px 25px;
 }
 
-/* ===== Dark mode: inset top highlight for inputs, buttons, selects ===== */
-[data-theme='dark'] .comments-form__textarea,
-[data-theme='dark'] .comments-form__input,
-[data-theme='dark'] .comments-form__submit,
-[data-theme='dark'] .aside-btn-close,
-[data-theme='dark'] .emoji-toggle-btn,
-[data-theme='dark'] .comments-replying__cancel,
-[data-theme='dark'] .post-card__meta {
-  box-shadow: inset 0 1px 0 0 #fff3;
-}
-
+/* ===== Dark mode: post meta bar ===== */
 [data-theme='dark'] .post-card__meta {
   background: rgba(0, 0, 0, 0.35);
-  box-shadow: inset 0 1px 0 0 #fff3, 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* ==================== Animations ==================== */

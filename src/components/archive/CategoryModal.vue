@@ -250,7 +250,6 @@ function onMaskClick(e: MouseEvent) {
 [data-theme='dark'] .timeline-modal {
   background: rgba(25,25,25,0.98);
   border-color: rgba(255,255,255,0.08);
-  box-shadow: inset 0 1px 0 0 #fff3;
 }
 
 [data-theme='dark'] .modal-title {

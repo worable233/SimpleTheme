@@ -68,24 +68,42 @@ onMounted(() => {
 <template>
   <div v-if="enabled && sentence" class="aside-card aside-card--hitokoto">
     <h3 class="aside-card__title">一言 <span>Hitokoto.</span></h3>
-    <blockquote
-      class="group m-0 cursor-pointer px-5 pb-5 text-center"
-      title="换一句"
-      @click="fetchHitokoto"
-    >
-      <p
-        class="m-0 text-[13px] leading-relaxed text-foreground transition-opacity duration-300"
-        :class="{ 'opacity-40': loading }"
-      >
+    <blockquote class="hitokoto__quote" title="换一句" @click="fetchHitokoto">
+      <p class="hitokoto__text" :class="{ 'is-loading': loading }">
         “{{ sentence }}”
       </p>
-      <footer
-        v-if="source"
-        class="mt-2 text-xs text-muted-foreground transition-opacity duration-300"
-        :class="{ 'opacity-40': loading }"
-      >
+      <footer v-if="source" class="hitokoto__source" :class="{ 'is-loading': loading }">
         —— {{ source }}
       </footer>
     </blockquote>
   </div>
 </template>
+
+<style scoped>
+.hitokoto__quote {
+  margin: 0;
+  padding: 0 20px 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.hitokoto__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.625;
+  color: var(--foreground);
+  transition: opacity 0.3s;
+}
+
+.hitokoto__source {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  transition: opacity 0.3s;
+}
+
+.hitokoto__text.is-loading,
+.hitokoto__source.is-loading {
+  opacity: 0.4;
+}
+</style>

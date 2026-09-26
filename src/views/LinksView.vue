@@ -2,7 +2,6 @@
 import { computed, ref, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import { fetchLinks, fetchPage, getErrorMessage } from '@/lib/wordpress'
-import { showError } from '@/lib/toast'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { withCache } from '@/lib/api-cache'
@@ -10,9 +9,10 @@ import CommentsPanel from '@/components/CommentsPanel.vue'
 import LinkCard from '@/components/links/LinkCard.vue'
 import type { WordPressLinkCategory, WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
-import { StSkeleton } from '@/ui'
+import { StSkeleton, useToast } from '@/ui'
 
 const { siteInfo } = useSiteShell()
+const toast = useToast()
 
 useHead({ title: '友人帐' })
 
@@ -33,7 +33,7 @@ onMounted(async () => {
     linksPage.value = page
   } catch (err) {
     errorMessage.value = getErrorMessage(err, '友链加载失败')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     loading.value = false
   }

@@ -10,11 +10,10 @@ import { useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import { buildRestUrl, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath } from '@/lib/theme-config'
-import { showError } from '@/lib/toast'
 import { useDebounce } from '@/composables/useDebounce'
 import type { WordPressPost } from '@/types/wordpress'
 import SearchResultList from '@/components/search/SearchResultList.vue'
-import { StInput, StModal } from '@/ui'
+import { StInput, StModal, useToast } from '@/ui'
 
 const props = defineProps<{
   modelValue: boolean
@@ -25,6 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const toast = useToast()
 
 const searchQuery = ref('')
 const searchResults = ref<WordPressPost[]>([])
@@ -93,7 +93,7 @@ function doSearch(query: string) {
     .catch((err: Error) => {
       if (err.name === 'AbortError') return
       errorMessage.value = getErrorMessage(err, '搜索请求失败')
-      showError(errorMessage.value)
+      toast.error(errorMessage.value)
     })
     .finally(() => {
       isSearching.value = false

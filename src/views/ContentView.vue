@@ -18,7 +18,6 @@ import {
 } from '@/lib/wordpress'
 import { withCache } from '@/lib/api-cache'
 import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
-import { showError } from '@/lib/toast'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'
 import AppIcon from '@/components/AppIcon.vue'
@@ -30,6 +29,7 @@ import StaticFallback from '@/components/StaticFallback.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
 import TermArchive from '@/views/TermArchive.vue'
 import { getPreloadedSpecialPage } from '@/lib/special-page-loader'
+import { useToast } from '@/ui'
 
 const AsyncPageLoading = defineComponent({
   name: 'AsyncPageLoading',
@@ -78,6 +78,7 @@ const normalizedPath = computed(() => {
 const route = useRoute()
 const router = useRouter()
 const { siteInfo } = useSiteShell()
+const toast = useToast()
 
 const contentType = ref<ResolveResponse['type']>('home')
 const errorMessage = ref('')
@@ -172,7 +173,7 @@ const loadTermPosts = async (taxonomy: string, id: number) => {
     rememberPreviews(termPosts.value)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '归档内容加载失败，请稍后重试。')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     termPostsLoading.value = false
   }
@@ -186,7 +187,7 @@ const loadDatePosts = async (year: number, month?: number) => {
     rememberPreviews(termPosts.value)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '归档内容加载失败，请稍后重试。')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     termPostsLoading.value = false
   }
@@ -243,7 +244,7 @@ const loadCurrentContent = async () => {
     }
 
     if (!['404', 'error', 'home'].includes(resolved.type)) {
-      showError(resolved.message || '页面解析失败，请稍后重试。')
+      toast.error(resolved.message || '页面解析失败，请稍后重试。')
       contentType.value = 'error'
     }
 
@@ -261,7 +262,7 @@ const loadCurrentContent = async () => {
       }
     }
   } catch (error) {
-    showError(getErrorMessage(error, '页面解析失败，请稍后重试。'))
+    toast.error(getErrorMessage(error, '页面解析失败，请稍后重试。'))
     contentType.value = 'error'
   } finally {
     loading.value = false

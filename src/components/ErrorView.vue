@@ -29,30 +29,89 @@ withDefaults(
 </script>
 
 <template>
-  <section class="flex min-h-screen items-center justify-center px-4 py-8">
-    <div class="flex w-full max-w-[440px] flex-1 flex-col items-center justify-center text-center">
+  <section class="error-view">
+    <div class="error-view__inner">
       <!-- 插画 -->
-      <div class="mb-6 w-full max-w-[320px]">
-        <UndrawIllustration :name="illustration" width="320" height="240" class="h-auto w-full" />
+      <div class="error-view__illustration">
+        <UndrawIllustration :name="illustration" width="320" height="240" class="error-view__img" />
       </div>
 
       <!-- 标题 -->
-      <h1 class="m-0 mb-2 text-xl leading-[1.4] font-[625] text-foreground">{{ title }}</h1>
+      <h1 class="error-view__title">{{ title }}</h1>
 
       <!-- 描述 -->
-      <p v-if="description" class="m-0 mb-7 text-sm leading-[1.6] text-secondary">
+      <p v-if="description" class="error-view__desc">
         {{ description }}
       </p>
 
       <!-- 操作按钮 -->
-      <div v-if="$slots.actions" class="mb-8 flex flex-wrap justify-center gap-2.5">
+      <div v-if="$slots.actions" class="error-view__actions">
         <slot name="actions" />
       </div>
 
       <!-- 额外信息 -->
-      <div v-if="$slots.extra" class="w-full">
+      <div v-if="$slots.extra" class="error-view__extra">
         <slot name="extra" />
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.error-view {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.error-view__inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+
+.error-view__illustration {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 24px;
+}
+
+.error-view__img {
+  width: 100%;
+  height: auto;
+}
+
+.error-view__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 625;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.error-view__desc {
+  margin: 0 0 28px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--secondary);
+}
+
+.error-view__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.error-view__extra {
+  width: 100%;
+}
+</style>

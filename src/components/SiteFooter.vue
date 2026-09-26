@@ -14,15 +14,15 @@ const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'd
 </script>
 
 <template>
-  <div class="sidebar-footer mt-auto shrink-0 border-t border-border bg-card px-[25px] py-[15px]">
+  <div class="sidebar-footer site-footer">
     <template v-if="shellLoading">
-      <div class="flex flex-col gap-1 py-3">
-        <div role="status" class="skeleton line" style="width: 60%"></div>
-        <div role="status" class="skeleton line" style="width: 40%"></div>
+      <div class="site-footer__skeleton" role="status">
+        <div class="skeleton line" style="width: 60%"></div>
+        <div class="skeleton line" style="width: 40%"></div>
       </div>
     </template>
     <template v-else>
-      <div v-if="copyrightStyle !== 'none'" class="text-center text-[13px] text-secondary">
+      <div v-if="copyrightStyle !== 'none'" class="site-footer__copyright">
         <p v-if="copyrightStyle === 'detailed'">Copyright © {{ currentYear }} {{ siteInfo.name }} All Rights Reserved.</p>
         <p v-else>{{ currentYear }} © {{ siteInfo.name }}.</p>
         <p v-if="siteInfo.theme?.showCredit !== false">Theme <a class="footer-theme-link" href="https://github.com/worable233/SimpleTheme" target="_blank" rel="noopener noreferrer">SimpleTheme</a>.</p>
@@ -32,6 +32,27 @@ const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'd
 </template>
 
 <style scoped>
+.site-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background-color: var(--card);
+  padding: 15px 25px;
+}
+
+.site-footer__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+}
+
+.site-footer__copyright {
+  text-align: center;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
 /* Gradient wordmark link — pseudo-element underline + gradient text stay in CSS */
 .footer-theme-link {
   font-family: 'Georgia', 'Noto Serif SC', '楷体', 'KaiTi', serif;

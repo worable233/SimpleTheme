@@ -3,13 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import UndrawIllustration from '@/components/UndrawIllustration.vue'
-import { showToast, dismissToast } from '@/lib/toast'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { StButton } from '@/ui'
+import { StButton, useToast } from '@/ui'
 
 const route = useRoute()
 const router = useRouter()
 const { siteInfo, ensureLoaded } = useSiteShell()
+const toast = useToast()
 
 const rawTargetUrl = computed(() => {
   const raw = typeof route.query.url === 'string' ? route.query.url : ''
@@ -57,12 +57,12 @@ const redirectTarget = computed<'_self' | '_blank' | '_parent' | '_top'>(() => {
 const countdown = ref(5)
 const isRedirecting = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
-let countdownToast: HTMLElement | undefined
+let countdownToastId: number | undefined
 
 function doRedirect() {
   if (!hasValidTarget.value || isRedirecting.value) return
   isRedirecting.value = true
-  if (countdownToast) dismissToast(countdownToast)
+  if (countdownToastId !== undefined) toast.remove(countdownToastId)
   if (redirectTarget.value === '_self') {
     window.location.href = targetUrl.value
     return
@@ -75,7 +75,7 @@ function doRedirect() {
 }
 
 function goBack() {
-  if (countdownToast) dismissToast(countdownToast)
+  if (countdownToastId !== undefined) toast.remove(countdownToastId)
   if (window.history.length > 1) {
     router.back()
   } else {
@@ -89,7 +89,9 @@ onMounted(async () => {
 
   countdown.value = redirectDelay.value
 
-  countdownToast = showToast(`将在 ${countdown.value} 秒后自动前往目标网站`, undefined, {
+  countdownToastId = toast.show({
+    type: 'info',
+    title: `将在 ${countdown.value} 秒后自动前往目标网站`,
     duration: redirectDelay.value * 1000,
   })
 
@@ -98,55 +100,48 @@ onMounted(async () => {
     if (countdown.value <= 0) {
       if (timer) clearInterval(timer)
       doRedirect()
-    } else if (countdownToast) {
-      const msgEl = countdownToast.querySelector('.toast-message')
-      if (msgEl) msgEl.textContent = `将在 ${countdown.value} 秒后自动前往目标网站`
+    } else if (countdownToastId !== undefined) {
+      toast.update(countdownToastId, {
+        title: `将在 ${countdown.value} 秒后自动前往目标网站`,
+      })
     }
   }, 1000)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
-  if (countdownToast) dismissToast(countdownToast)
+  if (countdownToastId !== undefined) toast.remove(countdownToastId)
 })
 </script>
 
 <template>
-  <section class="flex min-h-screen items-center justify-center px-4 py-8">
+  <section class="go-redirect">
     <!-- Invalid or missing URL -->
-    <div
-      v-if="!hasValidTarget"
-      class="flex w-full max-w-[440px] flex-1 flex-col items-center justify-center text-center"
-    >
-      <div class="mb-6 w-full max-w-[300px]">
+    <div v-if="!hasValidTarget" class="go-redirect__inner">
+      <div class="go-redirect__illustration">
         <UndrawIllustration name="access-denied" width="300" height="225" />
       </div>
-      <h1 class="mb-2 text-[1.35rem] leading-[1.4] font-[650] text-foreground">无效的链接</h1>
-      <p class="mb-5 text-sm leading-relaxed text-secondary">
+      <h1 class="go-redirect__title">无效的链接</h1>
+      <p class="go-redirect__desc">
         {{ rawTargetUrl ? '仅支持 HTTP 或 HTTPS 链接。' : '缺少前往地址。' }}
       </p>
-      <div class="flex w-full flex-wrap justify-center gap-3">
+      <div class="go-redirect__actions">
         <StButton tertiary size="large" @click="goBack">返回首页</StButton>
       </div>
     </div>
 
     <!-- Valid redirect confirmation -->
-    <div
-      v-else
-      class="flex w-full max-w-[440px] flex-1 flex-col items-center justify-center text-center"
-    >
-      <div class="mb-6 w-full max-w-[300px]">
+    <div v-else class="go-redirect__inner">
+      <div class="go-redirect__illustration">
         <UndrawIllustration name="navigator" width="300" height="225" />
       </div>
 
-      <h1 class="mb-2 text-[1.35rem] leading-[1.4] font-[650] text-foreground">即将前往外部网站</h1>
-      <p class="mb-5 text-sm leading-relaxed text-secondary">您即将访问以下链接：</p>
+      <h1 class="go-redirect__title">即将前往外部网站</h1>
+      <p class="go-redirect__desc">您即将访问以下链接：</p>
 
-      <div
-        class="mb-3 flex w-full items-center gap-2 rounded-xl border border-border bg-muted px-4 py-3 text-left text-sm break-all text-foreground"
-      >
+      <div class="go-redirect__url">
         <svg
-          class="shrink-0 text-secondary"
+          class="go-redirect__url-icon"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -163,16 +158,96 @@ onUnmounted(() => {
         <span :title="targetUrl">{{ displayUrl }}</span>
       </div>
 
-      <div class="flex w-full flex-wrap justify-center gap-3">
+      <div class="go-redirect__actions">
         <StButton type="primary" size="large" :disabled="isRedirecting" @click="doRedirect">
           {{ isRedirecting ? '正在前往...' : '继续前往' }}
         </StButton>
         <StButton tertiary size="large" @click="goBack">返回首页</StButton>
       </div>
 
-      <p class="mt-6 max-w-[380px] text-xs leading-relaxed text-secondary opacity-75">
+      <p class="go-redirect__disclaimer">
         本站仅为用户提供信息参考，不对目标网站的内容、安全性、准确性及合法性作任何保证。请用户自行判断并承担相关风险。
       </p>
     </div>
   </section>
 </template>
+
+<style scoped>
+.go-redirect {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.go-redirect__inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+
+.go-redirect__illustration {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 24px;
+}
+
+.go-redirect__title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.go-redirect__desc {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.625;
+  color: var(--secondary);
+}
+
+.go-redirect__url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background-color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+  word-break: break-all;
+  color: var(--foreground);
+}
+
+.go-redirect__url-icon {
+  flex-shrink: 0;
+  color: var(--secondary);
+}
+
+.go-redirect__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.go-redirect__disclaimer {
+  margin-top: 24px;
+  max-width: 380px;
+  font-size: 12px;
+  line-height: 1.625;
+  color: var(--secondary);
+  opacity: 0.75;
+}
+</style>

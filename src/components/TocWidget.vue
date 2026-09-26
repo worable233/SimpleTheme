@@ -147,11 +147,11 @@ onUnmounted(() => {
   <div
     v-if="tocData.length > 0"
     id="card-toc"
-    class="sticky top-4 mt-4 w-full rounded-xl bg-card p-2 max-xl:hidden"
+    class="toc-card"
   >
-    <div class="toc-content relative max-h-[calc(100vh-300px)] overflow-y-auto">
-      <div class="mb-[0.2rem] flex items-center gap-2 px-3 pt-[0.6rem] pb-[0.4rem] text-lg font-bold text-foreground">
-        <svg class="h-[22px] w-[22px] shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div class="toc-content">
+      <div class="toc-card__head">
+        <svg class="toc-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6" />
           <line x1="8" y1="12" x2="21" y2="12" />
           <line x1="8" y1="18" x2="21" y2="18" />
@@ -176,14 +176,11 @@ onUnmounted(() => {
     <Transition name="toc-drawer">
       <div
         v-if="isOpen && tocData.length > 0"
-        class="fixed inset-0 z-[1000] flex items-end justify-center bg-black/30"
+        class="toc-drawer-mask"
         @click.self="isOpen = false"
       >
-        <div
-          class="toc-drawer max-h-[70vh] w-full max-w-[420px] overflow-y-auto rounded-t-2xl bg-card px-[1.2rem] py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
-          @click.stop
-        >
-          <div class="mb-2 flex items-center justify-between gap-2 border-b border-border pb-3 text-[15px] font-semibold text-foreground">
+        <div class="toc-drawer" @click.stop>
+          <div class="toc-drawer__head">
             <span>文章目录</span>
             <ModalCloseButton @click="isOpen = false" />
           </div>
@@ -201,8 +198,28 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* TOC 滚动容器：自定义细滚动条（hover 时才显示滑块） */
+.toc-card {
+  position: sticky;
+  top: 16px;
+  margin-top: 16px;
+  width: 100%;
+  padding: 8px;
+  border-radius: var(--radius-xl);
+  background-color: var(--card);
+}
+
+/* 1200px 以下隐藏桌面目录卡 */
+@media (max-width: 75rem) {
+  .toc-card {
+    display: none;
+  }
+}
+
 .toc-content {
+  position: relative;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  /* TOC 滚动容器：自定义细滚动条（hover 时才显示滑块） */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
@@ -216,6 +233,58 @@ onUnmounted(() => {
 }
 .toc-content:hover::-webkit-scrollbar-thumb {
   background: var(--scroll);
+}
+
+.toc-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.2rem;
+  padding: 0.6rem 12px 0.4rem;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.toc-card__icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.toc-drawer-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background-color: rgb(0 0 0 / 0.3);
+}
+
+.toc-drawer {
+  width: 100%;
+  max-width: 420px;
+  max-height: 70vh;
+  padding: 16px 1.2rem;
+  overflow-y: auto;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background-color: var(--card);
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 0.1);
+}
+
+.toc-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 /* Drawer transition */

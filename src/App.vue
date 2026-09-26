@@ -16,8 +16,10 @@ import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
-import { showError } from '@/lib/toast'
+import { StToast, useToast } from '@/ui'
 import type { SidebarWidget, ThemeRadius, ThemeSettings, ThemeShadow } from '@/types/wordpress'
+
+const toast = useToast()
 
 const { siteInfo, shellError, ensureLoaded, footerMenu } = useSiteShell()
 const route = useRoute()
@@ -130,7 +132,7 @@ watch(
 watch(
   () => shellError.value,
   (err) => {
-    if (err) showError(err)
+    if (err) toast.error(err)
   },
 )
 
@@ -177,29 +179,25 @@ watch(
 </script>
 
 <template>
-  <div
-    class="app-container mx-auto flex min-h-screen w-full max-w-(--container-max) border-x border-border bg-card max-xl:border-none"
-  >
+  <div class="app-container">
     <LeftSidebar />
 
-    <div class="app-main min-w-0 flex-1 max-xl:pt-14">
-      <div class="app-content flex">
-        <main id="main-content" class="min-w-0 flex-1 bg-card">
+    <div class="app-main">
+      <div class="app-content">
+        <main id="main-content" class="app-content__main">
           <router-view v-slot="{ Component }">
             <component :is="Component" :key="route.path" />
           </router-view>
         </main>
 
-        <aside
-          class="right-sidebar flex min-h-dvh w-[300px] shrink-0 flex-col border-l border-border bg-card max-lg:hidden"
-        >
-          <div class="w-full shrink-0 overflow-x-hidden">
+        <aside class="right-sidebar">
+          <div class="right-sidebar__scroll">
             <div
-              class="relative flex w-[200%] flex-none overflow-clip transition-transform duration-300 ease-[ease]"
-              :class="{ '-translate-x-1/2': showSubPage }"
+              class="right-sidebar__slider"
+              :class="{ 'is-sub': showSubPage }"
             >
               <!-- Main page: widget-driven sidebar（外观→小工具 配置，按顺序渲染） -->
-              <div class="main-page h-full w-1/2 shrink-0">
+              <div class="main-page right-sidebar__pane">
                 <template v-for="(widget, i) in sidebarWidgets" :key="i">
                   <SidebarProfile
                     v-if="widget.type === 'profile'"
@@ -218,7 +216,7 @@ watch(
                 </template>
               </div>
               <!-- Sub page: menu -->
-              <div class="sub-page flex h-full w-1/2 shrink-0 flex-col">
+              <div class="sub-page right-sidebar__pane right-sidebar__pane--sub">
                 <div class="sub-page__header">
                   <div class="aside-btn-close" @click="showSubPage = false">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
@@ -274,4 +272,96 @@ watch(
     v-if="siteInfo.cookieConsent?.enabled"
     :message="siteInfo.cookieConsent.message"
   />
+
+  <!-- 全局 toast 渲染层：业务层任意 useToast() 调用都会推到这里 -->
+  <StToast placement="top" :max="5" />
 </template>
+
+<style scoped>
+/* ===== 页面骨架（原先靠 Tailwind 工具类，现收敛为 scoped CSS + 令牌） ===== */
+.app-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+@media (max-width: 75rem) {
+  .app-container {
+    border-left: none;
+    border-right: none;
+  }
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 75rem) {
+  .app-main {
+    padding-top: 56px;
+  }
+}
+
+.app-content {
+  display: flex;
+}
+
+.app-content__main {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--card);
+}
+
+/* ===== 桌面右侧栏（< 1000px 隐藏） ===== */
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 300px;
+  min-height: 100dvh;
+  border-left: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+@media (max-width: 62.5rem) {
+  .right-sidebar {
+    display: none;
+  }
+}
+
+.right-sidebar__scroll {
+  width: 100%;
+  flex-shrink: 0;
+  overflow-x: hidden;
+}
+
+.right-sidebar__slider {
+  position: relative;
+  display: flex;
+  width: 200%;
+  flex: none;
+  overflow: clip;
+  transition: transform 300ms ease;
+}
+
+.right-sidebar__slider.is-sub {
+  transform: translateX(-50%);
+}
+
+.right-sidebar__pane {
+  width: 50%;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.right-sidebar__pane--sub {
+  display: flex;
+  flex-direction: column;
+}
+</style>

@@ -5,10 +5,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
-import { StButton, StInput } from '@/ui'
+import { StButton, StCheckbox, StInput, useToast } from '@/ui'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
-import { showError } from '@/lib/toast'
 import type { CommentFormSettings, CaptchaData, UserData } from '@/types/wordpress'
 
 defineOptions({ name: 'CommentForm' })
@@ -42,6 +41,7 @@ const emojiTab = ref<'bilibili' | 'tieba' | 'dinosaur' | 'kaomoji'>('bilibili')
 const editorRef = ref<HTMLDivElement | null>(null)
 const emojiPanelRef = ref<HTMLElement | null>(null)
 const isComposing = ref(false)
+const toast = useToast()
 
 // Mobile bottom-sheet state
 const mobileExpanded = ref(false)
@@ -410,7 +410,9 @@ function onWizardKeydown(e: KeyboardEvent) {
 
 function focusWizardInput() {
   nextTick(() => {
-    const el = document.querySelector<HTMLInputElement>('.wizard-step .comments-form__input')
+    const el = document.querySelector<HTMLInputElement>(
+      '.wizard-step .comments-form__input input, .wizard-step input.comments-form__input',
+    )
     el?.focus()
   })
 }
@@ -438,15 +440,15 @@ function handleSubmit() {
   if (!props.currentUser) {
     const email = authorEmail.value.trim()
     if (props.formSettings.showEmailField && email && !isValidEmailInput(email)) {
-      showError('邮箱格式不正确，请输入邮箱或 5-11 位 QQ 号')
+      toast.error('邮箱格式不正确，请输入邮箱或 5-11 位 QQ 号')
       return
     }
     if (props.formSettings.showUrlField && !isValidUrlInput(authorUrl.value)) {
-      showError('网址格式不正确')
+      toast.error('网址格式不正确')
       return
     }
     if (props.formSettings.captchaEnabled && !captchaPayload.value) {
-      showError('请先完成人机验证')
+      toast.error('请先完成人机验证')
       return
     }
   }
@@ -495,6 +497,10 @@ defineExpose({ clearForm })
 
     <!-- Input row: textarea + collapsed actions (inline on mobile) -->
     <div class="comments-form__input-row">
+      <!--
+        保留原生 contenteditable：评论正文需要 Markdown/表情实时渲染与
+        placeholder 伪元素控制，不是 StTextarea 能表达的多行纯文本输入。
+      -->
       <div
         ref="editorRef"
         contenteditable
@@ -525,50 +531,68 @@ defineExpose({ clearForm })
         <span>已登录为 <strong>{{ currentUser.displayName }}</strong></span>
       </div>
       <div v-else-if="!isMobile" class="comments-form__row">
-        <input
+        <StInput
           v-model="authorName"
-          type="text"
           class="comments-form__input"
           placeholder="昵称 *"
-          maxlength="40"
+          :maxlength="40"
           required
         />
-        <input
+        <StInput
           v-if="formSettings.showEmailField"
           v-model="authorEmail"
-          type="text"
           class="comments-form__input"
           placeholder="邮箱 * (支持 QQ 号)"
-          maxlength="80"
+          :maxlength="80"
           :required="formSettings.requireNameEmail"
         />
-        <input
+        <StInput
           v-if="formSettings.showUrlField"
           v-model="authorUrl"
-          type="url"
           class="comments-form__input"
+          type="url"
           placeholder="网站"
-          maxlength="120"
+          :maxlength="120"
         />
       </div>
 
       <div class="comments-form__options">
-        <label v-if="formSettings.showPrivateOption !== false" class="comments-form__option" title="评论仅博主和你不见">
-          <input v-model="isPrivate" type="checkbox" />
-          <span>悄悄话</span>
-        </label>
-        <label v-if="parentCommentId" class="comments-form__option" title="有回复时邮件通知你">
-          <input v-model="mailNotify" type="checkbox" />
-          <span>邮件提醒</span>
-        </label>
-        <label v-if="formSettings.showMarkdownOption !== false && !isMobile" class="comments-form__option" title="启用 Markdown 格式">
-          <input v-model="useMarkdown" type="checkbox" />
-          <span>Markdown</span>
-        </label>
-        <label v-if="formSettings.showCookiesOptIn && !currentUser" class="comments-form__option" title="记住信息">
-          <input v-model="cookiesConsent" type="checkbox" />
-          <span>记住信息</span>
-        </label>
+        <StCheckbox
+          v-if="formSettings.showPrivateOption !== false"
+          v-model="isPrivate"
+          class="comments-form__option"
+          size="small"
+          title="评论仅博主和你不见"
+        >
+          悄悄话
+        </StCheckbox>
+        <StCheckbox
+          v-if="parentCommentId"
+          v-model="mailNotify"
+          class="comments-form__option"
+          size="small"
+          title="有回复时邮件通知你"
+        >
+          邮件提醒
+        </StCheckbox>
+        <StCheckbox
+          v-if="formSettings.showMarkdownOption !== false && !isMobile"
+          v-model="useMarkdown"
+          class="comments-form__option"
+          size="small"
+          title="启用 Markdown 格式"
+        >
+          Markdown
+        </StCheckbox>
+        <StCheckbox
+          v-if="formSettings.showCookiesOptIn && !currentUser"
+          v-model="cookiesConsent"
+          class="comments-form__option"
+          size="small"
+          title="记住信息"
+        >
+          记住信息
+        </StCheckbox>
       </div>
 
       <div v-if="formSettings.captchaEnabled && !currentUser" class="comments-form__captcha">
@@ -737,34 +761,50 @@ defineExpose({ clearForm })
                 <h3 class="wizard-step__title">选项设置</h3>
                 <p class="wizard-step__desc">配置你的发布偏好</p>
                 <div class="wizard-step__options">
-                  <label v-if="formSettings.showPrivateOption !== false" class="wizard-step__option">
-                    <input v-model="isPrivate" type="checkbox" class="wizard-step__checkbox" />
+                  <StCheckbox
+                    v-if="formSettings.showPrivateOption !== false"
+                    v-model="isPrivate"
+                    class="wizard-step__option"
+                    aria-label="悄悄话，仅博主和你可见"
+                  >
                     <span class="wizard-step__option-text">
                       <span class="wizard-step__option-label">悄悄话</span>
                       <span class="wizard-step__option-hint">仅博主和你可见</span>
                     </span>
-                  </label>
-                  <label v-if="parentCommentId" class="wizard-step__option">
-                    <input v-model="mailNotify" type="checkbox" class="wizard-step__checkbox" />
+                  </StCheckbox>
+                  <StCheckbox
+                    v-if="parentCommentId"
+                    v-model="mailNotify"
+                    class="wizard-step__option"
+                    aria-label="邮件提醒，有回复时通知你"
+                  >
                     <span class="wizard-step__option-text">
                       <span class="wizard-step__option-label">邮件提醒</span>
                       <span class="wizard-step__option-hint">有回复时通知你</span>
                     </span>
-                  </label>
-                  <label v-if="formSettings.showMarkdownOption !== false" class="wizard-step__option">
-                    <input v-model="useMarkdown" type="checkbox" class="wizard-step__checkbox" />
+                  </StCheckbox>
+                  <StCheckbox
+                    v-if="formSettings.showMarkdownOption !== false"
+                    v-model="useMarkdown"
+                    class="wizard-step__option"
+                    aria-label="Markdown，使用 Markdown 格式"
+                  >
                     <span class="wizard-step__option-text">
                       <span class="wizard-step__option-label">Markdown</span>
                       <span class="wizard-step__option-hint">使用 Markdown 格式</span>
                     </span>
-                  </label>
-                  <label v-if="formSettings.showCookiesOptIn && !currentUser" class="wizard-step__option">
-                    <input v-model="cookiesConsent" type="checkbox" class="wizard-step__checkbox" />
+                  </StCheckbox>
+                  <StCheckbox
+                    v-if="formSettings.showCookiesOptIn && !currentUser"
+                    v-model="cookiesConsent"
+                    class="wizard-step__option"
+                    aria-label="记住信息，保存昵称、邮箱等信息"
+                  >
                     <span class="wizard-step__option-text">
                       <span class="wizard-step__option-label">记住信息</span>
                       <span class="wizard-step__option-hint">保存昵称、邮箱等信息</span>
                     </span>
-                  </label>
+                  </StCheckbox>
                 </div>
                 <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
                   <altcha-widget
@@ -835,11 +875,14 @@ defineExpose({ clearForm })
   font-size: 14px;
   line-height: 1.6;
   color: var(--foreground);
-  background: var(--faint);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  background: var(--st-input-fill);
+  border: 1px solid var(--st-input-border-color);
+  border-radius: var(--radius-medium);
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.3s var(--ease-in-out),
+    background-color 0.3s var(--ease-in-out),
+    box-shadow 0.3s var(--ease-in-out);
   white-space: pre-wrap;
   overflow-wrap: break-word;
   -webkit-user-modify: read-write-plaintext-only;
@@ -847,13 +890,14 @@ defineExpose({ clearForm })
 
 .comments-form__textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  background: var(--card);
+  border-color: var(--st-input-border-focus);
+  background: var(--st-input-fill-focus);
+  box-shadow: var(--st-input-shadow-focus);
 }
 
 .comments-form__textarea--empty::before {
   content: attr(data-placeholder);
-  color: var(--secondary, #999);
+  color: var(--st-placeholder);
   pointer-events: none;
 }
 
@@ -874,20 +918,6 @@ defineExpose({ clearForm })
 
 .comments-form__input {
   flex: 1;
-  padding: 7px 10px;
-  font-size: 13px;
-  color: var(--foreground);
-  background: var(--faint);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.comments-form__input:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: var(--card);
 }
 
 .comments-form__options {
@@ -900,14 +930,7 @@ defineExpose({ clearForm })
 }
 
 .comments-form__option {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   cursor: pointer;
-  margin: 0;
-}
-
-.comments-form__option input {
   margin: 0;
 }
 
@@ -1072,8 +1095,8 @@ defineExpose({ clearForm })
     flex: 1;
     border-radius: 17px;
     margin-bottom: 0;
-    background: transparent;
-    border: 1px solid var(--border);
+    background: var(--st-input-fill);
+    border: 1px solid var(--st-input-border-color);
     line-height: 22px;
     font-size: 13px;
   }
@@ -1136,15 +1159,7 @@ defineExpose({ clearForm })
 	    box-sizing: border-box;
 	    padding: 12px 14px;
 	    font-size: 15px;
-	    border-radius: 10px;
-	    border: 1.5px solid var(--border);
-	    background: var(--faint);
-	    transition: all 0.2s;
-	  }
-	  .comments-form__expandable-inner .comments-form__input:focus {
-	    border-color: var(--primary);
-	    background: var(--card);
-	    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+	    border-radius: var(--radius-medium);
 	  }
 
 	  /* ── Logged-in badge ── */
@@ -1178,17 +1193,14 @@ defineExpose({ clearForm })
 	      min-height: 28px;
 	    }
 
-	  .comments-form__expandable-inner .comments-form__option:has(input:checked) {
-	      background: color-mix(in srgb, var(--primary) 15%, transparent);
-	      color: var(--primary);
-	    }
-
-	  .comments-form__expandable-inner .comments-form__option input[type="checkbox"] {
+	  .comments-form__expandable-inner .comments-form__option .st-checkbox__box {
 	      display: none;
 	    }
 
-	  .comments-form__expandable-inner .comments-form__option i {
-	      font-size: 15px;
+	  /* 芯片形态没有勾选框，选中态由 StCheckbox 的 is-checked 驱动 */
+	  .comments-form__expandable-inner .comments-form__option.is-checked {
+	      background: color-mix(in srgb, var(--primary) 15%, transparent);
+	      color: var(--primary);
 	    }
 
 	  .comments-form__expandable-inner .comments-form__option span {
@@ -1291,9 +1303,7 @@ defineExpose({ clearForm })
   max-width: 380px;
   background: var(--card);
   border-radius: 20px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   animation: wizard-card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1423,9 +1433,6 @@ defineExpose({ clearForm })
 }
 
 .wizard-step__option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 10px 12px;
   background: var(--faint);
   border-radius: 10px;
@@ -1436,15 +1443,6 @@ defineExpose({ clearForm })
 
 .wizard-step__option:hover {
   background: var(--muted);
-}
-
-.wizard-step__checkbox {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--primary);
-  flex-shrink: 0;
-  margin: 0;
-  cursor: pointer;
 }
 
 .wizard-step__option-text {
@@ -1521,9 +1519,7 @@ defineExpose({ clearForm })
 
 body[data-theme='dark'] .wizard-modal {
   background: var(--card);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
 
 body[data-theme='dark'] .wizard-modal .wizard-progress-bar {
@@ -1539,12 +1535,8 @@ body[data-theme='dark'] .wizard-step__option:hover {
 }
 
 /* ── Dark mode: 收起胶囊描边 ── */
-body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed {
-  border-color: rgba(255, 255, 255, 0.14);
-}
 body[data-theme='dark'] .comments-form__textarea--empty.comments-form__textarea--collapsed:focus {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: transparent;
+  background: var(--st-input-fill-focus);
 }
 
 /* ── Dark mode: 展开/表情面板 ── */

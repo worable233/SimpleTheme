@@ -125,14 +125,8 @@ const dayLabels = [
   { text: 'Sun', row: 6 },
 ]
 
-// GitHub 风格热力图色阶（light / dark）
-const HEATMAP_LEVEL_CLASSES = [
-  'bg-[#ebedf0] dark:bg-[#2a2a2a]',
-  'bg-[#9be9a8] dark:bg-[#0d4429]',
-  'bg-[#40c463] dark:bg-[#006d32]',
-  'bg-[#30a14e] dark:bg-[#26a641]',
-  'bg-[#216e39] dark:bg-[#39d353]',
-]
+// GitHub 风格热力图色阶（light / dark）—— 色值定义在 scoped CSS 的 .heatmap-cell--N 中
+const HEATMAP_LEVEL_CLASSES = ['heatmap-cell--0', 'heatmap-cell--1', 'heatmap-cell--2', 'heatmap-cell--3', 'heatmap-cell--4']
 
 function formatWordCount(count: number | undefined | null): string {
   if (!count) return '0'
@@ -208,7 +202,7 @@ function socialIconName(icon: string): string {
         <div v-if="siteName" class="aside-author__name">{{ siteName }}</div>
         <div v-if="motto" class="aside-author__des">“{{ motto }}”</div>
 
-        <div v-if="!noToggle" class="aside-btn-open absolute top-2.5 right-2.5 inline-flex cursor-pointer items-center gap-1 rounded-[5px] border-none bg-white/50 py-1 pr-2 pl-3.5 text-sm text-foreground shadow-[0_0_10px_rgba(0,0,0,0.1)] backdrop-blur-[10px] transition-colors duration-200 hover:bg-white/70 hover:shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:bg-black/35 dark:hover:bg-black/50" @click="$emit('toggle-sub')">
+        <div v-if="!noToggle" class="aside-btn-open profile-toggle" @click="$emit('toggle-sub')">
           查看更多
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
@@ -232,40 +226,40 @@ function socialIconName(icon: string): string {
   <!-- ======== Card 3: 贡献热力图 ======== -->
   <div v-if="showHeatmapCard && heatmapData.length > 0" class="aside-card aside-card--heatmap">
     <h3 class="aside-card__title">贡献 <span>Heatmap.</span></h3>
-    <div class="mx-auto max-w-[200px]">
-      <div class="mb-0.5 grid grid-cols-[22px_repeat(13,1fr)] gap-0.5 text-[9px] text-muted-foreground">
+    <div class="heatmap">
+      <div class="heatmap__months">
         <span
           v-for="m in monthLabels"
           :key="m.name"
-          class="text-[9px] leading-none"
+          class="heatmap__month"
           :style="{ gridColumn: m.col + 2 }"
         >{{ m.name }}</span>
       </div>
-      <div class="grid grid-cols-[22px_repeat(13,1fr)] grid-rows-[repeat(7,auto)] gap-[3px]">
+      <div class="heatmap__grid">
         <span
           v-for="d in dayLabels"
           :key="d.text"
-          class="flex items-center justify-end pr-0.5 text-[8px] leading-none text-muted-foreground"
+          class="heatmap__day"
           :style="{ gridColumn: 1, gridRow: d.row + 1 }"
         >{{ d.text }}</span>
         <div
           v-for="cell in heatmapCells"
           :key="cell.day"
-          class="aspect-square cursor-default rounded-[2px]"
+          class="heatmap-cell"
           :class="HEATMAP_LEVEL_CLASSES[cell.level]"
           :title="`${cell.day}: ${cell.count} 篇`"
           :style="{ gridColumn: cell.col + 2, gridRow: cell.row + 1 }"
         ></div>
       </div>
-      <div class="mt-1.5 flex items-center justify-end gap-[3px] pr-0.5">
-        <span class="text-[9px] leading-none text-muted-foreground">Less</span>
+      <div class="heatmap__legend">
+        <span class="heatmap__legend-label">Less</span>
         <span
           v-for="(cls, level) in HEATMAP_LEVEL_CLASSES"
           :key="level"
-          class="inline-block h-2.5 w-2.5 rounded-[2px]"
+          class="heatmap-cell heatmap-cell--legend"
           :class="cls"
         ></span>
-        <span class="text-[9px] leading-none text-muted-foreground">More</span>
+        <span class="heatmap__legend-label">More</span>
       </div>
     </div>
   </div>
@@ -282,3 +276,136 @@ function socialIconName(icon: string): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+.profile-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 14px;
+  border: none;
+  border-radius: 5px;
+  background-color: rgb(255 255 255 / 0.5);
+  color: var(--foreground);
+  font-size: 14px;
+  box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.profile-toggle:hover {
+  background-color: rgb(255 255 255 / 0.7);
+  box-shadow: 0 0 20px rgb(0 0 0 / 0.1);
+}
+
+[data-theme='dark'] .profile-toggle {
+  background-color: rgb(0 0 0 / 0.35);
+}
+
+[data-theme='dark'] .profile-toggle:hover {
+  background-color: rgb(0 0 0 / 0.5);
+}
+
+/* ===== 贡献热力图 ===== */
+.heatmap {
+  margin: 0 auto;
+  max-width: 200px;
+}
+
+.heatmap__months {
+  display: grid;
+  grid-template-columns: 22px repeat(13, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+
+.heatmap__month {
+  font-size: 9px;
+  line-height: 1;
+}
+
+.heatmap__grid {
+  display: grid;
+  grid-template-columns: 22px repeat(13, 1fr);
+  grid-template-rows: repeat(7, auto);
+  gap: 3px;
+}
+
+.heatmap__day {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 2px;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--muted-foreground);
+}
+
+.heatmap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 6px;
+  padding-right: 2px;
+}
+
+.heatmap__legend-label {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--muted-foreground);
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  cursor: default;
+  border-radius: 2px;
+}
+
+.heatmap-cell--legend {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+
+/* GitHub 色阶（浅色） */
+.heatmap-cell--0 {
+  background-color: #ebedf0;
+}
+.heatmap-cell--1 {
+  background-color: #9be9a8;
+}
+.heatmap-cell--2 {
+  background-color: #40c463;
+}
+.heatmap-cell--3 {
+  background-color: #30a14e;
+}
+.heatmap-cell--4 {
+  background-color: #216e39;
+}
+
+[data-theme='dark'] .heatmap-cell--0 {
+  background-color: #2a2a2a;
+}
+[data-theme='dark'] .heatmap-cell--1 {
+  background-color: #0d4429;
+}
+[data-theme='dark'] .heatmap-cell--2 {
+  background-color: #006d32;
+}
+[data-theme='dark'] .heatmap-cell--3 {
+  background-color: #26a641;
+}
+[data-theme='dark'] .heatmap-cell--4 {
+  background-color: #39d353;
+}
+</style>

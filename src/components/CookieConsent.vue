@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
+import { StButton } from '@/ui'
 
 defineProps<{
   message: string
@@ -23,28 +24,68 @@ function accept() {
 <template>
   <Teleport to="body">
     <Transition name="cookie" appear>
-      <div
-        v-if="visible"
-        class="cookie-consent fixed bottom-7 left-1/2 z-[99998] inline-flex w-auto max-w-[520px] -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card py-2.5 pr-[18px] pl-3.5 text-[13px] leading-normal text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] backdrop-blur-2xl max-sm:w-[calc(100%-32px)] max-sm:flex-wrap max-sm:gap-2.5 max-sm:rounded-large max-sm:px-4 max-sm:py-3"
-      >
-        <AppIcon name="cookie" filled :size="22" class="-mt-px shrink-0 text-muted-foreground" />
-        <p
-          class="m-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap max-sm:whitespace-normal"
-        >
+      <div v-if="visible" class="cookie-consent">
+        <AppIcon name="cookie" filled :size="22" class="cookie-consent__icon" />
+        <p class="cookie-consent__message">
           {{ message }}
         </p>
-        <button
-          class="shrink-0 cursor-pointer rounded-full border-none bg-primary px-4 py-[5px] text-xs font-medium whitespace-nowrap text-primary-foreground transition-opacity duration-200 hover:opacity-85 active:opacity-70"
-          @click="accept"
-        >
-          知道了
-        </button>
+        <StButton type="primary" round size="small" @click="accept">知道了</StButton>
       </div>
     </Transition>
   </Teleport>
 </template>
 
 <style scoped>
+.cookie-consent {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  z-index: 99998;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  max-width: 520px;
+  padding: 10px 18px 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background-color: var(--card);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.08);
+  backdrop-filter: blur(40px);
+  transform: translateX(-50%);
+}
+
+.cookie-consent__icon {
+  flex-shrink: 0;
+  margin-top: -1px;
+  color: var(--muted-foreground);
+}
+
+.cookie-consent__message {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 37.5rem) {
+  .cookie-consent {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-large);
+  }
+
+  .cookie-consent__message {
+    white-space: normal;
+  }
+}
+
 /* Use a spring-like ease-out for both mounting and dismissal without overscaling. */
 .cookie-enter-active,
 .cookie-leave-active {

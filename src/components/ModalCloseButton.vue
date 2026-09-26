@@ -9,6 +9,10 @@
 </script>
 
 <template>
+  <!--
+    全局统一关闭按钮：桌面 ESC 键帽 / 触屏圆形 × 两态由媒体查询切换，
+    形态无法用 StButton 的语义 props 表达。定位交给使用方的 class。
+  -->
   <button type="button" class="modal-close-btn" aria-label="关闭">
     <span class="modal-close-btn__esc" aria-hidden="true">ESC</span>
     <svg

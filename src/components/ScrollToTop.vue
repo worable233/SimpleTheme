@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
+import { StButton } from '@/ui'
 
 const isVisible = ref(false)
 let ticking = false
@@ -30,18 +31,28 @@ onUnmounted(() => {
 
 <template>
   <Transition name="fab-fade">
-    <button
+    <StButton
       v-if="isVisible"
-      class="fixed right-6 bottom-6 z-[9998] flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-border bg-card p-0 text-foreground shadow-medium transition-colors hover:bg-muted"
-      @click="scrollToTop"
+      class="scroll-to-top"
+      circle
+      size="large"
       aria-label="回到顶部"
+      @click="scrollToTop"
     >
-      <AppIcon name="chevron-up" :size="20" />
-    </button>
+      <template #icon><AppIcon name="chevron-up" :size="20" /></template>
+    </StButton>
   </Transition>
 </template>
 
 <style scoped>
+/* 定位钩子：StButton 契约不允许工具类，位置由调用方 scoped CSS 负责 */
+.scroll-to-top {
+  position: fixed;
+  right: var(--st-space-6);
+  bottom: var(--st-space-6);
+  z-index: 9998;
+}
+
 .fab-fade-enter-active,
 .fab-fade-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;

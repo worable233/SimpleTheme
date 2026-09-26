@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
 import {
+  StButton,
   StCard,
   StColorPicker,
   StFormItem,
@@ -78,6 +79,17 @@ const redirectTargetOptions = [
   { value: '_blank', label: '新标签页（_blank）' },
   { value: '_parent', label: '父框架（_parent）' },
   { value: '_top', label: '整个窗口（_top）' },
+]
+
+const ipLocationApiOptions = [
+  { value: 'xinyew', label: '鑫烨（百度渠道）' },
+  { value: 'ip.sb', label: 'IP.SB（海外）' },
+  { value: 'ip-api.com', label: 'ip-api.com（海外）' },
+]
+
+const ipLocationCacheOptions = [
+  { value: 'enabled', label: '开启' },
+  { value: 'disabled', label: '关闭' },
 ]
 
 function value(key: string, fallback: unknown = '') {
@@ -257,57 +269,55 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background font-sans text-foreground">
-    <div v-if="loading" class="flex min-h-screen items-center justify-center text-secondary">
+  <div class="admin-app">
+    <div v-if="loading" class="admin-app__loading">
       正在加载设置...
     </div>
 
-    <div v-else-if="error" class="flex min-h-screen items-center justify-center p-6">
-      <section class="w-full max-w-md rounded-large border border-border bg-card p-8 text-center shadow-small">
-        <h1 class="m-0 text-xl font-semibold">设置加载失败</h1>
-        <p class="mt-3 mb-5 text-sm text-secondary">{{ error }}</p>
-        <button class="rounded-medium bg-primary px-5 py-2.5 text-sm text-primary-foreground" @click="load">
-          重试
-        </button>
+    <div v-else-if="error" class="admin-app__error">
+      <section class="admin-app__error-card">
+        <h1 class="admin-app__error-title">设置加载失败</h1>
+        <p class="admin-app__error-desc">{{ error }}</p>
+        <StButton type="primary" @click="load">重试</StButton>
       </section>
     </div>
 
-    <div v-else class="flex min-h-screen flex-col lg:flex-row">
-      <aside class="w-full shrink-0 border-b border-border bg-card lg:w-60 lg:border-r lg:border-b-0">
-        <div class="border-b border-border px-5 py-5">
-          <strong class="block text-sm">Simple Theme</strong>
-          <span class="text-xs text-secondary">主题设置</span>
+    <div v-else class="admin-app__layout">
+      <aside class="admin-app__aside">
+        <div class="admin-app__brand">
+          <strong class="admin-app__brand-name">Simple Theme</strong>
+          <span class="admin-app__brand-sub">主题设置</span>
         </div>
-        <nav class="flex gap-1 overflow-x-auto p-3 lg:block">
-          <button
+        <nav class="admin-app__tabs">
+          <StButton
             v-for="tab in tabs"
             :key="tab.key"
-            class="mb-1 block shrink-0 rounded-medium px-3.5 py-2.5 text-left text-sm transition-colors"
-            :class="activeTab === tab.key ? 'bg-accent font-medium text-primary' : 'text-secondary hover:bg-muted hover:text-foreground'"
+            :type="activeTab === tab.key ? 'primary' : 'default'"
+            :secondary="activeTab !== tab.key"
+            block
             @click="activeTab = tab.key"
           >
             {{ tab.label }}
-          </button>
+          </StButton>
         </nav>
       </aside>
 
-      <main class="min-w-0 flex-1">
-        <header class="sticky top-[46px] z-10 flex min-h-16 items-center justify-between gap-4 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl min-[783px]:top-[32px] sm:px-8">
+      <main class="admin-app__main">
+        <header class="admin-app__topbar">
           <div>
-            <h1 class="m-0 text-lg font-semibold">{{ activeLabel }}</h1>
-            <p class="m-0 text-xs text-secondary">配置主题的展示与交互行为</p>
+            <h1 class="admin-app__topbar-title">{{ activeLabel }}</h1>
+            <p class="admin-app__topbar-desc">配置主题的展示与交互行为</p>
           </div>
-          <button
-            class="shrink-0 rounded-medium px-4 py-2 text-sm font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
-            :class="saved ? 'bg-success text-white' : 'bg-primary text-primary-foreground'"
+          <StButton
+            :type="saved ? 'success' : 'primary'"
             :disabled="saving || !dirty"
             @click="save"
           >
             {{ saving ? '保存中...' : saved ? '已保存' : '保存设置' }}
-          </button>
+          </StButton>
         </header>
 
-        <div class="mx-auto max-w-5xl space-y-5 p-5 sm:p-8">
+        <div class="admin-app__content">
           <template v-if="activeTab === 'appearance'">
             <StCard title="基础样式" subtitle="前台和设置页面共用这套主题变量。">
               <StGrid :cols="2" :gap="4">
@@ -480,6 +490,32 @@ onUnmounted(() => {
                 </StFormItem>
               </StStack>
             </StCard>
+
+            <StCard
+              title="IP 归属地"
+              subtitle="评论提交时 WordPress 已记录访客 IP，前台显示时按此处配置解析并缓存。"
+            >
+              <StStack :gap="4">
+                <StGrid :cols="2" :gap="4">
+                  <StFormItem label="解析接口">
+                    <StSelect
+                      :model-value="text('ip_location_api', 'xinyew')"
+                      :options="ipLocationApiOptions"
+                      aria-label="解析接口"
+                      @update:model-value="update('ip_location_api', $event)"
+                    />
+                  </StFormItem>
+                  <StFormItem label="结果缓存">
+                    <StSelect
+                      :model-value="checked('ip_location_cache', true) ? 'enabled' : 'disabled'"
+                      :options="ipLocationCacheOptions"
+                      aria-label="结果缓存"
+                      @update:model-value="update('ip_location_cache', $event === 'enabled')"
+                    />
+                  </StFormItem>
+                </StGrid>
+              </StStack>
+            </StCard>
           </template>
         </div>
       </main>
@@ -488,3 +524,165 @@ onUnmounted(() => {
     <StToast placement="bottom-right" />
   </div>
 </template>
+
+<style scoped>
+/* ===== 页面骨架（原先靠 Tailwind 工具类，现收敛为 scoped CSS + 令牌） =====
+   与前台 src/App.vue 的做法一致：页面级几何不新增组件，只落 scoped CSS。 */
+.admin-app {
+  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.admin-app__loading {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary);
+}
+
+.admin-app__error {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-app__error-card {
+  width: 100%;
+  max-width: 28rem; /* max-w-md */
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background-color: var(--card);
+  text-align: center;
+  box-shadow: var(--shadow-small);
+}
+
+.admin-app__error-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-app__error-desc {
+  margin: 12px 0 20px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.admin-app__layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-app__aside {
+  width: 100%;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+.admin-app__brand {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-app__brand-name {
+  display: block;
+  font-size: 13px;
+}
+
+.admin-app__brand-sub {
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.admin-app__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.admin-app__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-app__topbar {
+  position: sticky;
+  top: 46px;
+  z-index: 10;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--background) 90%, transparent);
+  backdrop-filter: blur(24px);
+}
+
+.admin-app__topbar-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.admin-app__topbar-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.admin-app__content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* space-y-5 */
+  max-width: 64rem; /* max-w-5xl */
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* lg (62.5rem / 1000px)：侧栏转为固定宽纵向栏，整体横向排布 */
+@media (min-width: 62.5rem) {
+  .admin-app__layout {
+    flex-direction: row;
+  }
+
+  .admin-app__aside {
+    width: 15rem; /* w-60 */
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  .admin-app__tabs {
+    display: block;
+  }
+}
+
+/* 783px：顶栏贴合 WordPress 管理栏高度 */
+@media (min-width: 48.9375rem) {
+  .admin-app__topbar {
+    top: 32px;
+  }
+}
+
+/* sm (37.5rem / 600px)：顶栏与内容区使用更大内边距 */
+@media (min-width: 37.5rem) {
+  .admin-app__topbar {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .admin-app__content {
+    padding: 32px;
+  }
+}
+</style>

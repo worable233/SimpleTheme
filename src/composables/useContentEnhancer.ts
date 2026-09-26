@@ -7,7 +7,9 @@ import { inlineProseIcons } from '@/lib/prose-icons'
 declare const Prism: { highlightElement: (el: HTMLElement) => void } | undefined
 import { Fancybox } from '@fancyapps/ui'
 import '@fancyapps/ui/dist/fancybox/fancybox.css'
-import { showToast } from '@/lib/toast'
+import { useToast } from '@/ui'
+
+const toast = useToast()
 
 let fancyboxBound = false
 
@@ -228,7 +230,7 @@ function addHeadingAnchors(container: Element) {
       e.stopPropagation()
       const url = `${window.location.href.split('#')[0]}#${id}`
       navigator.clipboard.writeText(url).catch(() => {})
-	      showToast('链接已复制到剪贴板')
+	      toast.success('链接已复制到剪贴板')
       copyBtn.innerHTML = CHECK_ICON
       setTimeout(() => {
         copyBtn.innerHTML = COPY_LINK_ICON
@@ -300,7 +302,7 @@ function wrapCodeBlockUI(pre: HTMLPreElement) {
   copyBtn.addEventListener('click', () => {
     const text = code.textContent || ''
     navigator.clipboard.writeText(text).catch(() => {})
-    showToast('代码已复制到剪贴板')
+    toast.success('代码已复制到剪贴板')
     copyBtn.innerHTML = `${CHECK_ICON} Copied!`
     setTimeout(() => {
       copyBtn.innerHTML = `${CLIPBOARD_ICON} Copy`

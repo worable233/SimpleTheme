@@ -27,33 +27,123 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section
-    class="flex flex-col rounded-large border-[1.5px] border-border bg-card p-[1.2rem] shadow-[0_4px_24px_0_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:transform-[perspective(800px)_translateY(-5px)_rotateX(2deg)] hover:border-primary hover:shadow-[0_10px_48px_-4px_rgba(0,0,0,0.13)] focus-within:border-primary dark:shadow-[inset_0_1px_0_0_#fff3]"
-  >
+  <section class="category-card">
+    <!--
+      保留原生 <button>：内部 justify-between（左标题 + 右计数），
+      StButton 会把内容塞进 .st-button__content。依据见 src/ui/README.md。
+    -->
     <button
       type="button"
-      class="mb-3 flex w-full cursor-pointer appearance-none items-center justify-between rounded-small bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      class="category-card__head"
       :aria-label="`查看 ${name} 分类的 ${count} 篇文章`"
       aria-haspopup="dialog"
       @click="emit('select', name)"
     >
-      <h3 class="m-0 text-xl font-bold text-foreground">{{ name }}</h3>
+      <h3 class="category-card__title">{{ name }}</h3>
       <StTag round>{{ count }} 篇</StTag>
     </button>
-    <div class="border-t border-dashed border-border pt-3">
+    <div class="category-card__list">
       <div
         v-for="post in posts"
         :key="post.id"
-        class="flex justify-between py-1 text-[0.9rem]"
+        class="category-card__item"
       >
         <RouterLink
           :to="toInternalPath(post.link)"
-          class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-foreground no-underline transition-colors duration-200 hover:text-primary dark:text-white/70"
+          class="category-card__link"
           @click.stop
           >{{ (post.title as RenderedText).rendered }}</RouterLink
         >
-        <span class="ml-3 shrink-0 text-[0.8rem] text-secondary">{{ post.displayDate }}</span>
+        <span class="category-card__date">{{ post.displayDate }}</span>
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.category-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-large);
+  background-color: var(--card);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
+  transition: all 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.category-card:hover {
+  transform: perspective(800px) translateY(-5px) rotateX(2deg);
+  border-color: var(--primary);
+  box-shadow: 0 10px 48px -4px rgb(0 0 0 / 0.13);
+}
+
+.category-card:focus-within {
+  border-color: var(--primary);
+}
+
+.category-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-small);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+
+.category-card__head:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.category-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.category-card__list {
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.category-card__item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+
+.category-card__link {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.category-card__link:hover {
+  color: var(--primary);
+}
+
+[data-theme='dark'] .category-card__link {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.category-card__date {
+  flex-shrink: 0;
+  margin-left: 12px;
+  font-size: 0.8rem;
+  color: var(--secondary);
+}
+</style>

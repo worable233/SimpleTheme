@@ -7,12 +7,12 @@ import { fetchCollection, getErrorMessage } from '@/lib/wordpress'
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import { rememberPreviews } from '@/lib/content-preview'
 import { useSkeletonSize } from '@/composables/useSkeletonSize'
-import { showError } from '@/lib/toast'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
-import { StSkeleton } from '@/ui'
+import { StSkeleton, useToast } from '@/ui'
 
 const { siteInfo, ensureLoaded } = useSiteShell()
+const toast = useToast()
 
 const pageSize = computed(() => siteInfo.value.collections?.shuoshuoPageSize ?? 12)
 const sectionTitle = computed(() => siteInfo.value.collections?.shuoshuoTitle || '说说')
@@ -54,7 +54,7 @@ async function loadShuoshuo() {
     void measureCard('.shuoshuo-card', '.shuoshuo-card__cover')
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '说说内容加载失败，请稍后重试。')
-    showError(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -328,7 +328,7 @@ body[data-theme='dark'] .shuoshuo-card:hover {
 
 body[data-theme='dark'] .shuoshuo-card__meta {
   background: rgba(0, 0, 0, 0.35);
-  box-shadow: inset 0 1px 0 0 #fff3, 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* ============ Skeleton ============ */

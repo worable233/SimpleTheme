@@ -16,18 +16,16 @@ const { open: openAuthModal } = useAuthModal()
 </script>
 
 <template>
-  <div
-    class="left-sidebar__actions flex w-full shrink-0 flex-col items-center gap-1.5 border-t border-border py-5 max-xl:justify-center max-xl:gap-1 max-xl:py-3"
-  >
+  <div class="left-sidebar__actions sidebar-actions">
     <!-- Login / User -->
     <template v-if="auth.loading">
-      <div class="h-[50px] w-[50px] animate-skeleton-pulse rounded-lg bg-muted"></div>
+      <div class="sidebar-actions__skeleton animate-skeleton-pulse"></div>
     </template>
     <template v-else-if="auth.loggedIn && auth.user">
       <a
         v-if="auth.adminUrl"
         :href="auth.adminUrl"
-        class="flex h-[50px] w-[50px] cursor-pointer items-center justify-center rounded-lg text-foreground transition-colors duration-150 hover:bg-menu-hover"
+        class="sidebar-actions__cell"
         :title="auth.user.displayName"
       >
         <StAvatar
@@ -79,3 +77,48 @@ const { open: openAuthModal } = useAuthModal()
     </StButton>
   </div>
 </template>
+
+<style scoped>
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  gap: 6px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-actions__skeleton {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-large);
+  background-color: var(--muted);
+}
+
+.sidebar-actions__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-large);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.sidebar-actions__cell:hover {
+  background-color: var(--menu-hover);
+}
+
+/* 1200px 以下侧栏收窄，操作区改为紧凑居中排布 */
+@media (max-width: 75rem) {
+  .sidebar-actions {
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 0;
+  }
+}
+</style>

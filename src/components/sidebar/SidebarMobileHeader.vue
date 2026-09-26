@@ -74,19 +74,19 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 <template>
   <header
-    class="fixed inset-x-0 top-0 z-[999] hidden h-14 w-full items-center justify-between overflow-hidden border-b border-border bg-card px-4 transition-transform duration-300 max-xl:flex"
-    :class="{ '-translate-y-full': hidden }"
+    class="mobile-header"
+    :class="{ 'is-hidden': hidden }"
   >
     <StButton quaternary circle size="large" aria-label="打开菜单" @click="$emit('toggle-menu')">
       <template #icon>
         <!-- ≤1000px: 汉堡菜单（两边都收起） -->
-        <svg class="hidden max-lg:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+        <svg class="mobile-header__icon-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
           <line x1="3" y1="6" x2="21" y2="6" />
           <line x1="3" y1="12" x2="21" y2="12" />
           <line x1="3" y1="18" x2="21" y2="18" />
         </svg>
         <!-- 1001-1200px: 左侧面板图标（只收起左侧） -->
-        <svg class="block max-lg:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+        <svg class="mobile-header__icon-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <line x1="9" y1="3" x2="9" y2="21" />
           <line x1="3" y1="9" x2="9" y2="9" />
@@ -95,17 +95,19 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </template>
     </StButton>
 
-    <div class="absolute left-1/2 max-w-[55%] -translate-x-1/2">
+    <div class="mobile-header__center">
+      <!-- 保留原生 <button>：阅读模式标题需借助 Transition 在「阅读标题/站点名」间切换，
+           且为居中布局而非单一内容按钮。 -->
       <Transition name="rm-fade" mode="out-in">
         <button
           v-if="readingMode"
           key="reading"
-          class="flex w-full cursor-pointer items-center justify-center gap-1 border-none bg-transparent p-0 text-foreground"
+          class="mobile-header__reading"
           aria-label="打开文章目录"
           @click="drawerOpen = true"
         >
-          <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-medium">{{ readingTitle }}</span>
-          <svg class="shrink-0 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+          <span class="mobile-header__reading-title">{{ readingTitle }}</span>
+          <svg class="mobile-header__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
@@ -113,9 +115,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           v-else
           key="brand"
           to="/"
-          class="flex items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap text-foreground no-underline"
+          class="mobile-header__brand"
         >
-          <span v-if="!shellLoading && siteName" class="text-base font-semibold">{{ siteName }}</span>
+          <span v-if="!shellLoading && siteName" class="mobile-header__brand-name">{{ siteName }}</span>
           <span v-else-if="shellLoading" role="status" class="skeleton line" style="width:80px;height:1rem;"></span>
         </RouterLink>
       </Transition>
@@ -133,13 +135,114 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- 阅读进度条（仅阅读模式显示） -->
     <div
       v-if="readingMode"
-      class="absolute bottom-0 left-0 h-[2px] bg-primary transition-[width] duration-150 ease-out"
+      class="mobile-header__progress"
       :style="{ width: (progress * 100).toFixed(2) + '%' }"
     ></div>
   </header>
 </template>
 
 <style scoped>
+/* 1200px 以上隐藏移动顶栏 */
+.mobile-header {
+  display: none;
+}
+
+@media (max-width: 75rem) {
+  .mobile-header {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    width: 100%;
+    padding: 0 16px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--card);
+    transition: transform 0.3s;
+  }
+
+  .mobile-header.is-hidden {
+    transform: translateY(-100%);
+  }
+}
+
+/* ≤1000px 显示汉堡，1001-1200px 显示面板图标 */
+.mobile-header__icon-hamburger {
+  display: none;
+}
+
+@media (max-width: 62.5rem) {
+  .mobile-header__icon-hamburger {
+    display: block;
+  }
+
+  .mobile-header__icon-panel {
+    display: none;
+  }
+}
+
+.mobile-header__center {
+  position: absolute;
+  left: 50%;
+  max-width: 55%;
+  transform: translateX(-50%);
+}
+
+.mobile-header__reading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.mobile-header__reading-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.mobile-header__caret {
+  flex-shrink: 0;
+  color: var(--secondary);
+}
+
+.mobile-header__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.mobile-header__brand-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mobile-header__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: width 0.15s ease-out;
+}
+
 .rm-fade-enter-active,
 .rm-fade-leave-active {
   transition: opacity 0.18s ease, transform 0.18s ease;

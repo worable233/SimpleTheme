@@ -47,7 +47,9 @@ const safeMenuItems = computed(() =>
           'menu-item-open': openMenus.has(item.id)
         }"
       >
-        <!-- 有子菜单项：切换按钮（浮动面板由 LeftSidebar 渲染） -->
+        <!-- 有子菜单项：切换按钮（浮动面板由 LeftSidebar 渲染）
+             保留原生 <button>：与同级 RouterLink 共用 图标+标题+chevron 布局，
+             样式由全局 src/styles/sidebar.css 的 .menu-toggle 驱动。 -->
         <template v-if="hasChildren(item)">
           <button
             class="menu-toggle"
