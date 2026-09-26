@@ -18,8 +18,8 @@ const route = useRoute()
 const tocTree = computed(() => {
   const root: TocNode[] = []
   const stack: TocNode[] = []
-  for (const item of tocItems.value) {
-    const node: TocNode = { ...item, children: [], hasActive: false }
+  for (const [order, item] of tocItems.value.entries()) {
+    const node: TocNode = { ...item, children: [], hasActive: false, order }
     while (stack.length > 0) {
       const parent = stack.at(-1)
       if (!parent || parent.level < node.level) break
@@ -52,6 +52,9 @@ const tocData = computed(() => {
   if (activeId.value) markActive(tree, activeId.value)
   return tree
 })
+
+/** 激活项在扁平目录里的序号（供 Apple Music 式距离模糊计算）。 */
+const activeIndex = computed(() => tocItems.value.findIndex((item) => item.id === activeId.value))
 
 let observer: IntersectionObserver | null = null
 
@@ -159,6 +162,7 @@ onUnmounted(() => {
         <TocTree
           :nodes="tocData"
           :active-id="activeId"
+          :active-index="activeIndex"
           @scroll-to="scrollToHeading"
         />
       </nav>
@@ -182,6 +186,7 @@ onUnmounted(() => {
             <TocTree
               :nodes="tocData"
               :active-id="activeId"
+              :active-index="activeIndex"
               @scroll-to="scrollToHeading"
             />
           </nav>

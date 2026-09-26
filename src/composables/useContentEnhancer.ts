@@ -194,17 +194,30 @@ function wrapCodeParagraphs(container: Element) {
 
 function addHeadingAnchors(container: Element) {
   const headings = container.querySelectorAll('h2, h3, h4')
+  /** 已占用的 id，保证自动生成的锚点唯一（重复标题不会撞车）。 */
+  const usedIds = new Set<string>(
+    Array.from(container.querySelectorAll('[id]'))
+      .map((el) => el.id)
+      .filter(Boolean),
+  )
   for (const heading of headings) {
     // Auto-generate ID if the heading doesn't have one
     let id = heading.getAttribute('id')
     if (!id) {
-      id = (heading.textContent || '')
+      const base = (heading.textContent || '')
         .toLowerCase()
         .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
         .replace(/^-+|-+$/g, '')
-      if (!id) id = 'heading-' + Math.random().toString(36).slice(2, 8)
+      id = base || 'heading-' + Math.random().toString(36).slice(2, 8)
+      // 去重：同名标题追加 -2 / -3 …，避免 getElementById 命中错误锚点
+      if (usedIds.has(id)) {
+        let n = 2
+        while (usedIds.has(`${id}-${n}`)) n += 1
+        id = `${id}-${n}`
+      }
       heading.setAttribute('id', id)
     }
+    usedIds.add(id)
 
     if (heading.querySelector('.heading-anchor-btn')) continue
 
