@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { StTooltip } from '@/ui'
 import type { AdminMenuItem } from '../shell-entry'
 
 const props = defineProps<{
@@ -53,41 +54,7 @@ function closeSubMenuNow() {
   hoveredItemId.value = null
 }
 
-// ========== Global tooltip (escapes scroll container clipping) ==========
-
-const tooltip = reactive({ visible: false, text: '', x: 0, y: 0 })
-
-function onNavMouseOver(e: MouseEvent) {
-  const link = (e.target as HTMLElement).closest<HTMLElement>('.admin-sidebar__item > a')
-  if (!link) {
-    tooltip.visible = false
-    return
-  }
-  const li = link.closest<HTMLElement>('.admin-sidebar__item')
-  // Only show tooltip for items WITHOUT children
-  if (li?.dataset.hasSub === 'true') {
-    tooltip.visible = false
-    return
-  }
-  const title = link.getAttribute('title') || ''
-  if (!title) {
-    tooltip.visible = false
-    return
-  }
-
-  const sidebar = link.closest<HTMLElement>('.admin-sidebar')
-  if (!sidebar) return
-  const sidebarRect = sidebar.getBoundingClientRect()
-  const linkRect = link.getBoundingClientRect()
-  tooltip.text = title
-  tooltip.x = sidebarRect.right + 10
-  tooltip.y = linkRect.top + linkRect.height / 2
-  tooltip.visible = true
-}
-
-function onNavMouseOut() {
-  tooltip.visible = false
-}
+// 悬浮提示统一由 src/ui 的 StTooltip 提供（见模板），不再自建 position:fixed 层。
 
 function isCurrent(item: AdminMenuItem): boolean {
   return props.currentUrl === item.url || props.currentUrl.startsWith(item.slug + '&')
@@ -149,11 +116,7 @@ function handleSubClick(child: { title: string; url: string }) {
     </div>
 
     <!-- Navigation -->
-    <nav
-      class="admin-sidebar__nav"
-      @mouseover="onNavMouseOver"
-      @mouseout="onNavMouseOut"
-    >
+    <nav class="admin-sidebar__nav">
       <ul class="admin-sidebar__list">
         <li
           v-for="item in menuItems"
@@ -163,31 +126,38 @@ function handleSubClick(child: { title: string; url: string }) {
           @mouseenter="item.children?.length && openSubMenu(item.id, $event)"
           @mouseleave="item.children?.length && scheduleCloseSubMenu()"
         >
-          <a
-            :href="safeHref(item.url)"
-            :title="item.title"
-            class="admin-sidebar__link"
-            :class="{ 'is-current': isCurrent(item) }"
-            @click.prevent="handleClick(item)"
+          <!-- 无子项的菜单用 StTooltip 提示；有子项悬停即出浮层，无需提示 -->
+          <StTooltip
+            :content="item.title"
+            placement="right"
+            :disabled="!!item.children?.length"
+            :side-offset="10"
           >
-            <span class="sta-icon admin-sidebar__icon">
-              <img v-if="getImageIconUrl(item.icon)" :src="getImageIconUrl(item.icon)" alt="" width="22" height="22" />
+            <a
+              :href="safeHref(item.url)"
+              class="admin-sidebar__link"
+              :class="{ 'is-current': isCurrent(item) }"
+              @click.prevent="handleClick(item)"
+            >
+              <span class="sta-icon admin-sidebar__icon">
+                <img v-if="getImageIconUrl(item.icon)" :src="getImageIconUrl(item.icon)" alt="" width="22" height="22" />
+                <span
+                  v-else-if="getDashiconClass(item.icon)"
+                  class="dashicons dashicons-before"
+                  :class="getDashiconClass(item.icon)"
+                ></span>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <!-- Chevron for items with children -->
               <span
-                v-else-if="getDashiconClass(item.icon)"
-                class="dashicons dashicons-before"
-                :class="getDashiconClass(item.icon)"
+                v-if="item.children?.length"
+                aria-hidden="true"
+                class="admin-sidebar__chevron"
               ></span>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </span>
-            <!-- Chevron for items with children -->
-            <span
-              v-if="item.children?.length"
-              aria-hidden="true"
-              class="admin-sidebar__chevron"
-            ></span>
-          </a>
+            </a>
+          </StTooltip>
         </li>
       </ul>
     </nav>
@@ -222,13 +192,6 @@ function handleSubClick(child: { title: string; url: string }) {
 
     <!-- Bottom spacer -->
     <div class="admin-sidebar__spacer"></div>
-
-    <!-- Global tooltip (position:fixed escapes overflow clipping) -->
-    <div
-      v-if="tooltip.visible"
-      class="admin-sidebar__tooltip"
-      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
-    >{{ tooltip.text }}</div>
   </aside>
 </template>
 
@@ -415,21 +378,6 @@ function handleSubClick(child: { title: string; url: string }) {
 .admin-sidebar__spacer {
   width: 100%;
   height: 12px;
-}
-
-.admin-sidebar__tooltip {
-  position: fixed;
-  z-index: 9999;
-  padding: 5px 12px;
-  border-radius: var(--radius-medium);
-  background-color: rgb(0 0 0 / 0.5);
-  color: #fff;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: nowrap;
-  pointer-events: none;
-  backdrop-filter: blur(10px);
-  transform: translateY(-50%);
 }
 
 .sta-icon svg {

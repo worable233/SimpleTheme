@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { resolveMenuIcon } from './icon-map'
 import AppIcon from '@/components/AppIcon.vue'
+import { StTooltip } from '@/ui'
 import type { MenuItem } from '@/types/wordpress'
 
 const props = defineProps<{
@@ -16,6 +17,22 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+
+/**
+ * 窄屏（< 1200px）时菜单项标题以图标下方小字展示，无需再做悬停提示。
+ * 与 sidebar.css 里标题切换的断点保持一致。
+ */
+const isNarrow = ref(false)
+let narrowQuery: MediaQueryList | null = null
+function syncNarrow(e?: MediaQueryListEvent) {
+  isNarrow.value = e ? e.matches : !!narrowQuery?.matches
+}
+onMounted(() => {
+  narrowQuery = window.matchMedia('(max-width: 1199.98px)')
+  syncNarrow()
+  narrowQuery.addEventListener('change', syncNarrow)
+})
+onUnmounted(() => narrowQuery?.removeEventListener('change', syncNarrow))
 
 function isCurrent(path: string): boolean {
   return route.path === path
@@ -64,34 +81,55 @@ const safeMenuItems = computed(() =>
           </button>
         </template>
 
-        <!-- 无子菜单项：普通链接 -->
-        <RouterLink
+        <!-- 无子菜单项：普通链接，窄屏标题在图标下方，宽屏用 StTooltip 悬停提示 -->
+        <StTooltip
           v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && !isHome(item.url)"
-          :to="item.path || item.url"
-          :target="item.target !== '_self' ? item.target : undefined"
-          :aria-current="isCurrent(item.path) ? 'page' : undefined"
+          :content="item.title"
+          placement="right"
+          :disabled="isNarrow"
+          :side-offset="10"
         >
-          <AppIcon v-bind="resolveMenuIcon(item, isCurrent(item.path))" class="menu-icon" />
-          <span class="menu-item-title">{{ item.title }}</span>
-        </RouterLink>
-        <RouterLink
+          <RouterLink
+            :to="item.path || item.url"
+            :target="item.target !== '_self' ? item.target : undefined"
+            :aria-current="isCurrent(item.path) ? 'page' : undefined"
+          >
+            <AppIcon v-bind="resolveMenuIcon(item, isCurrent(item.path))" class="menu-icon" />
+            <span class="menu-item-title">{{ item.title }}</span>
+          </RouterLink>
+        </StTooltip>
+        <StTooltip
           v-else-if="isSafeNavigationUrl(item.url) && !isExternalUrl(item.url) && isHome(item.url)"
-          to="/"
-          :target="item.target !== '_self' ? item.target : undefined"
-          :aria-current="isCurrent('/') ? 'page' : undefined"
+          :content="item.title"
+          placement="right"
+          :disabled="isNarrow"
+          :side-offset="10"
         >
-          <AppIcon v-bind="resolveMenuIcon(item, isCurrent('/'))" class="menu-icon" />
-          <span class="menu-item-title">{{ item.title }}</span>
-        </RouterLink>
-        <a
+          <RouterLink
+            to="/"
+            :target="item.target !== '_self' ? item.target : undefined"
+            :aria-current="isCurrent('/') ? 'page' : undefined"
+          >
+            <AppIcon v-bind="resolveMenuIcon(item, isCurrent('/'))" class="menu-icon" />
+            <span class="menu-item-title">{{ item.title }}</span>
+          </RouterLink>
+        </StTooltip>
+        <StTooltip
           v-else-if="isSafeNavigationUrl(item.url)"
-          :href="item.url"
-          :target="item.target || '_self'"
-          rel="noreferrer noopener"
+          :content="item.title"
+          placement="right"
+          :disabled="isNarrow"
+          :side-offset="10"
         >
-          <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
-          <span class="menu-item-title">{{ item.title }}</span>
-        </a>
+          <a
+            :href="item.url"
+            :target="item.target || '_self'"
+            rel="noreferrer noopener"
+          >
+            <AppIcon v-bind="resolveMenuIcon(item)" class="menu-icon" />
+            <span class="menu-item-title">{{ item.title }}</span>
+          </a>
+        </StTooltip>
       </li>
     </ul>
   </nav>

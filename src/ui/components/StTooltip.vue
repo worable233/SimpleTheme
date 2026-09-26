@@ -37,11 +37,14 @@ const props = withDefaults(
     disabled?: boolean
     /** 悬停多久后弹出（ms） */
     delayDuration?: number
+    /** 与触发器的距离（px）；侧栏等窄触发器可调大以推出容器 */
+    sideOffset?: number
   }>(),
   {
     placement: 'top',
     disabled: false,
     delayDuration: 200,
+    sideOffset: 8,
   },
 )
 
@@ -62,7 +65,7 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
           class="st-tooltip"
           :side="side"
           :align="align"
-          :side-offset="8"
+          :side-offset="sideOffset"
           :collision-padding="8"
         >
           {{ content }}

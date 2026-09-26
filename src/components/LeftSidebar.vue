@@ -139,7 +139,6 @@ onMounted(() => window.addEventListener('st:open-search', onOpenSearchEvent))
 onUnmounted(() => window.removeEventListener('st:open-search', onOpenSearchEvent))
 
 function onSidebarMouseLeave() {
-  tooltip.visible = false
   if (openMenus.value.size === 0) return
   closeTimer.value = setTimeout(() => {
     closeAllSubMenus()
@@ -186,37 +185,6 @@ function isHome(url: string): boolean {
 }
 
 const subMenuPositions = reactive<Record<number, { x: number; y: number }>>({})
-
-// ========== Global tooltip (escapes scroll container clipping) ==========
-
-const tooltip = reactive({ visible: false, text: '', x: 0, y: 0 })
-
-function onRootTooltipHover(e: MouseEvent) {
-  // Only on desktop — mobile has its own tooltip positioning below icons
-  if (window.innerWidth < 1200) return
-
-  const link = (e.target as HTMLElement).closest<HTMLElement>(
-    '.left-sidebar__menu > ul > li > a, .left-sidebar__menu > ul > li > button.menu-toggle',
-  )
-  if (!link) {
-    tooltip.visible = false
-    return
-  }
-
-  const titleEl = link.querySelector<HTMLElement>('.menu-item-title')
-  if (!titleEl?.textContent?.trim()) {
-    tooltip.visible = false
-    return
-  }
-
-  const sidebarRect = leftSidebarRef.value?.getBoundingClientRect()
-  if (!sidebarRect) return
-  const linkRect = link.getBoundingClientRect()
-  tooltip.text = titleEl.textContent.trim()
-  tooltip.x = sidebarRect.right + 10
-  tooltip.y = linkRect.top + linkRect.height / 2
-  tooltip.visible = true
-}
 </script>
 
 <template>
@@ -224,7 +192,6 @@ function onRootTooltipHover(e: MouseEvent) {
     class="sidebar-root"
     @mouseleave="onSidebarMouseLeave"
     @mouseenter="onSidebarMouseEnter"
-    @mouseover="onRootTooltipHover"
   >
     <!-- Mobile header (fixed top, visible on < 1200px) -->
     <SidebarMobileHeader
@@ -350,13 +317,6 @@ function onRootTooltipHover(e: MouseEvent) {
     </aside>
 
     <SearchModal v-model="searchOpen" />
-
-    <!-- Global tooltip (rendered outside scrollable menu, position:fixed to escape overflow clipping) -->
-    <div
-      class="sidebar-global-tooltip"
-      :class="{ 'is-visible': tooltip.visible }"
-      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
-    >{{ tooltip.text }}</div>
 
     <!-- Floating sub-menu panels (desktop only, outside scroll container) -->
     <div class="sidebar-sub-menu-desktop">

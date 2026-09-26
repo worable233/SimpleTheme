@@ -212,32 +212,6 @@
   pointer-events: auto;
 }
 
-/* Global tooltip (position: fixed escapes overflow clipping) */
-.sidebar-global-tooltip {
-  position: fixed;
-  z-index: 9999;
-  transform: translateY(-50%) translateX(-4px);
-  opacity: 0;
-  pointer-events: none;
-  font-size: 14px;
-  line-height: 1.4;
-  color: #fff;
-  white-space: nowrap;
-  padding: 5px 12px;
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease;
-}
-
-.sidebar-global-tooltip.is-visible {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
-
 /* ===== Narrow left drawer (< 1200px) ===== */
 @media (max-width: 1200px) {
   .left-sidebar {
