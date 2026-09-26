@@ -13,6 +13,7 @@
     "build-only": "node bin/copy-illustrations.mjs && node bin/copy-emojis.mjs && node bin/compress-emojis.mjs && vite build && node bin/copy-prism.mjs && node bin/cleanup-dist.mjs",
     "type-check": "vue-tsc --build",
     "check:ui": "node bin/check-ui.mjs",
+    "check:ui:business": "node bin/check-ui-business.mjs",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint --fix src env.d.ts vite.config.ts eslint.config.ts",
     "lint:eslint": "eslint src env.d.ts vite.config.ts eslint.config.ts --fix --cache",
