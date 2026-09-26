@@ -343,7 +343,7 @@ watch(
             <div class="single-post__cover-meta">
               <div
                 style="
-                  height: 0.75rem;
+                  height: 1.25rem;
                   width: 6rem;
                   border-radius: var(--radius-small, 4px);
                   background: rgba(255, 255, 255, 0.25);
@@ -352,7 +352,7 @@ watch(
               ></div>
               <div
                 style="
-                  height: 0.75rem;
+                  height: 1.25rem;
                   width: 4rem;
                   border-radius: var(--radius-small, 4px);
                   background: rgba(255, 255, 255, 0.25);
@@ -368,7 +368,7 @@ watch(
           <div class="single-post__header-meta">
             <div
               style="
-                height: 0.75rem;
+                height: 1.25rem;
                 width: 6rem;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
@@ -377,7 +377,7 @@ watch(
             ></div>
             <div
               style="
-                height: 0.75rem;
+                height: 1.25rem;
                 width: 4rem;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
