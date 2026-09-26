@@ -17,44 +17,59 @@
   will-change: transform, filter;
 }
 
-/* ===== forward：列表 → 详情 ===== */
-/* 上层：详情自右滑入 */
-.page-forward-enter-active {
+/* 节奏对齐 Naive UI 的 slide 约定（src/_styles/transitions/slide-in-from-*.ts）：
+ *   进场 → --duration-enter(0.3s) + --ease-out 减速落位
+ *   离场 → --duration-leave(0.2s) + --ease-in  加速退出
+ * 分两层：
+ *   主角层（整屏滑动的详情页）—— forward 是进场、back 是离场，取对应曲线；
+ *   视差层（被盖住、小幅位移后停在 -24% 的那一页）—— 它从不离开视口、
+ *     总是「减速落定」，所以固定用 --ease-out，时长与同方向的主角层一致，
+ *     保证两层同时起止。于是 forward 整体 0.3s、back 整体 0.2s。 */
+
+/* 上层页的抬升阴影：静态施加，不做 transition——box-shadow 逐帧动画会
+ * 触发整层重绘，反而拖累曲线顺滑度。 */
+.page-forward-enter-active,
+.page-back-leave-active {
   z-index: 2;
-  transition: transform 0.34s var(--ease-out);
+  box-shadow: var(--shadow-large);
+}
+
+/* ===== forward：列表 → 详情（整体 --duration-enter） ===== */
+/* 上层：详情自右滑入（进场：减速落位） */
+.page-forward-enter-active {
+  transition: transform var(--duration-enter) var(--ease-out);
 }
 .page-forward-enter-from {
   transform: translateX(100%);
 }
 
-/* 底层：列表轻微左移并压暗（视差） */
+/* 底层：列表左移并压暗（视差层：减速落定到 -24%） */
 .page-forward-leave-active {
   z-index: 1;
   transition:
-    transform 0.34s var(--ease-out),
-    filter 0.34s var(--ease-out);
+    transform var(--duration-enter) var(--ease-out),
+    filter var(--duration-enter) var(--ease-out);
 }
 .page-forward-leave-to {
   transform: translateX(-24%);
   filter: brightness(0.72);
 }
 
-/* ===== back：详情 → 列表 ===== */
-/* 上层：详情右滑退出，逐渐露出列表 */
+/* ===== back：详情 → 列表（整体 --duration-leave） ===== */
+/* 上层：详情右滑退出（离场：加速退出，干脆不拖沓） */
 .page-back-leave-active {
-  z-index: 2;
-  transition: transform 0.34s var(--ease-out);
+  transition: transform var(--duration-leave) var(--ease-in);
 }
 .page-back-leave-to {
   transform: translateX(100%);
 }
 
-/* 底层：列表自左归位并恢复亮度 */
+/* 底层：列表自左归位并恢复亮度（视差层：减速落定到 0） */
 .page-back-enter-active {
   z-index: 1;
   transition:
-    transform 0.34s var(--ease-out),
-    filter 0.34s var(--ease-out);
+    transform var(--duration-leave) var(--ease-out),
+    filter var(--duration-leave) var(--ease-out);
 }
 .page-back-enter-from {
   transform: translateX(-24%);
