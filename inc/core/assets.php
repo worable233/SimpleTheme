@@ -322,15 +322,16 @@ function simple_theme_enqueue_admin_assets( $hook ) {
 
 	$entry = $manifest['src/admin/main.ts'];
 
-	if ( ! empty( $entry['css'] ) && is_array( $entry['css'] ) ) {
-		foreach ( $entry['css'] as $index => $css_file ) {
-			wp_enqueue_style(
-				'simple-theme-admin-bundle-' . $index,
-				simple_theme_asset_uri( 'dist/' . ltrim( $css_file, '/' ) ),
-				array(),
-				simple_theme_get_asset_version( 'dist/' . ltrim( $css_file, '/' ) )
-			);
-		}
+	// 与前台一致：递归收集 imports 链上的 CSS。St* 组件样式在共享的
+	// _ui-*.js 子块里，只读 $entry['css'] 会漏掉整个组件库样式。
+	$all_css = simple_theme_collect_entry_css( $manifest, 'src/admin/main.ts' );
+	foreach ( $all_css as $index => $css_file ) {
+		wp_enqueue_style(
+			'simple-theme-admin-bundle-' . $index,
+			simple_theme_asset_uri( 'dist/' . ltrim( $css_file, '/' ) ),
+			array(),
+			simple_theme_get_asset_version( 'dist/' . ltrim( $css_file, '/' ) )
+		);
 	}
 
 	if ( ! empty( $entry['file'] ) ) {
