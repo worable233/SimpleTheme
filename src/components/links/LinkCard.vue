@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { StAvatar } from '@/ui'
+import { StAvatar, StPopover } from '@/ui'
 
 defineProps<{
   link: {
@@ -29,40 +29,48 @@ function decodeHtml(str: string): string {
 </script>
 
 <template>
-  <router-link
-    :to="{ path: '/go', query: { url: link.url } }"
-    class="link-card"
+  <!--
+    悬停预览统一用 src/ui 的 StPopover（reka-ui）：定位 / 碰撞翻转 / 端口
+    由浮层库负责；点击仍走 router-link 跳转到 /go。外观沿用本主题令牌。
+  -->
+  <StPopover
+    trigger="hover"
+    placement="top"
+    width="260px"
+    show-arrow
+    block
   >
-    <div class="link-card__inner">
-      <!-- 头像 -->
-      <div class="link-card__avatar-wrap">
-        <img
-          v-if="link.image"
-          :src="link.image"
-          :alt="link.name"
-          class="link-card__avatar"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-        />
-        <span v-else class="link-card__avatar-letter">{{ link.name.charAt(0) }}</span>
-      </div>
+    <template #trigger>
+      <router-link
+        :to="{ path: '/go', query: { url: link.url } }"
+        class="link-card"
+      >
+        <div class="link-card__inner">
+          <!-- 头像 -->
+          <StAvatar
+            :src="link.image"
+            :alt="link.name"
+            :fallback-text="link.name"
+            :size="40"
+            referrer-policy="no-referrer"
+          />
 
-      <!-- 站点名称 -->
-      <h3 class="link-card__name">{{ decodeHtml(link.name) }}</h3>
-    </div>
-
-    <!-- Hover tooltip -->
-    <div class="link-card__tip">
-      <div class="link-card__tip-top">
-        <StAvatar :src="link.image" alt="" :size="36" :fallback-text="link.name" />
-        <div class="link-card__tip-info">
-          <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
-          <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
+          <!-- 站点名称 -->
+          <h3 class="link-card__name">{{ decodeHtml(link.name) }}</h3>
         </div>
+      </router-link>
+    </template>
+
+    <!-- 悬停预览卡片 -->
+    <div class="link-card__tip-top">
+      <StAvatar :src="link.image" alt="" :size="36" :fallback-text="link.name" />
+      <div class="link-card__tip-info">
+        <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
+        <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
       </div>
-      <div v-if="link.description" class="link-card__tip-desc">{{ decodeHtml(link.description) }}</div>
     </div>
-  </router-link>
+    <div v-if="link.description" class="link-card__tip-desc">{{ decodeHtml(link.description) }}</div>
+  </StPopover>
 </template>
 
 <style scoped>
@@ -75,7 +83,7 @@ function decodeHtml(str: string): string {
   border-radius: var(--radius-large, 8px);
   background: var(--card);
   border: 1px solid var(--border, transparent);
-  transition: all 0.25s cubic-bezier(0.55, 0, 0.85, 0.25);
+  transition: all 0.25s var(--ease-in-out);
 }
 
 .link-card:hover {
@@ -91,36 +99,6 @@ function decodeHtml(str: string): string {
   padding: 0.875rem;
 }
 
-/* Avatar */
-.link-card__avatar-wrap {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--muted);
-}
-
-.link-card__avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.link-card__avatar-letter {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--muted);
-  user-select: none;
-}
-
 /* Name */
 .link-card__name {
   flex: 1;
@@ -134,46 +112,11 @@ function decodeHtml(str: string): string {
   text-overflow: ellipsis;
 }
 
-/* ============ Hover Tooltip ============ */
-.link-card__tip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  width: 260px;
-  background: var(--card);
-  border: none;
-  border-radius: var(--radius-large, 8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s 0.2s, visibility 0s 0.4s, transform 0.25s 0.2s cubic-bezier(0.55, 0, 0.8, 0.25);
-  pointer-events: none;
-  z-index: 10;
-}
-
-body[data-theme='dark'] .link-card__tip {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-}
-
-.link-card:hover .link-card__tip {
-  transition-delay: 0s;
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-
-/* Arrow */
-.link-card__tip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border: 5px solid transparent;
-  border-top-color: var(--card);
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.08));
+/* ============ Hover Popover ============ */
+.link-card__tip-top {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
 }
 
 .link-card__tip-info {
@@ -204,51 +147,17 @@ body[data-theme='dark'] .link-card__tip {
   text-overflow: ellipsis;
 }
 
+/* 描述区铺满浮层下沿：抵消 StPopover 内容区的 12px 内边距 */
 .link-card__tip-desc {
-  padding: 0.5rem 0.75rem 0.5rem;
+  margin: 10px -12px -12px;
+  padding: 8px 12px;
   background: var(--muted);
-  border-radius: 0 0 var(--radius-large, 8px) var(--radius-large, 8px);
+  border-radius: 0 0 var(--radius-medium) var(--radius-medium);
   font-size: 0.75rem;
   color: var(--secondary);
   line-height: 1.45;
   max-width: 100%;
   word-wrap: break-word;
-}
-
-/* Tip staggered entrance */
-.link-card__tip-name,
-.link-card__tip-url,
-.link-card__tip-desc {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: all 0.2s cubic-bezier(0.55, 0, 0.8, 0.25);
-  transition-delay: 0.2s;
-}
-
-.link-card:hover .link-card__tip-name {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0.02s;
-}
-
-.link-card:hover .link-card__tip-url {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0.04s;
-}
-
-.link-card:hover .link-card__tip-desc {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0.06s;
-}
-
-/* Top row */
-.link-card__tip-top {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem 0.5rem;
 }
 
 /* ============ Responsive ============ */
