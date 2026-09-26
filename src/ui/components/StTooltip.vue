@@ -94,5 +94,61 @@ const align = computed(() => (props.placement.split('-')[1] ?? 'center') as StAl
   -webkit-backdrop-filter: blur(var(--st-tooltip-blur));
   backdrop-filter: blur(var(--st-tooltip-blur));
   overflow-wrap: anywhere;
+
+  /* 进场起始位移，按 data-side 改写：始终从触发器一侧滑入（旧版侧栏
+   * 提示即 translateX(-4px)，此处推广到四个方向）。 */
+  --st-tooltip-shift-x: 0px;
+  --st-tooltip-shift-y: 0px;
+}
+
+:global(.st-tooltip[data-side='right']) {
+  --st-tooltip-shift-x: -4px;
+}
+
+:global(.st-tooltip[data-side='left']) {
+  --st-tooltip-shift-x: 4px;
+}
+
+:global(.st-tooltip[data-side='bottom']) {
+  --st-tooltip-shift-y: -4px;
+}
+
+:global(.st-tooltip[data-side='top']) {
+  --st-tooltip-shift-y: 4px;
+}
+
+/* 进出场：0.12s 淡入 + 4px 位移，与旧 .sidebar-global-tooltip 同节奏
+ * （进场 easeOut、退场 easeIn 且略快）。reka 的 Presence 监听 data-state
+ * 由 open → closed 时 animation-name 的变化来延迟卸载，因此退场必须写
+ * 在 [data-state='closed'] 上才生效。
+ * 动画只作用于内容根：定位用的 transform 在 reka 外层 popper wrapper 上，
+ * 二者互不打架。 */
+:global(.st-tooltip[data-state='open']) {
+  animation: st-tooltip-in 0.12s var(--ease-out);
+}
+
+:global(.st-tooltip[data-state='closed']) {
+  animation: st-tooltip-out 0.1s var(--ease-in);
+}
+
+@keyframes st-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--st-tooltip-shift-x), var(--st-tooltip-shift-y));
+  }
+}
+
+@keyframes st-tooltip-out {
+  to {
+    opacity: 0;
+    transform: translate(var(--st-tooltip-shift-x), var(--st-tooltip-shift-y));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.st-tooltip[data-state='open']),
+  :global(.st-tooltip[data-state='closed']) {
+    animation: none;
+  }
 }
 </style>
