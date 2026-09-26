@@ -220,13 +220,16 @@ import { StButton, StCard } from '@/ui'
 | `StCheckbox` 半选态 | `minus↔check` | `snappy` |
 | `StCollapseItem` / `SidebarNav` 折叠箭头 | `chevron-down↔up` | `smooth` |
 | `TechInfo` 展开箭头 | `chevron-down↔right` | `smooth` |
+| `useContentEnhancer` 正文音频播放器 | `player-play↔player-pause`、`volume↔volume-off` | `snappy` |
 
 > chevron 统一用 `smooth`（不越冲、减速落定），符合主题曲线约定。折叠/子菜单箭头原先靠
 > CSS `rotate()` 实现，现改为绑定展开态的形变，对应的 `rotate` 规则已从各组件与
 > `src/styles/sidebar.css` 移除。
-> 未纳入：`useContentEnhancer.ts` 的正文音频播放器（`play↔pause` / `volume↔mute`）。
-> 它是命令式 `innerHTML` 注入、且当前用实心图标，改用 Tabler 线性图标会改变视觉，
-> 故有意跳过；白名单里的 `player-play` 等数据保留待用。
+>
+> 音频播放器不用 `StMorphIcon` 组件，而用 morphicons 的 `<morph-icon>` **自定义元素**
+> （`morphicons/element`）：内容增强器是命令式 DOM，元素在 `disconnectedCallback`
+> 里自行销毁控制器、随正文一起被回收，不会像挂 Vue 应用那样泄漏。播放/暂停沿用实心
+> （CSS `fill: currentColor; stroke: none` 填充 Tabler path），音量/静音保持线性描边。
 
 ## 业务层门禁
 

@@ -2,6 +2,8 @@ import { watch, nextTick, onMounted, onUnmounted, type Ref } from 'vue'
 import { useToc } from '@/composables/useToc'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
+import { defineMorphIcon, type MorphIconElement } from 'morphicons/element'
+import { ICON_MORPH_NODES } from '@/lib/tabler-icons.generated'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
 declare const Prism: { highlightElement: (el: HTMLElement) => void } | undefined
@@ -65,12 +67,22 @@ function interceptSearchForms(container: Element) {
   }
 }
 
-// 自定义音频播放器图标（可信常量，Tabler 风格 2px 描边）
-const AUDIO_ICONS = {
-  play: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>',
-  pause: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
-  volume: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5z"/></svg>',
-  muted: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5z"/><path d="M16 10l4 4m0 -4l-4 4"/></svg>',
+// 正文音频播放器图标改用 morphicons 的 <morph-icon> 自定义元素：
+// 播放↔暂停、音量↔静音都走形变（图标数据取自 Tabler 白名单）。
+// 用自定义元素而非挂 Vue 应用——内容增强器是命令式 DOM，
+// 元素在 disconnectedCallback 里自行销毁控制器，随正文一起被回收，不会泄漏。
+defineMorphIcon()
+
+type AudioMorphName = 'player-play' | 'player-pause' | 'volume' | 'volume-off'
+
+/** 建一个 `<morph-icon>`；实际尺寸由 CSS 覆盖（此处 16 仅兜底） */
+function createAudioIcon(name: AudioMorphName): MorphIconElement {
+  const el = document.createElement('morph-icon')
+  el.setAttribute('size', '16')
+  el.setAttribute('reduced-motion', 'user')
+  el.setAttribute('spring', 'snappy')
+  el.icon = ICON_MORPH_NODES[name]
+  return el
 }
 
 function formatAudioTime(sec: number): string {
@@ -100,7 +112,8 @@ function enhanceAudioPlayers(container: Element) {
     btn.type = 'button'
     btn.className = 'st-audio__btn'
     btn.setAttribute('aria-label', '播放')
-    btn.innerHTML = AUDIO_ICONS.play
+    const playIcon = createAudioIcon('player-play')
+    btn.appendChild(playIcon)
 
     const time = document.createElement('span')
     time.className = 'st-audio__time'
@@ -119,7 +132,8 @@ function enhanceAudioPlayers(container: Element) {
     mute.type = 'button'
     mute.className = 'st-audio__mute'
     mute.setAttribute('aria-label', '静音')
-    mute.innerHTML = AUDIO_ICONS.volume
+    const muteIcon = createAudioIcon('volume')
+    mute.appendChild(muteIcon)
 
     ui.append(btn, time, track, mute)
     audio.after(ui)
@@ -129,7 +143,7 @@ function enhanceAudioPlayers(container: Element) {
       fill.style.width = audio.duration ? `${(audio.currentTime / audio.duration) * 100}%` : '0%'
     }
     const syncPlayState = () => {
-      btn.innerHTML = audio.paused ? AUDIO_ICONS.play : AUDIO_ICONS.pause
+      playIcon.icon = ICON_MORPH_NODES[audio.paused ? 'player-play' : 'player-pause']
       btn.setAttribute('aria-label', audio.paused ? '播放' : '暂停')
     }
 
@@ -139,7 +153,7 @@ function enhanceAudioPlayers(container: Element) {
     })
     mute.addEventListener('click', () => {
       audio.muted = !audio.muted
-      mute.innerHTML = audio.muted ? AUDIO_ICONS.muted : AUDIO_ICONS.volume
+      muteIcon.icon = ICON_MORPH_NODES[audio.muted ? 'volume-off' : 'volume']
     })
     track.addEventListener('click', (e) => {
       if (!audio.duration) return

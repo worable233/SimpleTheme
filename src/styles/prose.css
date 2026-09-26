@@ -633,9 +633,12 @@
   transform: scale(1.05);
 }
 
+/* 播放/暂停用实心（填充 Tabler 线性 path），音量保持线性描边 */
 .st-audio__btn svg {
   width: 16px;
   height: 16px;
+  fill: currentColor;
+  stroke: none;
 }
 
 .st-audio__time {
