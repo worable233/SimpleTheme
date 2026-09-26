@@ -269,23 +269,25 @@ defineExpose({ focus, el: inputEl })
   width: 100%;
   height: var(--st-height-medium);
   padding: 0 10px;
-  border: 1px solid var(--st-border);
+  border: 1px solid var(--st-input-border-color);
   border-radius: var(--radius-medium);
-  background-color: var(--st-fill);
+  background-color: var(--st-input-fill);
   color: var(--st-text);
   font-size: var(--st-font-medium);
   transition:
     border-color var(--transition-fast),
+    background-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
 .st-number-input:hover:not(.st-number-input--disabled) {
-  border-color: var(--st-border-hover);
+  border-color: var(--st-input-border-hover);
 }
 
 .st-number-input:focus-within {
-  border-color: var(--ring);
-  box-shadow: var(--st-focus-ring);
+  border-color: var(--st-input-border-focus);
+  background-color: var(--st-input-fill-focus);
+  box-shadow: var(--st-input-shadow-focus);
 }
 
 /* ==================== 尺寸 ==================== */
@@ -320,7 +322,7 @@ defineExpose({ focus, el: inputEl })
 }
 
 .st-number-input--readonly {
-  background-color: var(--st-fill-active);
+  background-color: var(--st-input-fill-disabled);
 }
 
 /* ==================== 校验状态 ==================== */
@@ -332,11 +334,18 @@ defineExpose({ focus, el: inputEl })
 .st-number-input--invalid:focus-within,
 .st-number-input--error:focus-within {
   border-color: var(--danger);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+  background-color: var(--st-input-fill-focus-error);
+  box-shadow: var(--st-input-shadow-focus-error);
 }
 
 .st-number-input--warning {
   border-color: var(--warning);
+}
+
+.st-number-input--warning:focus-within {
+  border-color: var(--warning);
+  background-color: var(--st-input-fill-focus-warning);
+  box-shadow: var(--st-input-shadow-focus-warning);
 }
 
 .st-number-input--success {

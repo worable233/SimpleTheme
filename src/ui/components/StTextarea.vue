@@ -105,23 +105,25 @@ defineExpose({ focus, el })
   box-sizing: border-box;
   width: 100%;
   padding: 7px 10px;
-  border: 1px solid var(--st-border);
+  border: 1px solid var(--st-input-border-color);
   border-radius: var(--radius-medium);
-  background-color: var(--st-fill);
+  background-color: var(--st-input-fill);
   color: var(--st-text);
   font-size: var(--st-font-medium);
   transition:
     border-color var(--transition-fast),
+    background-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
 .st-textarea:hover:not(.st-textarea--disabled) {
-  border-color: var(--st-border-hover);
+  border-color: var(--st-input-border-hover);
 }
 
 .st-textarea:focus-within {
-  border-color: var(--ring);
-  box-shadow: var(--st-focus-ring);
+  border-color: var(--st-input-border-focus);
+  background-color: var(--st-input-fill-focus);
+  box-shadow: var(--st-input-shadow-focus);
 }
 
 /* ==================== 尺寸 ==================== */
@@ -148,7 +150,7 @@ defineExpose({ focus, el })
 }
 
 .st-textarea--readonly {
-  background-color: var(--st-fill-active);
+  background-color: var(--st-input-fill-disabled);
 }
 
 /* 校验状态：用边色表达，并保证聚焦时不被 --ring 覆盖 */
@@ -158,11 +160,18 @@ defineExpose({ focus, el })
 
 .st-textarea--error:focus-within {
   border-color: var(--danger);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+  background-color: var(--st-input-fill-focus-error);
+  box-shadow: var(--st-input-shadow-focus-error);
 }
 
 .st-textarea--warning {
   border-color: var(--warning);
+}
+
+.st-textarea--warning:focus-within {
+  border-color: var(--warning);
+  background-color: var(--st-input-fill-focus-warning);
+  box-shadow: var(--st-input-shadow-focus-warning);
 }
 
 .st-textarea--success {

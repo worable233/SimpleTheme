@@ -110,6 +110,33 @@ const model = defineModel<string>({ default: '' })
 > `StSelect` 尚未处理：它基于 reka-ui `SelectTrigger`，属性应落到触发器
 > 按钮而非隐藏 input，需要单独设计。
 
+## 动效
+
+曲线与时长**对齐 Naive UI 的节奏约定**（`tokens.css` C 段）：
+
+| 令牌                    | 用途                              | 值                            |
+| ----------------------- | --------------------------------- | ----------------------------- |
+| `--ease-out`            | cubicBezierEaseOut（进场/退场）   | `cubic-bezier(0, 0, .2, 1)`   |
+| `--ease-in`             | cubicBezierEaseIn（退场）         | `cubic-bezier(.4, 0, 1, 1)`   |
+| `--ease-in-out`         | cubicBezierEaseInOut（几何折叠）  | `cubic-bezier(.4, 0, .2, 1)`  |
+| `--duration-enter`      | 进场时长                          | `0.3s`                        |
+| `--duration-leave`      | 退场时长                          | `0.2s`                        |
+| `--st-duration-modal`   | Modal 进出场同值刻度              | `0.25s`                       |
+
+> 关于"进慢出快"：这适用于 **StDrawer**（进场 `--duration-enter` + `--ease-out`，
+> 退场 `--duration-leave` + `--ease-in`，与 Naive drawer 的 `-bezier-in/-out` 一致）。
+> 但**不要套用到所有组件**——Naive 的 `StModal` 与 `StToast` 本身就是**对称**的：
+> Modal 进出都是 `.25s`，Toast 高度折叠进出都是 `.3s`。抄之前先核对该组件源码。
+
+> 已内置的动效样板（可直接参照）：
+> `StModal` / `StDrawer` 的 `[data-state='closed']` 退场（基于 reka-ui 的
+> `Presence`，它在 `animationend` 后才卸载节点，所以退场动画必须挂在
+> `Overlay` / `Content` **元素自身**上）；`StToast` 按 Naive
+> `fadeInHeightExpandTransition` 逐值实现的高度折叠；`StButton` 的
+> 图标↔spinner 交叉切换与点击波纹；`StSwitch` 的橡胶拉伸。
+
+**所有动效都必须包一层 `@media (prefers-reduced-motion: reduce)` 关闭。**
+
 ## 何时**不该**用 StButton
 
 `StButton` 把默认插槽包在 `.st-button__content`（`display:inline-block;
@@ -133,3 +160,17 @@ import { StButton, StCard } from '@/ui'
 ```
 
 按需具名引入，保留 tree-shaking。**不要**全局注册整个组件库。
+
+## 业务层门禁
+
+组件库自身的契约由 `npm run check:ui` 强制（见 `bin/check-ui.mjs`）。
+业务层（`src/App.vue`、`src/components`、`src/views`、`src/admin`）的「组件库优先」由
+`npm run check:ui:business` 强制（见 `bin/check-ui-business.mjs`）：
+
+- 禁裸 `<button>` → 优先 `StButton`；
+- 禁裸 `<input>` / `<textarea>` / `<select>` → 优先 `StInput` / `StTextarea` / `StSelect`；
+- 禁静态 `class="..."` 里的 Tailwind 工具类 → 收敛为 scoped CSS + 令牌。
+
+**登记制**：确实需要保留原生的，在 `bin/check-ui-business.mjs` 的白名单里
+显式登记理由，并在对应组件的 template 里补一段注释说明「为何不迁」。
+保留理由属于代码，不属于 commit message——否则后人只看到裸标签，会误以为漏迁。

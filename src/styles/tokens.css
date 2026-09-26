@@ -216,6 +216,21 @@
 
   --transition-fast: 0.15s var(--ease-standard);
   --transition: 0.2s var(--ease-standard);
+
+  /* 进出场专用曲线与时长（借用 Naive UI 的节奏约定）：
+   * 进场比退场慢、用 easeOut 让人看清内容；退场用 easeIn 干脆利落。
+   * 组件写动效时优先用成对的 --duration-enter/leave + --ease-in/out，
+   * 不要再对进出场复用同一条曲线。
+   * 注意：刻意放在 @theme 之外，避免生成同名 Tailwind 工具类而与内置
+   * ease-out / ease-in / duration-* 冲突。 */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  /* Naive 的 cubicBezierEaseInOut，用于几何属性（高度/边距）折叠 */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-enter: 0.3s;
+  --duration-leave: 0.2s;
+  /* Naive Modal 的进出场同值刻度 */
+  --st-duration-modal: 0.25s;
 }
 
 /* ==========================================================================
@@ -264,6 +279,41 @@
   /* 焦点反馈 */
   --st-focus-ring: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
 
+  /* StInput 皮肤 —— 对齐 Naive Input 的 light.ts / dark.ts 两套主题。
+   * Naive 的深色输入框不是浅色换色，而是另一套结构：常态无边框 +
+   * 半透明填充，聚焦时换成 tinted 底 + 8px 柔光（见 [data-theme='dark']）。
+   * 其余刻度的取值出处：src/input/styles/light.ts。 */
+  --st-input-fill: var(--st-fill);
+  --st-input-fill-disabled: var(--st-fill-active);
+  --st-input-fill-focus: var(--st-fill);
+  --st-input-border-color: var(--st-border);
+  --st-input-border-hover: var(--st-border-hover);
+  --st-input-border-focus: var(--ring);
+  --st-input-shadow-focus: var(--st-focus-ring);
+  --st-input-fill-focus-warning: var(--st-fill);
+  --st-input-fill-focus-error: var(--st-fill);
+  --st-input-shadow-focus-warning: 0 0 0 2px color-mix(in srgb, var(--warning) 20%, transparent);
+  --st-input-shadow-focus-error: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+
+  /* StSelect 皮肤 —— 对齐 Naive InternalSelection 的 light.ts / dark.ts。
+   * 与 StInput 同构，但多了「展开态 active」（对应 Naive 的 --active 修饰符）。
+   * 出处：src/_internal/selection/styles/light.ts。 */
+  --st-select-fill: var(--st-fill);
+  --st-select-fill-disabled: var(--st-fill-active);
+  --st-select-border-color: var(--st-border);
+  --st-select-border-hover: var(--st-border-hover);
+  --st-select-border-focus: var(--ring);
+  --st-select-border-active: var(--primary);
+  --st-select-shadow-focus: var(--st-focus-ring);
+  --st-select-shadow-active: var(--st-focus-ring);
+  --st-select-fill-active: var(--st-fill);
+  --st-select-fill-active-warning: var(--st-fill);
+  --st-select-fill-active-error: var(--st-fill);
+  --st-select-shadow-focus-warning: 0 0 0 2px color-mix(in srgb, var(--warning) 20%, transparent);
+  --st-select-shadow-focus-error: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+  --st-select-shadow-active-warning: 0 0 0 2px color-mix(in srgb, var(--warning) 20%, transparent);
+  --st-select-shadow-active-error: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+
   /* 浮层 */
   --st-popover-bg: var(--card);
   --st-popover-border: 1px solid var(--border);
@@ -290,4 +340,46 @@
 
 [data-theme='dark'] {
   --st-on-color: #1a1a1a;
+
+  /* StInput 深色皮肤 —— 逐条对齐 Naive src/input/styles/dark.ts:
+   *   color          = overlay(alphaInput=0.1)  → 半透明白，柔和的填充
+   *   colorFocus     = primary@0.1              → 聚焦着色调底（非浅色）
+   *   border         = 1px solid #0000          → 常态无边框
+   *   borderHover/Focus = primaryHover          → 悬停/聚焦才显边
+   *   boxShadowFocus = 0 0 8px 0 primary@0.3    → 柔光，非 2px 硬环
+   *   colorDisabled  = overlay(alphaDisabledInput=0.06) */
+  --st-input-fill: rgb(255 255 255 / 0.1);
+  --st-input-fill-disabled: rgb(255 255 255 / 0.06);
+  --st-input-fill-focus: color-mix(in srgb, var(--primary) 10%, transparent);
+  --st-input-border-color: transparent;
+  --st-input-border-hover: var(--primary);
+  --st-input-border-focus: var(--primary);
+  --st-input-shadow-focus: 0 0 8px 0 color-mix(in srgb, var(--primary) 30%, transparent);
+  --st-input-fill-focus-warning: color-mix(in srgb, var(--warning) 10%, transparent);
+  --st-input-fill-focus-error: color-mix(in srgb, var(--danger) 10%, transparent);
+  --st-input-shadow-focus-warning: 0 0 8px 0 color-mix(in srgb, var(--warning) 30%, transparent);
+  --st-input-shadow-focus-error: 0 0 8px 0 color-mix(in srgb, var(--danger) 30%, transparent);
+
+  /* StSelect 深色皮肤 —— 逐条对齐 Naive src/_internal/selection/styles/dark.ts:
+   *   color          = inputColor             → 半透明白 10%
+   *   colorActive    = primary@0.1            → 展开时着色调底
+   *   border         = 1px solid #0000        → 常态无边框
+   *   borderActive   = primary（非 primaryHover，与 focus 不同）
+   *   boxShadowActive/Focus = 0 0 8px 0 primary@0.4 ← 注意是 0.4（Input 是 0.3）
+   *   colorDisabled  = inputColorDisabled     → 半透明白 6% */
+  --st-select-fill: rgb(255 255 255 / 0.1);
+  --st-select-fill-disabled: rgb(255 255 255 / 0.06);
+  --st-select-border-color: transparent;
+  --st-select-border-hover: var(--primary);
+  --st-select-border-focus: var(--primary);
+  --st-select-border-active: var(--primary);
+  --st-select-shadow-focus: 0 0 8px 0 color-mix(in srgb, var(--primary) 40%, transparent);
+  --st-select-shadow-active: 0 0 8px 0 color-mix(in srgb, var(--primary) 40%, transparent);
+  --st-select-fill-active: color-mix(in srgb, var(--primary) 10%, transparent);
+  --st-select-fill-active-warning: color-mix(in srgb, var(--warning) 10%, transparent);
+  --st-select-fill-active-error: color-mix(in srgb, var(--danger) 10%, transparent);
+  --st-select-shadow-focus-warning: 0 0 8px 0 color-mix(in srgb, var(--warning) 40%, transparent);
+  --st-select-shadow-focus-error: 0 0 8px 0 color-mix(in srgb, var(--danger) 40%, transparent);
+  --st-select-shadow-active-warning: 0 0 8px 0 color-mix(in srgb, var(--warning) 40%, transparent);
+  --st-select-shadow-active-error: 0 0 8px 0 color-mix(in srgb, var(--danger) 40%, transparent);
 }

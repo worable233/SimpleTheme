@@ -190,9 +190,9 @@ function clear() {
   height: var(--st-select-height);
   padding: 0 var(--st-select-pad);
   padding-right: 26px;
-  border: 1px solid var(--st-border);
+  border: 1px solid var(--st-select-border-color);
   border-radius: var(--radius-medium);
-  background-color: var(--st-fill);
+  background-color: var(--st-select-fill);
   color: var(--st-text);
   font-family: inherit;
   font-size: inherit;
@@ -201,6 +201,7 @@ function clear() {
   cursor: pointer;
   transition:
     border-color var(--transition-fast),
+    background-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
@@ -210,20 +211,27 @@ function clear() {
 }
 
 .st-select__trigger:hover:not(:disabled) {
-  border-color: var(--st-border-hover);
+  border-color: var(--st-select-border-hover);
 }
 
 .st-select__trigger:focus-visible,
 .st-select__trigger[data-state='open'] {
   outline: none;
-  border-color: var(--ring);
-  box-shadow: var(--st-focus-ring);
+  border-color: var(--st-select-border-focus);
+  box-shadow: var(--st-select-shadow-focus);
+}
+
+/* 展开态：Naive --active，底色转 tinted、边框转 primary、柔光 */
+.st-select__trigger[data-state='open'] {
+  background-color: var(--st-select-fill-active);
+  border-color: var(--st-select-border-active);
+  box-shadow: var(--st-select-shadow-active);
 }
 
 .st-select__trigger:disabled,
 .st-select--disabled .st-select__trigger {
   cursor: not-allowed;
-  opacity: 0.5;
+  background-color: var(--st-select-fill-disabled);
 }
 
 /* 校验状态：边色表达，聚焦时不被 --ring 覆盖 */
@@ -234,11 +242,25 @@ function clear() {
 .st-select--error .st-select__trigger:focus-visible,
 .st-select--error .st-select__trigger[data-state='open'] {
   border-color: var(--danger);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+  box-shadow: var(--st-select-shadow-active-error);
+}
+
+.st-select--error .st-select__trigger[data-state='open'] {
+  background-color: var(--st-select-fill-active-error);
 }
 
 .st-select--warning .st-select__trigger {
   border-color: var(--warning);
+}
+
+.st-select--warning .st-select__trigger:focus-visible,
+.st-select--warning .st-select__trigger[data-state='open'] {
+  border-color: var(--warning);
+  box-shadow: var(--st-select-shadow-active-warning);
+}
+
+.st-select--warning .st-select__trigger[data-state='open'] {
+  background-color: var(--st-select-fill-active-warning);
 }
 
 .st-select--success .st-select__trigger {
