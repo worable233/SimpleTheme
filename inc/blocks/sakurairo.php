@@ -83,14 +83,21 @@ function simple_theme_render_notice_block( $attributes, $content ) {
 
 /**
  * Render a sakurairo/showcard-block.
- * Rebuild the small, attribute-driven card instead of returning saved HTML
- * verbatim. This keeps image/link/icon attributes from becoming an HTML sink.
+ *
+ * Modern saved markup already carries the full structure (block wrapper class,
+ * cover image, icon + title), so it is returned verbatim. Only very old
+ * attribute-only content falls back to the rebuild path below.
  */
 function simple_theme_render_showcard_block( $attributes, $content ) {
-	if ( empty( $attributes ) ) {
-		return empty( $content ) ? '' : wp_kses_post( $content );
+	if ( empty( $content ) ) {
+		return '';
 	}
 
+	if ( false !== strpos( $content, 'showcard' ) ) {
+		return $content;
+	}
+
+	$attributes   = is_array( $attributes ) ? $attributes : array();
 	$icon_classes = preg_split( '/\s+/', (string) ( $attributes['icon'] ?? 'ti ti-bookmark' ) );
 	$icon_classes = array_filter( array_map( 'sanitize_html_class', $icon_classes ) );
 	$icon         = implode( ' ', $icon_classes ) ?: 'ti ti-bookmark';
@@ -108,28 +115,43 @@ function simple_theme_render_showcard_block( $attributes, $content ) {
 
 /**
  * Render a sakurairo/conversations-block.
- * Saved HTML is self-contained — just return it.
+ *
+ * Modern saved markup already carries the full structure (block wrapper class,
+ * avatar, bubble), so it is returned verbatim. Rebuilding it would nest a
+ * second copy inside the saved HTML and duplicate the avatar.
  */
 function simple_theme_render_conversations_block( $attributes, $content ) {
-	if ( empty( $attributes ) ) {
-		return empty( $content ) ? '' : wp_kses_post( $content );
+	if ( empty( $content ) ) {
+		return '';
 	}
 
-	$avatar    = esc_url( (string) ( $attributes['avatar'] ?? '' ), array( 'http', 'https' ) );
-	$direction = in_array( $attributes['direction'] ?? 'row', array( 'row', 'row-reverse' ), true ) ? $attributes['direction'] : 'row';
-	$text      = wp_kses_post( (string) ( $attributes['content'] ?? $content ) );
+	if ( false !== strpos( $content, 'conversations-code' ) ) {
+		return $content;
+	}
+
+	$attributes  = is_array( $attributes ) ? $attributes : array();
+	$avatar      = esc_url( (string) ( $attributes['avatar'] ?? '' ), array( 'http', 'https' ) );
+	$direction   = in_array( $attributes['direction'] ?? 'row', array( 'row', 'row-reverse' ), true ) ? $attributes['direction'] : 'row';
+	$text        = wp_kses_post( (string) ( $attributes['content'] ?? $content ) );
 	$avatar_html = $avatar ? '<img src="' . esc_url( $avatar ) . '" alt="">' : '';
 
-	return '<div class="conversations-code" style="display:flex;flex-direction:' . esc_attr( $direction ) . ';">' . $avatar_html . '<div class="conversations-code-text">' . $text . '</div></div>';
+	return '<div class="wp-block-sakurairo-conversations-block conversations-code" style="display:flex;flex-direction:' . esc_attr( $direction ) . ';">' . $avatar_html . '<div class="conversations-code-text">' . $text . '</div></div>';
 }
 
 /**
  * Render a sakurairo/vbilibili block.
- * Saved HTML is self-contained — just return it.
+ *
+ * Modern saved markup already carries the full structure, so it is returned
+ * verbatim; only attribute-only content is rebuilt.
  */
 function simple_theme_render_vbilibili_block( $attributes, $content ) {
-	$video_id = trim( (string) ( $attributes['videoId'] ?? '' ) );
-	$src = '';
+	if ( ! empty( $content ) && false !== strpos( $content, 'vbilibili' ) ) {
+		return $content;
+	}
+
+	$attributes = is_array( $attributes ) ? $attributes : array();
+	$video_id   = trim( (string) ( $attributes['videoId'] ?? '' ) );
+	$src        = '';
 	if ( preg_match( '/^av(\d+)$/i', $video_id, $matches ) ) {
 		$src = 'https://player.bilibili.com/player.html?avid=' . $matches[1] . '&page=1&autoplay=0&danmaku=0';
 	} elseif ( preg_match( '/^BV[a-zA-Z0-9]+$/', $video_id ) ) {
@@ -139,7 +161,7 @@ function simple_theme_render_vbilibili_block( $attributes, $content ) {
 		return '';
 	}
 
-	return '<div class="vbilibili" style="position:relative;padding:56.25% 0 0 0"><iframe src="' . esc_url( $src, array( 'https' ) ) . '" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts" allowfullscreen style="position:absolute;width:100%;height:100%;left:0;top:0;border:none;overflow:hidden"></iframe></div>';
+	return '<div class="wp-block-sakurairo-vbilibili vbilibili" style="position:relative;padding:56.25% 0 0 0"><iframe src="' . esc_url( $src, array( 'https' ) ) . '" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts" allowfullscreen style="position:absolute;width:100%;height:100%;left:0;top:0;border:none;overflow:hidden"></iframe></div>';
 }
 
 // ============================================================

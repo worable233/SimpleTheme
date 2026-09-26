@@ -1,474 +1,209 @@
 /* ===================================================================
-   Sakurairo 区块兼容样式 — Simple Theme 设计语言
+   Sakurairo 区块样式 — 统一到 Simple Theme 设计语言
    ===================================================================
-   遵循主题的 Fumadocs 启发的设计风格：
-   - 轻薄卡片 (`var(--card)` / `var(--border)`)
-   - 暗色模式 `inset` 顶光 (`var(--card-highlight)`)
-   - 左彩色竖条(::before) + 微 tint 背景（通知块）
-   - 弹性动画曲线 `cubic-bezier(0.16, 1, 0.3, 1)`
-   - 毛玻璃效果 (`backdrop-filter: blur(10px)`)
-   - Hover 上浮 `translateY(-2px)`
+   本文件是这些区块的唯一样式来源：前台（SPA / 静态 HTML）与区块编辑器
+   共用。样式全部消费主题令牌，不再出现硬编码颜色。
+   设计语言对齐 src/ui 的 StAlert / StCard / StAvatar：
+   - 卡片：`var(--card)` + `1px var(--border)` + `var(--radius-*)`
+   - 暗色顶光：`var(--card-highlight)`
+   - 状态色：`var(--danger)` / `var(--warning)` / `var(--success)`
+   - 动效曲线：`var(--transition)` / `var(--ease-out)`
    =================================================================== */
 
-/* ==================== 入口动画（共用） ==================== */
+/* ==================== 1. 通知块（Notice / Callout） ====================
+   结构：<div class="wp-block-sakurairo-notice-block shortcodestyle task">
+           <span class="sc-title">TASK</span><span class="sc-content">…</span>
+         </div>
+   类型通过同名类切换强调色，视觉对齐 StAlert（浅色底 + 同色描边）。 */
 
-@keyframes notice-enter {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ==================== 1. 通知块（Notice / Callout） ==================== */
-
-/* --- 全局范围（兼容老版本 inline 用法） --- */
-
-.shortcodestyle {
-  display: block;
-  margin: 28px 0;
-  padding: 10px 14px 10px 24px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--foreground);
-  animation: notice-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: box-shadow 0.2s ease;
-  position: relative;
-}
-
-.shortcodestyle::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  border-radius: 2px;
-}
-
-.shortcodestyle:hover {
-  box-shadow: var(--shadow-medium);
-}
-
-.shortcodestyle .sc-title {
-  display: block;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 4px;
-}
-
-.shortcodestyle .sc-content {
-  display: block;
-}
-
-.shortcodestyle p {
-  margin: 0.4em 0;
-}
-
-.shortcodestyle p:first-of-type {
-  margin-top: 0;
-}
-
-.shortcodestyle p:last-of-type {
-  margin-bottom: 0;
-}
-
-/* --- 类型颜色（::before 竖条 + 标题颜色） --- */
-
-.task {
-  background: color-mix(in srgb, var(--card) 98%, var(--muted-foreground));
-}
-.task::before {
-  background: var(--muted-foreground);
-}
-.task .sc-title {
-  color: var(--muted-foreground);
-}
-
-.warning {
-  background: color-mix(in srgb, var(--card) 96%, var(--warning));
-}
-.warning::before {
-  background: var(--warning);
-}
-.warning .sc-title {
-  color: var(--warning);
-}
-
-.noway {
-  background: color-mix(in srgb, var(--card) 96%, var(--danger));
-}
-.noway::before {
-  background: var(--danger);
-}
-.noway .sc-title {
-  color: var(--danger);
-}
-
-.buy {
-  background: color-mix(in srgb, var(--card) 96%, var(--success));
-}
-.buy::before {
-  background: var(--success);
-}
-.buy .sc-title {
-  color: var(--success);
-}
-
-/* --- 暗色模式覆盖 --- */
-
-[data-theme='dark'] .shortcodestyle {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .shortcodestyle:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
-[data-theme='dark'] .task {
-  background: color-mix(in srgb, var(--card) 95%, var(--muted-foreground));
-}
-[data-theme='dark'] .warning {
-  background: color-mix(in srgb, var(--card) 92%, var(--warning));
-}
-[data-theme='dark'] .noway {
-  background: color-mix(in srgb, var(--card) 92%, var(--danger));
-}
-[data-theme='dark'] .buy {
-  background: color-mix(in srgb, var(--card) 92%, var(--success));
-}
-
-/* --- .prose-content 作用域（WP 文章内容内使用） --- */
-
+.shortcodestyle,
 .prose-content .shortcodestyle {
+  --sk-accent: var(--muted-foreground);
+
   display: block;
-  margin: 28px 0;
-  padding: 10px 14px 10px 24px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-small);
-  font-size: 14px;
+  margin: 24px 0;
+  padding: 11px 14px;
+  background: color-mix(in srgb, var(--sk-accent) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--sk-accent) 30%, var(--border));
+  border-radius: var(--radius-medium, 6px);
+  box-shadow: var(--card-highlight);
+  font-size: var(--st-font-medium, 14px);
   line-height: 1.65;
   color: var(--foreground);
-  animation: notice-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: box-shadow 0.2s ease;
-  position: relative;
 }
 
-.prose-content .shortcodestyle::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  border-radius: 2px;
-}
-
-.prose-content .shortcodestyle:hover {
-  box-shadow: var(--shadow-medium);
-}
-
-.prose-content .prose-content .shortcodestyle .sc-title {
+.shortcodestyle .sc-title,
+.prose-content .shortcodestyle .sc-title {
   display: block;
-  font-weight: 700;
-  font-size: 0.9375rem;
+  margin-bottom: 3px;
+  color: var(--sk-accent);
+  font-size: var(--st-font-small, 13px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 4px;
 }
 
+.shortcodestyle .sc-content,
 .prose-content .shortcodestyle .sc-content {
   display: block;
 }
 
+.shortcodestyle p,
 .prose-content .shortcodestyle p {
   margin: 0.4em 0;
 }
 
+.shortcodestyle p:first-of-type,
 .prose-content .shortcodestyle p:first-of-type {
   margin-top: 0;
 }
 
+.shortcodestyle p:last-of-type,
 .prose-content .shortcodestyle p:last-of-type {
   margin-bottom: 0;
 }
 
-.prose-content .task {
-  background: color-mix(in srgb, var(--card) 98%, var(--muted-foreground));
+/* 类型强调色 */
+.shortcodestyle.task,
+.prose-content .shortcodestyle.task {
+  --sk-accent: var(--muted-foreground);
 }
-.prose-content .task::before {
-  background: var(--muted-foreground);
+.shortcodestyle.warning,
+.prose-content .shortcodestyle.warning {
+  --sk-accent: var(--warning);
 }
-.prose-content .task .sc-title {
-  color: var(--muted-foreground);
+.shortcodestyle.noway,
+.prose-content .shortcodestyle.noway {
+  --sk-accent: var(--danger);
 }
-
-.prose-content .warning {
-  background: color-mix(in srgb, var(--card) 96%, var(--warning));
-}
-.prose-content .warning::before {
-  background: var(--warning);
-}
-.prose-content .warning .sc-title {
-  color: var(--warning);
+.shortcodestyle.buy,
+.prose-content .shortcodestyle.buy {
+  --sk-accent: var(--success);
 }
 
-.prose-content .noway {
-  background: color-mix(in srgb, var(--card) 96%, var(--danger));
-}
-.prose-content .noway::before {
-  background: var(--danger);
-}
-.prose-content .noway .sc-title {
-  color: var(--danger);
-}
+/* ==================== 2. 展示卡片（Showcard） ====================
+   结构：<div class="wp-block-sakurairo-showcard-block showcard">
+           <div class="img" style="background:url(…)">
+             <a href="…"><button class="showcard-button"><i class="ti ti-play-circle"></i></button></a>
+           </div>
+           <div class="icon-title"><i class="ti ti-bookmark"></i><span class="title">…</span></div>
+         </div> */
 
-.prose-content .buy {
-  background: color-mix(in srgb, var(--card) 96%, var(--success));
-}
-.prose-content .buy::before {
-  background: var(--success);
-}
-.prose-content .buy .sc-title {
-  color: var(--success);
-}
-
-[data-theme='dark'] .prose-content .shortcodestyle {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .prose-content .shortcodestyle:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
-[data-theme='dark'] .prose-content .task {
-  background: color-mix(in srgb, var(--card) 95%, var(--muted-foreground));
-}
-[data-theme='dark'] .prose-content .warning {
-  background: color-mix(in srgb, var(--card) 92%, var(--warning));
-}
-[data-theme='dark'] .prose-content .noway {
-  background: color-mix(in srgb, var(--card) 92%, var(--danger));
-}
-[data-theme='dark'] .prose-content .buy {
-  background: color-mix(in srgb, var(--card) 92%, var(--success));
-}
-
-/* ==================== 2. 展示卡片（Showcard） ==================== */
-
-.showcard {
-  display: inline-flex;
-  flex-direction: column;
-  width: 220px;
-  margin: 28px 0;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-small);
-  padding: 12px;
-  animation: notice-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.showcard:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-  transform: translateY(-2px);
-}
-
-.showcard .img {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--muted);
-}
-
-.showcard .img:hover {
-  opacity: 0.92;
-}
-
-.showcard-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.showcard-button svg {
-  width: 24px;
-  height: 24px;
-  color: var(--foreground);
-  transition: transform 0.3s ease;
-}
-
-.showcard .img:hover .showcard-button {
-  width: 48px;
-  height: 48px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.showcard .img:hover .showcard-button svg {
-  transform: translateX(2px);
-}
-
-.showcard .icon-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--muted-foreground);
-  line-height: 1.4;
-}
-
-.showcard .icon-title svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--muted-foreground);
-}
-
-.showcard .icon-title .title {
-  color: var(--foreground);
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* --- 暗色模式 --- */
-
-[data-theme='dark'] .showcard {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .showcard:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
-
-[data-theme='dark'] .showcard-button {
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 #fff3;
-}
-[data-theme='dark'] .showcard .img:hover .showcard-button {
-  background: rgba(0, 0, 0, 0.7);
-}
-[data-theme='dark'] .showcard-button svg {
-  color: #eee;
-}
-
-/* --- .prose-content 作用域 --- */
-
+.showcard,
 .prose-content .showcard {
   display: inline-flex;
   flex-direction: column;
   width: 220px;
-  margin: 28px 0;
+  max-width: 100%;
+  margin: 24px 0;
+  padding: 10px;
+  vertical-align: top;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-small);
-  padding: 12px;
-  animation: notice-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  border-radius: var(--radius-large, 8px);
+  box-shadow: var(--shadow-small), var(--card-highlight);
+  transition:
+    box-shadow var(--transition),
+    border-color var(--transition),
+    transform var(--transition);
 }
 
+.showcard:hover,
 .prose-content .showcard:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
+  border-color: color-mix(in srgb, var(--border) 40%, var(--foreground));
+  box-shadow: var(--shadow-medium);
   transform: translateY(-2px);
 }
 
+.showcard .img,
 .prose-content .showcard .img {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-medium, 6px);
   background: var(--muted);
 }
 
-.prose-content .showcard-button {
+.showcard .img > a,
+.prose-content .showcard .img > a {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.prose-content .showcard-button svg {
-  width: 24px;
-  height: 24px;
-  color: var(--foreground);
-  transition: transform 0.3s ease;
+.showcard-button,
+.prose-content .showcard-button {
+  /* 媒体浮层惯例：固定深色半透明底 + 白图标，保证盖在任何封面图上都清晰；
+     覆盖编辑器里保存的 color（默认 #fff），否则浅色主题下会不可见。 */
+  color: #fff !important;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: var(--radius-full, 9999px);
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    transform var(--transition),
+    background-color var(--transition);
 }
 
+.showcard-button svg,
+.showcard-button i,
+.prose-content .showcard-button svg,
+.prose-content .showcard-button i {
+  width: 20px;
+  height: 20px;
+  color: inherit !important;
+  font-size: 20px !important;
+}
+
+.showcard .img:hover .showcard-button,
 .prose-content .showcard .img:hover .showcard-button {
-  width: 48px;
-  height: 48px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgb(0 0 0 / 0.65);
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
-.prose-content .showcard .img:hover .showcard-button svg {
-  transform: translateX(2px);
-}
-
+.showcard .icon-title,
 .prose-content .showcard .icon-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 10px;
-  font-size: 13px;
-  color: var(--muted-foreground);
+  padding: 0 2px;
+  font-size: var(--st-font-small, 13px);
   line-height: 1.4;
-}
-
-.prose-content .showcard .icon-title svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
   color: var(--muted-foreground);
 }
 
+.showcard .icon-title svg,
+.showcard .icon-title i,
+.prose-content .showcard .icon-title svg,
+.prose-content .showcard .icon-title i {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--muted-foreground) !important;
+  font-size: 15px !important;
+}
+
+.showcard .icon-title .title,
 .prose-content .showcard .icon-title .title {
   color: var(--foreground);
   font-weight: 500;
@@ -477,207 +212,93 @@
   white-space: nowrap;
 }
 
-[data-theme='dark'] .prose-content .showcard {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .prose-content .showcard:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
+/* ==================== 3. 对话块（Conversations） ====================
+   结构：<div class="wp-block-sakurairo-conversations-block conversations-code" style="display:flex;flex-direction:row">
+           <img src="…" alt="">
+           <div class="conversations-code-text">…</div>
+         </div>
+   row-reverse 由内联样式控制，无需额外规则。 */
 
-/* ==================== 3. 对话块（Conversations） ==================== */
-
-.conversations-code {
-  display: flex;
-  gap: 12px;
-  padding: 12px 0;
-  margin: 28px 0;
-  align-items: flex-start;
-}
-
-.conversations-code img {
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  object-fit: cover;
-  box-shadow: var(--shadow-small);
-  border: 2px solid var(--card);
-  background: var(--muted);
-}
-
-.conversations-code-text {
-  margin: 0;
-  padding: 12px 16px;
-  color: var(--foreground);
-  max-width: 75%;
-  width: fit-content;
-  font-size: 14px;
-  line-height: 1.7;
-  background: var(--card);
-  border-radius: var(--radius-large);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-small);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.conversations-code-text:hover {
-  box-shadow: var(--shadow-medium);
-}
-
-.conversations-code-text p {
-  margin: 0.5em 0;
-}
-
-.conversations-code-text p:first-child {
-  margin-top: 0;
-}
-
-.conversations-code-text p:last-child {
-  margin-bottom: 0;
-}
-
-/* --- 反方向（右到左）--- */
-
-.conversations-code[style*="flexDirection: row-reverse"],
-.conversations-code[style*="flex-direction: row-reverse"] {
-  flex-direction: row-reverse;
-}
-
-[data-theme='dark'] .conversations-code-text {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .conversations-code-text:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
-
-/* --- .prose-content 作用域 --- */
-
+.conversations-code,
 .prose-content .conversations-code {
   display: flex;
-  gap: 12px;
-  padding: 12px 0;
-  margin: 28px 0;
+  gap: 10px;
   align-items: flex-start;
+  margin: 24px 0;
 }
 
-.prose-content .conversations-code img {
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
+.conversations-code > img,
+.prose-content .conversations-code > img {
+  flex: none;
+  width: 38px;
+  height: 38px;
   object-fit: cover;
-  box-shadow: var(--shadow-small);
-  border: 2px solid var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full, 9999px);
   background: var(--muted);
 }
 
+.conversations-code-text,
 .prose-content .conversations-code-text {
-  margin: 0;
-  padding: 12px 16px;
-  color: var(--foreground);
-  max-width: 75%;
   width: fit-content;
-  font-size: 14px;
+  max-width: 75%;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: var(--st-font-medium, 14px);
   line-height: 1.7;
+  color: var(--foreground);
   background: var(--card);
-  border-radius: var(--radius-large);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-small);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  border-radius: var(--radius-large, 8px);
+  box-shadow: var(--shadow-small), var(--card-highlight);
 }
 
-.prose-content .conversations-code-text:hover {
-  box-shadow: var(--shadow-medium);
-}
-
+.conversations-code-text p,
 .prose-content .conversations-code-text p {
   margin: 0.5em 0;
 }
 
+.conversations-code-text p:first-child,
 .prose-content .conversations-code-text p:first-child {
   margin-top: 0;
 }
 
+.conversations-code-text p:last-child,
 .prose-content .conversations-code-text p:last-child {
   margin-bottom: 0;
 }
 
-[data-theme='dark'] .prose-content .conversations-code-text {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .prose-content .conversations-code-text:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
+/* ==================== 4. Bilibili 视频（vbilibili） ====================
+   结构：<div class="wp-block-sakurairo-vbilibili vbilibili" style="position:relative;padding:56.25% 0 0 0">
+           <iframe …></iframe>
+         </div> */
 
-/* ==================== 4. Bilibili 视频（vbilibili） ==================== */
-
-.vbilibili {
-  position: relative;
-  width: 100%;
-  margin: 28px 0;
-  border-radius: var(--radius-large);
-  overflow: hidden;
-  /* 黑底：iframe 右下角 clip-path 裁角（遮广告按钮）露出的是容器背景，
-     用 card 白底会在播放器右下角形成白方块，改黑与播放器融合 */
-  background: #000;
-  box-shadow: var(--shadow-small);
-  border: 1px solid var(--border);
-  transition: box-shadow 0.2s ease;
-  padding: 0;
-}
-
-.vbilibili:hover {
-  box-shadow: var(--shadow-medium);
-}
-
-.vbilibili iframe {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: none;
-  border-radius: inherit;
-  /* clip bottom-right corner to hide bpx-player-relation-button (ad) */
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 40px), calc(100% - 40px) calc(100% - 40px), calc(100% - 40px) 100%, 0 100%);
-}
-
-[data-theme='dark'] .vbilibili {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .vbilibili:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
-}
-
-/* --- .prose-content 作用域 --- */
-
+.vbilibili,
 .prose-content .vbilibili {
   position: relative;
   width: 100%;
-  margin: 28px 0;
-  border-radius: var(--radius-large);
+  margin: 24px 0;
   overflow: hidden;
   background: #000;
-  box-shadow: var(--shadow-small);
   border: 1px solid var(--border);
-  transition: box-shadow 0.2s ease;
+  border-radius: var(--radius-large, 8px);
+  box-shadow: var(--shadow-small), var(--card-highlight);
 }
 
-.prose-content .vbilibili:hover {
-  box-shadow: var(--shadow-medium);
-}
-
+.vbilibili iframe,
 .prose-content .vbilibili iframe {
   display: block;
   width: 100%;
   height: 100%;
   border: none;
   border-radius: inherit;
-  /* clip bottom-right corner to hide bpx-player-relation-button (ad) */
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 40px), calc(100% - 40px) calc(100% - 40px), calc(100% - 40px) 100%, 0 100%);
-}
-
-[data-theme='dark'] .prose-content .vbilibili {
-  box-shadow: var(--shadow-small), var(--card-highlight);
-}
-[data-theme='dark'] .prose-content .vbilibili:hover {
-  box-shadow: var(--shadow-medium), var(--card-highlight);
+  /* 裁掉右下角，遮住 B 站播放器的广告按钮 */
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 40px),
+    calc(100% - 40px) calc(100% - 40px),
+    calc(100% - 40px) 100%,
+    0 100%
+  );
 }
