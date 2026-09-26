@@ -29,7 +29,7 @@ import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const SCAN_DIRS = ['src/components', 'src/views', 'src/admin']
+const SCAN_DIRS = ['src/components', 'src/views', 'src/admin', 'src/blocks']
 /** src 根目录下的业务壳组件（App.vue 等）单独登记，避免只扫子目录而漏掉页面骨架。 */
 const SCAN_ROOT_FILES = ['src/App.vue']
 

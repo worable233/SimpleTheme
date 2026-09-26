@@ -10,6 +10,7 @@ import LinkCard from '@/components/links/LinkCard.vue'
 import type { WordPressLinkCategory, WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import { StSkeleton, useToast } from '@/ui'
+import { BlockContent } from '@/blocks'
 
 const { siteInfo } = useSiteShell()
 const toast = useToast()
@@ -104,7 +105,7 @@ onMounted(async () => {
 
         <!-- 友链页面内容 -->
         <section v-if="linksPage" class="links-content prose-content">
-          <div v-html="linksPage.content?.rendered"></div>
+          <BlockContent :html="linksPage.content?.rendered" />
         </section>
 
         <!-- 评论区 -->

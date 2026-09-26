@@ -1,0 +1,126 @@
+/**
+ * src/styles/blocks.css — 区块组件化渲染层的统一视觉
+ *
+ * 配套 `src/blocks/`。原则与 `prose.css` 一致：只消费 `tokens.css` 的语义令牌，
+ * 不硬编码颜色。这里只补「被组件重绘、原 WP 类名不再命中」的部分；
+ * 结构未改写的区块仍由 `prose.css` 的 `.wp-block-*` 规则承担。
+ *
+ * 命名：`st-block-<name>` 由区块组件根元素携带（见 src/blocks/generic.ts）。
+ */
+
+/* ==================== 列表型动态区块（分类/归档/最新文章/页面/RSS） ==================== */
+
+.prose-content .st-block-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 1.5em 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-content .st-block-link-list li {
+  list-style: none;
+}
+
+.prose-content .st-block-link-list__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.prose-content .st-block-link-list__link {
+  color: var(--foreground);
+  text-decoration: none;
+  transition: color var(--transition, 0.15s);
+}
+
+.prose-content .st-block-link-list__link:hover {
+  color: var(--primary);
+  opacity: 1;
+}
+
+.prose-content .st-block-link-list__meta {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+/* 标签云 — 胶囊排布，覆盖 `.prose-content li` 的默认圆点 */
+.prose-content .st-block-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 1.5em 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-content .st-block-tag-cloud li {
+  list-style: none;
+}
+
+.prose-content .st-block-tag-cloud__link {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--secondary);
+  background: var(--muted);
+  padding: 3px 10px;
+  border-radius: var(--radius-small, 4px);
+  text-decoration: none;
+  transition: color var(--transition, 0.15s), background-color var(--transition, 0.15s);
+}
+
+.prose-content .st-block-tag-cloud__link:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  opacity: 1;
+}
+
+/* ==================== 文件区块 ==================== */
+
+.prose-content .st-block-file__name {
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.prose-content .st-block-file__name:hover {
+  color: var(--primary);
+}
+
+/* ==================== 搜索区块 ==================== */
+
+.prose-content .st-block-search__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.prose-content .st-block-search__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+/* ==================== 图标 / 数学 ==================== */
+
+.prose-content .st-block-icon {
+  display: flex;
+  align-items: center;
+}
+
+.prose-content .st-block-math {
+  overflow-x: auto;
+}
+
+/* ==================== 按钮（StButton 重绘）==================== */
+
+.prose-content .st-block-button {
+  vertical-align: middle;
+}

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
 import { StTag } from '@/ui'
+import { BlockContent } from '@/blocks'
 
 const props = defineProps<{
   pageData: WordPressPost
@@ -53,7 +54,7 @@ const pageTags = computed(() => {
       </p>
     </header>
 
-    <div class="single-post__body prose-content" v-html="pageData.content?.rendered"></div>
+    <BlockContent class="single-post__body prose-content" :html="pageData.content?.rendered" />
   </article>
 </template>
 

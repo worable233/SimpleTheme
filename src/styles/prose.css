@@ -870,9 +870,13 @@
   color: var(--foreground);
 }
 
-/* Link underline (Fumadocs-style) — 排除按钮类（wp-element-button）与标签云，
-   否则 (0,2,1) 特异性会覆盖它们的前景色，造成深底深字按钮不可见 */
-.prose-content a:not([data-card]):not(.wp-element-button):not(.tag-cloud-link) {
+/* Link underline (Fumadocs-style) — 排除按钮类（wp-element-button / st-button）、
+   标签云与区块组件重绘的列表/标签链接（st-block-*），否则 (0,2,1) 特异性会覆盖
+   它们的前景色/下划线，造成深底深字按钮不可见或列表链接被强制加下划线 */
+.prose-content
+  a:not([data-card]):not(.wp-element-button):not(.st-button):not(.tag-cloud-link):not(
+    .st-block-link-list__link
+  ):not(.st-block-tag-cloud__link) {
   color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: 3.5px;
@@ -882,7 +886,10 @@
   transition: opacity 0.2s;
 }
 
-.prose-content a:not([data-card]):not(.wp-element-button):not(.tag-cloud-link):hover {
+.prose-content
+  a:not([data-card]):not(.wp-element-button):not(.st-button):not(.tag-cloud-link):not(
+    .st-block-link-list__link
+  ):not(.st-block-tag-cloud__link):hover {
   opacity: 0.8;
 }
 

@@ -30,6 +30,7 @@ import { useStaticFallback } from '@/composables/useStaticFallback'
 import TermArchive from '@/views/TermArchive.vue'
 import { getPreloadedSpecialPage } from '@/lib/special-page-loader'
 import { useToast, StTag } from '@/ui'
+import { BlockContent } from '@/blocks'
 
 const AsyncPageLoading = defineComponent({
   name: 'AsyncPageLoading',
@@ -626,7 +627,7 @@ watch(
           </div>
         </div>
         <div class="single-post__body">
-          <div class="prose-content" v-html="postData.content?.rendered"></div>
+          <BlockContent class="prose-content" :html="postData.content?.rendered" />
           <footer class="single-post__footer">
             <div v-if="postTags.length > 0" class="single-post__tags">
               <router-link

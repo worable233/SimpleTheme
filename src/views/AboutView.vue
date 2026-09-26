@@ -7,6 +7,7 @@ import { useContentEnhancer } from '@/composables/useContentEnhancer'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import { StCard, StStack, StSkeleton, useToast } from '@/ui'
+import { BlockContent } from '@/blocks'
 
 const { siteInfo } = useSiteShell()
 const toast = useToast()
@@ -43,7 +44,7 @@ onMounted(async () => {
 
     <template v-else-if="aboutPage">
       <div class="content-area">
-        <article class="prose-content" v-html="aboutPage.content?.rendered"></article>
+        <BlockContent class="prose-content" :html="aboutPage.content?.rendered" />
       </div>
     </template>
 
