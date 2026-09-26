@@ -46,10 +46,7 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 		), 200 );
 	}
 
-	$theme_options = get_option( 'simple_theme_options', array() );
 	$post_count    = $limit > 0 ? max( 1, min( 50, $limit ) ) : simple_theme_get_option_number( 'home_post_count', 6, 3, 20 );
-	$shuoshuo_count = simple_theme_get_option_number( 'home_shuoshuo_count', 3, 0, 12 );
-	$show_shuoshuo = (bool) ( $theme_options['show_shuoshuo_section'] ?? True );
 	$total_posts   = (int) wp_count_posts( 'post' )->publish;
 	$total_pages   = $post_count > 0 ? max( 1, (int) ceil( $total_posts / $post_count ) ) : 1;
 
@@ -90,28 +87,12 @@ function simple_theme_get_collection( WP_REST_Request $request ) {
 	}
 	$total = $total_posts;
 
-	$shuoshuo_posts = array();
-	if ( $show_shuoshuo && $shuoshuo_count > 0 ) {
-		$shuoshuo_posts = get_posts( array(
-			'post_type'      => 'shuoshuo',
-			'posts_per_page' => $shuoshuo_count,
-			'post_status'    => 'publish',
-			'ignore_sticky_posts' => true,
-		) );
-	}
-
 	$data = array(
-		'postsTitle'        => (string) ( $theme_options['posts_title'] ?? '最新文章' ),
-		'postsSubtitle'     => (string) ( $theme_options['posts_subtitle'] ?? '' ),
-		'shuoshuoTitle'     => (string) ( $theme_options['shuoshuo_title'] ?? '最近说说' ),
-		'shuoshuoSubtitle'  => (string) ( $theme_options['shuoshuo_subtitle'] ?? '' ),
-		'items'             => array_map( 'simple_theme_format_post_item', $posts ),
-		'shuoshuoPosts'     => array_map( 'simple_theme_format_post_item', $shuoshuo_posts ),
-		'total'             => $total,
-		'totalPages'        => $total_pages,
-		'page'              => max( 1, $page ),
-		'perPage'           => $post_count,
-		'showShuoshuoSection' => $show_shuoshuo,
+		'items'      => array_map( 'simple_theme_format_post_item', $posts ),
+		'total'      => $total,
+		'totalPages' => $total_pages,
+		'page'       => max( 1, $page ),
+		'perPage'    => $post_count,
 	);
 
 	return new WP_REST_Response( $data, 200 );

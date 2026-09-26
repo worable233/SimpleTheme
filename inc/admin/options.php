@@ -89,14 +89,8 @@ function simple_theme_get_default_options() {
 		'ip_location_cache'        => true,
 
 		// ---- Collections & Home ----
-		'show_shuoshuo_section'    => true,
 		'home_post_count'          => 6,
-		'home_shuoshuo_count'      => 3,
 		'shuoshuo_page_size'       => 12,
-		'posts_title'              => '最新文章',
-		'posts_subtitle'           => '整理过的长文、笔记与项目更新。',
-		'shuoshuo_title'           => '最近说说',
-		'shuoshuo_subtitle'        => '',
 			'suppress_console_warnings' => false,
 
 			// ---- Announcement ----
@@ -177,9 +171,7 @@ function simple_theme_migrate_from_customizer() {
 		'hero_image'               => 'simple_theme_hero_image',
 		'hero_show_avatar'         => 'simple_theme_hero_show_avatar',
 		'hero_avatar'              => 'simple_theme_hero_avatar',
-		'show_shuoshuo_section'    => 'simple_theme_show_shuoshuo_section',
 		'home_post_count'          => 'simple_theme_home_post_count',
-		'home_shuoshuo_count'      => 'simple_theme_home_shuoshuo_count',
 		'shuoshuo_page_size'       => 'simple_theme_shuoshuo_page_size',
 		'meta_show_category'       => 'simple_theme_meta_show_category',
 		'meta_show_publish_date'   => 'simple_theme_meta_show_publish_date',
@@ -195,7 +187,6 @@ function simple_theme_migrate_from_customizer() {
 		'icp_text'                 => 'simple_theme_icp_text',
 		'icp_gov_text'             => 'simple_theme_icp_gov_text',
 		'comment_show_cookies'     => 'simple_theme_comment_show_cookies',
-		'shuoshuo_subtitle'        => 'simple_theme_shuoshuo_subtitle',
 		'hero_subtitle'            => 'simple_theme_hero_subtitle',
 	);
 
@@ -230,7 +221,6 @@ function simple_theme_sanitize_options( $input ) {
 		'article_max_width'    => array( 680, 1200 ),
 		'reading_speed'        => array( 100, 600 ),
 		'home_post_count'      => array( 3, 20 ),
-		'home_shuoshuo_count'  => array( 0, 12 ),
 		'shuoshuo_page_size'   => array( 6, 24 ),
 		'smtp_port'            => array( 1, 65535 ),
 		'smtp_timeout'         => array( 1, 120 ),

@@ -15,8 +15,9 @@ const { siteInfo, ensureLoaded } = useSiteShell()
 const toast = useToast()
 
 const pageSize = computed(() => siteInfo.value.collections?.shuoshuoPageSize ?? 12)
-const sectionTitle = computed(() => siteInfo.value.collections?.shuoshuoTitle || '说说')
-const sectionSubtitle = computed(() => siteInfo.value.collections?.shuoshuoSubtitle || 'Shuoshuo.')
+// 说说页标题/副标题为固定页面文案，不开放后台配置。
+const sectionTitle = '最近说说'
+const sectionSubtitle = 'Shuoshuo.'
 
 useHead({ title: sectionTitle })
 

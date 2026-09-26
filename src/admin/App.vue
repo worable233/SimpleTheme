@@ -197,16 +197,8 @@ function syncThemeMode() {
   document.documentElement.style.colorScheme = theme
 }
 
-const homeTextFields: Array<[string, string]> = [
-  ['posts_title', '文章区块标题'],
-  ['posts_subtitle', '文章区块副标题'],
-  ['shuoshuo_title', '说说区块标题'],
-  ['shuoshuo_subtitle', '说说区块副标题'],
-]
-
 const homeNumberFields: Array<[string, string, number, number]> = [
   ['home_post_count', '首页文章数量', 3, 20],
-  ['home_shuoshuo_count', '首页说说数量', 0, 12],
   ['shuoshuo_page_size', '说说每页数量', 6, 24],
 ]
 
@@ -400,39 +392,22 @@ onUnmounted(() => {
 
           <StTabPane value="home" label="首页" icon="home">
             <StStack :gap="5">
-              <StCard title="首页内容" subtitle="控制首页区块的标题、数量与显示状态。">
-                <StStack :gap="5">
-                  <StSwitch
-                    :model-value="checked('show_shuoshuo_section', true)"
-                    @update:model-value="update('show_shuoshuo_section', $event)"
+              <StCard title="内容数量" subtitle="首页文章列表与说说页每页加载的数量。">
+                <StGrid :cols="2" :gap="4">
+                  <StFormItem
+                    v-for="[key, label, min, max] in homeNumberFields"
+                    :key="key"
+                    :label="label"
                   >
-                    显示说说板块
-                  </StSwitch>
-                  <StGrid :cols="2" :gap="4">
-                    <StFormItem v-for="[key, label] in homeTextFields" :key="key" :label="label">
-                      <StInput
-                        :model-value="text(key)"
-                        :aria-label="label"
-                        @update:model-value="update(key, $event)"
-                      />
-                    </StFormItem>
-                  </StGrid>
-                  <StGrid :cols="3" :gap="4">
-                    <StFormItem
-                      v-for="[key, label, min, max] in homeNumberFields"
-                      :key="key"
-                      :label="label"
-                    >
-                      <StNumberInput
-                        :model-value="number(key, Number(defaults[key] || min))"
-                        :min="min"
-                        :max="max"
-                        :aria-label="label"
-                        @update:model-value="update(key, $event ?? Number(defaults[key] || min))"
-                      />
-                    </StFormItem>
-                  </StGrid>
-                </StStack>
+                    <StNumberInput
+                      :model-value="number(key, Number(defaults[key] || min))"
+                      :min="min"
+                      :max="max"
+                      :aria-label="label"
+                      @update:model-value="update(key, $event ?? Number(defaults[key] || min))"
+                    />
+                  </StFormItem>
+                </StGrid>
               </StCard>
             </StStack>
           </StTabPane>

@@ -93,6 +93,8 @@ const fallbackSiteInfo: SiteInfo = {
     showUrlField: true,
     showCookiesOptIn: true,
     captchaEnabled: false,
+    showPrivateOption: true,
+    showMarkdownOption: true,
   },
   hero: fallbackHeroSettings,
   theme: fallbackThemeSettings,
@@ -154,6 +156,10 @@ function mergeSiteInfo(next: SiteInfo): SiteInfo {
         next.comments?.showCookiesOptIn ?? fallbackSiteInfo.comments!.showCookiesOptIn,
       captchaEnabled:
         next.comments?.captchaEnabled ?? fallbackSiteInfo.comments!.captchaEnabled,
+      showPrivateOption:
+        next.comments?.showPrivateOption ?? fallbackSiteInfo.comments!.showPrivateOption,
+      showMarkdownOption:
+        next.comments?.showMarkdownOption ?? fallbackSiteInfo.comments!.showMarkdownOption,
     },
     externalRedirect: {
       enabled: next.externalRedirect?.enabled ?? fallbackSiteInfo.externalRedirect!.enabled,

@@ -203,13 +203,7 @@ export interface TechInfoItem {
 }
 
 export interface CollectionsSettings {
-  postsTitle?: string
-  postsSubtitle?: string
-  shuoshuoTitle?: string
-  shuoshuoSubtitle?: string
-  showShuoshuoSection?: boolean
   homePostCount?: number
-  homeShuoshuoCount?: number
   shuoshuoPageSize?: number
 }
 

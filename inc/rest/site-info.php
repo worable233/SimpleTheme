@@ -125,13 +125,7 @@ function simple_theme_get_site_info() {
 				'showMarkdownOption' => (bool) ( $theme_options['comment_show_markdown'] ?? true ),
 			),
 			'collections'   => array(
-				'postsTitle'         => (string) ( $theme_options['posts_title'] ?? '最新文章' ),
-				'postsSubtitle'      => (string) ( $theme_options['posts_subtitle'] ?? '整理过的长文、笔记与项目更新。' ),
-				'shuoshuoTitle'      => (string) ( $theme_options['shuoshuo_title'] ?? '最近说说' ),
-				'shuoshuoSubtitle'   => (string) ( $theme_options['shuoshuo_subtitle'] ?? '' ),
-				'showShuoshuoSection'=> (bool) ( $theme_options['show_shuoshuo_section'] ?? true ),
 				'homePostCount'      => simple_theme_get_option_number( 'home_post_count', 6, 3, 20 ),
-				'homeShuoshuoCount'  => simple_theme_get_option_number( 'home_shuoshuo_count', 3, 0, 12 ),
 				'shuoshuoPageSize'   => simple_theme_get_option_number( 'shuoshuo_page_size', 12, 6, 24 ),
 			),
 			'stats'          => $stats,

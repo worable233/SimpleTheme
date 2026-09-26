@@ -71,7 +71,6 @@ export const mockSiteInfo = {
   },
   collections: {
     homePostCount: 6,
-    homeShuoshuoCount: 3,
     shuoshuoPageSize: 12,
   },
   icp: '沪ICP备2024XXXXXX号',
