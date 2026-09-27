@@ -310,18 +310,33 @@ function onSearch(event: Event) {
   color: var(--st-placeholder);
 }
 
-.st-icon-picker__search-input {
+/* 输入框：用父级类提高特异性，压过 WP 后台全局的
+ * `input[type='text']:focus`（蓝框）—— portal 到 body 后仍可能命中。 */
+.st-icon-picker__search .st-icon-picker__search-input {
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
+  padding: 0;
   border: none;
+  border-radius: 0;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
   background: transparent;
+  box-shadow: none;
   color: var(--st-text);
   font-family: inherit;
   font-size: var(--st-font-small);
+  line-height: normal;
 }
 
-.st-icon-picker__search-input::placeholder {
+.st-icon-picker__search .st-icon-picker__search-input:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.st-icon-picker__search .st-icon-picker__search-input::placeholder {
   color: var(--st-placeholder);
 }
 
@@ -422,6 +437,7 @@ function onSearch(event: Event) {
 @media (prefers-reduced-motion: reduce) {
   .st-icon-picker,
   .st-icon-picker__search,
+  .st-icon-picker__search-input,
   .st-icon-picker__item,
   .st-icon-picker__clear {
     transition: none;
