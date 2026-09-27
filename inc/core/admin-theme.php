@@ -157,34 +157,41 @@ add_action('admin_enqueue_scripts', function () {
 });
 
 /**
- * 暗色模式同步：读取前端 localStorage 的 theme 设置，
- * 在 admin_head 中注入内联脚本。
- * 注意：主题设置页虽然跳过 shell，但设置面板依赖 data-theme 切换明暗，
- * 所以这里只跳过块编辑器等，不跳过设置页。
+ * 明暗模式同步：读取前端 localStorage 的 theme 设置，在 admin_head 注入内联脚本。
+ *
+ * 主题设置页是自带 chrome 的全屏 SPA：WordPress 后台本身只有浅色，所以未开启
+ * 后台美化时设置页固定浅色；开启后才跟随前端明暗设置（localStorage 优先，
+ * 否则跟随系统）。其余后台页面的同步仅在后台美化启用时进行。
  */
 add_action('admin_head', function () {
-		if (!simple_theme_is_admin_theme_enabled()) return;
 		$screen = get_current_screen();
 		$is_settings_page = $screen && 'toplevel_page_simple-theme' === $screen->id;
-		if (!$is_settings_page && simple_theme_should_skip_admin_theme()) return;
+
+		// 设置页跳过全局 shell，但仍需同步明暗（见上方说明）。
 		if ($is_settings_page) {
-			// 设置页无 shell 布局，仅需主题同步
+			$follow_scheme = simple_theme_is_admin_theme_enabled();
 			?>
 	<script>
 	(function() {
-		var theme = localStorage.getItem('theme');
-		if (theme === 'dark') {
-			document.documentElement.setAttribute('data-theme', 'dark');
-			document.documentElement.style.colorScheme = 'dark';
-		} else if (theme === 'light') {
+		if (!<?php echo $follow_scheme ? 'true' : 'false'; ?>) {
 			document.documentElement.setAttribute('data-theme', 'light');
 			document.documentElement.style.colorScheme = 'light';
+			return;
 		}
+		var theme = localStorage.getItem('theme');
+		if (theme !== 'light' && theme !== 'dark') {
+			theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+		}
+		document.documentElement.setAttribute('data-theme', theme);
+		document.documentElement.style.colorScheme = theme;
 	})();
 	</script>
 			<?php
 			return;
 		}
+
+		if (!simple_theme_is_admin_theme_enabled()) return;
+		if (simple_theme_should_skip_admin_theme()) return;
 	?>
 		<style>#wpfooter{display:none!important}</style>
 	<script>

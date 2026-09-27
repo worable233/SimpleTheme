@@ -101,7 +101,17 @@ function syncThemeTokens(data: AdminSettings) {
   }
 }
 
+/**
+ * WordPress 后台默认仅提供浅色。仅当开启「后台美化」后，设置页才跟随前端
+ * 明暗设置（localStorage 优先，否则跟随系统）；未开启时固定浅色，避免与
+ * WP 原生后台割裂。
+ */
 function syncThemeMode() {
+  if (!settings.value.admin_theme_enabled) {
+    document.documentElement.setAttribute('data-theme', 'light')
+    document.documentElement.style.colorScheme = 'light'
+    return
+  }
   let theme = localStorage.getItem('theme')
   if (theme !== 'light' && theme !== 'dark') {
     theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -115,6 +125,7 @@ function update(key: string, next: unknown) {
   dirty.value = true
   saved.value = false
   syncThemeTokens(settings.value)
+  if (key === 'admin_theme_enabled') syncThemeMode()
 }
 
 /** 原内联 toast 固定停留 2600ms；这里用 duration 对齐，迁移不改变可见节奏 */
