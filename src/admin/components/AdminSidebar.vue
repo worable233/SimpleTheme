@@ -68,6 +68,13 @@ function getImageIconUrl(icon: string): string {
     return value
   }
 
+  // dashicons 类名（以及 WP 的 'none' / 'div' 占位值）不是图片路径。
+  // 若不先排除，new URL() 会把它们解析成 wp-admin 下的相对地址，得到坏图。
+  if (getDashiconClass(value) || value === 'none' || value === 'div') return ''
+
+  // 只接受显式 URL（带协议、协议相对）或带斜杠的路径，避免把裸类名当路径。
+  if (!/^([a-z][a-z0-9+.-]*:|\/\/|\/|\.\.?\/)/i.test(value)) return ''
+
   try {
     const url = new URL(value, window.location.href)
     return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : ''
