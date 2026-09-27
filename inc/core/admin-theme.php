@@ -11,8 +11,9 @@
  *   - 通过 admin_enqueue_scripts 排在 WP 原生样式之后，source-order 胜出
  *   - --wp-admin-theme-color 覆盖 WP 组件强调色
  *
- * 主题自己的设置页（toplevel_page_simple-theme）跳过 shell：
- * 该页是自带侧栏/顶栏的全屏 SPA，再套一层全局 shell 会双层叠加。
+ * 主题设置页（toplevel_page_simple-theme）同样纳入 shell：它的内容列
+ * （#simple-theme-admin-app）作为普通后台页渲染在 shell 内容区内，页面自带的
+ * 「主题设置 + 保存」工具条固定在全局顶栏之下。
  *
  * @package SimpleTheme
  */
@@ -36,11 +37,6 @@ function simple_theme_should_skip_admin_theme(): bool {
 
 	// 跳过块编辑器、自定义器、站点编辑器
 	if ($screen->is_block_editor() || $screen->id === 'customize' || $screen->id === 'site-editor') {
-		return true;
-	}
-
-	// 跳过主题设置页 —— 它是自带 chrome 的全屏 SPA（见 inc/admin/menu.php）
-	if ($screen->id === 'toplevel_page_simple-theme') {
 		return true;
 	}
 
@@ -159,41 +155,14 @@ add_action('admin_enqueue_scripts', function () {
 /**
  * 明暗模式同步：读取前端 localStorage 的 theme 设置，在 admin_head 注入内联脚本。
  *
- * 主题设置页是自带 chrome 的全屏 SPA：WordPress 后台本身只有浅色，所以未开启
- * 后台美化时设置页固定浅色；开启后才跟随前端明暗设置（localStorage 优先，
- * 否则跟随系统）。其余后台页面的同步仅在后台美化启用时进行。
+ * 主题设置页与其余后台页走同一套逻辑：开启后台美化后跟随前端明暗设置
+ * （localStorage 优先，否则保持 WordPress 默认浅色）。未开启时后台保持浅色。
  */
 add_action('admin_head', function () {
-		$screen = get_current_screen();
-		$is_settings_page = $screen && 'toplevel_page_simple-theme' === $screen->id;
-
-		// 设置页跳过全局 shell，但仍需同步明暗（见上方说明）。
-		if ($is_settings_page) {
-			$follow_scheme = simple_theme_is_admin_theme_enabled();
-			?>
-	<script>
-	(function() {
-		if (!<?php echo $follow_scheme ? 'true' : 'false'; ?>) {
-			document.documentElement.setAttribute('data-theme', 'light');
-			document.documentElement.style.colorScheme = 'light';
-			return;
-		}
-		var theme = localStorage.getItem('theme');
-		if (theme !== 'light' && theme !== 'dark') {
-			theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-		}
-		document.documentElement.setAttribute('data-theme', theme);
-		document.documentElement.style.colorScheme = theme;
-	})();
-	</script>
-			<?php
-			return;
-		}
-
-		if (!simple_theme_is_admin_theme_enabled()) return;
-		if (simple_theme_should_skip_admin_theme()) return;
-	?>
-		<style>#wpfooter{display:none!important}</style>
+	if (!simple_theme_is_admin_theme_enabled()) return;
+	if (simple_theme_should_skip_admin_theme()) return;
+?>
+	<style>#wpfooter{display:none!important}</style>
 	<script>
 	(function() {
 		var theme = localStorage.getItem('theme');

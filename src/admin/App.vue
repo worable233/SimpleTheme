@@ -259,7 +259,7 @@ onUnmounted(() => {
 /* ===== 页面骨架（原先靠 Tailwind 工具类，现收敛为 scoped CSS + 令牌） =====
    与前台 src/App.vue 的做法一致：页面级几何不新增组件，只落 scoped CSS。 */
 .admin-app {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--sta-topbar-height, 0px));
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -322,6 +322,20 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--border);
   background-color: color-mix(in srgb, var(--card) 82%, transparent);
   backdrop-filter: blur(12px);
+}
+
+/* 开启后台美化后，设置页渲染在 shell 内容区内。此时页面滚动容器在桌面端是
+   <html>、在窄屏（≤782px，WP 让 body 变成滚动容器）是 <body>；而窄屏 body 的
+   padding-top 已经把内容让到顶栏之下，所以 sticky 偏移要分开写：桌面顶到顶栏
+   下沿，窄屏用 0。两者都写 48 会在窄屏再叠加一次，工具条下移并盖住内容。 */
+body.sta-theme-active .admin-app__bar {
+  top: var(--sta-topbar-height, 0px);
+}
+
+@media (max-width: 782px) {
+  body.sta-theme-active .admin-app__bar {
+    top: 0;
+  }
 }
 
 /* 顶栏内容与下方内容列同宽同轴，避免左右贴边造成两套对齐 */

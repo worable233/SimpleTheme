@@ -136,6 +136,9 @@ body.sta-theme-active #wpcontent {
 
 body.sta-theme-active #wpbody {
   min-height: auto;
+  /* WP 在 ≤782px 给 #wpbody 预留 46px 原生 admin bar 高度；美化后顶栏由 body
+     padding-top 负责，这里必须清零，否则内容区顶部多出一截空白。 */
+  padding-top: 0;
 }
 
 body.sta-theme-active #wpbody-content {
