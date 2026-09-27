@@ -4,7 +4,7 @@ import type { StOption } from '@/ui'
 export interface ListField {
   key: string
   label: string
-  type: 'text' | 'select'
+  type: 'text' | 'select' | 'icon'
   placeholder?: string
   options?: StOption[]
 }

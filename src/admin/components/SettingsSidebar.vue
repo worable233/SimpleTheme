@@ -22,7 +22,7 @@ const fields = useAdminFields(
 const socialFields: ListField[] = [
   { key: 'label', label: '名称', type: 'text', placeholder: 'GitHub' },
   { key: 'url', label: '链接', type: 'text', placeholder: 'https://github.com/…' },
-  { key: 'icon', label: '图标', type: 'text', placeholder: 'brand-github' },
+  { key: 'icon', label: '图标', type: 'icon', placeholder: 'brand-github' },
 ]
 
 const techFields: ListField[] = [

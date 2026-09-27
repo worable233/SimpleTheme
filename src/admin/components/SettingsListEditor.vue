@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { StButton, StFormItem, StIcon, StInput, StSelect } from '@/ui'
+import { StButton, StFormItem, StIcon, StIconPicker, StInput, StSelect } from '@/ui'
 import type { ListField } from './list-field'
 
 /**
@@ -10,7 +10,7 @@ import type { ListField } from './list-field'
  * 直接让用户改 JSON 极易写坏且无从校验，这里把它还原成「一行一条记录」的
  * 表单，编辑时再序列化回字符串，保持存储格式不变。
  *
- * 字段类型只覆盖项目实际用到的 text / select —— 未用到的类型不预先发明。
+ * 字段类型只覆盖项目实际用到的 text / select / icon —— 未用到的类型不预先发明。
  */
 
 const props = withDefaults(
@@ -107,6 +107,13 @@ function fieldAria(field: ListField, index: number) {
           :model-value="row[field.key]"
           :options="field.options || []"
           :aria-label="fieldAria(field, index)"
+          @update:model-value="updateField(row, field.key, $event)"
+        />
+        <StIconPicker
+          v-else-if="field.type === 'icon'"
+          :model-value="row[field.key]"
+          :aria-label="fieldAria(field, index)"
+          clearable
           @update:model-value="updateField(row, field.key, $event)"
         />
         <StInput
