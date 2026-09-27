@@ -321,8 +321,10 @@ function onPointerDownOutside(ev: Event) {
   display: block;
 }
 
-/* 触屏设备没有 ESC 键，显示 × 更直观 */
-@media (hover: none), (pointer: coarse) {
+/* 触屏设备没有 ESC 键，显示 × 更直观；
+ * 窄视口（响应式预览/小窗口）指针仍是鼠标，hover/pointer 不命中，
+ * 故并入主题统一的移动端断点（--breakpoint-sm ≈ 600px）。 */
+@media (hover: none), (pointer: coarse), (max-width: 37.5rem) {
   .st-modal__close {
     min-width: 0;
     width: 30px;

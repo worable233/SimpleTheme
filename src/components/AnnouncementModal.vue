@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+/**
+ * AnnouncementModal — 首页公告弹窗
+ *
+ * 外壳（遮罩 / 焦点陷阱 / ESC / 滚动锁定 / 右上角 ESC 键帽关闭按钮）统一由
+ * src/ui 的 StModal 提供，本组件只保留公告内容排版与关闭记忆逻辑。
+ */
+import { ref, onMounted } from 'vue'
 import type { AnnouncementSettings } from '@/types/wordpress'
-import { StButton } from '@/ui'
-import ModalCloseButton from '@/components/ModalCloseButton.vue'
-import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
+import { StButton, StModal } from '@/ui'
 
 const props = defineProps<{
   announcement: AnnouncementSettings
@@ -11,8 +15,7 @@ const props = defineProps<{
 
 const STORAGE_KEY = 'announcement_modal_dismissed'
 
-const visible = ref(false)
-const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
+const open = ref(false)
 
 function readDismissed(): boolean {
   if (props.announcement.alwaysShow) return false
@@ -23,6 +26,7 @@ function readDismissed(): boolean {
   }
 }
 
+/** 关闭（含 ESC / 遮罩 / 关闭按钮）：非「每次都展示」时记住，避免下次自动弹出 */
 function close() {
   if (!props.announcement.alwaysShow) {
     try {
@@ -31,8 +35,12 @@ function close() {
       /* localStorage 不可用时静默降级 */
     }
   }
-  visible.value = false
+  open.value = false
 }
+
+onMounted(() => {
+  if (!readDismissed()) open.value = true
+})
 
 function isSafeExternalUrl(value: string): boolean {
   try {
@@ -49,101 +57,42 @@ function handleButtonClick(button: { action?: 'close' | 'link'; url?: string }) 
   }
   close()
 }
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') close()
-}
-
-onMounted(() => {
-  if (!readDismissed()) visible.value = true
-  document.addEventListener('keydown', onKeydown)
-})
-
-watch(visible, (isVisible) => {
-  if (isVisible) lockBodyScroll()
-  else unlockBodyScroll()
-})
-
-onUnmounted(() => {
-  unlockBodyScroll()
-  document.removeEventListener('keydown', onKeydown)
-})
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="visible" class="announcement-modal" @click.self="close">
-      <div class="announcement-modal__panel">
-        <div class="announcement-modal__header">
-          <h2 class="announcement-modal__title">{{ announcement.pageTitle || '公告' }}</h2>
-          <ModalCloseButton @click="close" />
-        </div>
-        <div
-          class="announcement-modal__body"
-          v-html="announcement.pageContent || ''"
-        ></div>
-        <div v-if="announcement.buttons?.length" class="announcement-modal__footer">
-          <StButton
-            v-for="(btn, i) in announcement.buttons"
-            :key="i"
-            type="primary"
-            @click="handleButtonClick(btn)"
-          >
-            {{ btn.text }}
-          </StButton>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <StModal
+    v-model:show="open"
+    :title="announcement.pageTitle || '公告'"
+    size="medium"
+    @close="close"
+  >
+    <div class="announcement-modal__body" v-html="announcement.pageContent || ''"></div>
+
+    <template v-if="announcement.buttons?.length" #footer>
+      <StButton
+        v-for="(btn, i) in announcement.buttons"
+        :key="i"
+        type="primary"
+        @click="handleButtonClick(btn)"
+      >
+        {{ btn.text }}
+      </StButton>
+    </template>
+  </StModal>
 </template>
 
 <style scoped>
-.announcement-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background-color: rgb(0 0 0 / 0.5);
-}
-
-.announcement-modal__panel {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 560px;
-  max-height: 80vh;
-  border-radius: var(--radius-xl);
-  background-color: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.3);
-}
-
-.announcement-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 0;
-}
-
-.announcement-modal__title {
-  margin: 0;
-  font-size: 18px;
-}
-
+/* 公告正文由页面内容渲染，这里只做排版约束（外壳样式见 StModal） */
 .announcement-modal__body {
-  overflow-y: auto;
-  padding: 16px 24px;
   font-size: 13px;
   line-height: 1.7;
 }
 
-.announcement-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 24px 20px;
+.announcement-modal__body :deep(> :first-child) {
+  margin-top: 0;
+}
+
+.announcement-modal__body :deep(> :last-child) {
+  margin-bottom: 0;
 }
 </style>

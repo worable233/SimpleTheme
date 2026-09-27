@@ -4,9 +4,8 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
-import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
-import { StButton, StCheckbox, StInput, useToast } from '@/ui'
+import { StButton, StCheckbox, StDrawer, StInput, useToast } from '@/ui'
 import { renderToHtml } from '@/lib/emoji'
 import { fetchCaptcha } from '@/lib/api-comments'
 import type { CommentFormSettings, CaptchaData, UserData } from '@/types/wordpress'
@@ -177,7 +176,6 @@ const useMarkdown = ref(false)
 onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-  document.addEventListener('keydown', onWizardKeydown)
   document.addEventListener('click', onDocumentClick, true)
   if (props.formSettings.captchaEnabled && !props.currentUser) {
     await loadCaptcha()
@@ -186,7 +184,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', checkMobile)
-  document.removeEventListener('keydown', onWizardKeydown)
   document.removeEventListener('click', onDocumentClick, true)
 })
 
@@ -403,12 +400,6 @@ function finishWizard() {
   mobileExpanded.value = true
 }
 
-function onWizardKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && wizardActive.value) {
-    closeWizard()
-  }
-}
-
 function focusWizardInput() {
   nextTick(() => {
     const el = document.querySelector<HTMLInputElement>(
@@ -420,6 +411,11 @@ function focusWizardInput() {
 
 watch(wizardStep, () => {
   focusWizardInput()
+})
+
+// reka 打开时会把焦点交给首个可聚焦元素（关闭按钮），此处抢回输入框
+watch(wizardActive, (active) => {
+  if (active) requestAnimationFrame(() => focusWizardInput())
 })
 
 function clearForm() {
@@ -649,183 +645,177 @@ defineExpose({ clearForm })
   </form>
   </Teleport>
 
-  <!-- Mobile wizard modal (Teleported) -->
-  <Teleport to="body">
-    <Transition name="wizard">
-      <div v-if="wizardActive" class="wizard-mask" @click="closeWizard">
-        <div class="wizard-modal" @click.stop>
-          <!-- Progress bar -->
-          <div class="wizard-progress-bar">
-            <div class="wizard-progress-bar__fill" :style="{ width: progressPercent + '%' }"></div>
+  <!-- Mobile wizard modal：外壳（遮罩 / 焦点陷阱 / ESC / 滚动锁定 / 关闭按钮）
+       由 StDrawer 提供，本组件只保留多步表单与方向滑动切换 -->
+  <StDrawer v-model:show="wizardActive" placement="bottom" title="完善评论信息">
+    <!-- 顶部进度条：贴抽屉顶部 -->
+    <div class="wizard-progress-bar">
+      <div class="wizard-progress-bar__fill" :style="{ width: progressPercent + '%' }"></div>
+    </div>
+
+    <!-- Step content with directional slide -->
+    <Transition
+      :name="wizardDirection === 'forward' ? 'wizard-slide-fwd' : 'wizard-slide-bwd'"
+      mode="out-in"
+    >
+      <div :key="wizardStep" class="wizard-step">
+        <!-- Step 1: name -->
+        <template v-if="wizardStep === 'name'">
+          <div class="wizard-step__icon">
+            <AppIcon name="user" :size="28" :stroke="1.8" />
           </div>
-
-          <!-- Close button -->
-          <ModalCloseButton class="wizard-close" @click="closeWizard" />
-
-          <!-- Step content with directional slide -->
-          <Transition
-            :name="wizardDirection === 'forward' ? 'wizard-slide-fwd' : 'wizard-slide-bwd'"
-            mode="out-in"
-          >
-            <div :key="wizardStep" class="wizard-step">
-              <!-- Step 1: name -->
-              <template v-if="wizardStep === 'name'">
-                <div class="wizard-step__icon">
-                  <AppIcon name="user" :size="28" :stroke="1.8" />
-                </div>
-                <h3 class="wizard-step__title">怎么称呼你？</h3>
-                <p class="wizard-step__desc">输入你想显示的名称</p>
-                <div class="wizard-step__field">
-                  <StInput
-                    v-model="authorName"
-                    :size="isMobile ? 'large' : 'medium'"
-                    placeholder="输入昵称"
-                    :maxlength="40"
-                    @enter="isStepValid && nextStep()"
-                  />
-                </div>
-              </template>
-
-              <!-- Step 2: email -->
-              <template v-else-if="wizardStep === 'email'">
-                <div class="wizard-step__icon">
-                  <AppIcon name="mail" :size="28" :stroke="1.8" />
-                </div>
-                <h3 class="wizard-step__title">留下联系方式</h3>
-                <p class="wizard-step__desc">方便博主与你联系</p>
-                <div class="wizard-step__field">
-                  <StInput
-                    v-model="authorEmail"
-                    :size="isMobile ? 'large' : 'medium'"
-                    :status="wizardStepError ? 'error' : undefined"
-                    placeholder="输入邮箱或 QQ 号"
-                    :maxlength="80"
-                    @enter="isStepValid && nextStep()"
-                  />
-                  <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
-                </div>
-              </template>
-
-              <!-- Step 3: url -->
-              <template v-else-if="wizardStep === 'url'">
-                <div class="wizard-step__icon">
-                  <AppIcon name="link" :size="28" :stroke="1.8" />
-                </div>
-                <h3 class="wizard-step__title">你的网站</h3>
-                <p class="wizard-step__desc">可选，点击头像时会用到</p>
-                <div class="wizard-step__field">
-                  <StInput
-                    v-model="authorUrl"
-                    type="url"
-                    :size="isMobile ? 'large' : 'medium'"
-                    :status="wizardStepError ? 'error' : undefined"
-                    placeholder="输入你的网站地址"
-                    :maxlength="120"
-                    @enter="isStepValid && nextStep()"
-                  />
-                  <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
-                </div>
-              </template>
-
-              <!-- Step 4: options + finish -->
-              <template v-else>
-                <div class="wizard-step__icon">
-                  <AppIcon name="settings" :size="28" :stroke="1.8" />
-                </div>
-                <h3 class="wizard-step__title">选项设置</h3>
-                <p class="wizard-step__desc">配置你的发布偏好</p>
-                <div class="wizard-step__options">
-                  <StCheckbox
-                    v-if="formSettings.showPrivateOption !== false"
-                    v-model="isPrivate"
-                    class="wizard-step__option"
-                    aria-label="悄悄话，仅博主和你可见"
-                  >
-                    <span class="wizard-step__option-text">
-                      <span class="wizard-step__option-label">悄悄话</span>
-                      <span class="wizard-step__option-hint">仅博主和你可见</span>
-                    </span>
-                  </StCheckbox>
-                  <StCheckbox
-                    v-if="parentCommentId"
-                    v-model="mailNotify"
-                    class="wizard-step__option"
-                    aria-label="邮件提醒，有回复时通知你"
-                  >
-                    <span class="wizard-step__option-text">
-                      <span class="wizard-step__option-label">邮件提醒</span>
-                      <span class="wizard-step__option-hint">有回复时通知你</span>
-                    </span>
-                  </StCheckbox>
-                  <StCheckbox
-                    v-if="formSettings.showMarkdownOption !== false"
-                    v-model="useMarkdown"
-                    class="wizard-step__option"
-                    aria-label="Markdown，使用 Markdown 格式"
-                  >
-                    <span class="wizard-step__option-text">
-                      <span class="wizard-step__option-label">Markdown</span>
-                      <span class="wizard-step__option-hint">使用 Markdown 格式</span>
-                    </span>
-                  </StCheckbox>
-                  <StCheckbox
-                    v-if="formSettings.showCookiesOptIn && !currentUser"
-                    v-model="cookiesConsent"
-                    class="wizard-step__option"
-                    aria-label="记住信息，保存昵称、邮箱等信息"
-                  >
-                    <span class="wizard-step__option-text">
-                      <span class="wizard-step__option-label">记住信息</span>
-                      <span class="wizard-step__option-hint">保存昵称、邮箱等信息</span>
-                    </span>
-                  </StCheckbox>
-                </div>
-                <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
-                  <altcha-widget
-                    v-if="captchaData"
-                    :challengejson="captchaJson"
-                    style="--altcha-max-width: 100%"
-                    @statechange="onCaptchaStateChange"
-                  ></altcha-widget>
-                </div>
-              </template>
-            </div>
-          </Transition>
-
-          <!-- Navigation -->
-          <div class="wizard-nav">
-            <StButton
-              v-if="currentStepIndex > 0"
+          <h3 class="wizard-step__title">怎么称呼你？</h3>
+          <p class="wizard-step__desc">输入你想显示的名称</p>
+          <div class="wizard-step__field">
+            <StInput
+              v-model="authorName"
               :size="isMobile ? 'large' : 'medium'"
-              @click="prevStep"
-            >
-              <template #icon><AppIcon name="arrow-left" :size="16" :stroke="2.5" /></template>
-              上一步
-            </StButton>
-            <StButton
-              v-if="currentStepIndex < totalWizardSteps - 1"
-              type="primary"
-              :size="isMobile ? 'large' : 'medium'"
-              :disabled="!isStepValid"
-              @click="nextStep"
-            >
-              <template #icon><AppIcon name="arrow-right" :size="16" :stroke="2.5" /></template>
-              下一步
-            </StButton>
-            <StButton
-              v-else
-              type="primary"
-              :size="isMobile ? 'large' : 'medium'"
-              @click="finishWizard"
-            >
-              <template #icon><AppIcon name="check" :size="16" :stroke="2.5" /></template>
-              完成
-            </StButton>
+              placeholder="输入昵称"
+              :maxlength="40"
+              @enter="isStepValid && nextStep()"
+            />
           </div>
-        </div>
+        </template>
+
+        <!-- Step 2: email -->
+        <template v-else-if="wizardStep === 'email'">
+          <div class="wizard-step__icon">
+            <AppIcon name="mail" :size="28" :stroke="1.8" />
+          </div>
+          <h3 class="wizard-step__title">留下联系方式</h3>
+          <p class="wizard-step__desc">方便博主与你联系</p>
+          <div class="wizard-step__field">
+            <StInput
+              v-model="authorEmail"
+              :size="isMobile ? 'large' : 'medium'"
+              :status="wizardStepError ? 'error' : undefined"
+              placeholder="输入邮箱或 QQ 号"
+              :maxlength="80"
+              @enter="isStepValid && nextStep()"
+            />
+            <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
+          </div>
+        </template>
+
+        <!-- Step 3: url -->
+        <template v-else-if="wizardStep === 'url'">
+          <div class="wizard-step__icon">
+            <AppIcon name="link" :size="28" :stroke="1.8" />
+          </div>
+          <h3 class="wizard-step__title">你的网站</h3>
+          <p class="wizard-step__desc">可选，点击头像时会用到</p>
+          <div class="wizard-step__field">
+            <StInput
+              v-model="authorUrl"
+              type="url"
+              :size="isMobile ? 'large' : 'medium'"
+              :status="wizardStepError ? 'error' : undefined"
+              placeholder="输入你的网站地址"
+              :maxlength="120"
+              @enter="isStepValid && nextStep()"
+            />
+            <p v-if="wizardStepError" class="wizard-step__error">{{ wizardStepError }}</p>
+          </div>
+        </template>
+
+        <!-- Step 4: options + finish -->
+        <template v-else>
+          <div class="wizard-step__icon">
+            <AppIcon name="settings" :size="28" :stroke="1.8" />
+          </div>
+          <h3 class="wizard-step__title">选项设置</h3>
+          <p class="wizard-step__desc">配置你的发布偏好</p>
+          <div class="wizard-step__options">
+            <StCheckbox
+              v-if="formSettings.showPrivateOption !== false"
+              v-model="isPrivate"
+              class="wizard-step__option"
+              aria-label="悄悄话，仅博主和你可见"
+            >
+              <span class="wizard-step__option-text">
+                <span class="wizard-step__option-label">悄悄话</span>
+                <span class="wizard-step__option-hint">仅博主和你可见</span>
+              </span>
+            </StCheckbox>
+            <StCheckbox
+              v-if="parentCommentId"
+              v-model="mailNotify"
+              class="wizard-step__option"
+              aria-label="邮件提醒，有回复时通知你"
+            >
+              <span class="wizard-step__option-text">
+                <span class="wizard-step__option-label">邮件提醒</span>
+                <span class="wizard-step__option-hint">有回复时通知你</span>
+              </span>
+            </StCheckbox>
+            <StCheckbox
+              v-if="formSettings.showMarkdownOption !== false"
+              v-model="useMarkdown"
+              class="wizard-step__option"
+              aria-label="Markdown，使用 Markdown 格式"
+            >
+              <span class="wizard-step__option-text">
+                <span class="wizard-step__option-label">Markdown</span>
+                <span class="wizard-step__option-hint">使用 Markdown 格式</span>
+              </span>
+            </StCheckbox>
+            <StCheckbox
+              v-if="formSettings.showCookiesOptIn && !currentUser"
+              v-model="cookiesConsent"
+              class="wizard-step__option"
+              aria-label="记住信息，保存昵称、邮箱等信息"
+            >
+              <span class="wizard-step__option-text">
+                <span class="wizard-step__option-label">记住信息</span>
+                <span class="wizard-step__option-hint">保存昵称、邮箱等信息</span>
+              </span>
+            </StCheckbox>
+          </div>
+          <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
+            <altcha-widget
+              v-if="captchaData"
+              :challengejson="captchaJson"
+              style="--altcha-max-width: 100%"
+              @statechange="onCaptchaStateChange"
+            ></altcha-widget>
+          </div>
+        </template>
       </div>
     </Transition>
-  </Teleport>
+
+    <!-- Navigation -->
+    <template #footer>
+      <div class="wizard-nav">
+        <StButton
+          v-if="currentStepIndex > 0"
+          :size="isMobile ? 'large' : 'medium'"
+          @click="prevStep"
+        >
+          <template #icon><AppIcon name="arrow-left" :size="16" :stroke="2.5" /></template>
+          上一步
+        </StButton>
+        <StButton
+          v-if="currentStepIndex < totalWizardSteps - 1"
+          type="primary"
+          :size="isMobile ? 'large' : 'medium'"
+          :disabled="!isStepValid"
+          @click="nextStep"
+        >
+          <template #icon><AppIcon name="arrow-right" :size="16" :stroke="2.5" /></template>
+          下一步
+        </StButton>
+        <StButton
+          v-else
+          type="primary"
+          :size="isMobile ? 'large' : 'medium'"
+          @click="finishWizard"
+        >
+          <template #icon><AppIcon name="check" :size="16" :stroke="2.5" /></template>
+          完成
+        </StButton>
+      </div>
+    </template>
+  </StDrawer>
 </template>
 
 <style scoped>
@@ -1243,80 +1233,13 @@ defineExpose({ clearForm })
   transform: translateY(20px);
 }
 
-/* ── Wizard Modal (modern, mobile-first) ── */
+/* ── Wizard Drawer（外壳由 StDrawer 提供，此处只保留内容排版） ── */
 
-.wizard-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  padding: 16px;
-}
-
-@media (max-width: 500px) {
-  .wizard-mask {
-    align-items: flex-end;
-    padding: 0;
-    backdrop-filter: blur(4px);
-  }
-}
-
-.wizard-modal {
-  position: relative;
-  width: 100%;
-  max-width: 380px;
-  background: var(--card);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  animation: wizard-card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (max-width: 500px) {
-  .wizard-modal {
-    max-width: 100%;
-    border-radius: 20px 20px 0 0;
-    animation: wizard-sheet-enter 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-    padding-bottom: env(safe-area-inset-bottom, 12px);
-  }
-}
-
-@keyframes wizard-card-enter {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(16px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes wizard-sheet-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ── Progress bar ── */
-
+/* 顶部进度条：抽屉内首个元素，占满宽度 */
 .wizard-progress-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
   height: 3px;
+  margin: -16px -16px 16px;
   background: var(--border);
-  z-index: 1;
 }
 
 .wizard-progress-bar__fill {
@@ -1326,30 +1249,17 @@ defineExpose({ clearForm })
   border-radius: 0 2px 2px 0;
 }
 
-/* ── Close button（外观由 ModalCloseButton 统一，此处仅定位） ── */
-
-.wizard-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 2;
-}
-
 /* ── Step content ── */
 
 .wizard-step {
-  padding: 28px 24px 20px;
-  min-height: 180px;
+  min-height: 160px;
   display: flex;
   flex-direction: column;
 }
 
 @media (max-width: 500px) {
   .wizard-step {
-    padding: 24px 20px 16px;
-    min-height: 160px;
-    overflow-y: auto;
-    max-height: 55vh;
+    min-height: 140px;
   }
 }
 
@@ -1455,19 +1365,12 @@ defineExpose({ clearForm })
   max-width: 110px;
 }
 
-/* ── Navigation ── */
+/* ── Navigation（置于 StDrawer footer 插槽内） ── */
 
 .wizard-nav {
   display: flex;
-  padding: 0 24px 20px;
+  width: 100%;
   gap: 12px;
-}
-
-@media (max-width: 500px) {
-  .wizard-nav {
-    padding: 0 20px 16px;
-    gap: 10px;
-  }
 }
 
 /* 按钮外观与状态由 StButton 提供；此处只保留向导导航的几何排布：
@@ -1477,6 +1380,10 @@ defineExpose({ clearForm })
 }
 
 @media (max-width: 500px) {
+  .wizard-nav {
+    gap: 10px;
+  }
+
   .wizard-nav > * {
     flex: 1;
     min-height: 44px;
@@ -1484,15 +1391,6 @@ defineExpose({ clearForm })
 }
 
 /* ── Dark-mode glass consistency ── */
-
-body[data-theme='dark'] .wizard-modal {
-  background: var(--card);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-}
-
-body[data-theme='dark'] .wizard-modal .wizard-progress-bar {
-  background: rgba(255, 255, 255, 0.08);
-}
 
 body[data-theme='dark'] .wizard-step__option {
   background: rgba(255, 255, 255, 0.04);
@@ -1516,20 +1414,6 @@ body[data-theme='dark'] .comments-form--mobile.comments-form--emoji-open {
 }
 
 /* ── Transitions ── */
-
-/* Mask fade */
-.wizard-enter-active {
-  transition: opacity 0.25s ease;
-}
-
-.wizard-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.wizard-enter-from,
-.wizard-leave-to {
-  opacity: 0;
-}
 
 /* Slide forward: new from right, old to left */
 .wizard-slide-fwd-enter-active {

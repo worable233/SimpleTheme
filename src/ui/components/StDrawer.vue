@@ -25,7 +25,7 @@ import StIcon from './StIcon.vue'
 
 defineOptions({ name: 'StDrawer' })
 
-type StDrawerPlacement = 'right' | 'left'
+type StDrawerPlacement = 'right' | 'left' | 'bottom'
 
 const props = withDefaults(
   defineProps<{
@@ -271,8 +271,10 @@ function onPointerDownOutside(ev: Event) {
   display: none;
 }
 
-/* 触屏设备没有 ESC 键，显示 × 更直观 */
-@media (hover: none), (pointer: coarse) {
+/* 触屏设备没有 ESC 键，显示 × 更直观；
+ * 窄视口（响应式预览/小窗口）指针仍是鼠标，hover/pointer 不命中，
+ * 故并入主题统一的移动端断点（--breakpoint-sm ≈ 600px）。 */
+@media (hover: none), (pointer: coarse), (max-width: 37.5rem) {
   .st-drawer__close {
     min-width: 0;
     width: 30px;
@@ -291,6 +293,38 @@ function onPointerDownOutside(ev: Event) {
 
   .st-drawer__close-x {
     display: block;
+  }
+}
+
+/* 底部抽屉：贴底、限高、仅顶部圆角，移动端 sheet 形态 */
+.st-drawer__content--bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: 100% !important;
+  max-width: 100vw;
+  max-height: 80vh;
+  border-top: var(--st-popover-border);
+  border-radius: var(--radius-large) var(--radius-large) 0 0;
+  animation: st-drawer-in-bottom var(--duration-enter) var(--ease-out);
+}
+
+.st-drawer__content--bottom[data-state='closed'] {
+  animation: st-drawer-out-bottom var(--duration-leave) var(--ease-in);
+}
+
+@keyframes st-drawer-in-bottom {
+  from {
+    opacity: 0.6;
+    translate: 0 100%;
+  }
+}
+
+@keyframes st-drawer-out-bottom {
+  to {
+    opacity: 0.6;
+    translate: 0 100%;
   }
 }
 

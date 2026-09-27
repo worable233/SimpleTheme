@@ -40,10 +40,6 @@ const SCAN_ROOT_FILES = ['src/App.vue']
  */
 const RAW_BUTTON_ALLOW = new Map([
   [
-    'src/components/ModalCloseButton.vue',
-    '全局统一关闭按钮：桌面 ESC 键帽 / 触屏圆形 × 两态切换 + 自定义投影，形态不是 StButton 能表达的',
-  ],
-  [
     'src/components/sidebar/SidebarNav.vue',
     '菜单项折叠开关：与同级 RouterLink 脚手架共用图标+标题+chevron 布局，且由全局 sidebar.css 驱动',
   ],
@@ -94,16 +90,7 @@ const TW_ALLOW = new Map([])
  * 这类名字几乎总是自建浮层，应改用 StTooltip / StModal / StPopover；
  * 确需保留的在这里登记理由。
  */
-const FLOATING_CLASS_ALLOW = new Map([
-  [
-    'src/components/CommentForm.vue',
-    '移动端评论向导 wizard-mask：多步表单 + 方向滑动切换，非 StModal 能表达的一次性流程壳',
-  ],
-  [
-    'src/components/TocWidget.vue',
-    '目录抽屉 toc-drawer-mask：文章内浮动目录的遮罩，随 TOC 状态而非独立对话框',
-  ],
-])
+const FLOATING_CLASS_ALLOW = new Map([])
 
 /**
  * role="dialog" / aria-modal 白名单（[B5]）。

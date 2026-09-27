@@ -8,7 +8,7 @@ import { useRoute } from 'vue-router'
 import { useToc } from '@/composables/useToc'
 import TocTree from './toc/TocTree.vue'
 import AppIcon from '@/components/AppIcon.vue'
-import ModalCloseButton from '@/components/ModalCloseButton.vue'
+import { StDrawer } from '@/ui'
 import type { TocNode } from './toc/TocTree.vue'
 
 const { tocItems, activeId, drawerOpen: isOpen } = useToc()
@@ -130,19 +130,13 @@ watch(
   },
 )
 
-// 移动端目录抽屉：ESC 关闭（与统一关闭按钮的 ESC 键帽一致）
-function onDrawerKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isOpen.value) isOpen.value = false
-}
-
+// 移动端目录抽屉的 ESC / 遮罩关闭 / 滚动锁定由 StDrawer（reka Dialog）负责
 onMounted(() => {
   if (tocItems.value.length > 0) nextTick(setupIntersectionObserver)
-  document.addEventListener('keydown', onDrawerKeydown)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
-  document.removeEventListener('keydown', onDrawerKeydown)
 })
 </script>
 
@@ -169,31 +163,16 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <!-- Mobile TOC drawer（入口在移动端顶栏阅读模式，见 SidebarMobileHeader） -->
-  <Teleport to="body">
-    <Transition name="toc-drawer">
-      <div
-        v-if="isOpen && tocData.length > 0"
-        class="toc-drawer-mask"
-        @click.self="isOpen = false"
-      >
-        <div class="toc-drawer" @click.stop>
-          <div class="toc-drawer__head">
-            <span>文章目录</span>
-            <ModalCloseButton @click="isOpen = false" />
-          </div>
-          <nav>
-            <TocTree
-              :nodes="tocData"
-              :active-id="activeId"
-              :active-index="activeIndex"
-              @scroll-to="scrollToHeading"
-            />
-          </nav>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  <!-- Mobile TOC drawer（入口在移动端顶栏阅读模式，见 SidebarMobileHeader）
+       外壳（遮罩 / 焦点陷阱 / ESC / 滚动锁定 / 关闭按钮）由 StDrawer 提供 -->
+  <StDrawer v-model:show="isOpen" placement="bottom" title="文章目录">
+    <TocTree
+      :nodes="tocData"
+      :active-id="activeId"
+      :active-index="activeIndex"
+      @scroll-to="scrollToHeading"
+    />
+  </StDrawer>
 </template>
 
 <style scoped>
@@ -250,60 +229,5 @@ onUnmounted(() => {
   height: 22px;
   flex-shrink: 0;
   color: var(--primary);
-}
-
-.toc-drawer-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background-color: rgb(0 0 0 / 0.3);
-}
-
-.toc-drawer {
-  width: 100%;
-  max-width: 420px;
-  max-height: 70vh;
-  padding: 16px 1.2rem;
-  overflow-y: auto;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  background-color: var(--card);
-  box-shadow: 0 -4px 20px rgb(0 0 0 / 0.1);
-}
-
-.toc-drawer__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-/* Drawer transition */
-.toc-drawer-enter-active,
-.toc-drawer-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.toc-drawer-enter-active .toc-drawer,
-.toc-drawer-leave-active .toc-drawer {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toc-drawer-enter-from,
-.toc-drawer-leave-to {
-  opacity: 0;
-}
-
-.toc-drawer-enter-from .toc-drawer,
-.toc-drawer-leave-to .toc-drawer {
-  transform: translateY(100%);
 }
 </style>
