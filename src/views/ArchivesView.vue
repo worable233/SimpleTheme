@@ -431,6 +431,17 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
+  /* 与 TimelineCard 的移动端紧凑日历条保持一致，避免骨架/内容形态跳变 */
+  .archives-skeleton .timeline-year-card {
+    gap: 12px;
+    padding: 1rem;
+  }
+
+  .archives-skeleton .timeline-year-calendar {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 5px;
+  }
+
   .archives-page {
     padding: 1rem 0.8rem 3rem;
   }

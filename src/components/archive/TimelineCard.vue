@@ -125,4 +125,29 @@ const emit = defineEmits<{
 [data-theme='dark'] .timeline-card__month.is-active {
   color: #222;
 }
+
+/* 手机端：卡片占满整行，若沿用 6×2 方格会把月份格撑到 47px、卡片近 200px 高。
+   月份格只是「哪个月有文章」的指示（整卡即按钮），故排成一行 12 格做紧凑日历条。 */
+@media (max-width: 600px) {
+  .timeline-card {
+    gap: 12px;
+    padding: 1rem;
+  }
+
+  .timeline-card__year {
+    font-size: 20px;
+  }
+
+  .timeline-card__months {
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: 1fr;
+    gap: 5px;
+  }
+
+  .timeline-card__month {
+    font-size: 0.625rem;
+    border-width: 1px;
+    border-radius: var(--radius-small, 4px);
+  }
+}
 </style>
