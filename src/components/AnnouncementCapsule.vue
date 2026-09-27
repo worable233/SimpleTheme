@@ -2,16 +2,31 @@
 import { ref } from 'vue'
 import type { AnnouncementSettings } from '@/types/wordpress'
 
-defineProps<{
+const props = defineProps<{
   announcement: AnnouncementSettings
 }>()
 
 const STORAGE_KEY = 'announcement_capsule_dismissed'
 
-const visible = ref(!localStorage.getItem(STORAGE_KEY))
+function readDismissed(): boolean {
+  if (props.announcement.alwaysShow) return false
+  try {
+    return !!localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return false
+  }
+}
+
+const visible = ref(!readDismissed())
 
 function dismiss() {
-  localStorage.setItem(STORAGE_KEY, '1')
+  if (!props.announcement.alwaysShow) {
+    try {
+      localStorage.setItem(STORAGE_KEY, '1')
+    } catch {
+      /* localStorage 不可用时静默降级 */
+    }
+  }
   visible.value = false
 }
 </script>

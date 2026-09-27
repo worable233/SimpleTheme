@@ -141,6 +141,7 @@ function simple_theme_get_site_info() {
 			'announcement'    => array(
 				'enabled'       => (bool) ( $theme_options['announcement_enabled'] ?? false ),
 				'mode'          => (string) ( $theme_options['announcement_mode'] ?? 'modal' ),
+				'alwaysShow'    => (bool) ( $theme_options['announcement_always_show'] ?? false ),
 				'pageId'        => $page_id,
 				'pageTitle'     => $page_title,
 				'pageContent'   => $page_content,

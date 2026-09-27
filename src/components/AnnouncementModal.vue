@@ -5,14 +5,32 @@ import { StButton } from '@/ui'
 import ModalCloseButton from '@/components/ModalCloseButton.vue'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 
-defineProps<{
+const props = defineProps<{
   announcement: AnnouncementSettings
 }>()
 
-const visible = ref(true)
+const STORAGE_KEY = 'announcement_modal_dismissed'
+
+const visible = ref(false)
 const { lockBodyScroll, unlockBodyScroll } = useBodyScrollLock()
 
+function readDismissed(): boolean {
+  if (props.announcement.alwaysShow) return false
+  try {
+    return !!localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return false
+  }
+}
+
 function close() {
+  if (!props.announcement.alwaysShow) {
+    try {
+      localStorage.setItem(STORAGE_KEY, '1')
+    } catch {
+      /* localStorage 不可用时静默降级 */
+    }
+  }
   visible.value = false
 }
 
@@ -37,7 +55,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  lockBodyScroll()
+  if (!readDismissed()) visible.value = true
   document.addEventListener('keydown', onKeydown)
 })
 

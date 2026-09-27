@@ -96,6 +96,7 @@ function simple_theme_get_default_options() {
 			// ---- Announcement ----
 			'announcement_enabled'        => false,
 			'announcement_mode'           => 'modal',
+			'announcement_always_show'    => false,
 			'announcement_page_id'        => 0,
 			'announcement_buttons'        => '',
 			'announcement_capsule_title'  => '',

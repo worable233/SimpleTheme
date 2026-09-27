@@ -161,6 +161,8 @@ export interface AnnouncementButton {
 export interface AnnouncementSettings {
   enabled: boolean
   mode: 'modal' | 'capsule'
+  /** 开启后每次访问都展示，不记忆关闭状态 */
+  alwaysShow: boolean
   pageId: number
   pageTitle?: string
   pageContent?: string

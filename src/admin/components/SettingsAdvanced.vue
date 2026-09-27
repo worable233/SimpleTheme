@@ -135,6 +135,14 @@ const buttonFields: ListField[] = [
               />
             </StFormItem>
           </StGrid>
+          <StFormItem description="开启后每位访客每次访问都展示；关闭则被关闭一次后不再自动出现。">
+            <StSwitch
+              :model-value="fields.checked('announcement_always_show')"
+              @update:model-value="emit('update', 'announcement_always_show', $event)"
+            >
+              每次都展示
+            </StSwitch>
+          </StFormItem>
           <SettingsListEditor
             :model-value="fields.text('announcement_buttons')"
             :fields="buttonFields"
