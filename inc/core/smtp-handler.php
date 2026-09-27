@@ -66,6 +66,59 @@ function simple_theme_smtp_phpmailer( $phpmailer ) {
 }
 
 // ============================================================
+// 1b. Apply From before wp_mail() validates it
+// ============================================================
+//
+// wp_mail() calls PHPMailer::setFrom() with the value from the `wp_mail_from`
+// filter *before* the `phpmailer_init` action fires. When WordPress derives an
+// invalid default address (e.g. `wordpress@localhost` on a local/IP/container
+// host), setFrom() throws and wp_mail() aborts — the SMTP settings above never
+// get a chance to run. Filtering here lets the configured sender win, and
+// substitutes a valid fallback when WordPress' default is unusable.
+
+add_filter( 'wp_mail_from', 'simple_theme_smtp_mail_from', 99 );
+function simple_theme_smtp_mail_from( $from_email ) {
+	$options = get_option( 'simple_theme_options', array() );
+
+	if ( empty( $options['smtp_enabled'] ) || empty( $options['smtp_host'] ) ) {
+		return $from_email;
+	}
+
+	// Explicit, valid sender always wins.
+	if ( ! empty( $options['smtp_from_email'] ) && is_email( $options['smtp_from_email'] ) ) {
+		return $options['smtp_from_email'];
+	}
+
+	// Keep WordPress' address when it is usable.
+	if ( is_email( $from_email ) ) {
+		return $from_email;
+	}
+
+	// Fallback: SMTP username often is the mailbox address.
+	if ( ! empty( $options['smtp_username'] ) && is_email( $options['smtp_username'] ) ) {
+		return $options['smtp_username'];
+	}
+
+	$admin_email = get_option( 'admin_email' );
+	return is_email( $admin_email ) ? $admin_email : $from_email;
+}
+
+add_filter( 'wp_mail_from_name', 'simple_theme_smtp_mail_from_name', 99 );
+function simple_theme_smtp_mail_from_name( $from_name ) {
+	$options = get_option( 'simple_theme_options', array() );
+
+	if ( empty( $options['smtp_enabled'] ) || empty( $options['smtp_host'] ) ) {
+		return $from_name;
+	}
+
+	if ( ! empty( $options['smtp_from_name'] ) ) {
+		return $options['smtp_from_name'];
+	}
+
+	return $from_name;
+}
+
+// ============================================================
 // 2. SMTP password encryption / decryption
 // ============================================================
 
@@ -239,12 +292,20 @@ function simple_theme_smtp_test( WP_REST_Request $request ) {
 		$ssl_ca_hint = '当前服务器（Windows）缺少 CA 证书包，导致 SSL 握手失败。请在 wp-config.php 中添加 define(\'SIMPLE_THEME_SMTP_DEBUG_SSL\', true); 以临时跳过 SSL 验证（仅开发/测试环境使用，生产环境请配置 CA 证书）。';
 	}
 
+	// Detect an invalid sender address. WordPress derives a default From from
+	// the site host, which is not a valid mailbox on localhost / IP hosts.
+	$from_hint = '';
+	if ( ! $timeout_hint && false !== stripos( $debug_info, '(From)' ) ) {
+		$from_hint = '发件人地址无效：WordPress 默认发件地址由站点域名推导，`localhost` 或 IP 主机名不是合法邮箱。请在上方填写有效的「发件人邮箱」。';
+	}
+
 	return new WP_REST_Response( array(
 		'success'      => false,
 		'message'      => __( 'Failed to send test email.' ),
 		'debug'        => $debug_info,
 		'ssl_ca_hint'  => $ssl_ca_hint,
 		'timeout_hint' => $timeout_hint,
+		'from_hint'    => $from_hint,
 	), 500 );
 }
 

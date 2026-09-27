@@ -139,6 +139,7 @@ async function sendTest() {
       toast.error((data.message || '发送失败') + debug)
       if (data.timeout_hint) toast.warning(data.timeout_hint)
       else if (data.ssl_ca_hint) toast.warning(data.ssl_ca_hint)
+      else if (data.from_hint) toast.warning(data.from_hint)
     }
   } catch (err) {
     testStatus.value = 'error'
