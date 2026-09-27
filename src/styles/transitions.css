@@ -52,7 +52,45 @@
   animation: st-slide-out var(--duration-leave) var(--ease-in);
 }
 
+/* ==================== icon-switch ====================
+   移植 Naive _styles/transitions/icon-switch.cssr.ts：
+   同一位置的两个图标做交叉切换（缩放 0.75 + 淡入淡出），
+   典型用法是 StSelect 后缀里「箭头 ⇄ 清除」。两个图标须各自
+   绝对居中，过渡类补上定位与 transform-origin。 */
+.st-icon-switch-enter-from,
+.st-icon-switch-leave-to {
+  transform: translate(-50%, -50%) scale(0.75);
+  opacity: 0;
+}
+
+.st-icon-switch-enter-to,
+.st-icon-switch-leave-from {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.st-icon-switch-enter-active,
+.st-icon-switch-leave-active {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center;
+  transition:
+    transform 0.3s var(--ease-in-out),
+    opacity 0.3s var(--ease-in-out);
+}
+
 /* ==================== 关键帧 ==================== */
+/* StSelect 选项勾选进场 —— 移植 Naive select-menu/index.cssr.ts:146-148 的
+   fadeInScaleUp(enterScale .5)。放在全局层：勾选图标在 Portal 到 body 的
+   :global 规则里被消费，scoped 的 @keyframes 会被改名导致引用失配。 */
+@keyframes st-select-check-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+}
+
 @keyframes st-fade-in {
   from {
     opacity: 0;
@@ -98,5 +136,10 @@
   .st-transition-fade-scale[data-state],
   .st-transition-slide[data-state] {
     animation: none;
+  }
+
+  .st-icon-switch-enter-active,
+  .st-icon-switch-leave-active {
+    transition: none;
   }
 }

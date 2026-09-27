@@ -118,8 +118,11 @@ const model = defineModel<string>({ default: '' })
 否则原生表单校验与 `<label for>` 关联会静默失效。
 **新增输入类组件时必须沿用这个约定**，不然调用方会遇到"属性写了没反应"。
 
-> `StSelect` 尚未处理：它基于 reka-ui `SelectTrigger`，属性应落到触发器
-> 按钮而非隐藏 input，需要单独设计。
+> `StSelect` 的对齐方式不同：它的触发器是 `div[role=combobox][tabindex=0]`
+> （对齐 Naive，非 `<button>`，故可用 `as="div"` 承载），不是原生表单控件，
+> 没有 `name` / `required` 的表单语义。无障碍名走 `ariaLabel`（会落到触发器），
+> 未声明的其它属性按 Vue 默认透传到 `.st-select` 根元素。`filterable` 的输入框
+> 在打开时才渲染进触发器内部。
 
 ## 动效
 
@@ -164,6 +167,11 @@ const model = defineModel<string>({ default: '' })
 `--ease-in`（Naive「进慢出快」约定）。退场写在 `[data-state='closed']` 上，
 reka 的 `Presence` 依据 `animationend` 延迟卸载。`st-transition-*` 是**全局**
 工具类，门禁 E7 已为其开例外，不需要 `:global()`。
+
+另有 `st-icon-switch`（对齐 Naive `_styles/transitions/icon-switch.cssr.ts`）：
+同一位置两个图标交叉切换（缩放 `0.75` + 淡入淡出），用 **Vue `<Transition>`**
+而非 `data-state`——典型用法是 `StSelect` 后缀里「箭头 ⇄ 清除」。两个图标各自
+绝对居中，过渡类补定位与 `transform-origin`。
 
 **所有动效都必须包一层 `@media (prefers-reduced-motion: reduce)` 关闭。**
 

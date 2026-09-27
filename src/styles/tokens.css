@@ -314,6 +314,27 @@
   --st-select-shadow-active-warning: 0 0 0 2px color-mix(in srgb, var(--warning) 20%, transparent);
   --st-select-shadow-active-error: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
 
+  /* StSelect 后缀与菜单 —— 对齐 Naive：
+   *   _internal/selection/styles/_common.ts  (paddingSingle / clearSize / arrowSize)
+   *   _internal/clear/src/styles/index.cssr.ts (清除色)
+   *   _internal/select-menu/styles/light.ts    (选项态色 / 组头)
+   * 菜单几何（4px 上下留白、选项 0 12px 内边距）在组件内以注释标出出处。 */
+  --st-select-radius: var(--radius-medium);
+  --st-select-icon-color: var(--st-placeholder);
+  --st-select-icon-color-disabled: var(--st-text-disabled);
+  --st-select-placeholder-disabled: var(--st-text-disabled);
+  --st-select-text-disabled: var(--st-text-disabled);
+  --st-select-clear-color: var(--st-placeholder);
+  --st-select-clear-color-hover: var(--st-text);
+  --st-select-clear-color-active: var(--st-text-disabled);
+  --st-select-option-padding: 0 12px;
+  --st-select-option-hover: var(--st-fill-hover);
+  --st-select-option-text-active: var(--primary);
+  --st-select-option-check: var(--primary);
+  --st-select-option-text-disabled: var(--st-text-disabled);
+  --st-select-option-opacity-disabled: 0.5;
+  --st-select-group-header-color: var(--st-placeholder);
+
   /* 浮层 */
   --st-popover-bg: var(--card);
   --st-popover-border: 1px solid var(--border);
