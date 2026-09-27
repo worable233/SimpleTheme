@@ -75,6 +75,12 @@ function simple_theme_get_frontend_config() {
 					'email_templates' => esc_url_raw( rest_url( 'simple-theme/v1/email-templates' ) ),
 					'email_preview'   => esc_url_raw( rest_url( 'simple-theme/v1/email-template-preview' ) ),
 		),
+		// 归档路径前缀：前端据此在解析 URL 期间选出正确的加载骨架
+		// （分类/标签/日期归档用列表骨架，文章用文章骨架）。
+		'permalink' => array(
+			'categoryBase' => get_option( 'category_base' ) ?: 'category',
+			'tagBase'      => get_option( 'tag_base' ) ?: 'tag',
+		),
 		'features'   => array(
 			'commentOrder' => ( 'desc' === (string) ( $theme_options['comment_order'] ?? 'asc' ) ? 'desc' : 'asc' ),
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),

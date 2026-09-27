@@ -18,6 +18,11 @@ export interface SimpleThemeConfig {
     email_preview?: string
   }
   restNonce?: string
+  /** 归档路径前缀（分类 / 标签），用于加载骨架选型 */
+  permalink?: {
+    categoryBase: string
+    tagBase: string
+  }
   features?: {
     prismHighlight: boolean
     /** 是否开放用户注册（WP users_can_register） */

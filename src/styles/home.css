@@ -29,6 +29,25 @@
   font-weight: 400;
 }
 
+/* 归档加载骨架：标题 / 副标题占位条，避免解析期间骨架里出现空标题文字 */
+.term-archive--skeleton .section-header__title,
+.term-archive--skeleton .section-header__subtitle {
+  display: inline-block;
+  background: var(--muted);
+  border-radius: var(--radius-small, 4px);
+  animation: card-pulse 1.5s ease-in-out infinite;
+}
+
+.term-archive--skeleton .section-header__title {
+  width: 6rem;
+  height: 1.75rem;
+}
+
+.term-archive--skeleton .section-header__subtitle {
+  width: 4.5rem;
+  height: 0.875rem;
+}
+
 /* Post list - horizontal cards */
 .post-list {
   display: flex;

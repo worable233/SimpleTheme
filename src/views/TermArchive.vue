@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toInternalPath, getThemeConfig } from '@/lib/theme-config'
 import type { WordPressPost } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
+import PostListSkeleton from '@/components/PostListSkeleton.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
+import { useSkeletonSize } from '@/composables/useSkeletonSize'
 
-defineProps<{
+const props = defineProps<{
   termName: string
   termTaxonomy: string
   termPostsLoading: boolean
@@ -16,6 +18,16 @@ defineProps<{
 }>()
 
 const { staticFallbackHtml } = useStaticFallback()
+
+// 骨架尺寸记忆：与首页共用同一 key，保证骨架和真实卡片同高、同封面形态
+const { size: cardSize, measure: measureCard } = useSkeletonSize('st_sk_post_card')
+
+watch(
+  () => props.termPosts,
+  (posts) => {
+    if (posts.length > 0) void measureCard('.term-archive .post-card', '.post-card__cover')
+  },
+)
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
@@ -51,17 +63,12 @@ const formatWordCount = (count?: number) => {
     </header>
 
     <!-- Term loading -->
-    <div v-if="termPostsLoading" class="post-list">
-      <div v-for="i in 3" :key="'sk-term-' + i" class="post-card-skeleton">
-        <div class="post-card-skeleton__cover"></div>
-        <div class="post-card-skeleton__meta"><span></span><span></span></div>
-        <div class="post-card-skeleton__text">
-          <div class="post-card-skeleton__title"></div>
-          <div class="post-card-skeleton__excerpt"></div>
-          <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
-        </div>
-      </div>
-    </div>
+    <PostListSkeleton
+      v-if="termPostsLoading"
+      :count="3"
+      :card-height="cardSize?.h"
+      :show-cover="cardSize?.cover !== false"
+    />
 
     <!-- Term error -->
     <StaticFallback

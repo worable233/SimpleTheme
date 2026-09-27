@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, defineComponent, h, ref, watch, type Co
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   getThemeConfig,
+  isArchivePath,
   isExternalUrl,
   isSafeNavigationUrl,
   toInternalPath,
@@ -28,7 +29,9 @@ import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
 import TermArchive from '@/views/TermArchive.vue'
+import PostListSkeleton from '@/components/PostListSkeleton.vue'
 import { getPreloadedSpecialPage } from '@/lib/special-page-loader'
+import { useSkeletonSize } from '@/composables/useSkeletonSize'
 import { useToast, StTag } from '@/ui'
 import { BlockContent } from '@/blocks'
 
@@ -97,6 +100,11 @@ const termName = ref('')
 const termTaxonomy = ref('')
 const termPosts = ref<WordPressPost[]>([])
 const termPostsLoading = ref(false)
+
+// 解析 URL 期间的类型未知：按路径先判断是否为列表型归档，
+// 归档用列表骨架占位，避免误套文章正文骨架。
+const { size: archiveCardSize } = useSkeletonSize('st_sk_post_card')
+const loadingArchive = computed(() => loading.value && isArchivePath(normalizedPath.value))
 
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -200,6 +208,9 @@ const loadCurrentContent = async () => {
   termName.value = ''
   termTaxonomy.value = ''
   termPosts.value = []
+  // 类型未知期间回到中性态，避免沿用上一页的 contentType 触发错误分支
+  // （如归档 → 归档时闪现「暂无内容」空状态）
+  contentType.value = 'home'
   loading.value = true
 
   try {
@@ -331,6 +342,28 @@ watch(
         title="页面加载失败"
         description="抱歉，页面暂时无法加载，请稍后重试。"
       />
+      <TermArchive
+        v-else-if="'term' === contentType"
+        :term-name="termName"
+        :term-taxonomy="termTaxonomy"
+        :term-posts-loading="termPostsLoading"
+        :error-message="errorMessage"
+        :term-posts="termPosts"
+      />
+      <!-- 归档页解析中：先按路径判定为列表型归档，用列表骨架占位 -->
+      <section v-else-if="loadingArchive" class="term-archive term-archive--skeleton" aria-busy="true">
+        <header class="section-header">
+          <h1>
+            <span class="section-header__title"></span>
+            <span class="section-header__subtitle"></span>
+          </h1>
+        </header>
+        <PostListSkeleton
+          :count="3"
+          :card-height="archiveCardSize?.h"
+          :show-cover="archiveCardSize?.cover !== false"
+        />
+      </section>
       <article v-else-if="loading" class="single-post">
         <!-- 有预览且含特色图：直接展示真实封面+标题，只骨架化 meta -->
         <div v-if="preview?.cover" class="single-post__cover">
@@ -348,7 +381,7 @@ watch(
                   width: 6rem;
                   border-radius: var(--radius-small, 4px);
                   background: rgba(255, 255, 255, 0.25);
-                  animation: pulse 1.5s ease-in-out infinite;
+                  animation: var(--animate-card-pulse);
                 "
               ></div>
               <div
@@ -357,7 +390,7 @@ watch(
                   width: 4rem;
                   border-radius: var(--radius-small, 4px);
                   background: rgba(255, 255, 255, 0.25);
-                  animation: pulse 1.5s ease-in-out infinite;
+                  animation: var(--animate-card-pulse);
                 "
               ></div>
             </div>
@@ -373,7 +406,7 @@ watch(
                 width: 6rem;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -382,7 +415,7 @@ watch(
                 width: 4rem;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
           </div>
@@ -433,7 +466,7 @@ watch(
                 width: 100%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -442,7 +475,7 @@ watch(
                 width: 100%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -451,7 +484,7 @@ watch(
                 width: 85%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -460,7 +493,7 @@ watch(
                 width: 100%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -469,7 +502,7 @@ watch(
                 width: 60%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -478,7 +511,7 @@ watch(
                 width: 100%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -487,7 +520,7 @@ watch(
                 width: 70%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -496,7 +529,7 @@ watch(
                 width: 100%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
             <div
@@ -505,21 +538,13 @@ watch(
                 width: 90%;
                 border-radius: var(--radius-small, 4px);
                 background: var(--muted);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: var(--animate-card-pulse);
               "
             ></div>
           </div>
         </div>
       </article>
       <NotFoundView v-else-if="'404' === contentType" />
-      <TermArchive
-        v-else-if="'term' === contentType"
-        :term-name="termName"
-        :term-taxonomy="termTaxonomy"
-        :term-posts-loading="termPostsLoading"
-        :error-message="errorMessage"
-        :term-posts="termPosts"
-      />
       <article v-else-if="postData" class="single-post">
         <div v-if="featuredImageUrl" class="single-post__cover">
           <div class="single-post__cover-img">

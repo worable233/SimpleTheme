@@ -17,6 +17,10 @@ const fallbackConfig: SimpleThemeConfig = {
     links: `${origin}/wp-json/simple-theme/v1/links`,
     settings: `${origin}/wp-json/simple-theme/v1/settings`,
   },
+  permalink: {
+    categoryBase: 'category',
+    tagBase: 'tag',
+  },
   features: {
     prismHighlight: true,
     showStats: true,
@@ -68,6 +72,10 @@ const themeConfig: SimpleThemeConfig = injectedConfig
       routes: {
         ...fallbackConfig.routes,
         ...injectedConfig.routes,
+      },
+      permalink: {
+        ...fallbackConfig.permalink,
+        ...injectedConfig.permalink,
       },
     }
   : fallbackConfig
@@ -176,6 +184,31 @@ export function toResolvablePath(value: string) {
   } catch {
     return internalPath
   }
+}
+
+/**
+ * 判断内部路由路径是否属于「列表型归档」（分类 / 标签 / 日期）。
+ *
+ * 主题在 URL 解析（resolve-url）返回前无从得知类型，若此时一律套用
+ * 文章正文骨架，归档页会先闪出一副「文章骨架」。分类 / 标签前缀取自
+ * 站点 permalink 配置，日期归档形如 /YYYY 或 /YYYY/MM。
+ */
+export function isArchivePath(value: string): boolean {
+  const raw = (value || '/').split(/[?#]/)[0]
+  const path = `/${raw.split('/').filter(Boolean).join('/')}`
+  if ('/' === path) return false
+
+  // 日期归档：/YYYY 或 /YYYY/MM
+  if (/^\/\d{4}(\/\d{1,2})?$/.test(path)) return true
+
+  const first = path.split('/')[1]?.toLowerCase()
+  if (!first) return false
+
+  const { categoryBase, tagBase } = getThemeConfig().permalink ?? {}
+  // 'categories' 为主题自定义的分类过滤路由
+  return [categoryBase, tagBase, 'categories'].some(
+    (base) => !!base && base.toLowerCase() === first,
+  )
 }
 
 export function isSafeNavigationUrl(value: string) {

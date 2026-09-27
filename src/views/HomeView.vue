@@ -12,6 +12,7 @@ import { getThemeConfig } from '@/lib/theme-config'
 import type { PagedPostCollection, WordPressPost, WordPressCategory } from '@/types/wordpress'
 import ErrorView from '@/components/ErrorView.vue'
 import StaticFallback from '@/components/StaticFallback.vue'
+import PostListSkeleton from '@/components/PostListSkeleton.vue'
 import { useStaticFallback } from '@/composables/useStaticFallback'
 import AppIcon from '@/components/AppIcon.vue'
 import { StButton, useToast } from '@/ui'
@@ -56,9 +57,6 @@ const perPageCount = computed(() => siteInfo.value.collections?.homePostCount ??
 
 // 骨架尺寸记忆：用上次真实卡片的高度/形态渲染骨架，避免加载完成时跳动
 const { size: cardSize, measure: measureCard } = useSkeletonSize('st_sk_post_card')
-const skeletonStyle = computed(() =>
-  cardSize.value ? { height: cardSize.value.h + 'px', minHeight: cardSize.value.h + 'px' } : undefined,
-)
 
 const metaConfig = computed(() => getThemeConfig().features?.meta)
 
@@ -351,17 +349,12 @@ function cancelPrefetch(post: WordPressPost) {
       <!-- Progressively rendered post cards: skeleton → real cards -->
       <template v-else>
         <!-- Skeleton grid (initial load only — category transitions skip skeleton) -->
-        <div v-if="initialLoading && latestPosts.length === 0" class="post-list">
-          <div v-for="i in perPageCount" :key="'sk-init-' + i" class="post-card-skeleton" :style="skeletonStyle">
-            <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
-            <div class="post-card-skeleton__meta"><span></span><span></span></div>
-            <div class="post-card-skeleton__text">
-              <div class="post-card-skeleton__title"></div>
-              <div class="post-card-skeleton__excerpt"></div>
-              <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
-            </div>
-          </div>
-        </div>
+        <PostListSkeleton
+          v-if="initialLoading && latestPosts.length === 0"
+          :count="perPageCount"
+          :card-height="cardSize?.h"
+          :show-cover="cardSize?.cover !== false"
+        />
 
         <!-- Real post cards -->
         <div v-else class="post-list">
@@ -420,17 +413,13 @@ function cancelPrefetch(post: WordPressPost) {
         />
 
         <!-- Loading more skeleton (appended below existing posts) -->
-        <div v-if="loadingMore" class="post-list post-list--more">
-          <div v-for="i in 3" :key="'sk-more-' + i" class="post-card-skeleton" :style="skeletonStyle">
-            <div v-if="cardSize?.cover !== false" class="post-card-skeleton__cover"></div>
-            <div class="post-card-skeleton__meta"><span></span><span></span></div>
-            <div class="post-card-skeleton__text">
-              <div class="post-card-skeleton__title"></div>
-              <div class="post-card-skeleton__excerpt"></div>
-              <div class="post-card-skeleton__excerpt post-card-skeleton__excerpt--short"></div>
-            </div>
-          </div>
-        </div>
+        <PostListSkeleton
+          v-if="loadingMore"
+          class="post-list--more"
+          :count="3"
+          :card-height="cardSize?.h"
+          :show-cover="cardSize?.cover !== false"
+        />
 
       </template>
     </section>
