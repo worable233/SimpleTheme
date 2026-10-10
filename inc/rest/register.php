@@ -5,6 +5,8 @@
  * Each module registers its own routes via rest_api_init.
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

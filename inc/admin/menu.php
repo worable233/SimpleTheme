@@ -3,6 +3,8 @@
  * Admin Menu & Page Registration
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

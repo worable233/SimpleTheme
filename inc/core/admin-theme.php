@@ -16,6 +16,8 @@
  * 「主题设置 + 保存」工具条固定在全局顶栏之下。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 defined('ABSPATH') || exit;

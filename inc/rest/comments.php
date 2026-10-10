@@ -5,6 +5,8 @@
  * Combines main comment endpoints from functions.php with comment-extras.php
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

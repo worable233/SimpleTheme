@@ -3,6 +3,8 @@
  * SMTP Mail Handler — configure PHPMailer via theme settings
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 defined( 'ABSPATH' ) || exit;

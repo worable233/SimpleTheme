@@ -5,6 +5,8 @@
  * Returns the about page data stored in theme options.
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

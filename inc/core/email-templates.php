@@ -6,6 +6,8 @@
  * 与前台视觉保持一致；邮件客户端不支持 CSS 变量，故一律内联。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 defined( 'ABSPATH' ) || exit;

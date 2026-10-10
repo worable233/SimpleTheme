@@ -3,6 +3,8 @@
  * Local Avatars — user-uploaded custom avatars instead of Gravatar
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 defined( 'ABSPATH' ) || exit;

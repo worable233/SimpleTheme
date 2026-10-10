@@ -3,6 +3,8 @@
  * REST: Miscellaneous Endpoints (Links, Avatar, Path Resolution, Illustration)
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

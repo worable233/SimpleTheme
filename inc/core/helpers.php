@@ -3,6 +3,8 @@
  * Utility Helpers
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

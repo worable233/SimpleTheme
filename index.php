@@ -3,6 +3,8 @@
  * WordPress 主题入口模板，交由 Vue 应用接管前台渲染。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 ?><!doctype html>

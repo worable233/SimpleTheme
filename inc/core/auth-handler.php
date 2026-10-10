@@ -7,6 +7,8 @@
  * 使用 WordPress 原生函数（wp_signon、register_new_user 等）。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 defined( 'ABSPATH' ) || exit;

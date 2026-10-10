@@ -3,6 +3,8 @@
  * Simple Theme 的主题引导与 WordPress 集成。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 // ============================================================

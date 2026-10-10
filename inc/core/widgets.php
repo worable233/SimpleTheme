@@ -7,6 +7,8 @@
  * 前端 SPA 通过 site-info REST 读取结构化 sidebar 数据渲染。
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

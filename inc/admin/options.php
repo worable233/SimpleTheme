@@ -3,6 +3,8 @@
  * Theme Options: Defaults, Sanitize, Migration, Settings REST Endpoints
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

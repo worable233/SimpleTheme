@@ -3,6 +3,8 @@
  * REST: Site Info Endpoint
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

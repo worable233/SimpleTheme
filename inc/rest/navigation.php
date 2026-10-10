@@ -3,6 +3,8 @@
  * REST: Navigation Menu Endpoints
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

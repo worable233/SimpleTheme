@@ -3,6 +3,8 @@
  * REST: Posts / Collection Endpoints
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

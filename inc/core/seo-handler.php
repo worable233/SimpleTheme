@@ -21,6 +21,8 @@
  * returning proper content-type responses instead of the SPA HTML shell.
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

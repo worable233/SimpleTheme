@@ -3,6 +3,8 @@
  * Asset Enqueuing (Frontend + Admin)
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

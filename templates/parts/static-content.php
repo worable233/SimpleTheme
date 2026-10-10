@@ -9,6 +9,8 @@
  * Uses the main query only — no secondary queries, no wp_reset_postdata().
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -3,6 +3,8 @@
  * Theme Setup & Core Registration
  *
  * @package SimpleTheme
+ *
+ * @license MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
