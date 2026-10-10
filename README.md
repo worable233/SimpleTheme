@@ -4,7 +4,7 @@ Simple Theme 是一个面向个人博客的 WordPress 主题。前台使用 Vue 
 
 [![Release](https://img.shields.io/github/v/release/worable233/SimpleTheme?style=flat-square)](https://github.com/worable233/SimpleTheme/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/worable233/SimpleTheme/build.yml?style=flat-square)](https://github.com/worable233/SimpleTheme/actions)
-[![License](https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-red?style=flat-square)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=flat-square&logo=wordpress&logoColor=white)](https://wordpress.org/)
 
@@ -61,4 +61,4 @@ dist/   构建产物，由 WordPress 根据 Vite manifest 加载
 
 ## 许可证
 
-[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) — 署名、非商业使用、禁止演绎
+[MIT](https://opensource.org/licenses/MIT)

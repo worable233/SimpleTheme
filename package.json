@@ -2,7 +2,7 @@
   "name": "simple-theme",
   "version": "2.1.0",
   "private": true,
-  "license": "CC-BY-NC-ND-4.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "predev": "node bin/copy-illustrations.mjs && node bin/copy-emojis.mjs && node bin/copy-prism.mjs",
