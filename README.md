@@ -56,9 +56,14 @@ dist/   构建产物，由 WordPress 根据 Vite manifest 加载
 
 ## 致谢
 
-- [Sakurairo](https://github.com/mirai-mamori/Sakurairo)（GPL-2.0）：参考其部分区块和数据兼容实现
-- [iEmo](https://github.com/kannafay/iEmo)（MIT）：提供视觉设计方面的参考，未使用其代码
+- [Sakurairo](https://github.com/mirai-mamori/Sakurairo)（GPL-2.0）：部分区块与数据兼容实现参考了其做法
+- [iEmo](https://github.com/kannafay/iEmo)（MIT）：本项目的视觉设计灵感来源
+- [PrismJS](https://github.com/PrismJS/prism)（MIT）：代码高亮
+- [unDraw](https://undraw.co/)（开放许可）：插画素材
+- [Tabler Icons](https://github.com/tabler/tabler-icons)（MIT）：界面图标
 
 ## 许可证
 
 [MIT](https://opensource.org/licenses/MIT)
+
+本项目在构建产物中分发若干第三方组件与素材，其版权与许可见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。

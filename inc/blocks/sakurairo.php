@@ -12,6 +12,17 @@
  *   - sakurairo/vbilibili          (Bilibili video embed)
  *
  * @package SimpleTheme
+ *
+ * ---------------------------------------------------------------------------
+ * License notice
+ *
+ * This compatibility layer is derived from Sakurairo
+ * (https://github.com/mirai-mamori/Sakurairo), Copyright (c) mirai-mamori
+ * and contributors, and is distributed under the GNU General Public License
+ * v2.0 (or later), the same license as Sakurairo.
+ *
+ * GPL-2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * ---------------------------------------------------------------------------
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

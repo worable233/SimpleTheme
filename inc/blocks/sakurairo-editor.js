@@ -3,6 +3,10 @@
  *
  * Registers Sakurairo-compatible Gutenberg blocks in the post editor.
  * All strings are inline (not minified) for maintainability.
+ *
+ * 许可：移植/改自 Sakurairo（https://github.com/mirai-mamori/Sakurairo，
+ * Copyright (c) mirai-mamori 及贡献者），沿用 GPL-2.0 授权。
+ * GPL-2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  */
 (function (wp) {
   'use strict';

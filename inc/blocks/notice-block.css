@@ -1,6 +1,10 @@
 /* ===================================================================
    Sakurairo 区块样式 — 统一到 Simple Theme 设计语言
    ===================================================================
+   许可：移植/改自 Sakurairo（https://github.com/mirai-mamori/Sakurairo，
+   Copyright (c) mirai-mamori 及贡献者），沿用 GPL-2.0 授权。
+   GPL-2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+   -------------------------------------------------------------------
    本文件是这些区块的唯一样式来源：前台（SPA / 静态 HTML）与区块编辑器
    共用。样式全部消费主题令牌，不再出现硬编码颜色。
    设计语言对齐 src/ui 的 StAlert / StCard / StAvatar：

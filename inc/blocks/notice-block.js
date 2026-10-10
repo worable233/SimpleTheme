@@ -1,3 +1,10 @@
+/**
+ * Sakurairo 兼容区块 — 编辑器脚本（提示块 notice-block）
+ *
+ * 许可：移植/改自 Sakurairo（https://github.com/mirai-mamori/Sakurairo，
+ * Copyright (c) mirai-mamori 及贡献者），沿用 GPL-2.0 授权。
+ * GPL-2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ */
 (function (wp) {
   var registerBlockType = wp.blocks.registerBlockType;
   var RichText = wp.blockEditor.RichText;

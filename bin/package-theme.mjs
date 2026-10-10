@@ -65,6 +65,15 @@ const alwaysExcludeDirs = new Set([
   '.atomcode', 'vendor',
 ]);
 
+// Explicitly kept files — override both name-exclusion and extension filter.
+// Licenses/notices must ship with the distributed theme (MIT + GPL compliance).
+const keepNames = new Set([
+  'LICENSE',
+  'LICENSE.txt',
+  'THIRD-PARTY-NOTICES.md',
+  'README.md',
+]);
+
 let fileCount = 0;
 
 function shouldExclude(name, relPath) {
@@ -125,6 +134,13 @@ function walkDir(dir) {
 
       walkDir(fullPath);
     } else if (stat.isFile()) {
+      // License / notice files always ship, regardless of filters below.
+      if (keepNames.has(entry)) {
+        archive.file(fullPath, { name: `${themeSlug}/${relPath}` });
+        fileCount++;
+        continue;
+      }
+
       // File extension filter
       const ext = entry.substring(entry.lastIndexOf('.')).toLowerCase();
       if (ext === '.ps1' || ext === '.mjs' || ext === '.py' || ext === '.md' || ext === '.log' || ext === '.zip' || ext === '.txt') continue;
