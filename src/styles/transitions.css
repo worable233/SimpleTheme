@@ -36,6 +36,25 @@
   animation: st-fade-out-scale-down var(--duration-leave) var(--ease-in);
 }
 
+/* ==================== popover slide（StPopover animation="slide"） ====================
+   面板沿 --st-popover-shift-y 位移淡入（正值从下方升起），默认 8px。
+   曲线/时长/位移可经 StPopover 的 easing / duration / shiftY 覆写。
+   放在全局层：内容被 Portal 到 body，且 scoped @keyframes 会被改名，
+   与 StModal/StDrawer 引用全局过渡类的做法一致。 */
+.st-popover__content--slide {
+  --st-popover-shift-y: 8px;
+  --st-popover-duration: 0.25s;
+  --st-popover-easing: cubic-bezier(0.55, 0, 0.8, 0.25);
+}
+
+.st-popover__content--slide[data-state='open'] {
+  animation: st-popover-slide-in var(--st-popover-duration) var(--st-popover-easing) both;
+}
+
+.st-popover__content--slide[data-state='closed'] {
+  animation: st-popover-slide-out var(--st-popover-duration) var(--st-popover-easing) both;
+}
+
 /* ==================== slide-in-from-* ====================
    方向由 --st-transition-shift-x / -y 给出，默认从上方 4px 处滑入，
    调用方可覆写这两个变量来换方向。 */
@@ -131,10 +150,25 @@
   }
 }
 
+@keyframes st-popover-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--st-popover-shift-y));
+  }
+}
+
+@keyframes st-popover-slide-out {
+  to {
+    opacity: 0;
+    transform: translateY(var(--st-popover-shift-y));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .st-transition-fade[data-state],
   .st-transition-fade-scale[data-state],
-  .st-transition-slide[data-state] {
+  .st-transition-slide[data-state],
+  .st-popover__content--slide[data-state] {
     animation: none;
   }
 

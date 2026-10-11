@@ -203,7 +203,7 @@ function simple_theme_format_post_item( WP_Post $post ) {
 
 	$stats = simple_theme_calculate_post_stats( $post );
 
-	return array(
+	$data = array(
 		'id'             => $post->ID,
 		'title'          => array( 'rendered' => get_the_title( $post ) ),
 		'slug'           => $post->post_name,
@@ -224,4 +224,17 @@ function simple_theme_format_post_item( WP_Post $post ) {
 		'readingTime'    => $stats['readingTime'],
 		'isSticky'       => is_sticky( $post->ID ),
 	);
+
+	// 说说卡片默认展示正文预览、悬停展开全文，故列表接口需下发渲染后的正文。
+	// 仅对 shuoshuo 下发，避免首页 / 归档列表载荷被整篇正文撑大。
+	if ( 'shuoshuo' === $post->post_type ) {
+		$GLOBALS['post'] = $post;
+		setup_postdata( $post );
+		$data['content'] = array(
+			'rendered' => apply_filters( 'the_content', $post->post_content ),
+		);
+		wp_reset_postdata();
+	}
+
+	return $data;
 }

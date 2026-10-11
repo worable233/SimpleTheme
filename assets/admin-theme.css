@@ -99,6 +99,18 @@ body.sta-theme-active {
   color: var(--foreground);
 }
 
+/* 桌面端滚动容器是 <html>，body 只负责留出固定顶栏/侧栏的内边距。
+   但 reka-ui 的浮层（下拉/选择器/气泡）打开时会无条件给 body 加
+   overflow:hidden（见 useBodyScrollLock），把 body 变成滚动容器：
+   body 的 padding-top 会被 sticky 元素再算一遍，顶栏下移 48px、页面
+   整体跳动。此处常驻 overflow:visible 抵消该内联样式（仅桌面端；
+   ≤782px 时 WP 让 body 自己当滚动容器，保持 reka 的锁滚动行为）。 */
+@media (min-width: 783px) {
+  body.sta-theme-active {
+    overflow: visible !important;
+  }
+}
+
 body.sta-theme-active #simple-theme-admin-sidebar {
   position: fixed;
   top: 0;
@@ -178,7 +190,9 @@ body.sta-theme-active .wrap .page-title-action {
   color: var(--foreground);
   text-decoration: none;
   font-size: 13px;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 body.sta-theme-active .wrap .page-title-action:hover {
@@ -198,32 +212,34 @@ body.sta-theme-active #wpbody-content a:hover {
 }
 
 /* 按钮（覆盖 .wp-core-ui 特异性） */
-body.sta-theme-active .wp-core-ui .button,
-body.sta-theme-active .wp-core-ui .button-secondary {
+body.sta-theme-active.wp-core-ui .button,
+body.sta-theme-active.wp-core-ui .button-secondary {
   background: var(--card);
   color: var(--foreground);
   border: 1px solid var(--border);
   border-radius: var(--radius-medium);
   box-shadow: none;
-  transition: border-color var(--transition-fast), color var(--transition-fast),
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast),
     background var(--transition-fast);
 }
 
-body.sta-theme-active .wp-core-ui .button:hover,
-body.sta-theme-active .wp-core-ui .button-secondary:hover {
+body.sta-theme-active.wp-core-ui .button:hover,
+body.sta-theme-active.wp-core-ui .button-secondary:hover {
   background: var(--muted);
   border-color: var(--primary);
   color: var(--primary);
 }
 
-body.sta-theme-active .wp-core-ui .button:focus,
-body.sta-theme-active .wp-core-ui .button-secondary:focus {
+body.sta-theme-active.wp-core-ui .button:focus,
+body.sta-theme-active.wp-core-ui .button-secondary:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 1px var(--primary);
   outline: none;
 }
 
-body.sta-theme-active .wp-core-ui .button-primary {
+body.sta-theme-active.wp-core-ui .button-primary {
   background: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid var(--primary);
@@ -232,17 +248,17 @@ body.sta-theme-active .wp-core-ui .button-primary {
   text-shadow: none;
 }
 
-body.sta-theme-active .wp-core-ui .button-primary:hover,
-body.sta-theme-active .wp-core-ui .button-primary:focus {
+body.sta-theme-active.wp-core-ui .button-primary:hover,
+body.sta-theme-active.wp-core-ui .button-primary:focus {
   background: var(--wp-admin-theme-color-darker-10);
   border-color: var(--wp-admin-theme-color-darker-10);
   color: var(--primary-foreground);
 }
 
-body.sta-theme-active .wp-core-ui .button:disabled,
-body.sta-theme-active .wp-core-ui .button-primary:disabled,
-body.sta-theme-active .wp-core-ui .button.disabled,
-body.sta-theme-active .wp-core-ui .button-primary.disabled {
+body.sta-theme-active.wp-core-ui .button:disabled,
+body.sta-theme-active.wp-core-ui .button-primary:disabled,
+body.sta-theme-active.wp-core-ui .button.disabled,
+body.sta-theme-active.wp-core-ui .button-primary.disabled {
   opacity: 0.5;
   background: var(--muted) !important;
   color: var(--secondary) !important;
@@ -265,7 +281,9 @@ body.sta-theme-active #wpbody-content textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-medium);
   box-shadow: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 body.sta-theme-active #wpbody-content input[type='text']:focus,
@@ -617,6 +635,617 @@ body.sta-theme-active .form-table p.description {
 }
 
 /* ─────────────────────────────────────────────
+   4b. 深色模式核心兜底
+   ─────────────────────────────────────────────
+   WordPress 后台核心 CSS 仍是硬编码浅色（#fff / #f6f7f7 / #f0f0f1…），
+   并没有可覆盖的语义变量。这里按"表面类型"逐类把核心的浅色硬编码
+   重映射到深色令牌上，否则欢迎面板、插件列表、编辑器、菜单/媒体/小工具
+   等页面会留下大片白底白字。
+   选择器前缀 [data-theme='dark'] body.sta-theme-active 保证：
+     · 只在深色 + 已开启美化时生效（浅色页与未开启美化的页面零影响）；
+     · 特异性高于 WP 核心的 (0,1,1) 规则，无需 !important。
+   ───────────────────────────────────────────── */
+
+/* —— 通用表面：卡片 / 表格 / 条纹 / 面板 —— */
+[data-theme='dark'] body.sta-theme-active .stuffbox,
+[data-theme='dark'] body.sta-theme-active .comment-ays,
+[data-theme='dark'] body.sta-theme-active .feature-filter,
+[data-theme='dark'] body.sta-theme-active .popular-tags,
+[data-theme='dark'] body.sta-theme-active p.popular-tags,
+[data-theme='dark'] body.sta-theme-active .widgets-holder-wrap,
+[data-theme='dark'] body.sta-theme-active .wp-editor-container,
+[data-theme='dark'] body.sta-theme-active table.widefat,
+[data-theme='dark'] body.sta-theme-active .wp-filter,
+[data-theme='dark'] body.sta-theme-active .filter-group,
+[data-theme='dark'] body.sta-theme-active .filtered-by .tag,
+[data-theme='dark'] body.sta-theme-active .card,
+[data-theme='dark'] body.sta-theme-active .postbox,
+[data-theme='dark'] body.sta-theme-active .plugin-card,
+[data-theme='dark'] body.sta-theme-active .theme-browser .theme,
+[data-theme='dark'] body.sta-theme-active .theme-browser .theme .theme-name,
+[data-theme='dark'] body.sta-theme-active #screen-meta,
+[data-theme='dark'] body.sta-theme-active #screen-meta-links .show-settings {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .alternate,
+[data-theme='dark'] body.sta-theme-active .striped > tbody > :nth-child(odd),
+[data-theme='dark'] body.sta-theme-active ul.striped > :nth-child(odd),
+[data-theme='dark'] body.sta-theme-active .filter-drawer,
+[data-theme='dark'] body.sta-theme-active .wp-filter .favorites-form,
+[data-theme='dark'] body.sta-theme-active .plugin-card-bottom,
+[data-theme='dark'] body.sta-theme-active #dashboard_right_now .sub,
+[data-theme='dark'] body.sta-theme-active #future-posts li:nth-child(odd),
+[data-theme='dark'] body.sta-theme-active #published-posts li:nth-child(odd),
+[data-theme='dark'] body.sta-theme-active #activity-widget #the-comment-list .comment-item,
+[data-theme='dark'] body.sta-theme-active .theme-overlay .theme-actions,
+[data-theme='dark'] body.sta-theme-active .widget .widget-top,
+[data-theme='dark'] body.sta-theme-active .menu-item-handle {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active #activity-widget #the-comment-list .unapproved,
+[data-theme='dark'] body.sta-theme-active #the-comment-list .unapproved td,
+[data-theme='dark'] body.sta-theme-active #the-comment-list .unapproved th,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .site-mature,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .site-spammed,
+[data-theme='dark'] body.sta-theme-active .wp-list-table tr.site-mature,
+[data-theme='dark'] body.sta-theme-active .wp-list-table tr.site-spammed {
+  background-color: color-mix(in srgb, var(--warning) 16%, var(--card));
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .wp-list-table .site-archived,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .site-deleted,
+[data-theme='dark'] body.sta-theme-active .wp-list-table tr.site-archived,
+[data-theme='dark'] body.sta-theme-active .wp-list-table tr.site-deleted,
+[data-theme='dark'] body.sta-theme-active #menu-to-edit .menu-item-invalid .menu-item-handle {
+  background-color: color-mix(in srgb, var(--danger) 16%, var(--card));
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .plugins tr,
+[data-theme='dark'] body.sta-theme-active .plugins tr.paused td,
+[data-theme='dark'] body.sta-theme-active .plugins tr.paused th,
+[data-theme='dark'] body.sta-theme-active .plugins .plugin-title .dashicons:before,
+[data-theme='dark'] body.sta-theme-active .media-widget-preview .placeholder,
+[data-theme='dark']
+  body.sta-theme-active
+  .media-widget-control
+  .attachment-media-view
+  .button-add-media {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .plugins,
+[data-theme='dark'] body.sta-theme-active .plugins td,
+[data-theme='dark'] body.sta-theme-active .plugins th,
+[data-theme='dark'] body.sta-theme-active .plugins .plugin-description,
+[data-theme='dark'] body.sta-theme-active .plugins .plugin-description p,
+[data-theme='dark'] body.sta-theme-active .plugins .plugin-description strong {
+  color: var(--foreground);
+}
+
+/* —— 编辑器（经典编辑器：标题 / 工具条 / 容器） —— */
+[data-theme='dark'] body.sta-theme-active #titlediv #title,
+[data-theme='dark'] body.sta-theme-active #titlewrap .skiplink,
+[data-theme='dark'] body.sta-theme-active .wp-editor-container,
+[data-theme='dark'] body.sta-theme-active .mce-panel,
+[data-theme='dark'] body.sta-theme-active .mce-toolbar-grp,
+[data-theme='dark'] body.sta-theme-active .mce-menubar,
+[data-theme='dark'] body.sta-theme-active div.mce-edit-area,
+[data-theme='dark'] body.sta-theme-active .quicktags-toolbar {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active #wp-content-editor-tools,
+[data-theme='dark'] body.sta-theme-active #post-status-info,
+[data-theme='dark'] body.sta-theme-active .quicktags-toolbar {
+  background-color: var(--muted);
+}
+
+/* —— 欢迎面板（仪表盘） —— */
+[data-theme='dark'] body.sta-theme-active .welcome-panel .welcome-panel-column-container {
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active .welcome-panel h3,
+[data-theme='dark'] body.sta-theme-active .welcome-panel .welcome-panel-column p,
+[data-theme='dark'] body.sta-theme-active .welcome-panel .welcome-panel-column li,
+[data-theme='dark'] body.sta-theme-active .welcome-panel .welcome-panel-column a {
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .welcome-panel .welcome-panel-column a:hover {
+  color: var(--primary);
+}
+
+/* —— 通知 / 提示 / 帮助抽屉 —— */
+[data-theme='dark'] body.sta-theme-active .notice,
+[data-theme='dark'] body.sta-theme-active div.updated,
+[data-theme='dark'] body.sta-theme-active div.error,
+[data-theme='dark'] body.sta-theme-active .notice-info {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active #contextual-help-back,
+[data-theme='dark'] body.sta-theme-active .contextual-help-tabs .active {
+  background-color: var(--muted);
+}
+
+/* —— 标题与正文文字（核心硬编码 #1d2327 / #2c3338 / #3c434a / #50575e） —— */
+[data-theme='dark'] body.sta-theme-active #wpbody-content h1,
+[data-theme='dark'] body.sta-theme-active #wpbody-content h2,
+[data-theme='dark'] body.sta-theme-active #wpbody-content h3,
+[data-theme='dark'] body.sta-theme-active #wpbody-content h4,
+[data-theme='dark'] body.sta-theme-active #wpbody-content h5,
+[data-theme='dark'] body.sta-theme-active #wpbody-content h6,
+[data-theme='dark'] body.sta-theme-active #wpbody-content label,
+[data-theme='dark'] body.sta-theme-active .wrap h1,
+[data-theme='dark'] body.sta-theme-active .wrap h2,
+[data-theme='dark'] body.sta-theme-active .wrap h3 {
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active #wpbody-content .description,
+[data-theme='dark'] body.sta-theme-active #wpbody-content .howto,
+[data-theme='dark'] body.sta-theme-active #wpbody-content p.description,
+[data-theme='dark'] body.sta-theme-active #wpbody-content .subsubsub,
+[data-theme='dark'] body.sta-theme-active #wpbody-content .row-actions,
+[data-theme='dark'] body.sta-theme-active #wpbody-content .form-wrap p,
+[data-theme='dark'] body.sta-theme-active #wpbody-content .menu-item-settings .field-desc {
+  color: var(--secondary);
+}
+
+/* —— 选项卡面板（分类/页面/文章选择器） —— */
+[data-theme='dark'] body.sta-theme-active .tabs-panel,
+[data-theme='dark'] body.sta-theme-active .tabs-panel-active,
+[data-theme='dark'] body.sta-theme-active .wp-tab-panel,
+[data-theme='dark'] body.sta-theme-active .categorydiv div.tabs-panel,
+[data-theme='dark'] body.sta-theme-active .customlinkdiv div.tabs-panel,
+[data-theme='dark'] body.sta-theme-active .posttypediv div.tabs-panel,
+[data-theme='dark'] body.sta-theme-active .taxonomydiv div.tabs-panel,
+[data-theme='dark'] body.sta-theme-active #menu-settings-column .inside,
+[data-theme='dark'] body.sta-theme-active ul.category-tabs li,
+[data-theme='dark'] body.sta-theme-active ul.add-menu-item-tabs li {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active ul.category-tabs li.tabs,
+[data-theme='dark'] body.sta-theme-active ul.add-menu-item-tabs li.tabs,
+[data-theme='dark'] body.sta-theme-active .tabs-panel .tabs {
+  background-color: var(--muted);
+}
+
+/* 选项卡文字（核心给 li.tabs a 设了深色字） */
+[data-theme='dark'] body.sta-theme-active ul.category-tabs li a,
+[data-theme='dark'] body.sta-theme-active ul.add-menu-item-tabs li a,
+[data-theme='dark'] body.sta-theme-active .wp-tab-bar li a,
+[data-theme='dark'] body.sta-theme-active .tabs-panel .tabs a {
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active ul.category-tabs li.tabs a,
+[data-theme='dark'] body.sta-theme-active ul.add-menu-item-tabs li.tabs a,
+[data-theme='dark'] body.sta-theme-active .wp-tab-bar li.tabs a,
+[data-theme='dark'] body.sta-theme-active .tabs-panel .tabs a {
+  color: var(--foreground);
+}
+
+/* —— 导航标签（nav-tab） —— */
+[data-theme='dark'] body.sta-theme-active .nav-tab {
+  background-color: var(--muted);
+  border-color: var(--border);
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active .nav-tab:hover {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .nav-tab-active,
+[data-theme='dark'] body.sta-theme-active .nav-tab-active:focus,
+[data-theme='dark'] body.sta-theme-active .nav-tab-active:hover {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+/* 菜单项选择器里的 a.nav-tab-link（核心用 #post-body 的 ID 选择器给了深色字，
+   这里用同样的 #post-body 前缀对齐特异性） */
+[data-theme='dark'] body.sta-theme-active #post-body ul.add-menu-item-tabs li a,
+[data-theme='dark'] body.sta-theme-active #post-body ul.category-tabs li a,
+[data-theme='dark'] body.sta-theme-active #side-sortables .add-menu-item-tabs .tabs a,
+[data-theme='dark'] body.sta-theme-active #side-sortables .category-tabs .tabs a {
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active #post-body ul.add-menu-item-tabs li.tabs a,
+[data-theme='dark'] body.sta-theme-active #post-body ul.category-tabs li.tabs a,
+[data-theme='dark'] body.sta-theme-active .wp-tab-bar .wp-tab-active a {
+  color: var(--foreground);
+}
+
+/* —— 菜单编辑器 —— */
+/* 注意：.nav-menus-php 与 .wp-core-ui 一样挂在 <body> 上，
+   必须写成 body.sta-theme-active.nav-menus-php 复合选择器，
+   否则后代组合器永不匹配（同 .wp-core-ui 的坑）。 */
+[data-theme='dark'] body.sta-theme-active .manage-menus,
+[data-theme='dark'] body.sta-theme-active.nav-menus-php #post-body,
+[data-theme='dark'] body.sta-theme-active .accordion-section-content,
+[data-theme='dark'] body.sta-theme-active .control-section .accordion-section-title,
+[data-theme='dark'] body.sta-theme-active #nav-menu-header,
+[data-theme='dark'] body.sta-theme-active #nav-menu-footer,
+[data-theme='dark'] body.sta-theme-active .bulk-select-button,
+[data-theme='dark'] body.sta-theme-active #menu-to-edit .menu-item-handle {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active #nav-menu-header,
+[data-theme='dark'] body.sta-theme-active #nav-menu-footer,
+[data-theme='dark'] body.sta-theme-active .bulk-select-button {
+  background-color: var(--muted);
+}
+
+/* 菜单编辑器的容器边框（核心为 #c3c4c7/#dcdcde/#f0f0f1，深色下是刺眼的浅线）。
+   注意核心用 #menu-management .menu-edit 的 ID 特异性，需同样带上前缀。 */
+[data-theme='dark'] body.sta-theme-active #menu-management .menu-edit,
+[data-theme='dark'] body.sta-theme-active .nav-tab-wrapper,
+[data-theme='dark'] body.sta-theme-active #side-sortables,
+[data-theme='dark'] body.sta-theme-active #side-sortables .outer-border,
+[data-theme='dark'] body.sta-theme-active .outer-border,
+[data-theme='dark'] body.sta-theme-active .menu-settings,
+[data-theme='dark'] body.sta-theme-active .accordion-section,
+[data-theme='dark'] body.sta-theme-active .control-section.accordion-section {
+  border-color: var(--border);
+}
+
+/* 折叠面板标题里的按钮自带 color:#1d2327，需一并覆盖 */
+[data-theme='dark'] body.sta-theme-active .accordion-section-title button.accordion-trigger,
+[data-theme='dark'] body.sta-theme-active .accordion-section-title .accordion-title,
+[data-theme='dark'] body.sta-theme-active .control-section .accordion-section-title button,
+[data-theme='dark']
+  body.sta-theme-active
+  .accordion-section-title
+  span.dashicons.dashicons-arrow-down,
+[data-theme='dark']
+  body.sta-theme-active
+  .accordion-section-title:hover
+  span.dashicons.dashicons-arrow-down {
+  color: var(--foreground);
+}
+
+/* —— 媒体库 —— */
+[data-theme='dark'] body.sta-theme-active .media-frame,
+[data-theme='dark'] body.sta-theme-active .media-frame-content,
+[data-theme='dark'] body.sta-theme-active .media-frame-menu,
+[data-theme='dark'] body.sta-theme-active .media-menu,
+[data-theme='dark'] body.sta-theme-active .media-toolbar,
+[data-theme='dark'] body.sta-theme-active .media-sidebar,
+[data-theme='dark'] body.sta-theme-active .attachment-details,
+[data-theme='dark'] body.sta-theme-active .media-upload-form .media-item,
+[data-theme='dark'] body.sta-theme-active .edit-attachment-frame .attachment-info,
+[data-theme='dark'] body.sta-theme-active .media-modal-content,
+[data-theme='dark'] body.sta-theme-active .media-frame-router,
+[data-theme='dark'] body.sta-theme-active .media-frame-title,
+[data-theme='dark'] body.sta-theme-active .media-frame-toolbar {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .attachment-preview,
+[data-theme='dark'] body.sta-theme-active .media-frame-menu,
+[data-theme='dark'] body.sta-theme-active .media-menu,
+[data-theme='dark'] body.sta-theme-active .media-sidebar,
+[data-theme='dark'] body.sta-theme-active .edit-attachment-frame .attachment-info {
+  background-color: var(--muted);
+}
+
+/* —— 小工具 —— */
+[data-theme='dark'] body.sta-theme-active .widget-inside,
+[data-theme='dark'] body.sta-theme-active .widgets-chooser li,
+[data-theme='dark'] body.sta-theme-active .widget-control-edit,
+[data-theme='dark'] body.sta-theme-active #available-widgets .widget-description {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .widget-control-edit {
+  background-color: var(--muted);
+}
+
+[data-theme='dark'] body.sta-theme-active .widget-title h3,
+[data-theme='dark'] body.sta-theme-active .widget-title h3 .in-widget-title,
+[data-theme='dark'] body.sta-theme-active .widget-title-action .widget-action,
+[data-theme='dark'] body.sta-theme-active .sidebar-name button.handlediv,
+[data-theme='dark'] body.sta-theme-active .widget-inside label,
+[data-theme='dark'] body.sta-theme-active .widget-inside p {
+  color: var(--foreground);
+}
+
+/* —— 主题浏览 —— */
+[data-theme='dark'] body.sta-theme-active .theme-overlay .theme-wrap,
+[data-theme='dark'] body.sta-theme-active .theme-overlay .parent-theme {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .theme-actions {
+  background-color: color-mix(in srgb, var(--muted) 72%, transparent);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active .theme-actions .button.activate,
+[data-theme='dark'] body.sta-theme-active .theme-actions .button {
+  background-color: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+/* 主题卡片操作条上的按钮：作用中的主题按钮核心写死 #fff 边框 */
+[data-theme='dark'] body.sta-theme-active .theme-id-container .theme-actions .button,
+[data-theme='dark'] body.sta-theme-active .theme.active .theme-actions .button {
+  border-color: var(--border);
+}
+
+/* —— 个人资料：配色选择 / 密码强度 —— */
+[data-theme='dark'] body.sta-theme-active .color-option.selected {
+  background-color: var(--muted);
+}
+
+[data-theme='dark'] body.sta-theme-active #pass-strength-result {
+  background-color: var(--muted);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active #caps-warning .caps-icon,
+[data-theme='dark'] body.sta-theme-active #caps-warning .caps-icon svg,
+[data-theme='dark'] body.sta-theme-active #caps-warning .caps-icon svg path,
+[data-theme='dark'] body.sta-theme-active #caps-warning .caps-icon svg rect {
+  color: var(--foreground);
+  fill: currentColor;
+}
+
+/* —— 媒体：缩略图文件名条 / 上传状态 —— */
+[data-theme='dark'] body.sta-theme-active .attachment .filename,
+[data-theme='dark'] body.sta-theme-active .attachment-preview .filename {
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .media-uploader-status,
+[data-theme='dark'] body.sta-theme-active .upload-details,
+[data-theme='dark'] body.sta-theme-active .media-frame label,
+[data-theme='dark'] body.sta-theme-active .media-frame .description {
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .upload-details .upload-filename,
+[data-theme='dark'] body.sta-theme-active .upload-details .upload-detail-separator {
+  color: var(--secondary);
+}
+
+/* —— 通知正文 —— */
+[data-theme='dark'] body.sta-theme-active .notice p,
+[data-theme='dark'] body.sta-theme-active .notice li,
+[data-theme='dark'] body.sta-theme-active div.updated p,
+[data-theme='dark'] body.sta-theme-active div.error p {
+  color: var(--foreground);
+}
+
+/* —— 列表表格里的次要文字（作者/日期/操作/评论） —— */
+[data-theme='dark'] body.sta-theme-active .wp-list-table .submitted-on,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .column-date,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .column-author,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .comment-meta,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .post-com-count-wrapper,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .item-type,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .is-submenu,
+[data-theme='dark'] body.sta-theme-active .media-uploader-status .upload-count,
+[data-theme='dark'] body.sta-theme-active .media-uploader-status .upload-index,
+[data-theme='dark'] body.sta-theme-active .media-uploader-status .upload-total,
+[data-theme='dark'] body.sta-theme-active #dashboard-widgets .subsubsub,
+[data-theme='dark'] body.sta-theme-active #dashboard-widgets .subsubsub a,
+[data-theme='dark'] body.sta-theme-active #dashboard-widgets .subsubsub .count,
+[data-theme='dark'] body.sta-theme-active #published-posts li,
+[data-theme='dark'] body.sta-theme-active #published-posts li span,
+[data-theme='dark'] body.sta-theme-active #the-comment-list .comment-meta,
+[data-theme='dark'] body.sta-theme-active #the-comment-list .comment-meta a,
+[data-theme='dark'] body.sta-theme-active #the-comment-list .comment-meta cite,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity .comment-meta,
+[data-theme='dark'] body.sta-theme-active #theme-location-set-footer {
+  color: var(--secondary);
+}
+
+/* 仪表盘“社区活动/活动”列表的浅色半透明底 */
+[data-theme='dark'] body.sta-theme-active #community-events .community-events-results,
+[data-theme='dark'] body.sta-theme-active #community-events .activity-block,
+[data-theme='dark'] body.sta-theme-active #community-events ul {
+  background-color: var(--muted);
+}
+
+[data-theme='dark'] body.sta-theme-active #community-events li,
+[data-theme='dark'] body.sta-theme-active .community-events-footer,
+[data-theme='dark'] body.sta-theme-active .rssSummary,
+[data-theme='dark'] body.sta-theme-active #dashboard_primary .rss-widget span,
+[data-theme='dark'] body.sta-theme-active #dashboard_primary .rss-widget span.rss-date {
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active #community-events a,
+[data-theme='dark'] body.sta-theme-active .rss-widget a {
+  color: var(--foreground);
+}
+
+/* 仪表盘「最新评论 / 最新文章」的 subsubsub 与评论元信息 */
+[data-theme='dark'] body.sta-theme-active #latest-comments #the-comment-list .comment-meta,
+[data-theme='dark'] body.sta-theme-active #latest-comments #the-comment-list .comment-meta a,
+[data-theme='dark'] body.sta-theme-active #latest-comments #the-comment-list .comment-meta cite,
+[data-theme='dark'] body.sta-theme-active #latest-comments .subsubsub,
+[data-theme='dark'] body.sta-theme-active #latest-comments .subsubsub a,
+[data-theme='dark'] body.sta-theme-active #latest-comments .subsubsub .count,
+[data-theme='dark'] body.sta-theme-active #latest-comments .subsubsub li,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity .subsubsub,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity .subsubsub a,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity #the-comment-list .comment-meta,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity #the-comment-list .comment-meta a,
+[data-theme='dark'] body.sta-theme-active .dashboard-comment-wrap .comment-meta,
+[data-theme='dark'] body.sta-theme-active .dashboard-comment-wrap .comment-meta a {
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active .wp-list-table .comment,
+[data-theme='dark'] body.sta-theme-active .wp-list-table .comment p,
+[data-theme='dark'] body.sta-theme-active .attachment,
+[data-theme='dark'] body.sta-theme-active .attachment .thumbnail,
+[data-theme='dark'] body.sta-theme-active #caps-warning .caps-warning-text {
+  color: var(--foreground);
+}
+
+/* 小工具 / 折叠面板的展开箭头等指示图标 */
+[data-theme='dark'] body.sta-theme-active .toggle-indicator,
+[data-theme='dark'] body.sta-theme-active .widget-action .toggle-indicator,
+[data-theme='dark'] body.sta-theme-active .handlediv .toggle-indicator,
+[data-theme='dark'] body.sta-theme-active .postbox .handle-order-higher,
+[data-theme='dark'] body.sta-theme-active .postbox .handle-order-lower,
+[data-theme='dark'] body.sta-theme-active .postbox .handlediv,
+[data-theme='dark'] body.sta-theme-active .postbox .hndle .screen-reader-text {
+  color: var(--secondary);
+}
+
+/* 菜单项卡片里的类型/子项标注 */
+[data-theme='dark'] body.sta-theme-active .menu-item-handle .item-type,
+[data-theme='dark'] body.sta-theme-active .menu-item-handle .is-submenu,
+[data-theme='dark'] body.sta-theme-active .menu-item-handle .item-controls .item-type {
+  color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active .menu-item-handle .item-title,
+[data-theme='dark'] body.sta-theme-active .menu-item-handle .item-title .is-submenu {
+  color: var(--foreground);
+}
+
+/* —— 表单：下拉 / 复选 / 单选 —— */
+[data-theme='dark'] body.sta-theme-active #wpbody-content select,
+[data-theme='dark'] body.sta-theme-active #wpbody-content select[multiple] {
+  background-color: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active #wpbody-content select:disabled,
+[data-theme='dark'] body.sta-theme-active #wpbody-content select.disabled {
+  background-color: var(--muted);
+  color: var(--secondary);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='checkbox'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='radio'] {
+  background-color: var(--card);
+  border-color: var(--secondary);
+}
+
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='checkbox']:checked,
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='radio']:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* 文本类输入框在深色下边框要比 --border(#333) 略亮，否则在 --card(#222) 上几乎看不见 */
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='text'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='search'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='email'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='url'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='password'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='number'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='tel'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content input[type='date'],
+[data-theme='dark'] body.sta-theme-active #wpbody-content textarea {
+  border-color: var(--secondary);
+}
+
+/* —— 表格文字与分隔线 —— */
+[data-theme='dark'] body.sta-theme-active .wp-list-table th,
+[data-theme='dark'] body.sta-theme-active .wp-list-table td,
+[data-theme='dark'] body.sta-theme-active .widefat th,
+[data-theme='dark'] body.sta-theme-active .widefat td,
+[data-theme='dark'] body.sta-theme-active .form-table th,
+[data-theme='dark'] body.sta-theme-active .form-table td {
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] body.sta-theme-active .widefat thead th,
+[data-theme='dark'] body.sta-theme-active .widefat thead td,
+[data-theme='dark'] body.sta-theme-active .widefat tfoot th,
+[data-theme='dark'] body.sta-theme-active .widefat tfoot td {
+  background-color: var(--card);
+  color: var(--secondary);
+  border-color: var(--border);
+}
+
+/* —— 杂项：代码 / 弹窗 / 进度条底 —— */
+[data-theme='dark'] body.sta-theme-active code,
+[data-theme='dark'] body.sta-theme-active kbd,
+[data-theme='dark'] body.sta-theme-active .bar {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] body.sta-theme-active .wp-dialog,
+[data-theme='dark'] body.sta-theme-active .notification-dialog,
+[data-theme='dark'] body.sta-theme-active .ui-autocomplete,
+[data-theme='dark'] body.sta-theme-active .ac_results {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+/* —— 分隔线：核心用 #f0f0f1 / #e9e9ed / #dcdcde / #c3c4c7 的亮色边框 ——
+   深色下这些浅色边框会变成刺眼的白色分割线，统一降到 --border。 */
+[data-theme='dark'] body.sta-theme-active #dashboard_activity .activity-block,
+[data-theme='dark'] body.sta-theme-active #dashboard_activity .subsubsub,
+[data-theme='dark'] body.sta-theme-active #dashboard_right_now .sub,
+[data-theme='dark'] body.sta-theme-active #dashboard_quick_press .drafts,
+[data-theme='dark'] body.sta-theme-active #activity-widget #the-comment-list .comment-item,
+[data-theme='dark']
+  body.sta-theme-active
+  #activity-widget
+  #the-comment-list
+  .comment-item:first-child,
+[data-theme='dark'] body.sta-theme-active .community-events li,
+[data-theme='dark'] body.sta-theme-active .community-events li:first-child,
+[data-theme='dark'] body.sta-theme-active .community-events li ~ li,
+[data-theme='dark'] body.sta-theme-active .community-events .activity-block,
+[data-theme='dark'] body.sta-theme-active .community-events .activity-block.last,
+[data-theme='dark'] body.sta-theme-active .community-events-footer,
+[data-theme='dark'] body.sta-theme-active #dashboard_primary .rss-widget,
+[data-theme='dark'] body.sta-theme-active #dashboard_primary .rss-widget ul li,
+[data-theme='dark'] body.sta-theme-active .rss-widget ul li,
+[data-theme='dark'] body.sta-theme-active #dashboard_secondary a,
+[data-theme='dark'] body.sta-theme-active #latest-comments .subsubsub,
+[data-theme='dark'] body.sta-theme-active #latest-comments .comment-item,
+[data-theme='dark'] body.sta-theme-active hr {
+  border-color: var(--border);
+}
+
+/* —— 杂项：代码 / 弹窗 / 进度条底 —— */
+
+/* ─────────────────────────────────────────────
    5. 响应式
    ───────────────────────────────────────────── */
 @media (max-width: 782px) {
@@ -653,8 +1282,17 @@ body.sta-theme-active .form-table p.description {
 body.login {
   background: var(--background);
   font-family:
-    'MiSans VF', 'OPPO Sans', 'SF Pro SC', ui-sans-serif, -apple-system, BlinkMacSystemFont,
-    'PingFang SC', 'Segoe UI', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    'MiSans VF',
+    'OPPO Sans',
+    'SF Pro SC',
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    'Segoe UI',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    sans-serif;
 }
 
 body.login #login {
@@ -698,7 +1336,7 @@ body.login input[type='password']:focus {
   outline: none;
 }
 
-body.login .wp-core-ui .button-primary {
+body.login.wp-core-ui .button-primary {
   background: var(--primary);
   border: 1px solid var(--primary);
   border-radius: var(--radius-medium);
@@ -708,7 +1346,7 @@ body.login .wp-core-ui .button-primary {
   transition: opacity var(--transition-fast);
 }
 
-body.login .wp-core-ui .button-primary:hover {
+body.login.wp-core-ui .button-primary:hover {
   opacity: 0.85;
   background: var(--primary);
   border-color: var(--primary);

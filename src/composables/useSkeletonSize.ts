@@ -15,8 +15,9 @@ export interface SkeletonSize {
 }
 
 export function useSkeletonSize(storageKey: string) {
-  // 移动端与桌面端卡片布局不同，分开记忆
-  const key = () => `${storageKey}:${window.innerWidth <= 600 ? 'm' : 'd'}`
+  // 卡片形态由容器宽度（440px 断点）决定，而非视口；这里用视口近似分档，
+  // 阈值与 home.css 的 @container (max-width: 440px) 对齐，避免跨档误用尺寸。
+  const key = () => `${storageKey}:${window.innerWidth <= 440 ? 'm' : 'd'}`
 
   const read = (): SkeletonSize | null => {
     try {

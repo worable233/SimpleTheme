@@ -172,7 +172,9 @@ function onPointerDownOutside(ev: Event) {
 /* ==================== 分区 ==================== */
 .st-drawer__header {
   display: flex;
-  align-items: flex-start;
+  /* 与关闭按钮垂直居中：标题行高(≈22px) 低于关闭按钮(30px)，
+   * flex-start 会让二者顶部对齐、中心错位。 */
+  align-items: center;
   gap: 12px;
   flex: none;
   padding: 16px 16px 0;
@@ -238,7 +240,6 @@ function onPointerDownOutside(ev: Event) {
   box-sizing: border-box;
   min-width: 2.5rem;
   height: 1.6rem;
-  margin-top: 2px;
   padding: 0 6px;
   border: 1px solid var(--st-border);
   border-radius: var(--radius-small);

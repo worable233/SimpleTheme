@@ -56,10 +56,20 @@ function expandMobile() {
   if (isMobile.value) {
     if (props.currentUser || wizardCompleted.value) {
       mobileExpanded.value = true
-    } else {
+    } else if (!wizardDismissed.value) {
+      // 关闭抽屉时 reka 会把焦点归还给输入框，从而再次触发 @focus → 反复弹窗。
+      // 用 wizardDismissed 屏蔽这类程序化聚焦，仅在真实指针按下时才复位。
       openWizard()
     }
   }
+}
+
+/** 用户主动关闭向导后置位；下一次真实点击（pointerdown）才复位，
+ *  避免关闭时的焦点归还被误判为「首次点击」而无限重开。 */
+const wizardDismissed = ref(false)
+
+function markUserIntent() {
+  wizardDismissed.value = false
 }
 
 function collapseMobile() {
@@ -415,7 +425,12 @@ watch(wizardStep, () => {
 
 // reka 打开时会把焦点交给首个可聚焦元素（关闭按钮），此处抢回输入框
 watch(wizardActive, (active) => {
-  if (active) requestAnimationFrame(() => focusWizardInput())
+  if (active) {
+    requestAnimationFrame(() => focusWizardInput())
+  } else {
+    // 向导关闭（关闭按钮 / ESC / 遮罩）后屏蔽焦点归还导致的重复弹出
+    wizardDismissed.value = true
+  }
 })
 
 function clearForm() {
@@ -512,6 +527,7 @@ defineExpose({ clearForm })
         @input="handleEditorInput"
         @compositionstart="handleCompositionStart"
         @compositionend="handleCompositionEnd"
+        @pointerdown="markUserIntent"
         @focus="expandMobile"
         @click="expandMobile"
       ></div>
@@ -1235,11 +1251,13 @@ defineExpose({ clearForm })
 
 /* ── Wizard Drawer（外壳由 StDrawer 提供，此处只保留内容排版） ── */
 
-/* 顶部进度条：抽屉内首个元素，占满宽度 */
+/* 顶部进度条：抽屉内首个元素，占满宽度。
+ * 轨道透明：第 0 步时不应留下一条通栏灰线（易被误认为分割线），
+ * 只保留主色进度填充，随步骤推进生长。 */
 .wizard-progress-bar {
   height: 3px;
   margin: -16px -16px 16px;
-  background: var(--border);
+  background: transparent;
 }
 
 .wizard-progress-bar__fill {

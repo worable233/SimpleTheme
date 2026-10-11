@@ -30,7 +30,7 @@ const errorMessage = ref('')
 // 骨架尺寸记忆：复用上次真实卡片的高度/形态
 const { size: cardSize, measure: measureCard } = useSkeletonSize('st_sk_shuoshuo_card')
 const skeletonStyle = computed(() =>
-  cardSize.value ? { height: cardSize.value.h + 'px', minHeight: cardSize.value.h + 'px' } : undefined,
+  cardSize.value ? { '--sk-h': cardSize.value.h + 'px' } : undefined,
 )
 
 const formatDate = (dateString: string) =>
@@ -120,13 +120,12 @@ onMounted(() => {
         </div>
         <!-- Text content -->
         <div class="shuoshuo-card__body">
-          <h2 class="shuoshuo-card__title">
+          <!-- 有标题才渲染标题；无标题的说说直接以正文为主体，避免空标题占位 -->
+          <h2 v-if="post.title.rendered" class="shuoshuo-card__title">
             <RouterLink :to="toInternalPath(post.link)"><span v-html="post.title.rendered" /></RouterLink>
           </h2>
-          <!-- Smooth expand content on hover -->
-          <div class="shuoshuo-card__expand">
-            <div class="shuoshuo-card__content" v-html="post.content?.rendered" />
-          </div>
+          <!-- 正文：默认折叠为预览，悬停卡片展开全文 -->
+          <div v-if="post.content?.rendered" class="shuoshuo-card__content" v-html="post.content.rendered" />
         </div>
       </article>
     </div>
@@ -142,6 +141,7 @@ onMounted(() => {
 
 /* ============ List container ============ */
 .shuoshuo-list {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -208,6 +208,14 @@ body[data-theme='dark'] .shuoshuo-card:hover {
   width: 60%;
   min-height: 130px;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 无封面时正文占满整宽，避免右侧留下空档 */
+.shuoshuo-card:not(:has(.shuoshuo-card__cover)) .shuoshuo-card__body {
+  width: 100%;
 }
 
 .shuoshuo-card__title {
@@ -231,35 +239,68 @@ body[data-theme='dark'] .shuoshuo-card:hover {
   color: var(--primary);
 }
 
-/* ============ Expandable content (hidden by default, revealed on hover) ============ */
-.shuoshuo-card__expand {
-  max-height: 0;
-  opacity: 0;
+/* ============ 正文预览（默认折叠 3 行，悬停展开全文） ============ */
+/* 无标题时正文即卡片主体，故标题存在时才需要上边距 */
+.shuoshuo-card__title + .shuoshuo-card__content {
+  margin-top: 0.5rem;
+}
+
+.shuoshuo-card__content {
+  position: relative;
+  font-size: 0.9375rem;
+  line-height: 1.8;
+  color: var(--secondary);
+  /* 预览高度 = 2 行；悬停时放开到全文 */
+  max-height: 3.6em;
   overflow: hidden;
   transition:
     max-height 0.35s var(--anim-ease-expand),
-    opacity 0.35s var(--anim-ease-expand),
-    margin 0.35s var(--anim-ease-expand);
-  transition-delay: 0ms;
-  margin-top: 0;
+    color 0.35s var(--anim-ease-expand);
 }
 
-.shuoshuo-card:hover .shuoshuo-card__expand {
-  max-height: 600px;
-  opacity: 1;
-  transition-delay: 180ms;
-  margin-top: 0.75rem;
+/* 底部渐隐，暗示「还有更多」，悬停展开后消失 */
+.shuoshuo-card__content::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1.8em;
+  background: linear-gradient(to bottom, transparent, var(--card));
+  pointer-events: none;
+  transition: opacity 0.35s var(--anim-ease-expand);
 }
 
-/* Full content within expand area */
-.shuoshuo-card__content {
-  font-size: 0.9375rem;
-  line-height: 1.8;
+/* 悬停展开：沿用旧版展开动画的节奏（0.35s ease-expand + 180ms 延迟），
+ * 只是起点由「完全隐藏」改为「2 行预览」，保留底部渐隐作为默认态。 */
+.shuoshuo-card:hover .shuoshuo-card__content {
+  max-height: 1000px;
   color: var(--foreground);
+  transition-delay: 180ms;
+}
+
+.shuoshuo-card:hover .shuoshuo-card__content::after {
+  opacity: 0;
+  transition-delay: 180ms;
+}
+
+/* 触摸设备没有 hover，折叠的正文将无法展开；直接展示全文。 */
+@media (hover: none) {
+  .shuoshuo-card__content {
+    max-height: none;
+    color: var(--foreground);
+  }
+
+  .shuoshuo-card__content::after {
+    display: none;
+  }
 }
 
 .shuoshuo-card__content :deep(p) {
   margin: 0.5em 0;
+}
+
+.shuoshuo-card__content :deep(p:first-child) {
+  margin-top: 0;
 }
 
 .shuoshuo-card__content :deep(img) {
@@ -310,12 +351,13 @@ body[data-theme='dark'] .shuoshuo-card__meta {
 /* ============ Skeleton ============ */
 .shuoshuo-card-skeleton {
   display: flex;
+  container-type: inline-size;
   background: var(--card);
   box-shadow: var(--card-highlight);
   border-radius: var(--radius-large, 12px);
   border: 1px solid var(--border);
   overflow: hidden;
-  min-height: 130px;
+  min-height: var(--sk-h, 130px);
 }
 
 .shuoshuo-card-skeleton__text {
@@ -355,40 +397,23 @@ body[data-theme='dark'] .shuoshuo-card__meta {
   .shuoshuo-card__title {
     font-size: 1rem;
   }
-}
 
-/* ============ Responsive ============ */
-@media (max-width: 640px) {
-  .shuoshuo-page {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .shuoshuo-card__title {
-    font-size: 0.9375rem;
-    -webkit-line-clamp: 2;
-  }
-  .section-header__title {
-    font-size: 24px;
-  }
-  .section-header__subtitle {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 600px) {
+  /* 骨架同步堆叠，与 .shuoshuo-card 保持同一形态 */
   .shuoshuo-card-skeleton {
     flex-direction: column;
     min-height: auto;
   }
+
   .shuoshuo-card-skeleton__text {
-    padding: 1rem;
+    padding: 1rem 1.25rem;
     gap: 0.5rem;
   }
+
   .shuoshuo-card-skeleton__cover {
     width: 100%;
-    height: 140px;
+    height: auto;
+    aspect-ratio: 2.4;
+    max-height: 256px;
     min-height: auto;
   }
 }

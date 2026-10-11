@@ -83,6 +83,12 @@ function simple_theme_get_frontend_config() {
 			'categoryBase' => get_option( 'category_base' ) ?: 'category',
 			'tagBase'      => get_option( 'tag_base' ) ?: 'tag',
 		),
+		// 布局宽度：随初始 HTML 一起下发，让首屏在 API 返回前就用对容器宽度，
+		// 避免「先按 1500px 渲染、site-info 返回后再跳回 1360px」的宽度闪烁。
+		'layout' => array(
+			'containerMaxWidth' => simple_theme_get_option_number( 'container_max_width', 1500, 960, 2000 ),
+			'articleMaxWidth'   => simple_theme_get_option_number( 'article_max_width', 900, 680, 1200 ),
+		),
 		'features'   => array(
 			'commentOrder' => ( 'desc' === (string) ( $theme_options['comment_order'] ?? 'asc' ) ? 'desc' : 'asc' ),
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
@@ -257,14 +263,30 @@ function simple_theme_output_generator_meta() {
  */
 add_action( 'wp_head', 'simple_theme_output_frontend_config', 0 );
 function simple_theme_output_frontend_config() {
+	$frontend_config = simple_theme_get_frontend_config();
 	$config = wp_json_encode(
-		simple_theme_get_frontend_config(),
+		$frontend_config,
 		JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	);
 	if ( ! $config ) {
 		return;
 	}
 	echo '<script>window.SimpleThemeConfig = ' . $config . ';</script>' . "\n";
+
+	// 首屏立即套用容器/正文宽度：这些值来自主题设置，若等到 site-info
+	// 接口返回后再写入 :root，页面会「先按 CSS 默认宽度渲染、再跳变」。
+	// 在此提前写入内联样式（行内优先级高于 tokens.css 的 :root 默认值）。
+	$layout = $frontend_config['layout'] ?? array();
+	if ( $layout ) {
+		$container = (int) ( $layout['containerMaxWidth'] ?? 0 );
+		$article   = (int) ( $layout['articleMaxWidth'] ?? 0 );
+		if ( $container > 0 && $article > 0 ) {
+			echo '<script>(function(){var r=document.documentElement.style;'
+				. 'r.setProperty("--container-max","' . $container . 'px");'
+				. 'r.setProperty("--article-max-width","' . $article . 'px");'
+				. '})();</script>' . "\n";
+		}
+	}
 }
 
 

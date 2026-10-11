@@ -21,6 +21,10 @@ const fallbackConfig: SimpleThemeConfig = {
     categoryBase: 'category',
     tagBase: 'tag',
   },
+  layout: {
+    containerMaxWidth: 1500,
+    articleMaxWidth: 900,
+  },
   features: {
     prismHighlight: true,
     showStats: true,
@@ -76,6 +80,10 @@ const themeConfig: SimpleThemeConfig = injectedConfig
       permalink: {
         ...fallbackConfig.permalink,
         ...injectedConfig.permalink,
+      },
+      layout: {
+        ...fallbackConfig.layout,
+        ...injectedConfig.layout,
       },
     }
   : fallbackConfig

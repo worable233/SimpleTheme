@@ -29,7 +29,7 @@ withDefaults(
       v-for="i in count"
       :key="i"
       class="post-card-skeleton"
-      :style="cardHeight ? { height: cardHeight + 'px', minHeight: cardHeight + 'px' } : undefined"
+      :style="cardHeight ? { '--sk-h': cardHeight + 'px' } : undefined"
     >
       <div v-if="showCover" class="post-card-skeleton__cover"></div>
       <div class="post-card-skeleton__meta"><span></span><span></span></div>

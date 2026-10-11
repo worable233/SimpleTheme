@@ -39,6 +39,9 @@ function decodeHtml(str: string): string {
     width="260px"
     show-arrow
     block
+    animation="slide"
+    :padded="false"
+    :arrow-color="link.description ? 'var(--muted)' : undefined"
   >
     <template #trigger>
       <router-link
@@ -61,15 +64,25 @@ function decodeHtml(str: string): string {
       </router-link>
     </template>
 
-    <!-- 悬停预览卡片 -->
-    <div class="link-card__tip-top">
-      <StAvatar :src="link.image" alt="" :size="36" :fallback-text="link.name" />
-      <div class="link-card__tip-info">
-        <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
-        <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
+    <!-- 悬停预览卡片：头部 + 描述条各自贴边，描述条铺满浮层下沿 -->
+    <div class="link-card__tip">
+      <div class="link-card__tip-top">
+        <StAvatar
+          class="link-card__tip-avatar"
+          :src="link.image"
+          alt=""
+          :size="36"
+          :fallback-text="link.name"
+        />
+        <div class="link-card__tip-info">
+          <span class="link-card__tip-name">{{ decodeHtml(link.name) }}</span>
+          <span class="link-card__tip-url">{{ getDomain(link.url) }}</span>
+        </div>
+      </div>
+      <div v-if="link.description" class="link-card__tip-desc">
+        {{ decodeHtml(link.description) }}
       </div>
     </div>
-    <div v-if="link.description" class="link-card__tip-desc">{{ decodeHtml(link.description) }}</div>
   </StPopover>
 </template>
 
@@ -113,10 +126,19 @@ function decodeHtml(str: string): string {
 }
 
 /* ============ Hover Popover ============ */
+/* 裸面板（:padded="false"）由本组件自行贴边排版 */
+.link-card__tip {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
 .link-card__tip-top {
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  padding: 0.75rem;
 }
 
 .link-card__tip-info {
@@ -147,17 +169,59 @@ function decodeHtml(str: string): string {
   text-overflow: ellipsis;
 }
 
-/* 描述区铺满浮层下沿：抵消 StPopover 内容区的 12px 内边距 */
+/* 描述区铺满浮层下沿：裸面板下无需负边距，直接整宽 */
 .link-card__tip-desc {
-  margin: 10px -12px -12px;
   padding: 8px 12px;
   background: var(--muted);
-  border-radius: 0 0 var(--radius-medium) var(--radius-medium);
   font-size: 0.75rem;
   color: var(--secondary);
   line-height: 1.45;
-  max-width: 100%;
   word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ============ 内容分层错峰进场（复刻 v2.0.5 悬停指示器） ============
+ * 面板滑入由 StPopover 的 slide 档负责（0.25s cubic-bezier(0.55,0,0.8,0.25)）；
+ * 这里让 头像 / 名称 / 域名 / 描述 各自以 0.2s + 错峰延迟上浮淡入，形成层次感。
+ * reka 在打开时才挂载内容节点，首帧即终态，transition 不会触发；
+ * 故用 animation（挂载即播放）+ animation-delay 复刻 v2.0.5 的错峰节奏。 */
+.link-card__tip-avatar,
+.link-card__tip-name,
+.link-card__tip-url,
+.link-card__tip-desc {
+  animation: st-link-tip-in 0.2s cubic-bezier(0.55, 0, 0.8, 0.25) both;
+}
+
+.link-card__tip-avatar {
+  animation-delay: 0s;
+}
+
+.link-card__tip-name {
+  animation-delay: 0.02s;
+}
+
+.link-card__tip-url {
+  animation-delay: 0.04s;
+}
+
+.link-card__tip-desc {
+  animation-delay: 0.06s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-card__tip-avatar,
+  .link-card__tip-name,
+  .link-card__tip-url,
+  .link-card__tip-desc {
+    animation: none;
+  }
+}
+
+@keyframes st-link-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 /* ============ Responsive ============ */

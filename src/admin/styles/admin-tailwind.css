@@ -8,10 +8,28 @@
  * 设计令牌全部来自 ../styles/tokens.css（唯一事实来源）。
  * 此前本文件手抄了一份调色板并且缺失 @theme 块（导致 rounded-medium /
  * shadow-large 等工具类静默失效），均已修复 —— 不要再把取值写回这里。
+ *
+ * ⚠️ 工具类（utilities）必须嵌套在挂载根选择器内，绝不能全局引入。
+ *    Tailwind 会生成 .fixed{position:fixed}、.hidden{display:none} 等
+ *    短类名，而 wp-admin 核心 HTML 大量使用同名类（例如列表页的
+ *    <table class="wp-list-table widefat fixed striped">，其中 fixed 表示
+ *    "固定表格布局"）。全局引入会让 WP 的表格变成 position:fixed —— 表现
+ *    为标题栏/tablenav 被钉在视口里、滚动错乱、控件重复堆叠。
+ *    嵌套后产物为 `#simple-theme-admin-shell .fixed{...}`，只作用于我们的
+ *    组件，不再污染 WP 后台。
  * ============================================================== */
 @import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
 @import '../../styles/tokens.css';
+
+@layer utilities {
+  #simple-theme-admin-app,
+  #simple-theme-admin-sidebar,
+  #simple-theme-admin-topbar,
+  #simple-theme-admin-shell,
+  .sta-shell-pop {
+    @import 'tailwindcss/utilities.css';
+  }
+}
 
 /* ==================== 最小化 reset ====================
  * 只在我们的挂载根内部生效，不触碰 WP 后台其余部分。 */

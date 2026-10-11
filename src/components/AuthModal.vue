@@ -255,7 +255,13 @@ function switchTo(tab: AuthTab) {
 </script>
 
 <template>
-  <StModal v-model:show="showModal" :title="tabTitle" size="small" @close="emit('close')">
+  <StModal
+    v-model:show="showModal"
+    :title="tabTitle"
+    size="small"
+    :mask-closable="false"
+    @close="emit('close')"
+  >
     <StStack gap="4">
       <!-- 错误 / 成功消息 -->
       <StAlert v-if="errorMsg" type="error">{{ errorMsg }}</StAlert>

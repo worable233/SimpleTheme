@@ -23,6 +23,11 @@ export interface SimpleThemeConfig {
     categoryBase: string
     tagBase: string
   }
+  /** 布局宽度（随初始 HTML 下发，首屏即用，避免宽度跳变） */
+  layout?: {
+    containerMaxWidth: number
+    articleMaxWidth: number
+  }
   features?: {
     prismHighlight: boolean
     /** 是否开放用户注册（WP users_can_register） */

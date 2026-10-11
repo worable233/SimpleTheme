@@ -2,7 +2,7 @@
 # This file is distributed under the MIT license.
 msgid ""
 msgstr ""
-"Project-Id-Version: Simple Theme 2.1.0\n"
+"Project-Id-Version: Simple Theme 2.1.1\n"
 "Report-Msgid-Bugs-To: https://github.com/worable/simple-theme\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"

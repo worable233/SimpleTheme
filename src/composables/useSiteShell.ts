@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { fetchNavigation, fetchSiteInfo, getErrorMessage } from '@/lib/wordpress'
 import { getCached, setCache, computeHash, clearAllCache } from '@/lib/persistent-cache'
+import { getThemeConfig } from '@/lib/theme-config'
 
 import type {
   HeroSettings,
@@ -41,8 +42,8 @@ const fallbackThemeSettings: ThemeSettings = {
   accentDark: '#2a2a2a',
   borderLight: '#e2e2e2',
   borderDark: '#333333',
-  containerMaxWidth: 1500,
-  articleMaxWidth: 900,
+  containerMaxWidth: getThemeConfig().layout?.containerMaxWidth ?? 1500,
+  articleMaxWidth: getThemeConfig().layout?.articleMaxWidth ?? 900,
   cardMeta: {
     showCategory: true,
     showPublishDate: true,

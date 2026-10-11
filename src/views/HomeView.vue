@@ -456,27 +456,4 @@ function cancelPrefetch(post: WordPressPost) {
 .post-list--more {
   margin-top: 24px;
 }
-
-/* Responsive skeleton — stack vertically on mobile */
-@media (max-width: 600px) {
-  .post-card-skeleton {
-    flex-direction: column;
-    min-height: auto;
-  }
-  .post-card-skeleton__text {
-    width: auto;
-    padding: 1rem;
-    gap: 0.5rem;
-  }
-  .post-card-skeleton__cover {
-    position: relative;
-    inset-inline-end: auto;
-    top: auto;
-    width: 100%;
-    height: 140px;
-    min-height: auto;
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-}
 </style>

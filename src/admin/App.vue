@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import { ConfigProvider } from 'reka-ui'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
 import { StButton, StIcon, StSpinner, StTabPane, StTabs, StToast, useToast } from '@/ui'
@@ -186,73 +187,78 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="admin-app">
-    <div v-if="loading" class="admin-app__state">
-      <StSpinner size="large" description="正在加载设置…" />
-    </div>
+  <!-- 关闭 reka 的滚动条补偿：本主题在 html 上常驻滚动条槽位，若浮层打开时
+       再叠加 padding/margin-right 并给 body 加 overflow:hidden，页面会整体
+       横向错位、内容被顶出视口。与前台 App.vue 保持一致。 -->
+  <ConfigProvider :scroll-body="false">
+    <div class="admin-app">
+      <div v-if="loading" class="admin-app__state">
+        <StSpinner size="large" description="正在加载设置…" />
+      </div>
 
-    <div v-else-if="error" class="admin-app__state">
-      <section class="admin-app__error-card">
-        <span class="admin-app__error-icon"><StIcon name="alert-triangle" :size="22" /></span>
-        <h1 class="admin-app__error-title">设置加载失败</h1>
-        <p class="admin-app__error-desc">{{ error }}</p>
-        <StButton type="primary" @click="load">重试</StButton>
-      </section>
-    </div>
+      <div v-else-if="error" class="admin-app__state">
+        <section class="admin-app__error-card">
+          <span class="admin-app__error-icon"><StIcon name="alert-triangle" :size="22" /></span>
+          <h1 class="admin-app__error-title">设置加载失败</h1>
+          <p class="admin-app__error-desc">{{ error }}</p>
+          <StButton type="primary" @click="load">重试</StButton>
+        </section>
+      </div>
 
-    <template v-else>
-      <header class="admin-app__bar">
-        <div class="admin-app__bar-inner">
-          <div class="admin-app__brand">
-            <span class="admin-app__brand-mark"><StIcon name="palette" :size="17" /></span>
-            <span class="admin-app__brand-text">
-              <strong class="admin-app__brand-name">Simple Theme</strong>
-              <span class="admin-app__brand-sub">主题设置</span>
-            </span>
+      <template v-else>
+        <header class="admin-app__bar">
+          <div class="admin-app__bar-inner">
+            <div class="admin-app__brand">
+              <span class="admin-app__brand-mark"><StIcon name="palette" :size="17" /></span>
+              <span class="admin-app__brand-text">
+                <strong class="admin-app__brand-name">Simple Theme</strong>
+                <span class="admin-app__brand-sub">主题设置</span>
+              </span>
+            </div>
+            <div class="admin-app__bar-actions">
+              <span v-if="dirty" class="admin-app__dirty">有未保存的更改</span>
+              <StButton
+                :type="saved ? 'success' : 'primary'"
+                :loading="saving"
+                :disabled="!dirty"
+                @click="save"
+              >
+                {{ saved ? '已保存' : '保存设置' }}
+              </StButton>
+            </div>
           </div>
-          <div class="admin-app__bar-actions">
-            <span v-if="dirty" class="admin-app__dirty">有未保存的更改</span>
-            <StButton
-              :type="saved ? 'success' : 'primary'"
-              :loading="saving"
-              :disabled="!dirty"
-              @click="save"
-            >
-              {{ saved ? '已保存' : '保存设置' }}
-            </StButton>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main class="admin-app__main">
-        <StTabs v-model:value="activeTab" type="line" class="admin-app__tabs">
-          <StTabPane value="appearance" label="外观" icon="palette">
-            <SettingsAppearance :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="home" label="首页" icon="home">
-            <SettingsHome :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="sidebar" label="侧栏" icon="layout-sidebar">
-            <SettingsSidebar :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="comments" label="评论" icon="message-circle">
-            <SettingsComments :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="footer" label="页脚" icon="world">
-            <SettingsFooter :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="advanced" label="高级" icon="adjustments">
-            <SettingsAdvanced :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-          <StTabPane value="mail" label="邮件" icon="mail">
-            <SettingsMail :settings="settings" :defaults="defaults" @update="update" />
-          </StTabPane>
-        </StTabs>
-      </main>
-    </template>
+        <main class="admin-app__main">
+          <StTabs v-model:value="activeTab" type="line" class="admin-app__tabs">
+            <StTabPane value="appearance" label="外观" icon="palette">
+              <SettingsAppearance :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="home" label="首页" icon="home">
+              <SettingsHome :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="sidebar" label="侧栏" icon="layout-sidebar">
+              <SettingsSidebar :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="comments" label="评论" icon="message-circle">
+              <SettingsComments :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="footer" label="页脚" icon="world">
+              <SettingsFooter :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="advanced" label="高级" icon="adjustments">
+              <SettingsAdvanced :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+            <StTabPane value="mail" label="邮件" icon="mail">
+              <SettingsMail :settings="settings" :defaults="defaults" @update="update" />
+            </StTabPane>
+          </StTabs>
+        </main>
+      </template>
 
-    <StToast placement="bottom-right" />
-  </div>
+      <StToast placement="bottom-right" />
+    </div>
+  </ConfigProvider>
 </template>
 
 <style scoped>

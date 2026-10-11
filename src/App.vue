@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
+import { ConfigProvider } from 'reka-ui'
 import SiteFooter from '@/components/SiteFooter.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import LeftSidebar from '@/components/LeftSidebar.vue'
@@ -183,110 +184,115 @@ watch(
 </script>
 
 <template>
-  <div class="app-container">
-    <LeftSidebar />
+  <!-- 关闭 reka 的滚动条补偿：本主题已在 html 上常驻滚动条槽位
+       （tailwind.css: html{overflow-y:scroll} + body 隐藏滚动条），
+       若再叠加 padding/margin-right，弹窗打开时页面会整体左移。 -->
+  <ConfigProvider :scroll-body="false">
+    <div class="app-container">
+      <LeftSidebar />
 
-    <div class="app-main">
-      <div class="app-content">
-        <main id="main-content" class="app-content__main">
-          <router-view v-slot="{ Component }">
-            <Transition
-              :name="pageTransitionName"
-              @before-enter="onBeforeEnter"
-              @after-enter="onAfterEnter"
-              @before-leave="onBeforeLeave"
-              @after-leave="onAfterLeave"
-            >
-              <component :is="Component" :key="route.path" />
-            </Transition>
-          </router-view>
-        </main>
+      <div class="app-main">
+        <div class="app-content">
+          <main id="main-content" class="app-content__main">
+            <router-view v-slot="{ Component }">
+              <Transition
+                :name="pageTransitionName"
+                @before-enter="onBeforeEnter"
+                @after-enter="onAfterEnter"
+                @before-leave="onBeforeLeave"
+                @after-leave="onAfterLeave"
+              >
+                <component :is="Component" :key="route.path" />
+              </Transition>
+            </router-view>
+          </main>
 
-        <aside class="right-sidebar">
-          <div class="right-sidebar__scroll">
-            <div
-              class="right-sidebar__slider"
-              :class="{ 'is-sub': showSubPage }"
-            >
-              <!-- Main page: widget-driven sidebar（外观→小工具 配置，按顺序渲染） -->
-              <div class="main-page right-sidebar__pane">
-                <template v-for="(widget, i) in sidebarWidgets" :key="i">
-                  <SidebarProfile
-                    v-if="widget.type === 'profile'"
-                    :settings="widget.settings"
-                    @toggle-sub="showSubPage = !showSubPage"
-                  />
-                  <HitokotoCard
-                    v-else-if="widget.type === 'hitokoto'"
-                    :settings="widget.settings"
-                  />
-                  <TechInfo v-else-if="widget.type === 'techInfo'" />
-                  <GenericWidget
-                    v-else-if="widget.type === 'html'"
-                    :html="widget.html"
-                  />
-                </template>
-              </div>
-              <!-- Sub page: menu -->
-              <div class="sub-page right-sidebar__pane right-sidebar__pane--sub">
-                <div class="sub-page__header">
-                  <div class="aside-btn-close" @click="showSubPage = false">
-                    <AppIcon name="chevron-left" :size="14" />
-                    返回
+          <aside class="right-sidebar">
+            <div class="right-sidebar__scroll">
+              <div
+                class="right-sidebar__slider"
+                :class="{ 'is-sub': showSubPage }"
+              >
+                <!-- Main page: widget-driven sidebar（外观→小工具 配置，按顺序渲染） -->
+                <div class="main-page right-sidebar__pane">
+                  <template v-for="(widget, i) in sidebarWidgets" :key="i">
+                    <SidebarProfile
+                      v-if="widget.type === 'profile'"
+                      :settings="widget.settings"
+                      @toggle-sub="showSubPage = !showSubPage"
+                    />
+                    <HitokotoCard
+                      v-else-if="widget.type === 'hitokoto'"
+                      :settings="widget.settings"
+                    />
+                    <TechInfo v-else-if="widget.type === 'techInfo'" />
+                    <GenericWidget
+                      v-else-if="widget.type === 'html'"
+                      :html="widget.html"
+                    />
+                  </template>
+                </div>
+                <!-- Sub page: menu -->
+                <div class="sub-page right-sidebar__pane right-sidebar__pane--sub">
+                  <div class="sub-page__header">
+                    <div class="aside-btn-close" @click="showSubPage = false">
+                      <AppIcon name="chevron-left" :size="14" />
+                      返回
+                    </div>
                   </div>
+                  <div v-if="safeFooterMenu.length > 0" class="aside-card">
+                    <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
+                    <ul class="sub-page__menu-list">
+                      <li v-for="item in safeFooterMenu" :key="item.id" class="sub-page__menu-item">
+                        <router-link
+                          v-if="!isExternalUrl(item.path || item.url)"
+                          :to="item.path || item.url"
+                          @click="showSubPage = false"
+                        >{{ item.title }}</router-link>
+                        <a
+                          v-else
+                          :href="item.url"
+                          :target="item.target || '_blank'"
+                          rel="noopener noreferrer"
+                          @click="showSubPage = false"
+                        >{{ item.title }}</a>
+                      </li>
+                    </ul>
+                  </div>
+                  <p v-else class="sub-page__empty">暂无菜单</p>
                 </div>
-                <div v-if="safeFooterMenu.length > 0" class="aside-card">
-                  <h2 class="sub-page__menu-title">菜单 <span>Menus.</span></h2>
-                  <ul class="sub-page__menu-list">
-                    <li v-for="item in safeFooterMenu" :key="item.id" class="sub-page__menu-item">
-                      <router-link
-                        v-if="!isExternalUrl(item.path || item.url)"
-                        :to="item.path || item.url"
-                        @click="showSubPage = false"
-                      >{{ item.title }}</router-link>
-                      <a
-                        v-else
-                        :href="item.url"
-                        :target="item.target || '_blank'"
-                        rel="noopener noreferrer"
-                        @click="showSubPage = false"
-                      >{{ item.title }}</a>
-                    </li>
-                  </ul>
-                </div>
-                <p v-else class="sub-page__empty">暂无菜单</p>
               </div>
             </div>
-          </div>
-          <TocWidget />
-          <SiteFooter :site-info="siteInfo" />
-        </aside>
+            <TocWidget />
+            <SiteFooter :site-info="siteInfo" />
+          </aside>
+        </div>
       </div>
     </div>
-  </div>
 
-  <AuthModal v-if="authModalVisible" @close="useAuthModal().close()" />
+    <AuthModal v-if="authModalVisible" @close="useAuthModal().close()" />
 
-  <!-- Announcement Modal (only when mode === 'modal') -->
-  <AnnouncementModal
-    v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'modal'"
-    :announcement="siteInfo.announcement"
-  />
+    <!-- Announcement Modal (only when mode === 'modal') -->
+    <AnnouncementModal
+      v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'modal'"
+      :announcement="siteInfo.announcement"
+    />
 
-  <!-- Announcement Capsule (only when mode === 'capsule') -->
-  <AnnouncementCapsule
-    v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'capsule'"
-    :announcement="siteInfo.announcement"
-  />
+    <!-- Announcement Capsule (only when mode === 'capsule') -->
+    <AnnouncementCapsule
+      v-if="siteInfo.announcement?.enabled && siteInfo.announcement.mode === 'capsule'"
+      :announcement="siteInfo.announcement"
+    />
 
-  <!-- Cookie Consent Toast -->
-  <CookieConsent
-    v-if="siteInfo.cookieConsent?.enabled"
-    :message="siteInfo.cookieConsent.message"
-  />
+    <!-- Cookie Consent Toast -->
+    <CookieConsent
+      v-if="siteInfo.cookieConsent?.enabled"
+      :message="siteInfo.cookieConsent.message"
+    />
 
-  <!-- 全局 toast 渲染层：业务层任意 useToast() 调用都会推到这里 -->
-  <StToast placement="top" :max="5" />
+    <!-- 全局 toast 渲染层：业务层任意 useToast() 调用都会推到这里 -->
+    <StToast placement="top" :max="5" />
+  </ConfigProvider>
 </template>
 
 <style scoped>

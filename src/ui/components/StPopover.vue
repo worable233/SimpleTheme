@@ -37,6 +37,24 @@ const props = withDefaults(
     showArrow?: boolean
     /** 锚点撑满父级（网格/整块触发器的场景） */
     block?: boolean
+    /** 面板是否自带 12px 内边距；为 false 时由内容自行控制贴边布局 */
+    padded?: boolean
+    /** 箭头填充色；默认与面板同色（--st-popover-bg），贴近不同底色时可覆写 */
+    arrowColor?: string
+    /**
+     * 面板入场动画：
+     *  - fade：淡入（对齐 Naive fade）
+     *  - fade-scale：淡入 + 轻微放大（默认，浮层通用节奏）
+     *  - slide：沿 --st-popover-shift-y 位移淡入
+     *  - none：交给消费方自定义（如友链预览的分层错峰）
+     */
+    animation?: 'fade' | 'fade-scale' | 'slide' | 'none'
+    /** slide 档位的位移距离，默认 8px（正值从下方升起） */
+    shiftY?: string
+    /** slide 档位的时长，默认 0.25s */
+    duration?: string
+    /** slide 档位的缓动，默认 cubic-bezier(0.55, 0, 0.8, 0.25) */
+    easing?: string
   }>(),
   {
     placement: 'bottom-start',
@@ -44,8 +62,38 @@ const props = withDefaults(
     disabled: false,
     showArrow: false,
     block: false,
+    padded: true,
+    animation: 'fade-scale',
+    shiftY: '8px',
+    duration: '0.25s',
+    easing: 'cubic-bezier(0.55, 0, 0.8, 0.25)',
   },
 )
+
+const contentStyle = computed<Record<string, string>>(() => {
+  const style: Record<string, string> = {}
+  if (props.width) style.width = props.width
+  if (props.arrowColor) style['--st-popover-arrow-color'] = props.arrowColor
+  if (props.animation === 'slide') {
+    style['--st-popover-shift-y'] = props.shiftY
+    style['--st-popover-duration'] = props.duration
+    style['--st-popover-easing'] = props.easing
+  }
+  return style
+})
+
+const animationClass = computed(() => {
+  switch (props.animation) {
+    case 'fade':
+      return 'st-transition-fade'
+    case 'slide':
+      return 'st-popover__content--slide'
+    case 'none':
+      return ''
+    default:
+      return 'st-transition-fade-scale'
+  }
+})
 
 const show = defineModel<boolean>('show', { default: false })
 
@@ -106,12 +154,13 @@ onBeforeUnmount(cancelClose)
 
     <PopoverPortal to="body">
       <PopoverContent
-        class="st-popover__content st-transition-fade-scale"
+        class="st-popover__content"
+        :class="[animationClass, { 'st-popover__content--bare': !padded }]"
         :side="side"
         :align="align"
         :side-offset="8"
         :collision-padding="8"
-        :style="width ? { width } : undefined"
+        :style="contentStyle"
         @mouseenter="cancelClose"
         @mouseleave="onTriggerLeave"
       >
@@ -155,13 +204,19 @@ onBeforeUnmount(cancelClose)
   outline: none;
 }
 
-/* reka 的箭头是 <span><svg>…，颜色靠 currentColor 传递 */
-:global(.st-popover__arrow) {
-  color: var(--st-popover-bg);
-  fill: currentColor;
+/* 裸面板：去掉内边距，由内容自行贴边排版（如友链预览的整宽描述条） */
+:global(.st-popover__content--bare) {
+  padding: 0;
 }
 
-:global(.st-popover__arrow) svg {
-  display: block;
+/* slide 档位的关键帧与规则在 src/styles/transitions.css 中定义（全局层，
+ * 避免 scoped @keyframes 改名与 :global() 引用失配）。 */
+
+/* reka 的箭头是内联 <svg class="st-popover__arrow">，外壳 <span> 由
+ * PopperArrow 负责绝对定位。用 currentColor 上色；颜色经
+ * --st-popover-arrow-color 暴露，消费方可在贴近不同底色时覆写。 */
+:global(.st-popover__arrow) {
+  color: var(--st-popover-arrow-color, var(--st-popover-bg));
+  fill: currentColor;
 }
 </style>

@@ -178,7 +178,9 @@
 
   --menu-hover: #2a2a2a;
   --social-hover: #1a1a1a;
-  --card-highlight: inset 0 1px 0 0 rgba(255 255 255 / 0.06);
+  /* 卡片本身已有 1px 边框；此前额外叠加的 inset 顶部高光会与边框合并，
+   * 让顶边显得比其余三边更宽更亮。故与浅色模式保持一致，不再叠加。 */
+  --card-highlight: 0 0 0 0 transparent;
 
   --shadow-small: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-medium: 0 2px 4px rgb(0 0 0 / 0.45);

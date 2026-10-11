@@ -424,7 +424,7 @@ watch(
         <div
           v-else
           class="single-post__cover"
-          style="background: var(--muted); animation: pulse 1.5s ease-in-out infinite"
+          style="background: var(--muted); animation: var(--animate-card-pulse)"
         >
           <div class="single-post__cover-info">
             <div class="single-post__cover-title">
