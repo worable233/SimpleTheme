@@ -31,13 +31,6 @@ export interface SimpleThemeConfig {
     prismHighlight: boolean
     /** 是否开放用户注册（WP users_can_register） */
     registration?: boolean
-    showStats?: boolean
-    showHeatmap?: boolean
-    showSocial?: boolean
-    /** 侧边栏一言卡片 */
-    showHitokoto?: boolean
-    /** 一言 API 地址（默认 https://v1.hitokoto.cn） */
-    hitokotoApi?: string
     commentOrder?: 'asc' | 'desc'
     meta?: ArticleMeta
     articleMeta?: ArticleMeta
@@ -123,7 +116,6 @@ export interface AnnouncementSettings {
   mode: 'modal' | 'capsule'
   /** 开启后每次访问都展示，不记忆关闭状态 */
   alwaysShow: boolean
-  pageId: number
   pageTitle?: string
   pageContent?: string
   buttons: AnnouncementButton[]
@@ -195,7 +187,6 @@ export interface SiteInfo {
   stats?: SiteStats
   socialLinks?: SocialLink[]
   techInfoItems?: TechInfoItem[]
-  loginUrl?: string
   icp?: string
   icpGov?: string
   endNote?: string

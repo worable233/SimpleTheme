@@ -92,11 +92,6 @@ function simple_theme_get_frontend_config() {
 			'commentOrder' => ( 'desc' === (string) ( $theme_options['comment_order'] ?? 'asc' ) ? 'desc' : 'asc' ),
 			'prismHighlight' => (bool) ( $theme_options['enable_prism_highlight'] ?? true ),
 			'registration'   => (bool) get_option( 'users_can_register' ),
-			'showStats'   => (bool) ($theme_options['sidebar_show_stats']   ?? true),
-			'showHeatmap' => (bool) ($theme_options['sidebar_show_heatmap'] ?? true),
-						'showSocial'  => (bool) ($theme_options['sidebar_show_social']  ?? true),
-			'showHitokoto' => (bool) ( $theme_options['sidebar_show_hitokoto'] ?? true ),
-			'hitokotoApi'  => esc_url_raw( (string) ( $theme_options['hitokoto_api'] ?? 'https://v1.hitokoto.cn' ) ) ?: 'https://v1.hitokoto.cn',
 			'meta' => array(
 				'showCategory'     => (bool) ($theme_options['meta_show_category']      ?? true),
 				'showPublishDate'  => (bool) ($theme_options['meta_show_publish_date']   ?? true),

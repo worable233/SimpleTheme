@@ -62,13 +62,6 @@ function simple_theme_get_default_options() {
 		'article_meta_show_edit_link'      => true,
 		'reading_speed'              => 300,
 		'enable_prism_highlight'     => true,
-		// @deprecated 2.1 — 侧栏卡片显隐已迁往「外观 → 小工具」，
-		// 以下选项仅供老站升级时迁移到小工具实例读取（见 inc/core/widgets.php）。
-		'sidebar_show_stats'         => true,
-		'sidebar_show_heatmap'       => true,
-		'sidebar_show_social'        => true,
-		'sidebar_show_hitokoto'      => true,
-		'hitokoto_api'               => 'https://v1.hitokoto.cn',
 		'show_theme_credit'          => true,
 
 		// ---- Footer & Legal ----
@@ -156,7 +149,6 @@ function simple_theme_migrate_from_customizer() {
 		'primary_color'            => 'simple_theme_primary_color',
 		'body_font'                => 'simple_theme_body_font',
 		'code_font'                => 'simple_theme_code_font',
-		'heading_font'             => 'simple_theme_heading_font',
 		'radius'                   => 'simple_theme_radius',
 		'shadow'                   => 'simple_theme_shadow',
 		'background_light'         => 'simple_theme_background_light',
@@ -351,7 +343,7 @@ function simple_theme_sanitize_options( $input ) {
 			if ( '' === $output[ $key ] ) {
 				$output[ $key ] = $default_value;
 			}
-		} elseif ( 'hitokoto_api' === $key || 'gravatar_base_url' === $key ) {
+		} elseif ( 'gravatar_base_url' === $key ) {
 			$output[ $key ] = $sanitize_http_url( $value, $default_value );
 		} else {
 			$output[ $key ] = sanitize_text_field( (string) $value );

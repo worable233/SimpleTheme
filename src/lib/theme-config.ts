@@ -26,9 +26,6 @@ const fallbackConfig: SimpleThemeConfig = {
   },
   features: {
     prismHighlight: true,
-    showStats: true,
-    showHeatmap: true,
-    showSocial: true,
     meta: {
       showCategory: true,
       showPublishDate: true,
