@@ -3,7 +3,6 @@ import {
   mockMenuItems,
   mockPosts,
   mockShuoshuo,
-  mockAboutInfo,
   mockCategories,
   mockLinkCategories,
 } from '@/lib/mock-data'
@@ -13,7 +12,6 @@ import type {
   ResolveResponse,
   SiteInfo,
   WordPressPost,
-  AboutInfo,
   WordPressCategory,
   WordPressLinkCategory,
 } from '@/types/wordpress'
@@ -70,11 +68,6 @@ export async function mockFetchCollection(
     page,
     perPage: limit,
   }
-}
-
-export async function mockFetchAboutInfo(): Promise<AboutInfo> {
-  await simulateDelay(300)
-  return mockAboutInfo
 }
 
 export async function mockFetchCategories(): Promise<WordPressCategory[]> {

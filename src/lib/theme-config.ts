@@ -13,7 +13,6 @@ const fallbackConfig: SimpleThemeConfig = {
     menusBase: `${origin}/wp-json/simple-theme/v1/navigation`,
     siteInfo: `${origin}/wp-json/simple-theme/v1/site-info`,
     collection: `${origin}/wp-json/simple-theme/v1/collection`,
-    about: `${origin}/wp-json/simple-theme/v1/about`,
     links: `${origin}/wp-json/simple-theme/v1/links`,
     settings: `${origin}/wp-json/simple-theme/v1/settings`,
   },

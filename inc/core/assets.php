@@ -69,7 +69,6 @@ function simple_theme_get_frontend_config() {
 			'menusBase'  => esc_url_raw( rest_url( 'simple-theme/v1/navigation' ) ),
 			'siteInfo'   => esc_url_raw( rest_url( 'simple-theme/v1/site-info' ) ),
 			'collection' => esc_url_raw( rest_url( 'simple-theme/v1/collection' ) ),
-			'about'      => esc_url_raw( rest_url( 'simple-theme/v1/about' ) ),
 			'links'      => esc_url_raw( rest_url( 'simple-theme/v1/links' ) ),
 			'settings'   => esc_url_raw( rest_url( 'simple-theme/v1/settings' ) ),
 			'smtp_test'  => esc_url_raw( rest_url( 'simple-theme/v1/smtp-test' ) ),

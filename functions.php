@@ -50,7 +50,6 @@ require_once __DIR__ . '/inc/rest/posts.php';
 require_once __DIR__ . '/inc/rest/comments.php';
 require_once __DIR__ . '/inc/rest/navigation.php';
 require_once __DIR__ . '/inc/rest/misc.php';
-require_once __DIR__ . '/inc/rest/about.php';
 require_once __DIR__ . '/inc/rest/register.php';
 
 // Email templates — HTML email formatting with multiple styles

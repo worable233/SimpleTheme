@@ -8,7 +8,6 @@
 | 端点 | 方法 | 用途 |
 |------|------|------|
 | `/site-info` | GET | 站点信息（主题配置 + 统计） |
-| `/about` | GET | 关于页数据 |
 | `/navigation/{location}` | GET | 导航菜单 |
 | `/resolve-url` | POST | 路径 → 内容类型解析（`path`） |
 | `/collection` | GET | 文章/说说列表（`type` `page` `limit`） |

@@ -10,11 +10,9 @@ import {
   mockFetchNavigation,
   mockFetchCategories,
   mockFetchLinks,
-  mockFetchAboutInfo,
   mockResolveThemePath,
 } from './mock-api'
 import type {
-  AboutInfo,
   MenuCollectionResponse,
   ResolveResponse,
   SiteInfo,
@@ -73,20 +71,6 @@ async function withSiteIconFallback(data: Partial<SiteInfo>): Promise<SiteInfo> 
   }
 
   return data as SiteInfo
-}
-
-export async function fetchAboutInfo(): Promise<AboutInfo> {
-  if (shouldUseMock()) return mockFetchAboutInfo()
-  const aboutUrl = buildRestUrl('simple-theme/v1/about')
-  try {
-    const { data } = await apiClient.get<AboutInfo>(aboutUrl)
-    return data
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return {} as AboutInfo
-    }
-    throw error
-  }
 }
 
 export async function fetchNavigation(location: string) {

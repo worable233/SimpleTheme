@@ -9,7 +9,6 @@ export interface SimpleThemeConfig {
     menusBase: string
     siteInfo: string
     collection: string
-    about: string
     links: string
     settings: string
     smtp_test?: string
@@ -45,8 +44,6 @@ export interface SimpleThemeConfig {
   }
 }
 
-// ----- About Page Types -----
-
 export interface ArticleMeta {
   showCategory: boolean
   showPublishDate: boolean
@@ -58,53 +55,6 @@ export interface ArticleMeta {
   showAuthor: boolean
   /** 编辑文章入口（仅对有编辑权限的用户显示） */
   showEditLink?: boolean
-}
-
-export interface AboutTimelineEntry {
-  period: string
-  title: string
-  subtitle: string
-  image: string
-}
-
-export interface AboutGameEntry {
-  name: string
-  icon: string
-  uid: string
-}
-
-export interface AboutSponsorEntry {
-  name: string
-  amount: string
-}
-
-export interface AboutInfo {
-  avatar: string
-  subtitleLines: string[]
-  identityTags: string[]
-  greeting: string
-  sloganBlock: string
-  skills: string[]
-  timeline: AboutTimelineEntry[]
-  mbtiType: string
-  mbtiLabel: string
-  mbtiImage: string
-  mbtiUrl: string
-  games: AboutGameEntry[]
-  animeTitle: string
-  animeTagline: string
-  musicArtists: string
-  musicUrl: string
-  location: string
-  birthYear: number
-  education: string
-  occupation: string
-  sponsorTotal: string
-  sponsorList: AboutSponsorEntry[]
-  sponsorUrl: string
-  donationWechatQr: string
-  donationAlipayQr: string
-  donationTotal: string
 }
 
 export type ThemeRadius = 'small' | 'medium' | 'large'

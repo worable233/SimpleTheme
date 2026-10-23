@@ -239,57 +239,6 @@ export const mockShuoshuo = [
   },
 ]
 
-import type { AboutInfo } from '@/types/wordpress'
-
-export const mockAboutInfo: AboutInfo = {
-  avatar: 'https://i.pravatar.cc/200',
-  subtitleLines: [
-    '永恒理想的筑梦师',
-    '内心世界的漫游者',
-    '情感光谱的翻译官',
-    '静谧深海的探险家',
-    '精神家园的守护者',
-    '理想现实的摆渡人',
-  ],
-  identityTags: ['计算机爱好者', '博主', '全栈开发者'],
-  greeting: '你好，很高兴认识你👋',
-  sloganBlock: '在\n不断探索中\n学习·生活·创作',
-  skills: ['Java', 'Docker', 'Node.js', 'Vue', 'TypeScript', 'Python', 'Git', 'Linux'],
-  timeline: [
-    { period: '2020 — 2024', title: '河北农业大学', subtitle: '酿酒工程', image: '' },
-    { period: '2024', title: '备考中', subtitle: '待定', image: '' },
-    { period: '2025 — 至今', title: '中国铁路北京局集团有限公司', subtitle: '京铁始发站', image: '' },
-  ],
-  mbtiType: 'INFP-T',
-  mbtiLabel: '调停者',
-  mbtiImage: '',
-  mbtiUrl: 'https://www.16personalities.com/ch/infp-人格',
-  games: [
-    { name: '原神', icon: '', uid: 'UID: 173516657' },
-    { name: '崩坏：星穹铁道', icon: '', uid: 'UID: 100122444' },
-    { name: '第五人格', icon: '', uid: 'ID: 442106279' },
-  ],
-  animeTitle: '时光代理人',
-  animeTagline: '不论过去，不问将来',
-  musicArtists: 'JUSF周存、HOYO-MIX',
-  musicUrl: 'https://music.example.com',
-  location: '中国，北京',
-  birthYear: 2003,
-  education: '河北农业大学酿酒工程',
-  occupation: '文创产品运营',
-  sponsorTotal: '¥ 1180.44',
-  sponsorList: [
-    { name: '玖君', amount: '¥ 20' },
-    { name: '红中', amount: '¥ 30' },
-    { name: '小萌虎', amount: '¥ 65' },
-    { name: '匿名用户', amount: '¥ 50' },
-  ],
-  sponsorUrl: '/sponsor',
-  donationWechatQr: '',
-  donationAlipayQr: '',
-  donationTotal: '总金额：¥ 1180.44，将用于本人各项目的维护和更新',
-}
-
 export const mockCategories: Array<{ id: number; name: string; slug: string }> = [
   { id: 1, name: '未分类', slug: 'uncategorized' },
   { id: 2, name: '教程', slug: 'tutorial' },
