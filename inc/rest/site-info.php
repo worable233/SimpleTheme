@@ -22,8 +22,9 @@ function simple_theme_get_site_info() {
 	$social_links  = array();
 	if ( ! empty( $theme_options['social_links'] ) ) {
 		$decoded = json_decode( $theme_options['social_links'], true );
-		if ( is_array( $decoded ) ) {
+		if ( is_array( $decoded ) && ! empty( $decoded ) ) {
 			// 如果用户只填了单个对象 {...}，自动包装成数组 [{...}]
+			// 空数组（"[]"）必须原样返回，否则会被包成 [[]]，前端读到无 url 的条目。
 			$social_links = isset( $decoded[0] ) ? $decoded : array( $decoded );
 		}
 	}

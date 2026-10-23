@@ -215,8 +215,10 @@ export function isArchivePath(value: string): boolean {
   )
 }
 
-export function isSafeNavigationUrl(value: string) {
-  const normalizedValue = value.trim()
+export function isSafeNavigationUrl(value?: string | null) {
+  // 后台菜单/社交链接可能缺 url 字段（PHP 侧数据不完整），这里一律按不合法处理，
+  // 不要让 undefined.trim() 把整个渲染流程抛崩。
+  const normalizedValue = (value ?? '').trim()
   if (
     !normalizedValue ||
     normalizedValue.startsWith('//') ||
@@ -233,13 +235,13 @@ export function isSafeNavigationUrl(value: string) {
   }
 }
 
-export function isExternalUrl(value: string) {
+export function isExternalUrl(value?: string | null) {
   if (!isSafeNavigationUrl(value)) {
     return false
   }
 
   try {
-    const targetUrl = new URL(value, themeConfig.homeUrl)
+    const targetUrl = new URL(value as string, themeConfig.homeUrl)
     const sharesOrigin = targetUrl.origin === siteBaseUrl.origin
     const sharesBase =
       '/' === siteBasePath ||

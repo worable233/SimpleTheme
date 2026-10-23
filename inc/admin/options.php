@@ -238,7 +238,7 @@ function simple_theme_sanitize_options( $input ) {
 		if ( ! is_array( $decoded ) ) {
 			return '';
 		}
-		$items = isset( $decoded[0] ) ? $decoded : array( $decoded );
+		$items = empty( $decoded ) || isset( $decoded[0] ) ? $decoded : array( $decoded );
 		$items = array_values( array_filter( array_map( $item_callback, array_slice( $items, 0, 50 ) ) ) );
 		return wp_json_encode( $items );
 	};
