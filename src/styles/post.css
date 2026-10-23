@@ -124,6 +124,23 @@
   margin-bottom: 15px;
 }
 
+/* 文章许可声明：弱化处理，避免抢正文注意力 */
+.single-post__license {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--secondary);
+}
+
+.single-post__license a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.single-post__license a:hover {
+  text-decoration: underline;
+}
+
 /* 标签胶囊本体由 StTag 渲染，这里只管外层链接触摸区与悬停反馈 */
 .single-post__tag-link {
   display: inline-flex;

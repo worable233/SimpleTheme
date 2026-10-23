@@ -48,6 +48,8 @@
 			#st-static .cf-post__excerpt{font-size:.9375rem;color:#444}
 			#st-static .cf-single__title{font-size:2rem;font-weight:700;margin-bottom:12px;line-height:1.3}
 			#st-static .cf-single__body{font-size:1rem;line-height:1.8}
+		#st-static .cf-single__license{margin-top:20px;padding-top:14px;border-top:1px solid #f0f0f0;font-size:.8125rem;color:#888}
+		#st-static .cf-single__license a{color:#1a0dab;text-decoration:none}
 			#st-static .cf-single__body img{max-width:100%;height:auto}
 			#st-static .cf-single__body pre{background:#f5f5f5;padding:1em;overflow-x:auto;border-radius:4px;font-size:.875em}
 			#st-static .cf-pagination{margin-top:24px;display:flex;gap:16px}

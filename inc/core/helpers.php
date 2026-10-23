@@ -236,6 +236,49 @@ function simple_theme_try_api_upk( $ip ) {
 	return null;
 }
 
+/**
+ * 文章许可协议映射（后台「页脚与备案 → 文章许可」）。
+ *
+ * 与 src/lib/license.ts 保持一致：用于静态直出 HTML，保证无 JS 访客同样
+ * 看到许可声明。'none' / 未知取值返回 null。
+ *
+ * @return array{key:string,label:string,url:string,statement:string}|null
+ */
+function simple_theme_get_article_license() {
+	$options = get_option( 'simple_theme_options', array() );
+	$key     = is_array( $options ) ? (string) ( $options['article_license'] ?? '' ) : '';
+	if ( '' === $key || 'none' === $key ) {
+		return null;
+	}
+
+	$licenses = array(
+		'cc-by-40'       => array( 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/' ),
+		'cc-by-sa-40'    => array( 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/' ),
+		'cc-by-nc-40'    => array( 'CC BY-NC 4.0', 'https://creativecommons.org/licenses/by-nc/4.0/' ),
+		'cc-by-nc-sa-40' => array( 'CC BY-NC-SA 4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/' ),
+		'cc-by-nd-40'    => array( 'CC BY-ND 4.0', 'https://creativecommons.org/licenses/by-nd/4.0/' ),
+		'cc-by-nc-nd-40' => array( 'CC BY-NC-ND 4.0', 'https://creativecommons.org/licenses/by-nc-nd/4.0/' ),
+		'cc0-10'         => array( 'CC0 1.0', 'https://creativecommons.org/publicdomain/zero/1.0/' ),
+		'mit'            => array( 'MIT', 'https://opensource.org/license/mit' ),
+		'arr'            => array( 'All Rights Reserved', '' ),
+	);
+
+	if ( ! isset( $licenses[ $key ] ) ) {
+		return null;
+	}
+
+	list( $label, $url ) = $licenses[ $key ];
+
+	return array(
+		'key'       => $key,
+		'label'     => $label,
+		'url'       => $url,
+		'statement' => '' !== $url
+			? sprintf( '本文采用 %s 许可协议发布，转载请注明出处。', $label )
+			: '本文版权归作者所有，未经许可请勿转载。',
+	);
+}
+
 function simple_theme_try_api_ipapi( $ip ) {
 	if ( ! function_exists( 'wp_remote_get' ) ) {
 		return null;

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { version as vueVersion } from 'vue'
 import { useSiteShell } from '@/composables/useSiteShell'
+import { resolveArticleLicense } from '@/lib/license'
 import { StMorphIcon } from '@/ui'
 
 declare const __BUILD_TIME__: string
@@ -15,22 +16,10 @@ interface TechInfoItem {
   value: string
 }
 
-const licenseMap: Record<string, string> = {
-  'cc-by-40': 'CC BY 4.0',
-  'cc-by-sa-40': 'CC BY-SA 4.0',
-  'cc-by-nc-40': 'CC BY-NC 4.0',
-  'cc-by-nc-sa-40': 'CC BY-NC-SA 4.0',
-  'cc-by-nd-40': 'CC BY-ND 4.0',
-  'cc-by-nc-nd-40': 'CC BY-NC-ND 4.0',
-  'cc0-10': 'CC0 1.0',
-  mit: 'MIT',
-  arr: 'All Rights Reserved',
-}
-
 const autoItems = computed<TechInfoItem[]>(() => {
   const s = siteInfo.value
-  const licenseKey = s.theme?.articleLicense
-  const articleLicense = licenseKey && licenseKey !== 'none' ? licenseMap[licenseKey] || licenseKey : '无'
+  const license = resolveArticleLicense(s.theme?.articleLicense)
+  const articleLicense = license ? license.label : '无'
   return [
     { label: '文章许可', value: articleLicense },
     { label: '规范域名', value: window.location.hostname },

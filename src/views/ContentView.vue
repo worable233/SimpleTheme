@@ -17,6 +17,7 @@ import {
   resolveThemePath,
   trackPostView,
 } from '@/lib/wordpress'
+import { resolveArticleLicense } from '@/lib/license'
 import { withCache } from '@/lib/api-cache'
 import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
@@ -91,6 +92,9 @@ const { staticFallbackHtml } = useStaticFallback()
 const postData = ref<WordPressPost | null>(null)
 const postContent = computed(() => postData.value?.content?.rendered ?? null)
 useContentEnhancer(postContent)
+
+// 文章许可声明（后台「页脚与备案 → 文章许可」，'none' 时不渲染）
+const articleLicense = computed(() => resolveArticleLicense(siteInfo.value.theme?.articleLicense))
 
 // 列表页写入的预览信息（标题/特色图）— 加载期间精准渲染骨架：
 // 有特色图直接展示真图+真标题，无特色图则不渲染 cover 骨架
@@ -664,6 +668,16 @@ watch(
                 <StTag>#{{ tag.name }}</StTag>
               </router-link>
             </div>
+            <p v-if="articleLicense" class="single-post__license">
+              <span v-if="articleLicense.url">
+                本文采用
+                <a :href="articleLicense.url" target="_blank" rel="noopener noreferrer">{{
+                  articleLicense.label
+                }}</a>
+                许可协议发布，转载请注明出处。
+              </span>
+              <span v-else>{{ articleLicense.statement }}</span>
+            </p>
           </footer>
         </div>
         <CommentsPanel

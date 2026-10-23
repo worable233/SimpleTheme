@@ -112,6 +112,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php the_content(); ?>
 						<?php endif; ?>
 					</div>
+					<?php $st_license = simple_theme_get_article_license(); ?>
+					<?php if ( $st_license ) : ?>
+						<p class="cf-single__license">
+							<?php if ( '' !== $st_license['url'] ) : ?>
+								<?php esc_html_e( '本文采用', 'simple-theme' ); ?>
+								<a href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
+								<?php esc_html_e( '许可协议发布，转载请注明出处。', 'simple-theme' ); ?>
+							<?php else : ?>
+								<?php echo esc_html( $st_license['statement'] ); ?>
+							<?php endif; ?>
+						</p>
+					<?php endif; ?>
 				</article>
 			<?php endwhile; ?>
 
@@ -229,13 +241,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<footer class="cf-footer">
 		<div class="cf-footer__inner">
-			<p>&copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> <?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
 			<?php
-			// 备案信息：与 Vue 页脚保持一致，保证无 JS / 爬虫同样可见。
-			$st_footer_options = get_option( 'simple_theme_options', array() );
-			$st_icp_text       = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_text'] ) ? trim( (string) $st_footer_options['icp_text'] ) : '';
-			$st_icp_gov_text   = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_gov_text'] ) ? trim( (string) $st_footer_options['icp_gov_text'] ) : '';
+			// 页脚内容与 Vue 的 SiteFooter 保持一致：版权样式 + 备案号，
+			// 保证无 JS 访客与爬虫看到的和浏览器渲染结果相同。
+			$st_footer_options  = get_option( 'simple_theme_options', array() );
+			$st_copyright_style = is_array( $st_footer_options ) && in_array( (string) ( $st_footer_options['copyright_style'] ?? 'detailed' ), array( 'none', 'simple', 'detailed' ), true )
+				? (string) $st_footer_options['copyright_style']
+				: 'detailed';
+			$st_icp_text        = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_text'] ) ? trim( (string) $st_footer_options['icp_text'] ) : '';
+			$st_icp_gov_text    = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_gov_text'] ) ? trim( (string) $st_footer_options['icp_gov_text'] ) : '';
 			?>
+			<?php if ( 'none' !== $st_copyright_style ) : ?>
+				<p>
+					<?php if ( 'simple' === $st_copyright_style ) : ?>
+						<?php echo esc_html( date_i18n( 'Y' ) ); ?> &copy; <?php echo esc_html( get_bloginfo( 'name' ) ); ?>.
+					<?php else : ?>
+						Copyright &copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> <?php echo esc_html( get_bloginfo( 'name' ) ); ?> All Rights Reserved.
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 			<?php if ( '' !== $st_icp_text || '' !== $st_icp_gov_text ) : ?>
 				<p class="cf-footer__icp">
 					<?php if ( '' !== $st_icp_text ) : ?>

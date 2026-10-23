@@ -1,6 +1,6 @@
 import { watch, nextTick, onMounted, onUnmounted, type Ref } from 'vue'
 import { useToc } from '@/composables/useToc'
-import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
+import { getThemeConfig, isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
 import { defineMorphIcon, type MorphIconElement } from 'morphicons/element'
 import { ICON_MORPH_NODES, ICON_NODES } from '@/lib/tabler-icons.generated'
@@ -479,6 +479,7 @@ function wrapCodeBlockUI(pre: HTMLPreElement) {
 
 function processCodeBlocks(container: Element) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre')
+  const prismEnabled = getThemeConfig().features?.prismHighlight !== false
   let highlighted = 0
   let errors = 0
 
@@ -495,8 +496,9 @@ function processCodeBlocks(container: Element) {
       code.classList.add('language-' + lang)
     }
 
-    // Highlight using Prism (loaded globally by WordPress, may be unavailable in dev)
-    if (typeof Prism !== 'undefined') {
+    // Highlight using Prism (loaded globally by WordPress, may be unavailable in dev).
+    // 后台「代码高亮」关闭时不调用，即使别的插件注入了 window.Prism。
+    if (prismEnabled && typeof Prism !== 'undefined') {
       try {
         Prism.highlightElement(code)
         highlighted++

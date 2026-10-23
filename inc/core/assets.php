@@ -133,6 +133,16 @@ function simple_theme_get_frontend_config() {
 
 add_action( 'wp_enqueue_scripts', 'simple_theme_enqueue_prism', 8 );
 function simple_theme_enqueue_prism() {
+	// 「外观 → 代码高亮」关闭时完全不加载 Prism：前端 useContentEnhancer
+	// 也按同一份配置跳过高亮，两条路径保持一致。
+	$theme_options = get_option( 'simple_theme_options', array() );
+	$prism_enabled = ! is_array( $theme_options ) || ! isset( $theme_options['enable_prism_highlight'] )
+		? true
+		: (bool) $theme_options['enable_prism_highlight'];
+	if ( ! $prism_enabled ) {
+		return;
+	}
+
 	$prism_path = get_theme_file_path( 'dist/prism/prism-core.min.js' );
 	if ( ! file_exists( $prism_path ) ) {
 		return; // prism files not copied yet (npm run build-only)
