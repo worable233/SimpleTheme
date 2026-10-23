@@ -192,6 +192,25 @@
   height: auto;
 }
 
+/* 图片按需加载（useContentEnhancer 的 IntersectionObserver）：
+   加载前用底色占位，加载完成后淡入，避免滚动时内容突跳 */
+.prose-content img[data-st-lazy='pending'] {
+  background-color: var(--muted, rgba(0, 0, 0, 0.05));
+}
+
+.prose-content img[data-st-lazy='loaded'] {
+  animation: st-lazy-image-in 0.35s ease;
+}
+
+@keyframes st-lazy-image-in {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Overflow protection for embeds, iframes, videos — scroll instead of breaking layout */
 .prose-content iframe,
 .prose-content embed,
@@ -423,7 +442,9 @@
   padding: 3px 10px;
   border-radius: 4px;
   line-height: 1.5;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .prose-content .wp-block-tag-cloud a:hover {
@@ -1140,4 +1161,3 @@
     max-width: 100%;
   }
 }
-

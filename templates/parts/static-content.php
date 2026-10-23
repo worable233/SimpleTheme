@@ -109,7 +109,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php if ( post_password_required() ) : ?>
 							<p class="cf-empty"><?php esc_html_e( '此内容受密码保护。', 'simple-theme' ); ?></p>
 						<?php else : ?>
-							<?php the_content(); ?>
+							<?php
+							// 静态副本对爬虫可见，但不应在首屏就下载全文图片：
+							// 补 lazy、去掉 fetchpriority="high"。
+							ob_start();
+							the_content();
+							echo simple_theme_static_lazy_images( ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+							?>
 						<?php endif; ?>
 					</div>
 					<?php $st_license = simple_theme_get_article_license(); ?>

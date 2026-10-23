@@ -237,6 +237,35 @@ function simple_theme_try_api_upk( $ip ) {
 }
 
 /**
+ * 静态直出 HTML 的图片降级：统一补 loading="lazy" 并去掉 fetchpriority="high"。
+ *
+ * 隐藏的 #st-static 只是给爬虫/无 JS 访客看的，不应因为它提前下载整篇文章的图片。
+ * 前端 Vue 渲染的正文由 useContentEnhancer 的 IntersectionObserver 接管。
+ *
+ * @param string $html 已渲染的正文 HTML。
+ * @return string
+ */
+function simple_theme_static_lazy_images( $html ) {
+	if ( ! is_string( $html ) || false === stripos( $html, '<img' ) ) {
+		return $html;
+	}
+
+	return preg_replace_callback(
+		'/<img\b[^>]*>/i',
+		function ( $matches ) {
+			$tag = $matches[0];
+			// 首图常被 WP 标记为高优先级，静态副本里没必要
+			$tag = preg_replace( '/\\s+fetchpriority=(["\'])[^"\']*\\1/i', '', $tag );
+			if ( ! preg_match( '/\sloading=/i', $tag ) ) {
+				$tag = preg_replace( '/^<img\b/i', '<img loading="lazy"', $tag );
+			}
+			return $tag;
+		},
+		$html
+	);
+}
+
+/**
  * 文章许可协议映射（后台「页脚与备案 → 文章许可」）。
  *
  * 与 src/lib/license.ts 保持一致：用于静态直出 HTML，保证无 JS 访客同样

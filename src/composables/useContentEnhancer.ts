@@ -552,6 +552,133 @@ function transformExternalLinks(container: Element) {
   }
 }
 
+// ---------- 正文图片按需加载 ----------
+
+/** 1×1 透明 GIF：占住 <img> 的 src，避免无 src 时出现破图图标（不产生网络请求） */
+const LAZY_PLACEHOLDER =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+const lazyHandledImages = new WeakSet<HTMLImageElement>()
+/** 尚未加载的图片，用于「一步跳过视口」时的补偿扫描 */
+const pendingLazyImages = new Set<HTMLImageElement>()
+let lazyImageObserver: IntersectionObserver | null = null
+let lazyCheckScheduled = false
+let lazyListenersBound = false
+
+function revealLazyImage(img: HTMLImageElement) {
+  const src = img.dataset.stSrc
+  const srcset = img.dataset.stSrcset
+  delete img.dataset.stSrc
+  delete img.dataset.stSrcset
+  pendingLazyImages.delete(img)
+  lazyImageObserver?.unobserve(img)
+  if (!src) return
+  // 关键：待加载期间设了 loading="lazy"，若此时图片在视口外（整页跳转/
+  // 恢复滚动位置后被越过），原生懒加载仍会压住请求不发。写回真实地址前
+  // 改回 eager，让图片立即开始下载。
+  img.loading = 'eager'
+  if (srcset) img.srcset = srcset
+  img.src = src
+  const done = () => {
+    img.dataset.stLazy = 'loaded'
+  }
+  if (img.complete && img.naturalWidth > 0) done()
+  else img.addEventListener('load', done, { once: true })
+}
+
+/**
+ * 补偿扫描：锚点定位、刷新后恢复滚动位置、Cmd+End 等方式会「一步跨过」
+ * 大量图片。IntersectionObserver 只在交叉状态变化时回调，被跳过的图片
+ * 永远不会触发，因此这里在滚动/缩放/加载完成时统一检查：
+ * 只要图片顶部已进入「视口 + 200px」范围就补加载。
+ */
+function checkPendingLazyImages() {
+  lazyCheckScheduled = false
+  if (pendingLazyImages.size === 0) return
+  const threshold = window.innerHeight + 200
+  for (const img of [...pendingLazyImages]) {
+    if (img.getBoundingClientRect().top < threshold) revealLazyImage(img)
+  }
+}
+
+function scheduleLazyCheck() {
+  if (lazyCheckScheduled) return
+  lazyCheckScheduled = true
+  requestAnimationFrame(checkPendingLazyImages)
+}
+
+function bindLazyListeners() {
+  if (lazyListenersBound) return
+  lazyListenersBound = true
+  window.addEventListener('scroll', scheduleLazyCheck, { passive: true })
+  window.addEventListener('resize', scheduleLazyCheck, { passive: true })
+  window.addEventListener('load', scheduleLazyCheck, { once: true })
+}
+
+function getLazyImageObserver(): IntersectionObserver {
+  if (!lazyImageObserver) {
+    lazyImageObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          revealLazyImage(entry.target as HTMLImageElement)
+        }
+      },
+      // 提前 200px 开始加载，滚动到位时图片基本已就绪
+      { rootMargin: '200px 0px', threshold: 0.01 },
+    )
+  }
+  return lazyImageObserver
+}
+
+/**
+ * 图片「滚到附近才请求」：把 src/srcset 暂存到 data-st-*，交给
+ * IntersectionObserver 在进入视口前 200px 时写回。
+ *
+ * 原生 loading="lazy" 不够用的原因：浏览器会预加载视口外 1~2 屏的图片，
+ * 且 WordPress 会给正文首图加 fetchpriority="high"，长文的图往往在首屏
+ * 就全部开始下载。这里在 DOM 解析后即摘掉真实地址，未滚动到的图片
+ * 一个请求都不会发出。
+ */
+function setupLazyImages(container: Element) {
+  const images = container.querySelectorAll<HTMLImageElement>('img')
+
+  if (typeof IntersectionObserver === 'undefined') {
+    // 兜底：不支持 IO 的环境退回浏览器原生懒加载
+    images.forEach((img) => {
+      if (!img.hasAttribute('loading')) img.loading = 'lazy'
+    })
+    return
+  }
+
+  const observer = getLazyImageObserver()
+  bindLazyListeners()
+  for (const img of images) {
+    if (lazyHandledImages.has(img)) continue
+    lazyHandledImages.add(img)
+
+    const src = img.getAttribute('src')
+    // 第三方懒加载（只有 data-src）或已处理的图片不介入
+    if (!src || src.startsWith('data:')) continue
+    // 逃生舱：<img data-no-lazy>（如首屏大图想立即加载）
+    if (img.closest('[data-no-lazy]')) continue
+
+    const srcset = img.getAttribute('srcset')
+    img.dataset.stSrc = src
+    if (srcset) {
+      img.dataset.stSrcset = srcset
+      img.removeAttribute('srcset')
+    }
+    img.setAttribute('loading', 'lazy')
+    img.dataset.stLazy = 'pending'
+    img.src = LAZY_PLACEHOLDER
+    pendingLazyImages.add(img)
+    observer.observe(img)
+  }
+
+  // 首次挂载/切换文章后立刻按当前滚动位置补一次
+  scheduleLazyCheck()
+}
+
 function initFancyboxImages(container: Element) {
   // Wrap standalone <img> inside <a data-fancybox="article-gallery"> for Fancybox preview
   // Skip images already wrapped in a link
@@ -638,10 +765,8 @@ export function useContentEnhancer(
       // Initialize Fancybox for article images
       initFancyboxImages(container)
 
-      // Lazy load all images — content text renders immediately, images stream in
-      container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
-        if (!img.hasAttribute('loading')) img.loading = 'lazy'
-      })
+      // 图片滚到附近才真正请求（替代原生 loading="lazy" 的预加载）
+      setupLazyImages(container)
       // Sync TOC from the same container (headings now have IDs)
       const { setTocItems, extractToc } = useToc()
       setTocItems(extractToc(selector))
