@@ -7,6 +7,12 @@
  * @license MIT
  */
 
+// 主题版本：与 style.css 的 Version 字段保持一致，用于静态资源缓存失效。
+if ( ! defined( 'SIMPLE_THEME_VERSION' ) ) {
+	$simple_theme = wp_get_theme( get_template() );
+	define( 'SIMPLE_THEME_VERSION', $simple_theme->exists() ? $simple_theme->get( 'Version' ) : '0.0.0' );
+}
+
 // ============================================================
 // 1. Required files (in order)
 // ============================================================
