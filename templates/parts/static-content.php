@@ -230,6 +230,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<footer class="cf-footer">
 		<div class="cf-footer__inner">
 			<p>&copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> <?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
+			<?php
+			// 备案信息：与 Vue 页脚保持一致，保证无 JS / 爬虫同样可见。
+			$st_footer_options = get_option( 'simple_theme_options', array() );
+			$st_icp_text       = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_text'] ) ? trim( (string) $st_footer_options['icp_text'] ) : '';
+			$st_icp_gov_text   = is_array( $st_footer_options ) && ! empty( $st_footer_options['icp_gov_text'] ) ? trim( (string) $st_footer_options['icp_gov_text'] ) : '';
+			?>
+			<?php if ( '' !== $st_icp_text || '' !== $st_icp_gov_text ) : ?>
+				<p class="cf-footer__icp">
+					<?php if ( '' !== $st_icp_text ) : ?>
+						<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_icp_text ); ?></a>
+					<?php endif; ?>
+					<?php if ( '' !== $st_icp_gov_text ) : ?>
+						<a href="https://beian.mps.gov.cn/" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_icp_gov_text ); ?></a>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 		</div>
 	</footer>
 

@@ -69,7 +69,10 @@ const licenseOptions = [
       </StFormItem>
     </StCard>
 
-    <StCard title="页脚与备案" subtitle="显示在文章列表与评论区末尾的寄语，以及备案号。">
+    <StCard
+      title="页脚与备案"
+      subtitle="底部寄语显示在文章列表与评论区末尾；备案号显示在页面页脚并链接到工信部 / 公安部备案系统。"
+    >
       <StStack :gap="4">
         <StFormItem label="底部寄语">
           <StInput

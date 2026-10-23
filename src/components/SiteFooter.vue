@@ -11,6 +11,13 @@ const props = defineProps<{
 
 const currentYear = new Date().getFullYear()
 const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'detailed')
+
+// 备案信息（中国大陆合规要求：页脚展示并链接备案系统）
+const ICP_URL = 'https://beian.miit.gov.cn/'
+const ICP_GOV_URL = 'https://beian.mps.gov.cn/'
+const icp = computed(() => props.siteInfo.icp?.trim() || '')
+const icpGov = computed(() => props.siteInfo.icpGov?.trim() || '')
+const hasBeian = computed(() => Boolean(icp.value || icpGov.value))
 </script>
 
 <template>
@@ -23,9 +30,39 @@ const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'd
     </template>
     <template v-else>
       <div v-if="copyrightStyle !== 'none'" class="site-footer__copyright">
-        <p v-if="copyrightStyle === 'detailed'">Copyright © {{ currentYear }} {{ siteInfo.name }} All Rights Reserved.</p>
+        <p v-if="copyrightStyle === 'detailed'">
+          Copyright © {{ currentYear }} {{ siteInfo.name }} All Rights Reserved.
+        </p>
         <p v-else>{{ currentYear }} © {{ siteInfo.name }}.</p>
-        <p v-if="siteInfo.theme?.showCredit !== false">Theme <a class="footer-theme-link" href="https://github.com/worable233/SimpleTheme" target="_blank" rel="noopener noreferrer">SimpleTheme</a>.</p>
+        <p v-if="siteInfo.theme?.showCredit !== false">
+          Theme
+          <a
+            class="footer-theme-link"
+            href="https://github.com/worable233/SimpleTheme"
+            target="_blank"
+            rel="noopener noreferrer"
+            >SimpleTheme</a
+          >.
+        </p>
+      </div>
+      <!-- 备案号独立于版权样式，版权设为「不显示」时仍需展示 -->
+      <div v-if="hasBeian" class="site-footer__beian">
+        <a
+          v-if="icp"
+          class="site-footer__beian-link"
+          :href="ICP_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ icp }}</a
+        >
+        <a
+          v-if="icpGov"
+          class="site-footer__beian-link"
+          :href="ICP_GOV_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ icpGov }}</a
+        >
       </div>
     </template>
   </div>
@@ -51,6 +88,30 @@ const copyrightStyle = computed(() => props.siteInfo.theme?.copyrightStyle || 'd
   text-align: center;
   font-size: 13px;
   color: var(--secondary);
+}
+
+.site-footer__beian {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--secondary);
+}
+
+.site-footer__beian-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.site-footer__beian-link:hover,
+.site-footer__beian-link:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
 }
 
 /* Gradient wordmark link — pseudo-element underline + gradient text stay in CSS */

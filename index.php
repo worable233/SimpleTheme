@@ -52,6 +52,9 @@
 			#st-static .cf-single__body pre{background:#f5f5f5;padding:1em;overflow-x:auto;border-radius:4px;font-size:.875em}
 			#st-static .cf-pagination{margin-top:24px;display:flex;gap:16px}
 			#st-static .cf-footer{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:.8125rem;color:#999;text-align:center}
+		#st-static .cf-footer__icp{margin-top:6px;font-size:.75rem}
+		#st-static .cf-footer__icp a{color:#999;text-decoration:none;margin:0 5px}
+		#st-static .cf-footer__icp a:hover{text-decoration:underline}
 			#st-static .cf-empty{color:#999;font-style:italic}
 			</style>
 		</noscript>
