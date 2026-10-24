@@ -14,6 +14,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<script>
 			(function() {
+				// 顶栏站点名：接口拿不到时（离线/验证拦截）也有名字可显示
+				window.__ST_SITE_NAME__ = <?php echo wp_json_encode( get_bloginfo( 'name' ) ); ?>;
 				var theme = localStorage.getItem('theme');
 				if (theme !== 'light' && theme !== 'dark') {
 					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

@@ -122,6 +122,50 @@ $st_render_category_filter = static function () {
 	<?php
 };
 
+/** 少量内联图标：与 AppIcon 用同一份 Tabler 路径，避免静态副本缺图标 */
+$st_icon = static function ( $name ) {
+	$paths = array(
+		'clock'    => '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 7v5l3 3" />',
+		'calendar' => '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />',
+		'folder'   => '<path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" />',
+	);
+	if ( ! isset( $paths[ $name ] ) ) {
+		return '';
+	}
+	return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $paths[ $name ] . '</svg>';
+};
+
+/** 单篇的元信息：与 ContentView 的 .single-post__cover-meta / __header-meta 同构 */
+$st_render_single_meta = static function ( $categories, $variant ) use ( $st_icon ) {
+	// 与 Vue 端实际拿到的数据保持一致：单篇接口只有发布日期 / 修改日期 / 分类，
+	// 没有阅读时长与作者嵌入，所以这里也只输出这几项（再按主题设置开关过滤）。
+	$config = array();
+	if ( function_exists( 'simple_theme_get_frontend_config' ) ) {
+		$frontend_config = simple_theme_get_frontend_config();
+		$config          = isset( $frontend_config['features']['articleMeta'] )
+			? (array) $frontend_config['features']['articleMeta']
+			: array();
+	}
+	$show = static function ( $key, $default = true ) use ( $config ) {
+		return array_key_exists( $key, $config ) ? (bool) $config[ $key ] : $default;
+	};
+
+	$class = 'cover' === $variant ? 'single-post__cover-meta' : 'single-post__header-meta';
+	echo '<div class="' . esc_attr( $class ) . '">';
+
+	if ( $show( 'showPublishDate' ) ) {
+		echo '<span class="meta-item">' . $st_icon( 'calendar' ) . '<time datetime="' . esc_attr( get_the_date( 'c' ) ) . '">' . esc_html( get_the_date( 'Y年n月j日' ) ) . '</time></span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+	if ( $show( 'showModifiedDate', false ) && get_the_modified_time( 'U' ) ) {
+		echo '<span class="meta-item">' . $st_icon( 'clock' ) . '<time datetime="' . esc_attr( get_the_modified_date( 'c' ) ) . '">' . esc_html( get_the_modified_date( 'Y年n月j日' ) ) . '</time></span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+	if ( $show( 'showCategory' ) && ! empty( $categories ) ) {
+		echo '<span class="meta-item">' . $st_icon( 'folder' ) . '<a href="' . esc_url( get_category_link( $categories[0]->term_id ) ) . '">' . esc_html( $categories[0]->name ) . '</a></span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	echo '</div>';
+};
+
 ?>
 <div class="cf-container">
 
@@ -158,83 +202,105 @@ $st_render_category_filter = static function () {
 		<?php elseif ( is_singular() ) : ?>
 			<?php /* ── Single Post / Page ── */ ?>
 			<?php while ( have_posts() ) : the_post(); ?>
-				<article <?php post_class( 'cf-single' ); ?>>
-					<h1 class="cf-single__title"><?php the_title(); ?></h1>
-					<?php if ( 'post' === get_post_type() ) : ?>
-						<div class="cf-single__meta">
-							<time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
-								<?php echo esc_html( get_the_date() ); ?>
-							</time>
-							<?php
-							$categories = get_the_category();
-							if ( ! empty( $categories ) ) :
+				<?php
+				$st_is_post = 'post' === get_post_type();
+				$st_cats    = $st_is_post ? get_the_category() : array();
+				$st_cover   = has_post_thumbnail()
+					? get_the_post_thumbnail( get_the_ID(), 'large', array( 'alt' => '' ) )
+					: '';
+				?>
+				<article class="single-post">
+					<?php if ( $st_cover ) : ?>
+						<div class="single-post__cover">
+							<div class="single-post__cover-img"><?php echo $st_cover; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+							<div class="single-post__cover-info">
+								<div class="single-post__cover-title">
+									<h1><?php the_title(); ?></h1>
+								</div>
+								<?php
+								if ( $st_is_post ) {
+									$st_render_single_meta( $st_cats, 'cover' );
+								}
 								?>
-								<span class="cf-single__cats">
-									<?php
-									$cat_links = array();
-									foreach ( $categories as $cat ) {
-										$cat_links[] = '<a href="' . esc_url( get_category_link( $cat->term_id ) ) . '">' . esc_html( $cat->name ) . '</a>';
-									}
-									echo implode( ', ', $cat_links ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-									?>
-								</span>
+							</div>
+						</div>
+					<?php else : ?>
+						<div class="single-post__header">
+							<h1 class="single-post__header-title"><?php the_title(); ?></h1>
+							<?php
+							if ( $st_is_post ) {
+								$st_render_single_meta( $st_cats, 'header' );
+							}
+							?>
+						</div>
+					<?php endif; ?>
+					<div class="single-post__body">
+						<div class="prose-content">
+							<?php if ( post_password_required() ) : ?>
+								<p class="cf-empty"><?php esc_html_e( '此内容受密码保护。', 'simple-theme' ); ?></p>
+							<?php else : ?>
+								<?php
+								// 静态副本对爬虫可见，但不应在首屏就下载全文图片：
+								// 补 lazy、去掉 fetchpriority="high"。
+								ob_start();
+								the_content();
+								echo simple_theme_static_lazy_images( ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+								?>
 							<?php endif; ?>
 						</div>
-					<?php endif; ?>
-					<div class="cf-single__body prose-content">
-						<?php if ( post_password_required() ) : ?>
-							<p class="cf-empty"><?php esc_html_e( '此内容受密码保护。', 'simple-theme' ); ?></p>
-						<?php else : ?>
-							<?php
-							// 静态副本对爬虫可见，但不应在首屏就下载全文图片：
-							// 补 lazy、去掉 fetchpriority="high"。
-							ob_start();
-							the_content();
-							echo simple_theme_static_lazy_images( ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-							?>
-						<?php endif; ?>
-					</div>
-					<?php $st_license = simple_theme_get_article_license(); ?>
-					<?php if ( $st_license ) : ?>
-						<div class="cf-single__license">
-							<div class="cf-single__license-head">
-								<a class="cf-single__license-title" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( get_the_title() ); ?></a>
-								<a class="cf-single__license-url" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( rawurldecode( get_permalink() ) ); ?></a>
-							</div>
-							<dl class="cf-single__license-meta">
-								<div>
-									<dt><?php esc_html_e( '作者', 'simple-theme' ); ?></dt>
-									<dd><?php echo esc_html( get_the_author() ); ?></dd>
-								</div>
-								<div>
-									<dt><?php esc_html_e( '发布于', 'simple-theme' ); ?></dt>
-									<dd><time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>"><?php echo esc_html( get_the_date( 'Y年n月j日' ) ); ?></time></dd>
-								</div>
-								<?php if ( get_the_modified_date( 'Ymd' ) !== get_the_date( 'Ymd' ) ) : ?>
-									<div>
-										<dt><?php esc_html_e( '更新于', 'simple-theme' ); ?></dt>
-										<dd><time datetime="<?php echo esc_attr( get_the_modified_date( 'c' ) ); ?>"><?php echo esc_html( get_the_modified_date( 'Y年n月j日' ) ); ?></time></dd>
+						<?php if ( $st_is_post ) : ?>
+							<footer class="single-post__footer">
+								<?php $st_license = simple_theme_get_article_license(); ?>
+								<?php if ( $st_license ) : ?>
+									<div class="single-post__license">
+										<div class="single-post__license-head">
+											<a class="single-post__license-title" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( get_the_title() ); ?></a>
+											<a class="single-post__license-url" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( rawurldecode( get_permalink() ) ); ?></a>
+										</div>
+										<dl class="single-post__license-meta">
+											<div class="single-post__license-item">
+												<dt><?php esc_html_e( '作者', 'simple-theme' ); ?></dt>
+												<dd><?php echo esc_html( get_the_author() ); ?></dd>
+											</div>
+											<div class="single-post__license-item">
+												<dt><?php esc_html_e( '发布于', 'simple-theme' ); ?></dt>
+												<dd><time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>"><?php echo esc_html( get_the_date( 'Y年n月j日' ) ); ?></time></dd>
+											</div>
+											<?php if ( get_the_modified_time( 'U' ) ) : ?>
+												<div class="single-post__license-item">
+													<dt><?php esc_html_e( '更新于', 'simple-theme' ); ?></dt>
+													<dd><time datetime="<?php echo esc_attr( get_the_modified_date( 'c' ) ); ?>"><?php echo esc_html( get_the_modified_date( 'Y年n月j日' ) ); ?></time></dd>
+												</div>
+											<?php endif; ?>
+											<div class="single-post__license-item">
+												<dt><?php esc_html_e( '许可协议', 'simple-theme' ); ?></dt>
+												<dd>
+													<?php if ( '' !== $st_license['url'] ) : ?>
+														<a href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
+													<?php else : ?>
+														<?php echo esc_html( $st_license['label'] ); ?>
+													<?php endif; ?>
+												</dd>
+											</div>
+										</dl>
+										<p class="single-post__license-name"><?php echo esc_html( $st_license['full_name'] ); ?></p>
 									</div>
 								<?php endif; ?>
-								<div>
-									<dt><?php esc_html_e( '许可协议', 'simple-theme' ); ?></dt>
-									<dd>
-										<?php if ( '' !== $st_license['url'] ) : ?>
-											<a href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
-										<?php else : ?>
-											<?php echo esc_html( $st_license['label'] ); ?>
-										<?php endif; ?>
-									</dd>
-								</div>
-							</dl>
-							<p class="cf-single__license-name"><?php echo esc_html( $st_license['full_name'] ); ?></p>
-						</div>
-					<?php endif; ?>
-					<?php if ( has_tag() ) : ?>
-						<span class="cf-single__tags">
-							<?php the_tags( '', ', ', '' ); ?>
-						</span>
-					<?php endif; ?>
+								<?php $st_tags = get_the_tags(); ?>
+								<?php if ( ! empty( $st_tags ) ) : ?>
+									<div class="single-post__tags">
+										<?php foreach ( $st_tags as $st_tag ) : ?>
+											<a class="single-post__tag-link" href="<?php echo esc_url( get_tag_link( $st_tag->term_id ) ); ?>">
+												<span class="st-tag st-tag--default st-tag--small st-tag--bordered">
+													<span class="st-tag__content">#<?php echo esc_html( $st_tag->name ); ?></span>
+												</span>
+											</a>
+										<?php endforeach; ?>
+									</div>
+								<?php endif; ?>
+							</footer>
+						<?php endif; ?>
+					</div>
 				</article>
 			<?php endwhile; ?>
 

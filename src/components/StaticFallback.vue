@@ -48,6 +48,11 @@ onMounted(() => {
   padding: 0.5rem 25px 2rem;
 }
 
+/* 单篇的封面/页头自己带 25px 内边距，外层再来一层会让封面缩进、不再通栏 */
+.st-fallback:has(.single-post) {
+  padding: 0 0 2rem;
+}
+
 /* 与 SPA 布局重复的部分隐藏 */
 .st-fallback .cf-header,
 .st-fallback .cf-footer {
@@ -185,6 +190,74 @@ onMounted(() => {
   border-color: transparent;
   background-color: var(--foreground);
   color: var(--background);
+}
+
+/* ==================== 单篇：对齐 ContentView 的 scoped 样式 ====================
+   这些规则在 Vue 里是写在 ContentView.vue 的 <style scoped> 中的，
+   v-html 注入的服务端 HTML 拿不到 scoped 属性，只能在这里补一份。 */
+.st-fallback .single-post__cover-meta,
+.st-fallback .single-post__header-meta {
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.st-fallback .single-post__cover-meta {
+  color: rgba(255 255 255 / 0.88);
+  text-shadow: 0 1px 6px rgba(0 0 0 / 0.45);
+}
+
+.st-fallback .single-post__header-meta {
+  color: var(--muted-foreground, #888);
+}
+
+.st-fallback .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.st-fallback .meta-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.st-fallback .meta-item a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.st-fallback .meta-item a:hover {
+  color: var(--primary);
+}
+
+/* 标签胶囊：StTag 同样是 scoped 样式，这里按它的 small + bordered 复刻 */
+.st-fallback .single-post__tag-link {
+  display: inline-flex;
+  text-decoration: none;
+  color: var(--secondary);
+}
+
+.st-fallback .st-tag {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--st-height-small, 28px);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small, 4px);
+  background-color: var(--faint, var(--muted));
+  color: var(--muted-foreground, var(--secondary));
+  font-size: var(--st-font-small, 13px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.st-fallback .single-post__tag-link:hover .st-tag {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 
 .st-fallback .cf-pagination a {

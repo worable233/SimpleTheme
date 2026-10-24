@@ -84,7 +84,8 @@ const fallbackSiteStats: SiteStats = {
 }
 
 const fallbackSiteInfo: SiteInfo = {
-  name: '',
+  // 服务端直出站点名：接口失败时顶栏不至于空白一片
+  name: window.__ST_SITE_NAME__ || '',
   description: '',
   url: window.location.origin,
   comments: {

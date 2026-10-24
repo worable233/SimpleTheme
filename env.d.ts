@@ -23,6 +23,7 @@ declare global {
     SimpleThemeConfig?: SimpleThemeConfig
     Prism: typeof import('prismjs')
     /** Server-rendered static content (from #st-static), preserved before Vue mount. */
+    __ST_SITE_NAME__?: string
     __ST_STATIC_HTML__?: string
     /** location.pathname at boot — the URL the static content was rendered for. */
     __ST_STATIC_PATH__?: string
