@@ -34,9 +34,9 @@ onMounted(() => {
   <section class="st-fallback">
     <!-- 提示由全局 <ConnectionBanner /> 承担，这里只负责内容本身 -->
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <!-- prose-content：存档用的是服务端 HTML，直接继承 Tailwind preflight 会丢掉标题/列表/
-         段落的排版（截图里 H1~H6 一样大、有序列表没编号）。复用主题正文样式即可。 -->
-    <div ref="root" class="st-fallback__body prose-content" v-html="html"></div>
+    <!-- 存档用的是服务端 HTML：列表区已改成与 Vue 相同的 .post-card 结构，
+         正文区由 PHP 输出 .prose-content，所以这里不需要再套排版类。 -->
+    <div ref="root" class="st-fallback__body" v-html="html"></div>
   </section>
 </template>
 
@@ -150,6 +150,41 @@ onMounted(() => {
   gap: 1rem;
   margin-top: 1.5rem;
   font-size: 0.9375rem;
+}
+
+/* 分类筛选条：存档里的筛选链接要长得和 Vue 的 StButton(small/round) 一样。
+   StButton 的样式是 scoped 的，注入的 HTML 拿不到，只能在这里补一份。 */
+.st-fallback .home-content__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.st-fallback .home-content__filters a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full, 9999px);
+  background-color: transparent;
+  color: var(--secondary);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.st-fallback .home-content__filters a:hover {
+  color: var(--foreground);
+  border-color: var(--muted-foreground);
+}
+
+.st-fallback .home-content__filters a:first-child {
+  border-color: transparent;
+  background-color: var(--foreground);
+  color: var(--background);
 }
 
 .st-fallback .cf-pagination a {

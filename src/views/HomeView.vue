@@ -35,6 +35,12 @@ const hasMore = ref(true)
 const errorMessage = ref('')
 const { staticFallbackHtml } = useStaticFallback()
 
+/**
+ * 用静态存档兜底时，存档里已经带了页头与分类筛选（与 Vue 同一套结构），
+ * 这里要把 SPA 自己的页头/筛选隐藏掉，否则会出现两份。
+ */
+const showStaticArchive = computed(() => Boolean(errorMessage.value && staticFallbackHtml.value))
+
 /** Local category slug; '' means 'all'. Initialized from route param on mount. */
 const categorySlug = ref((route.params.slug as string) || '')
 const categoryNotFound = computed(
@@ -303,7 +309,7 @@ function cancelPrefetch(post: WordPressPost) {
 <template>
   <div class="home-content">
     <!-- Page Header -->
-    <header class="section-header">
+    <header v-if="!showStaticArchive" class="section-header">
       <h1>
         <span class="section-header__title">{{ pageTitle }}</span>
         <span class="section-header__subtitle">{{ categorySlug ? 'Category.' : 'Home.' }}</span>
@@ -313,7 +319,7 @@ function cancelPrefetch(post: WordPressPost) {
     <!-- Latest Posts -->
     <section>
       <!-- Filter bar -->
-      <div class="home-content__filters">
+      <div v-if="!showStaticArchive" class="home-content__filters">
         <StButton
           size="small"
           round

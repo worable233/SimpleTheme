@@ -17,6 +17,111 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * 文章卡片列表：与 Vue 侧 HomeView / TermArchive 的卡片同一套 class，
+ * 无 JS 访客、爬虫和离线兜底看到的就是浏览器里那套卡片样式。
+ */
+$st_render_post_cards = static function () {
+	if ( ! have_posts() ) {
+		echo '<p class="cf-empty">' . esc_html__( '暂无文章', 'simple-theme' ) . '</p>';
+		return;
+	}
+
+	echo '<div class="post-list"><div class="post-list__grid">';
+
+	while ( have_posts() ) :
+		the_post();
+
+		$st_stats  = function_exists( 'simple_theme_calculate_post_stats' )
+			? simple_theme_calculate_post_stats( get_post() )
+			: array( 'readingTime' => 0 );
+		$st_cats   = get_the_category();
+		$st_sticky = is_sticky();
+		?>
+		<article <?php post_class( 'post-card' ); ?>>
+			<?php if ( has_post_thumbnail() ) : ?>
+				<a
+					href="<?php the_permalink(); ?>"
+					class="post-card__cover-link"
+					tabindex="-1"
+					aria-hidden="true"
+				>
+					<?php
+					echo get_the_post_thumbnail(
+						get_the_ID(),
+						'large',
+						array(
+							'class'   => 'post-card__cover',
+							'loading' => 'lazy',
+							'alt'     => '',
+						)
+					);
+					?>
+				</a>
+			<?php endif; ?>
+			<div class="post-card__meta">
+				<?php if ( ! empty( $st_cats ) ) : ?>
+					<a class="post-card__meta-item" href="<?php echo esc_url( get_category_link( $st_cats[0]->term_id ) ); ?>">
+						<?php echo esc_html( $st_cats[0]->name ); ?>
+					</a>
+				<?php endif; ?>
+				<time class="post-card__meta-item" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+					<?php echo esc_html( get_the_date( 'Y/m/d' ) ); ?>
+				</time>
+				<?php if ( ! empty( $st_stats['readingTime'] ) ) : ?>
+					<span class="post-card__meta-item"><?php echo esc_html( $st_stats['readingTime'] ); ?> 分钟</span>
+				<?php endif; ?>
+			</div>
+			<div class="post-card__body">
+				<h2 class="post-card__title">
+					<?php if ( $st_sticky ) : ?>
+						<span class="post-card__sticky">
+							<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+								<path d="M15.113 3.21l.094 .083l5.5 5.5a1 1 0 0 1 -1.175 1.59l-3.172 3.171l-1.424 3.797a1 1 0 0 1 -.158 .277l-.07 .08l-1.5 1.5a1 1 0 0 1 -1.32 .082l-.095 -.083l-2.793 -2.792l-3.793 3.792a1 1 0 0 1 -1.497 -1.32l.083 -.094l3.792 -3.793l-2.792 -2.793a1 1 0 0 1 -.083 -1.32l.083 -.094l1.5 -1.5a1 1 0 0 1 .258 -.187l.098 -.042l3.796 -1.425l3.171 -3.17a1 1 0 0 1 1.497 -1.26z" />
+							</svg>
+							<?php esc_html_e( '置顶', 'simple-theme' ); ?>
+						</span>
+					<?php endif; ?>
+					<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+				</h2>
+				<div class="post-card__excerpt"><?php the_excerpt(); ?></div>
+			</div>
+		</article>
+		<?php
+	endwhile;
+
+	echo '</div></div>';
+
+	// 与 HomeView 的结尾提示一致：只有一页时告诉读者到底了
+	global $wp_query;
+	if ( isset( $wp_query->max_num_pages ) && (int) $wp_query->max_num_pages <= 1 ) {
+		$st_options  = get_option( 'simple_theme_options', array() );
+		$st_end_note = is_array( $st_options ) && ! empty( $st_options['end_note'] )
+			? (string) $st_options['end_note']
+			: '好像就这么多';
+		echo '<p class="end-note">' . esc_html( $st_end_note ) . '</p>';
+	}
+};
+
+/** 分类筛选条：与 HomeView 的筛选按钮同构，无 JS 时也能点击跳转 */
+$st_render_category_filter = static function () {
+	?>
+	<div class="home-content__filters">
+		<a class="st-button st-button--primary st-button--small st-button--round" href="<?php echo esc_url( home_url( '/' ) ); ?>">
+			<?php esc_html_e( '全部', 'simple-theme' ); ?>
+		</a>
+		<?php foreach ( get_categories( array( 'hide_empty' => true ) ) as $st_category ) : ?>
+			<a
+				class="st-button st-button--default st-button--small st-button--round"
+				href="<?php echo esc_url( get_category_link( $st_category->term_id ) ); ?>"
+			>
+				<?php echo esc_html( $st_category->name ); ?>
+			</a>
+		<?php endforeach; ?>
+	</div>
+	<?php
+};
+
 ?>
 <div class="cf-container">
 
@@ -33,41 +138,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<?php if ( is_home() || is_front_page() ) : ?>
 			<?php /* ── Home / Front Page ── */ ?>
-			<h1 class="cf-page-title"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></h1>
-			<div class="cf-posts">
-				<?php if ( have_posts() ) : ?>
-					<?php while ( have_posts() ) : the_post(); ?>
-						<article <?php post_class( 'cf-post' ); ?>>
-							<h2 class="cf-post__title">
-								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-							</h2>
-							<div class="cf-post__meta">
-								<time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
-									<?php echo esc_html( get_the_date() ); ?>
-								</time>
-								<?php
-								$categories = get_the_category();
-								if ( ! empty( $categories ) ) :
-									?>
-									<span class="cf-post__cats">
-										<?php
-										$cat_links = array();
-										foreach ( $categories as $cat ) {
-											$cat_links[] = '<a href="' . esc_url( get_category_link( $cat->term_id ) ) . '">' . esc_html( $cat->name ) . '</a>';
-										}
-										echo implode( ', ', $cat_links ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-										?>
-									</span>
-								<?php endif; ?>
-							</div>
-							<div class="cf-post__excerpt">
-								<?php the_excerpt(); ?>
-							</div>
-						</article>
-					<?php endwhile; ?>
-				<?php else : ?>
-					<p class="cf-empty"><?php esc_html_e( '暂无文章', 'simple-theme' ); ?></p>
-				<?php endif; ?>
+			<div class="home-content">
+				<header class="section-header">
+					<h1>
+						<span class="section-header__title"><?php esc_html_e( '首页', 'simple-theme' ); ?></span>
+						<span class="section-header__subtitle">Home.</span>
+					</h1>
+				</header>
+				<section>
+					<?php $st_render_category_filter(); ?>
+					<?php $st_render_post_cards(); ?>
+				</section>
 			</div>
 			<nav class="cf-pagination">
 				<?php previous_posts_link( '&laquo; 上一页' ); ?>
@@ -100,7 +181,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php endif; ?>
 						</div>
 					<?php endif; ?>
-					<div class="cf-single__body">
+					<div class="cf-single__body prose-content">
 						<?php if ( post_password_required() ) : ?>
 							<p class="cf-empty"><?php esc_html_e( '此内容受密码保护。', 'simple-theme' ); ?></p>
 						<?php else : ?>
@@ -159,32 +240,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<?php elseif ( is_category() || is_tag() || is_tax() ) : ?>
 			<?php /* ── Archive: Category / Tag / Taxonomy ── */ ?>
-			<h1 class="cf-page-title">
-				<?php echo esc_html( single_term_title( '', false ) ); ?>
-			</h1>
-			<?php if ( term_description() ) : ?>
-				<div class="cf-term-desc"><?php echo term_description(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
-			<?php endif; ?>
-			<div class="cf-posts">
-				<?php if ( have_posts() ) : ?>
-					<?php while ( have_posts() ) : the_post(); ?>
-						<article <?php post_class( 'cf-post' ); ?>>
-							<h2 class="cf-post__title">
-								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-							</h2>
-							<div class="cf-post__meta">
-								<time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
-									<?php echo esc_html( get_the_date() ); ?>
-								</time>
-							</div>
-							<div class="cf-post__excerpt">
-								<?php the_excerpt(); ?>
-							</div>
-						</article>
-					<?php endwhile; ?>
-				<?php else : ?>
-					<p class="cf-empty"><?php esc_html_e( '该分类暂无文章', 'simple-theme' ); ?></p>
+			<div class="archive-content">
+				<header class="section-header">
+					<h1>
+						<span class="section-header__title"><?php echo esc_html( single_term_title( '', false ) ); ?></span>
+						<span class="section-header__subtitle"><?php esc_html_e( '分类', 'simple-theme' ); ?></span>
+					</h1>
+				</header>
+				<?php if ( term_description() ) : ?>
+					<div class="cf-term-desc"><?php echo term_description(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 				<?php endif; ?>
+				<?php $st_render_post_cards(); ?>
 			</div>
 			<nav class="cf-pagination">
 				<?php previous_posts_link( '&laquo; 上一页' ); ?>
@@ -193,41 +259,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<?php elseif ( is_archive() ) : ?>
 			<?php /* ── Date / Author / Other Archives ── */ ?>
-			<h1 class="cf-page-title">
-				<?php
-				if ( is_day() ) {
-					printf( esc_html__( '每日归档：%s', 'simple-theme' ), get_the_date() );
-				} elseif ( is_month() ) {
-					printf( esc_html__( '每月归档：%s', 'simple-theme' ), get_the_date( 'F Y' ) );
-				} elseif ( is_year() ) {
-					printf( esc_html__( '每年归档：%s', 'simple-theme' ), get_the_date( 'Y' ) );
-				} elseif ( is_author() ) {
-					printf( esc_html__( '作者：%s', 'simple-theme' ), get_the_author() );
-				} else {
-					esc_html_e( '归档', 'simple-theme' );
-				}
-				?>
-			</h1>
-			<div class="cf-posts">
-				<?php if ( have_posts() ) : ?>
-					<?php while ( have_posts() ) : the_post(); ?>
-						<article <?php post_class( 'cf-post' ); ?>>
-							<h2 class="cf-post__title">
-								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-							</h2>
-							<div class="cf-post__meta">
-								<time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
-									<?php echo esc_html( get_the_date() ); ?>
-								</time>
-							</div>
-							<div class="cf-post__excerpt">
-								<?php the_excerpt(); ?>
-							</div>
-						</article>
-					<?php endwhile; ?>
-				<?php else : ?>
-					<p class="cf-empty"><?php esc_html_e( '暂无内容', 'simple-theme' ); ?></p>
-				<?php endif; ?>
+			<div class="archive-content">
+				<header class="section-header">
+					<h1>
+						<span class="section-header__title">
+							<?php
+							if ( is_day() ) {
+								echo esc_html( get_the_date() );
+							} elseif ( is_month() ) {
+								echo esc_html( get_the_date( 'F Y' ) );
+							} elseif ( is_year() ) {
+								echo esc_html( get_the_date( 'Y' ) );
+							} elseif ( is_author() ) {
+								echo esc_html( get_the_author() );
+							} else {
+								esc_html_e( '归档', 'simple-theme' );
+							}
+							?>
+						</span>
+						<span class="section-header__subtitle">Archive.</span>
+					</h1>
+				</header>
+				<?php $st_render_post_cards(); ?>
 			</div>
 			<nav class="cf-pagination">
 				<?php previous_posts_link( '&laquo; 上一页' ); ?>
@@ -236,24 +289,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<?php elseif ( is_search() ) : ?>
 			<?php /* ── Search Results ── */ ?>
-			<h1 class="cf-page-title">
-				<?php printf( esc_html__( '搜索结果：%s', 'simple-theme' ), get_search_query() ); ?>
-			</h1>
-			<div class="cf-posts">
-				<?php if ( have_posts() ) : ?>
-					<?php while ( have_posts() ) : the_post(); ?>
-						<article <?php post_class( 'cf-post' ); ?>>
-							<h2 class="cf-post__title">
-								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-							</h2>
-							<div class="cf-post__excerpt">
-								<?php the_excerpt(); ?>
-							</div>
-						</article>
-					<?php endwhile; ?>
-				<?php else : ?>
-					<p class="cf-empty"><?php esc_html_e( '未找到相关结果', 'simple-theme' ); ?></p>
-				<?php endif; ?>
+			<div class="archive-content">
+				<header class="section-header">
+					<h1>
+						<span class="section-header__title"><?php echo esc_html( get_search_query() ); ?></span>
+						<span class="section-header__subtitle">Search.</span>
+					</h1>
+				</header>
+				<?php $st_render_post_cards(); ?>
 			</div>
 			<nav class="cf-pagination">
 				<?php previous_posts_link( '&laquo; 上一页' ); ?>
