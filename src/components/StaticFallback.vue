@@ -13,7 +13,7 @@ defineProps<{ html: string }>()
 
 <template>
   <section class="st-fallback">
-    <p class="st-fallback__notice">实时内容加载失败，以下为静态存档版本。</p>
+    <!-- 提示由全局 <ConnectionBanner /> 承担，这里只负责内容本身 -->
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div class="st-fallback__body" v-html="html"></div>
   </section>
@@ -24,17 +24,6 @@ defineProps<{ html: string }>()
 .st-fallback {
   width: 100%;
   padding: 0.5rem 0 2rem;
-}
-
-.st-fallback__notice {
-  margin: 0 0 1.5rem;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium, 8px);
-  background: var(--card);
-  color: var(--secondary);
-  font-size: 0.8125rem;
-  line-height: 1.5;
 }
 
 /* 与 SPA 布局重复的部分隐藏 */

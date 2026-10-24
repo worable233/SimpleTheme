@@ -14,6 +14,7 @@ import AuthModal from '@/components/AuthModal.vue'
 import AnnouncementModal from '@/components/AnnouncementModal.vue'
 import AnnouncementCapsule from '@/components/AnnouncementCapsule.vue'
 import CookieConsent from '@/components/CookieConsent.vue'
+import ConnectionBanner from '@/components/ConnectionBanner.vue'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
@@ -289,6 +290,9 @@ watch(
       v-if="siteInfo.cookieConsent?.enabled"
       :message="siteInfo.cookieConsent.message"
     />
+
+    <!-- 连接层问题（人机验证过期 / 断网 / 服务器无响应）的统一提示条 -->
+    <ConnectionBanner />
 
     <!-- 全局 toast 渲染层：业务层任意 useToast() 调用都会推到这里 -->
     <StToast placement="top" :max="5" />

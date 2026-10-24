@@ -3,6 +3,12 @@
  */
 import axios from 'axios'
 import { getThemeConfig } from '@/lib/theme-config'
+import {
+  createCircuitError,
+  isCircuitOpen,
+  reportRequestFailure,
+  reportRequestSuccess,
+} from '@/lib/connectivity'
 
 const _themeConfig = getThemeConfig()
 export const apiClient = axios.create({
@@ -20,6 +26,28 @@ export const apiClient = axios.create({
 if (_themeConfig.restNonce) {
   apiClient.defaults.headers.common['X-WP-Nonce'] = _themeConfig.restNonce
 }
+
+// ========== 连接层熔断 ==========
+// 站点被人机验证（Cloudflare 等）拦住或后端完全不可达时，一屏并行请求会全部
+// 失败。熔断后新请求直接本地失败，既不打网络，也不再逐条弹 toast；
+// 具体提示由 <ConnectionBanner /> 统一给出。
+apiClient.interceptors.request.use((config) => {
+  if (isCircuitOpen()) {
+    return Promise.reject(createCircuitError(config.url))
+  }
+  return config
+})
+
+apiClient.interceptors.response.use(
+  (response) => {
+    reportRequestSuccess()
+    return response
+  },
+  (error) => {
+    reportRequestFailure(error)
+    return Promise.reject(error)
+  },
+)
 
 /**
  * 构建 REST 地址。

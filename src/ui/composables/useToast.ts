@@ -11,6 +11,7 @@
  * 渲染由 <StToast /> 负责，本文件只维护数据与计时器。
  */
 import { ref, type Ref } from 'vue'
+import { connectionIssue } from '@/lib/connectivity'
 
 export type StToastType = 'success' | 'error' | 'warning' | 'info' | 'loading'
 
@@ -67,8 +68,42 @@ export function clearToasts() {
   toasts.value = []
 }
 
+/** 同一条错误提示在这个窗口内只出现一次（并发请求常常一起失败） */
+const DEDUPE_WINDOW = 8000
+const recentMessages = new Map<string, number>()
+
+/**
+ * 降噪：并发请求同时失败时会推多条一模一样的提示（例如 6 个请求全部 403），
+ * 这里按「类型+标题+正文」在 8 秒内去重；连接层问题在熔断期间直接吞掉，
+ * 交给 <ConnectionBanner /> 统一说明。
+ */
+function shouldSkipToast(type: StToastType, title: string, message?: string) {
+  if (type !== 'error' && type !== 'warning') return false
+
+  // 横幅已经把情况说清楚了，此时任何错误提示都是噪音（侧栏/评论各自失败一次就会刷屏）
+  if (connectionIssue.value) return true
+
+  const text = `${title} ${message ?? ''}`.trim()
+
+  const key = `${type}|${text}`
+  const now = Date.now()
+  const last = recentMessages.get(key)
+  if (last !== undefined && now - last < DEDUPE_WINDOW) return true
+  recentMessages.set(key, now)
+
+  // 顺手清理过期记录，避免长时间停留的页面里 Map 无限增长
+  if (recentMessages.size > 50) {
+    for (const [key2, at] of recentMessages) {
+      if (now - at >= DEDUPE_WINDOW) recentMessages.delete(key2)
+    }
+  }
+  return false
+}
+
 export function showToast(item: Partial<StToastItem> & { title: string }): number {
   const type = item.type ?? 'info'
+  // 被降噪的提示返回 -1：调用方拿到的 id 不会命中任何条目，remove(-1) 无副作用
+  if (shouldSkipToast(type, item.title, item.message)) return -1
   const duration = item.duration ?? (type === 'error' ? ERROR_DURATION : DEFAULT_DURATION)
   const id = ++seed
 

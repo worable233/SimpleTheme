@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { connectionIssue } from '@/lib/connectivity'
 
 /**
  * useStaticFallback — 运行时数据不可用时的静态内容兜底。
@@ -20,6 +21,9 @@ export function useStaticFallback() {
     const html = window.__ST_STATIC_HTML__
     const path = window.__ST_STATIC_PATH__
     if (!html || path == null) return ''
+    // 人机验证过期（challenge）说明站点是活的，只是需要重新验证；
+    // 这时展示静态存档会让用户误以为内容未更新，交给 ConnectionBanner 提示刷新。
+    if (connectionIssue.value === 'challenge') return ''
     // 读取 route.fullPath 让该 computed 在前端路由跳转后重新求值
     // （location.pathname 随 vue-router 同步更新）
     const stillOnBootUrl = route.fullPath !== undefined && window.location.pathname === path

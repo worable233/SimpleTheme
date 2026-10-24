@@ -4,6 +4,7 @@
 import axios from 'axios'
 import { getThemeConfig, toResolvablePath } from '@/lib/theme-config'
 import { apiClient, buildRestUrl } from './api-client'
+import { isConnectivityError } from '@/lib/connectivity'
 import {
   shouldUseMock,
   mockFetchSiteInfo,
@@ -118,65 +119,64 @@ export async function resolveThemePath(path: string): Promise<ResolveResponse> {
 
   if (shouldUseMock()) return mockResolveThemePath(resolvablePath)
 
+  let resolved: ResolveResponse | null = null
+  try {
+    const { data } = await apiClient.post<ResolveResponse>(getThemeConfig().routes.resolveUrl, {
+      path: resolvablePath,
+    })
+    resolved = data
+  } catch (error) {
+    // 断网 / 人机验证 / 5xx 不能被当成 404，否则用户看到「页面不存在」而真实原因无从得知
+    if (isConnectivityError(error)) throw error
+  }
+
+  // 主接口已经给出结论（文章/页面/归档/首页…）就直接用，不再发兜底查询
+  if (resolved && !['error', '404'].includes(resolved.type)) return resolved
+  if (resolved && resolved.type === 'error') return resolved
+
+  // 只有主接口失败或 404 时，才按 slug 依次查页面/文章兜底。
+  // 这段以前是无条件并发执行的：正常打开一篇文章会白白多打两个 REST 请求（各 ~28KB）。
+  const fallback = await resolveBySlug(resolvablePath)
+  return fallback ?? resolved ?? { type: '404', message: '页面未找到' }
+}
+
+/** slug 兜底：先按页面查，再按文章查；查不到返回 null */
+async function resolveBySlug(resolvablePath: string): Promise<ResolveResponse | null> {
   const slug = resolvablePath.split('/').filter(Boolean).pop() || ''
+  if (!slug) return null
   const decodedSlug = decodeURIComponentSafely(slug)
 
-  const results = await Promise.allSettled([
-    (async () => {
-      const { data } = await apiClient.post<ResolveResponse>(getThemeConfig().routes.resolveUrl, {
-        path: resolvablePath,
-      })
-      return data
-    })(),
-    (async () => {
-      if (!slug) throw new Error('no slug')
-      try {
-        const { data: pages } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/pages'), {
-          params: { slug: decodedSlug, per_page: 1, _embed: 1 },
-        })
-        if (pages?.[0]) {
-          return {
-            type: 'page' as const,
-            restUrl: buildRestUrl(`wp/v2/pages/${pages[0].id}?_embed=1`),
-            id: pages[0].id,
-          }
-        }
-      } catch {}
-      try {
-        const { data: posts } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/posts'), {
-          params: { slug: decodedSlug, per_page: 1, _embed: 1 },
-        })
-        if (posts?.[0]) {
-          return {
-            type: 'post' as const,
-            restUrl: buildRestUrl(`wp/v2/posts/${posts[0].id}?_embed=1`),
-            id: posts[0].id,
-          }
-        }
-      } catch {}
-      throw new Error('slug not found')
-    })(),
-  ])
-
-  const customResult = results[0]
-  const wpResult = results[1]
-
-  if (customResult.status === 'fulfilled') {
-    const data = customResult.value
-    if (data && !['error'].includes(data.type)) {
-      return data
+  try {
+    const { data: pages } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/pages'), {
+      params: { slug: decodedSlug, per_page: 1, _embed: 1 },
+    })
+    if (pages?.[0]) {
+      return {
+        type: 'page',
+        restUrl: buildRestUrl(`wp/v2/pages/${pages[0].id}?_embed=1`),
+        id: pages[0].id,
+      }
     }
+  } catch (error) {
+    if (isConnectivityError(error)) throw error
   }
 
-  if (wpResult.status === 'fulfilled') {
-    return wpResult.value
+  try {
+    const { data: posts } = await apiClient.get<WordPressPost[]>(buildRestUrl('wp/v2/posts'), {
+      params: { slug: decodedSlug, per_page: 1, _embed: 1 },
+    })
+    if (posts?.[0]) {
+      return {
+        type: 'post',
+        restUrl: buildRestUrl(`wp/v2/posts/${posts[0].id}?_embed=1`),
+        id: posts[0].id,
+      }
+    }
+  } catch (error) {
+    if (isConnectivityError(error)) throw error
   }
 
-  if (customResult.status === 'fulfilled') {
-    return customResult.value
-  }
-
-  return { type: '404', message: '页面未找到' }
+  return null
 }
 
 function decodeURIComponentSafely(value: string): string {
