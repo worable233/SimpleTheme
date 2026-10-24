@@ -278,7 +278,7 @@ export interface CommentsResponse {
   totalPages: number
 }
 
-/** 官方 ALTCHA challenge JSON（直接传给 altcha-widget 的 challengejson 属性） */
+/** 验证码挑战（后端按 ALTCHA 协议出题，前端 worker 自己求解） */
 export interface CaptchaData {
   algorithm: string
   challenge: string

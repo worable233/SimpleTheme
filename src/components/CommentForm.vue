@@ -3,6 +3,7 @@
  * CommentForm — 评论输入表单（含 contenteditable 编辑器和表情面板）
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import CommentCaptcha from '@/components/CommentCaptcha.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { StButton, StCheckbox, StDrawer, StInput, useToast } from '@/ui'
@@ -205,14 +206,28 @@ async function loadCaptcha() {
   }
 }
 
-// altcha-widget 接收官方 challengejson（JSON 字符串）
-const captchaJson = computed(() => (captchaData.value ? JSON.stringify(captchaData.value) : ''))
+// 验证浮层：点「发表评论」且还没验证过时弹出，验证通过后接着提交
+const captchaOpen = ref(false)
+const pendingSubmit = ref(false)
 
-function onCaptchaStateChange(e: Event) {
-  const detail = (e as CustomEvent).detail
-  if (detail?.payload) {
-    captchaPayload.value = detail.payload
+/** 换一份新鲜挑战后弹出浮层（旧挑战可能已过期或被用过） */
+async function requestCaptcha() {
+  pendingSubmit.value = true
+  await loadCaptcha()
+  captchaOpen.value = true
+}
+
+function onCaptchaVerified(payload: string) {
+  captchaPayload.value = payload
+  captchaOpen.value = false
+  if (pendingSubmit.value) {
+    pendingSubmit.value = false
+    emitSubmit()
   }
+}
+
+function onCaptchaRefresh() {
+  void loadCaptcha()
 }
 
 // ── contenteditable 输入框 ──
@@ -460,10 +475,14 @@ function handleSubmit() {
       return
     }
     if (props.formSettings.captchaEnabled && !captchaPayload.value) {
-      toast.error('请先完成人机验证')
+      void requestCaptcha()
       return
     }
   }
+  emitSubmit()
+}
+
+function emitSubmit() {
   const payload: {
     name: string; email: string; url: string; content: string; cookies: boolean
     captchaPayload?: string
@@ -478,8 +497,11 @@ function handleSubmit() {
     mailNotify: mailNotify.value,
     useMarkdown: useMarkdown.value,
   }
-  if (props.formSettings.captchaEnabled && captchaData.value) {
+  if (props.formSettings.captchaEnabled && captchaPayload.value) {
     payload.captchaPayload = captchaPayload.value
+    // 服务端按一次性 payload 校验（用完即弃、还有防重放 transient），
+    // 留着重试只会被判定 captcha_failed，直接清掉让用户重新验证
+    captchaPayload.value = ''
   }
   emit('submit', payload)
 }
@@ -605,17 +627,15 @@ defineExpose({ clearForm })
         </StCheckbox>
       </div>
 
-      <div v-if="formSettings.captchaEnabled && !currentUser" class="comments-form__captcha">
-        <altcha-widget
-          v-if="captchaData"
-          :challengejson="captchaJson"
-          style="--altcha-max-width: 100%"
-          @statechange="onCaptchaStateChange"
-        ></altcha-widget>
-      </div>
-
       <div class="comments-form__footer">
         <div class="comments-form__footer-right">
+          <CommentCaptcha
+            v-if="formSettings.captchaEnabled && !currentUser"
+            v-model:show="captchaOpen"
+            :challenge="captchaData"
+            @verified="onCaptchaVerified"
+            @refresh="onCaptchaRefresh"
+          />
           <!-- Desktop emoji panel (dropdown above toggle) -->
           <div v-if="!isMobile && emojiOpen" ref="emojiPanelRef" class="emoji-panel-wrapper emoji-panel-wrapper--dropdown">
             <EmojiPicker
@@ -786,14 +806,6 @@ defineExpose({ clearForm })
                 <span class="wizard-step__option-hint">保存昵称、邮箱等信息</span>
               </span>
             </StCheckbox>
-          </div>
-          <div v-if="formSettings.captchaEnabled && !currentUser" class="wizard-step__captcha">
-            <altcha-widget
-              v-if="captchaData"
-              :challengejson="captchaJson"
-              style="--altcha-max-width: 100%"
-              @statechange="onCaptchaStateChange"
-            ></altcha-widget>
           </div>
         </template>
       </div>

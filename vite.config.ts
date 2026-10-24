@@ -42,14 +42,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     base: command === 'serve' ? '/wp-content/themes/simple-theme/dist/' : './',
     plugins: [
-      vue({
-        template: {
-          compilerOptions: {
-            // ALTCHA is a native web component, not a Vue component
-            isCustomElement: (tag) => tag.startsWith('altcha-'),
-          },
-        },
-      }),
+      vue(),
       tailwindcss(),
       spaFallback(),
       VitePWA({
