@@ -61,6 +61,28 @@ export default defineConfig(({ command, mode }) => {
           navigateFallback: null,
           runtimeCaching: [
             {
+              // 页面文档：NetworkFirst —— 离线或人机验证拦住时，仍能返回上次看到的
+              // HTML 外壳（内含服务端预渲染的 #st-static 静态存档），不至于直接白屏
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'st-pages',
+                expiration: { maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 },
+                networkTimeoutSeconds: 4,
+              },
+            },
+            {
+              // 核心内容接口（文章/页面正文）：resolve-url 早已缓存，但正文本身没缓存，
+              // 导致离线时「能解析出页面却没有内容」。同样 NetworkFirst。
+              urlPattern: /\/wp-json\/wp\/v2\/(?:posts|pages)(?:[/?]|$)/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'st-wp-content',
+                expiration: { maxEntries: 60, maxAgeSeconds: 7 * 24 * 60 * 60 },
+                networkTimeoutSeconds: 4,
+              },
+            },
+            {
               // Theme built assets (hashed URLs = naturally versioned)
               urlPattern: /\/wp-content\/themes\/simple-theme\/dist\//,
               handler: 'CacheFirst',

@@ -6,16 +6,35 @@
  * 内容来自 #st-static（cf-* 结构），这里补上与主题变量匹配的样式，
  * 并隐藏与 SPA 布局重复的 header/footer。
  */
+import { onMounted, ref } from 'vue'
+
 defineOptions({ name: 'StaticFallback' })
 
 defineProps<{ html: string }>()
+
+const root = ref<HTMLElement | null>(null)
+
+/**
+ * 存档里的图片沿用服务端输出的 loading="lazy"，但它们是刚注入的新节点，
+ * 在兜底页面里常常停在空白、用户以为「图片没缓存」。兜底只在出故障时出现，
+ * 直接全部改成 eager，让它们立刻加载（命中 SW 的 uploads 缓存）。
+ */
+onMounted(() => {
+  const images = root.value?.querySelectorAll<HTMLImageElement>('img') ?? []
+  images.forEach((img) => {
+    img.loading = 'eager'
+    img.decoding = 'async'
+    const lazySrc = img.getAttribute('data-src') || img.getAttribute('data-lazy-src')
+    if (lazySrc && !img.getAttribute('src')) img.src = lazySrc
+  })
+})
 </script>
 
 <template>
   <section class="st-fallback">
     <!-- 提示由全局 <ConnectionBanner /> 承担，这里只负责内容本身 -->
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <div class="st-fallback__body" v-html="html"></div>
+    <div ref="root" class="st-fallback__body" v-html="html"></div>
   </section>
 </template>
 
