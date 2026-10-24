@@ -10,6 +10,9 @@ import './styles/transitions.css'
 import './styles/prose.css'
 import './styles/blocks.css'
 // ALTCHA Proof-of-Work CAPTCHA Web Component
+// ALTCHA 必须锁在 2.x：后端 inc/rest/comments.php 按 v2 协议校验
+// （widget 本地求解 sha256(salt + number) → payload 随评论一起提交）。
+// v3 换成了服务端校验（verifyUrl + 新的 PoW 算法），直接升级会让验证码永远失败。
 import 'altcha'
 
 // Register Service Worker for full caching (production only)

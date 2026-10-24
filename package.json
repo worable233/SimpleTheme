@@ -33,7 +33,7 @@
     "@fancyapps/ui": "^5.0.26",
     "@tabler/icons": "^3.46.0",
     "@unhead/vue": "^3.3.2",
-    "altcha": "^3.0.9",
+    "altcha": "2.3.0",
     "axios": "^1.19.0",
     "prismjs": "^1.30.0",
     "reka-ui": "^2.10.4",
