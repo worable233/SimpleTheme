@@ -26,6 +26,8 @@ declare global {
     __ST_STATIC_HTML__?: string
     /** location.pathname at boot — the URL the static content was rendered for. */
     __ST_STATIC_PATH__?: string
+    /** 预览文章数据（仅 ?preview=true 请求由 PHP 直出），见 src/lib/preview.ts */
+    __ST_PREVIEW__?: import('./src/lib/preview').PreviewPayload
   }
   /** Prism syntax highlighter — loaded as a regular <script> by WordPress. */
   const Prism: typeof import('prismjs')

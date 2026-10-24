@@ -18,6 +18,7 @@ import {
   trackPostView,
 } from '@/lib/wordpress'
 import { resolveArticleLicense } from '@/lib/license'
+import { getPreviewPayload } from '@/lib/preview'
 import { withCache } from '@/lib/api-cache'
 import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
@@ -171,6 +172,9 @@ const postTags = computed(() => {
   return [] as { name: string; link: string }[]
 })
 
+/** 预览模式下隐藏评论区（草稿/修订还没对外发布） */
+const isPreviewMode = computed(() => Boolean(getPreviewPayload()))
+
 const showMeta = computed(
   () => getThemeConfig().features?.articleMeta || ({} as Record<string, boolean>),
 )
@@ -225,6 +229,36 @@ const loadCurrentContent = async () => {
   // （如归档 → 归档时闪现「暂无内容」空状态）
   contentType.value = 'home'
   loading.value = true
+
+  // 预览请求（?p=ID&preview=true）：正文由 PHP 直出，避免路径解析把
+  // 查询串剥掉后落到首页；同时跳过阅读量统计与评论（草稿尚未公开）。
+  const preview = getPreviewPayload()
+  if (preview) {
+    postData.value = {
+      id: preview.id,
+      date: preview.date,
+      modified: preview.modified,
+      slug: '',
+      link: preview.link,
+      status: preview.status,
+      comment_status: 'closed',
+      title: { rendered: preview.title },
+      content: { rendered: preview.content },
+      _embedded: {
+        author: [{ name: preview.authorName }],
+        'wp:term': [
+          preview.tags.map((tag) => ({
+            taxonomy: 'post_tag',
+            name: tag.name,
+            link: tag.link,
+          })),
+        ],
+      },
+    } as unknown as WordPressPost
+    contentType.value = 'post'
+    loading.value = false
+    return
+  }
 
   try {
     const resolved = await withCache(
@@ -720,6 +754,7 @@ watch(
           </footer>
         </div>
         <CommentsPanel
+          v-if="!isPreviewMode"
           :post-id="postData.id"
           :enabled="'open' === (postData.comment_status || 'closed')"
           :form-settings="siteInfo.comments!"

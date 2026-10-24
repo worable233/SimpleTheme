@@ -258,6 +258,64 @@ function simple_theme_output_generator_meta() {
 }
 
 /**
+ * 预览请求直出文章数据。
+ *
+ * 预览地址（?p=ID&preview=true / &preview_id=...）带查询串，SPA 的
+ * resolve-url 会剥掉查询串解析成首页，因此这里把服务端已经渲染好的
+ * 预览内容（含未保存的自动草稿修订）交给前端直接渲染文章页。
+ */
+add_action( 'wp_footer', 'simple_theme_output_preview_payload', 1 );
+function simple_theme_output_preview_payload() {
+	if ( ! is_preview() ) {
+		return;
+	}
+
+	$preview_post = get_queried_object();
+	if ( ! $preview_post instanceof WP_Post ) {
+		return;
+	}
+
+	$tags       = array();
+	$post_tags  = get_the_tags( $preview_post->ID );
+	if ( is_array( $post_tags ) ) {
+		foreach ( $post_tags as $tag ) {
+			$tags[] = array(
+				'name' => $tag->name,
+				'link' => get_tag_link( $tag ),
+			);
+		}
+	}
+
+	// 草稿还没有 post_date（'0000-00-00'），此时回落到最后修改时间
+	$date_iso = get_post_time( 'c', true, $preview_post );
+	if ( ! $date_iso || 0 === strpos( (string) $date_iso, '1970' ) ) {
+		$date_iso = get_post_modified_time( 'c', true, $preview_post );
+	}
+
+	$payload = array(
+		'id'         => (int) $preview_post->ID,
+		'title'      => get_the_title( $preview_post ),
+		'content'    => apply_filters( 'the_content', $preview_post->post_content ),
+		'date'       => $date_iso,
+		'modified'   => get_post_modified_time( 'c', true, $preview_post ),
+		'link'       => get_permalink( $preview_post ),
+		'authorName' => get_the_author_meta( 'display_name', $preview_post->post_author ),
+		'tags'       => $tags,
+		'status'     => $preview_post->post_status,
+	);
+
+	$json = wp_json_encode(
+		$payload,
+		JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+	);
+	if ( ! $json ) {
+		return;
+	}
+
+	echo '<script>window.__ST_PREVIEW__ = ' . $json . ';</script>' . "\n";
+}
+
+/**
  * Output the frontend config as an inline script.
  *
  * We use wp_head (priority 0) instead of wp_add_inline_script because the
