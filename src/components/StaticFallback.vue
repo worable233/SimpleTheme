@@ -34,7 +34,9 @@ onMounted(() => {
   <section class="st-fallback">
     <!-- 提示由全局 <ConnectionBanner /> 承担，这里只负责内容本身 -->
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <div ref="root" class="st-fallback__body" v-html="html"></div>
+    <!-- prose-content：存档用的是服务端 HTML，直接继承 Tailwind preflight 会丢掉标题/列表/
+         段落的排版（截图里 H1~H6 一样大、有序列表没编号）。复用主题正文样式即可。 -->
+    <div ref="root" class="st-fallback__body prose-content" v-html="html"></div>
   </section>
 </template>
 
@@ -42,7 +44,8 @@ onMounted(() => {
 <style>
 .st-fallback {
   width: 100%;
-  padding: 0.5rem 0 2rem;
+  /* 与 .single-post__body 一致的内边距，避免在窄视口下文字贴到屏幕边缘 */
+  padding: 0.5rem 25px 2rem;
 }
 
 /* 与 SPA 布局重复的部分隐藏 */
