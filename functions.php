@@ -27,6 +27,8 @@ require_once __DIR__ . '/inc/core/setup.php';
 require_once __DIR__ . '/inc/core/helpers.php';
 require_once __DIR__ . '/inc/core/assets.php';
 require_once __DIR__ . '/inc/core/widgets.php';
+// SPA 路由（/categories/<slug>/）的服务端映射，让直出内容与状态码都正确
+require_once __DIR__ . '/inc/core/routing.php';
 
 // Global admin theme — Vue shell + scoped CSS (no @layer; see inc/core/admin-theme.php)
 require_once __DIR__ . '/inc/core/admin-theme.php';
