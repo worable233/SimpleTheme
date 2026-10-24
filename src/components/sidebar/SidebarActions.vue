@@ -1,11 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { StAvatar, StButton, StMorphIcon } from '@/ui'
 import AppIcon from '@/components/AppIcon.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthModal } from '@/composables/useAuthModal'
+import {
+  nextThemePreference,
+  themePreferenceLabel,
+  type ResolvedTheme,
+  type ThemePreference,
+} from '@/lib/theme-preference'
 
-defineProps<{
-  currentTheme: string
+const props = defineProps<{
+  currentTheme: ResolvedTheme
+  themePreference: ThemePreference
 }>()
 
 defineEmits<{
@@ -14,6 +22,25 @@ defineEmits<{
 
 const { auth } = useAuth()
 const { open: openAuthModal } = useAuthModal()
+
+/** 自动模式用显示器图标，明确表示「跟着系统走」 */
+const themeIcon = computed(() => {
+  if (props.themePreference === 'auto') return 'device-desktop'
+  return props.currentTheme === 'dark' ? 'moon' : 'sun'
+})
+
+const NEXT_LABEL: Record<ThemePreference, string> = {
+  auto: '切换到跟随系统',
+  light: '切换到浅色模式',
+  dark: '切换到深色模式',
+}
+
+const nextHint = computed(() => NEXT_LABEL[nextThemePreference(props.themePreference)])
+
+const themeTitle = computed(
+  () =>
+    `主题：${themePreferenceLabel(props.themePreference, props.currentTheme)}，点击${nextHint.value}`,
+)
 </script>
 
 <template>
@@ -48,11 +75,12 @@ const { open: openAuthModal } = useAuthModal()
       quaternary
       circle
       size="large"
-      :aria-label="currentTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'"
+      :aria-label="themeTitle"
+      :title="themeTitle"
       @click="$emit('toggle-theme')"
     >
       <template #icon>
-        <StMorphIcon :name="currentTheme === 'dark' ? 'sun' : 'moon'" :size="24" />
+        <StMorphIcon :name="themeIcon" :size="24" />
       </template>
     </StButton>
   </div>

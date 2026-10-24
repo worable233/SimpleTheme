@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import UserDropdown from './UserDropdown.vue'
+import {
+  applyTheme,
+  readThemePreference,
+  resolveTheme,
+  setThemePreference,
+  type ResolvedTheme,
+} from '@/lib/theme-preference'
 
 const props = defineProps<{
   siteName: string
@@ -9,7 +16,7 @@ const props = defineProps<{
 }>()
 
 const userOpen = ref(false)
-const currentTheme = ref('light')
+const currentTheme = ref<ResolvedTheme>('light')
 const userBtnRef = ref<HTMLElement | null>(null)
 
 function toggleUser() {
@@ -24,24 +31,15 @@ const avatarLetter = computed(() => {
   return props.userName ? props.userName.charAt(0).toUpperCase() : 'U'
 })
 
-function applyTheme(theme: string) {
-  document.documentElement.setAttribute('data-theme', theme)
-  document.documentElement.style.colorScheme = theme
-}
-
+// 这里的按钮是有意的二态开关：点一下就把「跟随系统」变成明确的明/暗偏好
 function toggleTheme() {
   currentTheme.value = currentTheme.value === 'dark' ? 'light' : 'dark'
   applyTheme(currentTheme.value)
-  localStorage.setItem('theme', currentTheme.value)
+  setThemePreference(currentTheme.value)
 }
 
 onMounted(() => {
-  const saved = localStorage.getItem('theme')
-  if (saved === 'light' || saved === 'dark') {
-    currentTheme.value = saved
-  } else {
-    currentTheme.value = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
+  currentTheme.value = resolveTheme(readThemePreference())
   applyTheme(currentTheme.value)
 })
 </script>

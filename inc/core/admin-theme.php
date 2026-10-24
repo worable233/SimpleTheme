@@ -168,13 +168,12 @@ add_action('admin_head', function () {
 	<script>
 	(function() {
 		var theme = localStorage.getItem('theme');
-		if (theme === 'dark') {
-			document.documentElement.setAttribute('data-theme', 'dark');
-			document.documentElement.style.colorScheme = 'dark';
-		} else if (theme === 'light') {
-			document.documentElement.setAttribute('data-theme', 'light');
-			document.documentElement.style.colorScheme = 'light';
+		if (theme !== 'light' && theme !== 'dark') {
+			// 未设置或「跟随系统」时按系统偏好渲染，避免先闪一下浅色
+			theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 		}
+		document.documentElement.setAttribute('data-theme', theme);
+		document.documentElement.style.colorScheme = theme;
 	})();
 	</script>
 	<?php

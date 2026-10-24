@@ -4,6 +4,7 @@ import { ConfigProvider } from 'reka-ui'
 import { fetchSettings, saveSettings } from './api'
 import type { AdminSettings } from './api'
 import { StButton, StIcon, StSpinner, StTabPane, StTabs, StToast, useToast } from '@/ui'
+import { readThemePreference, resolveTheme } from '@/lib/theme-preference'
 import SettingsAppearance from './components/SettingsAppearance.vue'
 import SettingsHome from './components/SettingsHome.vue'
 import SettingsSidebar from './components/SettingsSidebar.vue'
@@ -113,10 +114,8 @@ function syncThemeMode() {
     document.documentElement.style.colorScheme = 'light'
     return
   }
-  let theme = localStorage.getItem('theme')
-  if (theme !== 'light' && theme !== 'dark') {
-    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
+  // 未手动选过时跟随系统（与前台一致）
+  const theme = resolveTheme(readThemePreference())
   document.documentElement.setAttribute('data-theme', theme)
   document.documentElement.style.colorScheme = theme
 }

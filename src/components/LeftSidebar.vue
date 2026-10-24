@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { StButton } from '@/ui'
+import { StButton, useToast } from '@/ui'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
+import {
+  applyTheme,
+  nextThemePreference,
+  readThemePreference,
+  resolveTheme,
+  setThemePreference,
+  themePreferenceLabel,
+  watchSystemTheme,
+  type ResolvedTheme,
+  type ThemePreference,
+} from '@/lib/theme-preference'
 import { resolveMenuIcon } from './sidebar/icon-map'
 import AppIcon from '@/components/AppIcon.vue'
 import SidebarProfile from './SidebarProfile.vue'
@@ -36,30 +47,39 @@ const leftSidebarRef = ref<HTMLElement | null>(null)
 const leftOpen = ref(false)
 const rightOpen = ref(false)
 const showRightSubPage = ref(false)
-const currentTheme = ref('light')
+// 默认跟随系统；点一次在 自动 → 浅色 → 深色 之间循环
+const themePreference = ref<ThemePreference>('auto')
+const currentTheme = ref<ResolvedTheme>('light')
+const toast = useToast()
+let stopWatchingSystem: (() => void) | null = null
 
 // ========== Theme ==========
 
 onMounted(() => {
-  const saved = localStorage.getItem('theme')
-  if (saved === 'light' || saved === 'dark') {
-    currentTheme.value = saved
-  } else {
-    currentTheme.value = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
+  themePreference.value = readThemePreference()
+  currentTheme.value = resolveTheme(themePreference.value)
   applyTheme(currentTheme.value)
+
+  // 跟随系统时要实时响应系统明暗切换，而不是只在首屏读一次
+  stopWatchingSystem = watchSystemTheme((theme) => {
+    if (themePreference.value !== 'auto') return
+    currentTheme.value = theme
+    applyTheme(theme)
+  })
+})
+
+onUnmounted(() => {
+  stopWatchingSystem?.()
+  stopWatchingSystem = null
 })
 
 function toggleTheme() {
-  currentTheme.value = currentTheme.value === 'dark' ? 'light' : 'dark'
+  const next = nextThemePreference(themePreference.value)
+  themePreference.value = next
+  setThemePreference(next)
+  currentTheme.value = resolveTheme(next)
   applyTheme(currentTheme.value)
-  localStorage.setItem('theme', currentTheme.value)
-}
-
-function applyTheme(theme: string) {
-  document.documentElement.setAttribute('data-theme', theme)
-  document.body.setAttribute('data-theme', theme)
-  document.documentElement.style.colorScheme = theme
+  toast.info(`主题：${themePreferenceLabel(next, currentTheme.value)}`)
 }
 
 // ========== Drawer state ==========
@@ -231,6 +251,7 @@ const subMenuPositions = reactive<Record<number, { x: number; y: number }>>({})
       <!-- Theme toggle -->
       <SidebarActions
         :current-theme="currentTheme"
+        :theme-preference="themePreference"
         @toggle-theme="toggleTheme"
       />
     </aside>
