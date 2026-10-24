@@ -480,15 +480,14 @@ function wrapCodeBlockUI(pre: HTMLPreElement) {
 function processCodeBlocks(container: Element) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre')
   const prismEnabled = getThemeConfig().features?.prismHighlight !== false
-  let highlighted = 0
-  let errors = 0
+  const queue: HTMLElement[] = []
 
   for (const pre of blocks) {
     const code = pre.querySelector<HTMLElement>('code')
     if (!code) continue
 
-    // Skip already-highlighted blocks
-    if (code.querySelector('.token')) continue
+    // Skip already-highlighted / already-queued blocks
+    if (code.querySelector('.token') || code.dataset.stPrismQueued === '1') continue
 
     // Infer language
     const lang = detectLanguage(code)
@@ -496,23 +495,50 @@ function processCodeBlocks(container: Element) {
       code.classList.add('language-' + lang)
     }
 
+    // Wrap in UI chrome — 保持同步，避免按钮晚到引起布局跳动
+    wrapCodeBlockUI(pre)
+
     // Highlight using Prism (loaded globally by WordPress, may be unavailable in dev).
     // 后台「代码高亮」关闭时不调用，即使别的插件注入了 window.Prism。
     if (prismEnabled && typeof Prism !== 'undefined') {
+      code.dataset.stPrismQueued = '1'
+      queue.push(code)
+    }
+  }
+
+  if (queue.length === 0) {
+    container.setAttribute('data-prism-status', 'highlighted=0 errors=0')
+    return
+  }
+
+  // 时间切片：语法高亮逐块放到空闲帧里做。长文（几十个代码块）时一次性高亮
+  // 会长时间占用主线程，拖慢首屏交互；这里每帧只处理一小批。
+  let highlighted = 0
+  let errors = 0
+  const CHUNK_SIZE = 4
+  const report = () =>
+    container.setAttribute('data-prism-status', `highlighted=${highlighted} errors=${errors}`)
+
+  const runChunk = (start: number) => {
+    const end = Math.min(start + CHUNK_SIZE, queue.length)
+    for (let i = start; i < end; i++) {
+      const code = queue[i]!
+      delete code.dataset.stPrismQueued
+      // 内容可能在排队期间被替换/移除，跳过失效节点
+      if (!code.isConnected || code.querySelector('.token')) continue
       try {
-        Prism.highlightElement(code)
+        Prism!.highlightElement(code)
         highlighted++
       } catch (e) {
         errors++
         console.error('[useContentEnhancer] Prism highlight failed:', e)
       }
     }
-
-    // Wrap in UI chrome
-    wrapCodeBlockUI(pre)
+    report()
+    if (end < queue.length) scheduleIdle(() => runChunk(end))
   }
 
-  container.setAttribute('data-prism-status', `highlighted=${highlighted} errors=${errors}`)
+  scheduleIdle(() => runChunk(0))
 }
 
 /** Remove unsafe links, then route HTTP(S) external links through /go. */
@@ -557,6 +583,23 @@ function transformExternalLinks(container: Element) {
 /** 1×1 透明 GIF：占住 <img> 的 src，避免无 src 时出现破图图标（不产生网络请求） */
 const LAZY_PLACEHOLDER =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+/**
+ * 在空闲时间执行一次任务（无 requestIdleCallback 时退化为 setTimeout）。
+ * 用于把语法高亮这类「可以晚一点、但不能卡住首屏」的工作延后。
+ */
+function scheduleIdle(task: () => void) {
+  const idle = (
+    window as Window & {
+      requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number
+    }
+  ).requestIdleCallback
+  if (typeof idle === 'function') {
+    idle(task, { timeout: 500 })
+    return
+  }
+  setTimeout(task, 16)
+}
+
 const lazyHandledImages = new WeakSet<HTMLImageElement>()
 /** 尚未加载的图片，用于「一步跳过视口」时的补偿扫描 */
 const pendingLazyImages = new Set<HTMLImageElement>()
@@ -576,6 +619,8 @@ function revealLazyImage(img: HTMLImageElement) {
   // 恢复滚动位置后被越过），原生懒加载仍会压住请求不发。写回真实地址前
   // 改回 eager，让图片立即开始下载。
   img.loading = 'eager'
+  // 解码也放到后台线程，避免滚动时图片解码抢占主线程造成掉帧
+  if (!img.hasAttribute('decoding')) img.decoding = 'async'
   if (srcset) img.srcset = srcset
   img.src = src
   const done = () => {
@@ -606,10 +651,25 @@ function scheduleLazyCheck() {
   requestAnimationFrame(checkPendingLazyImages)
 }
 
+/**
+ * 滚动补偿扫描的节流：位移不足 120px 时不重扫。
+ * 每帧对剩余图片逐个读 getBoundingClientRect 会强制同步布局，
+ * 高频小幅滚动（触控板惯性）下纯属浪费。
+ */
+let lastLazyScanY = 0
+const LAZY_SCAN_MIN_DELTA = 120
+
+function onLazyScroll() {
+  if (Math.abs(window.scrollY - lastLazyScanY) < LAZY_SCAN_MIN_DELTA) return
+  lastLazyScanY = window.scrollY
+  scheduleLazyCheck()
+}
+
 function bindLazyListeners() {
   if (lazyListenersBound) return
   lazyListenersBound = true
-  window.addEventListener('scroll', scheduleLazyCheck, { passive: true })
+  lastLazyScanY = window.scrollY
+  window.addEventListener('scroll', onLazyScroll, { passive: true })
   window.addEventListener('resize', scheduleLazyCheck, { passive: true })
   window.addEventListener('load', scheduleLazyCheck, { once: true })
 }
@@ -661,6 +721,9 @@ function setupLazyImages(container: Element) {
     if (!src || src.startsWith('data:')) continue
     // 逃生舱：<img data-no-lazy>（如首屏大图想立即加载）
     if (img.closest('[data-no-lazy]')) continue
+    // 首屏（视口 + 200px 内）的图片保持原样：既不让 LCP 图片等 JS 才发请求，
+    // 也避免 1×1 占位图（无尺寸信息时）造成的高度塌陷。
+    if (img.getBoundingClientRect().top < window.innerHeight + 200) continue
 
     const srcset = img.getAttribute('srcset')
     img.dataset.stSrc = src

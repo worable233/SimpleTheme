@@ -134,8 +134,13 @@ export async function fetchContentByRestUrl(restUrl: string) {
   }
 }
 
+/** 本次会话已上报过浏览量的文章：服务端虽按 IP 去重，但没必要重复发请求 */
+const trackedViewPostIds = new Set<number>()
+
 export async function trackPostView(postId: number) {
   if (shouldUseMock()) return 0
+  if (trackedViewPostIds.has(postId)) return 0
+  trackedViewPostIds.add(postId)
   try {
     const { data } = await apiClient.post<{ viewCount: number }>(
       buildRestUrl('simple-theme/v1/track-view'),
