@@ -120,18 +120,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 					<?php $st_license = simple_theme_get_article_license(); ?>
 					<?php if ( $st_license ) : ?>
-						<p class="cf-single__license">
-							<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /></svg>
-							<span>
-								<?php if ( '' !== $st_license['url'] ) : ?>
-									<?php esc_html_e( '本文采用', 'simple-theme' ); ?>
-									<a class="cf-single__license-badge" href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
-									<?php esc_html_e( '许可协议发布，转载请注明出处。', 'simple-theme' ); ?>
-								<?php else : ?>
-									<?php echo esc_html( $st_license['statement'] ); ?>
+						<div class="cf-single__license">
+							<div class="cf-single__license-head">
+								<a class="cf-single__license-title" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( get_the_title() ); ?></a>
+								<a class="cf-single__license-url" href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( rawurldecode( get_permalink() ) ); ?></a>
+							</div>
+							<dl class="cf-single__license-meta">
+								<div>
+									<dt><?php esc_html_e( '作者', 'simple-theme' ); ?></dt>
+									<dd><?php echo esc_html( get_the_author() ); ?></dd>
+								</div>
+								<div>
+									<dt><?php esc_html_e( '发布于', 'simple-theme' ); ?></dt>
+									<dd><time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>"><?php echo esc_html( get_the_date( 'Y年n月j日' ) ); ?></time></dd>
+								</div>
+								<?php if ( get_the_modified_date( 'Ymd' ) !== get_the_date( 'Ymd' ) ) : ?>
+									<div>
+										<dt><?php esc_html_e( '更新于', 'simple-theme' ); ?></dt>
+										<dd><time datetime="<?php echo esc_attr( get_the_modified_date( 'c' ) ); ?>"><?php echo esc_html( get_the_modified_date( 'Y年n月j日' ) ); ?></time></dd>
+									</div>
 								<?php endif; ?>
-							</span>
-						</p>
+								<div>
+									<dt><?php esc_html_e( '许可协议', 'simple-theme' ); ?></dt>
+									<dd>
+										<?php if ( '' !== $st_license['url'] ) : ?>
+											<a href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
+										<?php else : ?>
+											<?php echo esc_html( $st_license['label'] ); ?>
+										<?php endif; ?>
+									</dd>
+								</div>
+							</dl>
+							<p class="cf-single__license-name"><?php echo esc_html( $st_license['full_name'] ); ?></p>
+						</div>
 					<?php endif; ?>
 				</article>
 			<?php endwhile; ?>

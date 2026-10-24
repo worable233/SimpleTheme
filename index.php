@@ -48,9 +48,16 @@
 			#st-static .cf-post__excerpt{font-size:.9375rem;color:#444}
 			#st-static .cf-single__title{font-size:2rem;font-weight:700;margin-bottom:12px;line-height:1.3}
 			#st-static .cf-single__body{font-size:1rem;line-height:1.8}
-		#st-static .cf-single__license{display:flex;gap:10px;margin-top:20px;padding:11px 14px;border-left:2px solid #333;border-radius:0 8px 8px 0;background:#f5f5f5;font-size:.8125rem;line-height:1.7;color:#888}
-		#st-static .cf-single__license svg{flex:none;margin-top:3px}
-		#st-static .cf-single__license-badge{display:inline-flex;align-items:center;margin:0 2px;padding:0 8px;border:1px solid #e2e2e2;border-radius:999px;background:#fff;color:#333;font-size:.75rem;line-height:20px;text-decoration:none}
+		#st-static .cf-single__license{position:relative;margin-top:22px;padding-top:18px;border-top:1px solid #e2e2e2;overflow:hidden;font-size:.8125rem;line-height:1.7;color:#888}
+		#st-static .cf-single__license-head{display:flex;flex-direction:column;gap:2px}
+		#st-static .cf-single__license-title{color:#333;font-size:.9375rem;font-weight:600;text-decoration:none}
+		#st-static .cf-single__license-url{color:#888;font-size:.75rem;text-decoration:none;word-break:break-all}
+		#st-static .cf-single__license-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px 24px;margin:16px 0 0}
+		#st-static .cf-single__license-meta dd{margin:2px 0 0;color:#333}
+		#st-static .cf-single__license-meta dt{color:#888;font-size:.75rem}
+		#st-static .cf-single__license-meta a{color:#333;text-decoration:none}
+		#st-static .cf-single__license-name{margin:14px 0 0;color:#888;font-size:.75rem}
+		#st-static .cf-single__license::after{content:'\00a9';position:absolute;top:16px;right:8px;font-size:96px;font-weight:700;line-height:1;color:#333;opacity:.05;pointer-events:none}
 			#st-static .cf-single__body img{max-width:100%;height:auto}
 			#st-static .cf-single__body pre{background:#f5f5f5;padding:1em;overflow-x:auto;border-radius:4px;font-size:.875em}
 			#st-static .cf-pagination{margin-top:24px;display:flex;gap:16px}

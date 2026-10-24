@@ -124,48 +124,84 @@
   margin-bottom: 15px;
 }
 
-/* 文章许可声明：左侧竖线横幅，比正文弱一档但不至于被忽略 */
+/* 文章版权信息：引用本文版式，无卡片边框/底色，只用一条分隔线收尾 */
 .single-post__license {
-  display: flex;
-  gap: 10px;
-  margin: 4px 0 0;
-  padding: 11px 14px;
-  border-left: 2px solid var(--primary);
-  border-radius: 0 var(--radius-large) var(--radius-large) 0;
-  background: var(--muted);
+  position: relative;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  overflow: hidden;
   font-size: 13px;
   line-height: 1.7;
   color: var(--secondary);
 }
 
-.single-post__license-icon {
-  flex: none;
-  margin-top: 3px;
+.single-post__license-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.single-post__license-text {
-  min-width: 0;
-}
-
-/* 协议名做成胶囊，兼顾可点击范围与克制感 */
-.single-post__license-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 2px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--card);
-  color: var(--primary);
-  font-size: 12px;
-  line-height: 20px;
+.single-post__license-title {
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
-  transition: border-color 0.2s var(--ease-standard);
 }
 
-.single-post__license-badge:hover {
-  border-color: var(--primary);
+.single-post__license-title:hover,
+.single-post__license-url:hover,
+.single-post__license-item a:hover {
+  color: var(--primary);
+}
+
+.single-post__license-url {
+  color: var(--secondary);
+  font-size: 12px;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.single-post__license-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px 24px;
+  margin: 16px 0 0;
+}
+
+.single-post__license-item dd {
+  margin: 2px 0 0;
+  color: var(--foreground);
+}
+
+.single-post__license-item dt {
+  color: var(--secondary);
+  font-size: 12px;
+}
+
+.single-post__license-item a {
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.single-post__license-name {
+  margin: 14px 0 0;
+  color: var(--secondary);
+  font-size: 12px;
+}
+
+/* 右侧淡化 © 水印，纯装饰 */
+.single-post__license::after {
+  content: '©';
+  position: absolute;
+  top: 16px;
+  right: 8px;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--foreground);
+  opacity: 0.05;
+  pointer-events: none;
 }
 
 /* 标签胶囊本体由 StTag 渲染，这里只管外层链接触摸区与悬停反馈 */

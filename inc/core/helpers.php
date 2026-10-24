@@ -281,27 +281,28 @@ function simple_theme_get_article_license() {
 	}
 
 	$licenses = array(
-		'cc-by-40'       => array( 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/' ),
-		'cc-by-sa-40'    => array( 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/' ),
-		'cc-by-nc-40'    => array( 'CC BY-NC 4.0', 'https://creativecommons.org/licenses/by-nc/4.0/' ),
-		'cc-by-nc-sa-40' => array( 'CC BY-NC-SA 4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/' ),
-		'cc-by-nd-40'    => array( 'CC BY-ND 4.0', 'https://creativecommons.org/licenses/by-nd/4.0/' ),
-		'cc-by-nc-nd-40' => array( 'CC BY-NC-ND 4.0', 'https://creativecommons.org/licenses/by-nc-nd/4.0/' ),
-		'cc0-10'         => array( 'CC0 1.0', 'https://creativecommons.org/publicdomain/zero/1.0/' ),
-		'mit'            => array( 'MIT', 'https://opensource.org/license/mit' ),
-		'arr'            => array( 'All Rights Reserved', '' ),
+		'cc-by-40'       => array( 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/', '署名 4.0 国际' ),
+		'cc-by-sa-40'    => array( 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/', '署名-相同方式共享 4.0 国际' ),
+		'cc-by-nc-40'    => array( 'CC BY-NC 4.0', 'https://creativecommons.org/licenses/by-nc/4.0/', '署名-非商业性使用 4.0 国际' ),
+		'cc-by-nc-sa-40' => array( 'CC BY-NC-SA 4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/', '署名-非商业性使用-相同方式共享 4.0 国际' ),
+		'cc-by-nd-40'    => array( 'CC BY-ND 4.0', 'https://creativecommons.org/licenses/by-nd/4.0/', '署名-禁止演绎 4.0 国际' ),
+		'cc-by-nc-nd-40' => array( 'CC BY-NC-ND 4.0', 'https://creativecommons.org/licenses/by-nc-nd/4.0/', '署名-非商业性使用-禁止演绎 4.0 国际' ),
+		'cc0-10'         => array( 'CC0 1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'CC0 1.0 通用（公有领域贡献）' ),
+		'mit'            => array( 'MIT', 'https://opensource.org/license/mit', 'MIT 许可证' ),
+		'arr'            => array( 'All Rights Reserved', '', '保留所有权利' ),
 	);
 
 	if ( ! isset( $licenses[ $key ] ) ) {
 		return null;
 	}
 
-	list( $label, $url ) = $licenses[ $key ];
+	list( $label, $url, $full_name ) = $licenses[ $key ];
 
 	return array(
 		'key'       => $key,
 		'label'     => $label,
 		'url'       => $url,
+		'full_name' => $full_name,
 		'statement' => '' !== $url
 			? sprintf( '本文采用 %s 许可协议发布，转载请注明出处。', $label )
 			: '本文版权归作者所有，未经许可请勿转载。',

@@ -117,6 +117,15 @@ const formatDate = (dateString: string) =>
     day: 'numeric',
   }).format(new Date(dateString))
 
+/** 版权信息里展示的链接：去掉 %xx 编码，便于阅读（非法编码时原样返回） */
+const readableLink = (link: string) => {
+  try {
+    return decodeURI(link)
+  } catch {
+    return link
+  }
+}
+
 const primaryCategory = computed<{ name: string; slug: string } | null>(() => {
   const post = postData.value as (WordPressPost & { _embedded?: Record<string, unknown> }) | null
   const terms =
@@ -668,25 +677,46 @@ watch(
                 <StTag>#{{ tag.name }}</StTag>
               </router-link>
             </div>
-            <p v-if="articleLicense" class="single-post__license">
-              <AppIcon class="single-post__license-icon" name="shield" :size="15" />
-              <span class="single-post__license-text">
-                <template v-if="articleLicense.url">
-                  本文采用
-                  <a
-                    class="single-post__license-badge"
-                    :href="articleLicense.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ articleLicense.label }}
-                    <AppIcon name="link-external" :size="11" />
-                  </a>
-                  许可协议发布，转载请注明出处。
-                </template>
-                <template v-else>{{ articleLicense.statement }}</template>
-              </span>
-            </p>
+            <div v-if="articleLicense" class="single-post__license">
+              <div class="single-post__license-head">
+                <a class="single-post__license-title" :href="postData.link" v-html="postData.title.rendered"></a>
+                <a class="single-post__license-url" :href="postData.link">{{
+                  readableLink(postData.link)
+                }}</a>
+              </div>
+              <dl class="single-post__license-meta">
+                <div class="single-post__license-item">
+                  <dt>作者</dt>
+                  <dd>{{ authorName }}</dd>
+                </div>
+                <div class="single-post__license-item">
+                  <dt>发布于</dt>
+                  <dd>
+                    <time :datetime="postData.date">{{ formatDate(postData.date) }}</time>
+                  </dd>
+                </div>
+                <div v-if="postData.modified" class="single-post__license-item">
+                  <dt>更新于</dt>
+                  <dd>
+                    <time :datetime="postData.modified">{{ formatDate(postData.modified) }}</time>
+                  </dd>
+                </div>
+                <div class="single-post__license-item">
+                  <dt>许可协议</dt>
+                  <dd>
+                    <a
+                      v-if="articleLicense.url"
+                      :href="articleLicense.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >{{ articleLicense.label }}</a
+                    >
+                    <span v-else>{{ articleLicense.label }}</span>
+                  </dd>
+                </div>
+              </dl>
+              <p class="single-post__license-name">{{ articleLicense.fullName }}</p>
+            </div>
           </footer>
         </div>
         <CommentsPanel
