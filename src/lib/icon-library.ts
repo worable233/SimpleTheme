@@ -2,7 +2,7 @@
  * icon-library — 图标选择器（StIconPicker）的可选清单
  *
  * 数据源：`tabler-icon-map.json`（语义名 / 旧 bx 基础名 / 别名 → Tabler kebab）。
- * 只收录生成脚本已打包进 `ICON_COMPONENTS` 的图标，保证选中的值一定能渲染；
+ * 只收录生成脚本已打包进 `ICON_NAMES` 的图标，保证选中的值一定能渲染；
  * 多个别名指向同一 Tabler 图标时合并为一项，取最短别名作展示名，其余进关键词。
  *
  * 新增可选图标：在 `tabler-icon-map.json` 加一行并重跑 `bin/gen-tabler-icons.mjs`，
@@ -10,7 +10,7 @@
  */
 
 import ICON_MAP from './tabler-icon-map.json'
-import { ICON_COMPONENTS } from './tabler-icons.generated'
+import { ICON_NAMES } from './tabler-icons.generated'
 
 export interface IconLibraryItem {
   /** 存储值：Tabler kebab 名（StIcon 可直接渲染） */
@@ -21,7 +21,7 @@ export interface IconLibraryItem {
   keywords: string[]
 }
 
-const BUNDLED = new Set(Object.keys(ICON_COMPONENTS))
+const BUNDLED = new Set(ICON_NAMES)
 
 function buildLibrary(): IconLibraryItem[] {
   const byName = new Map<string, string[]>()

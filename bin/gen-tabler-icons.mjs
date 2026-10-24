@@ -3,9 +3,14 @@
  *   读取 src/lib/tabler-icon-map.json（语义名 → Tabler kebab 名），
  *   校验每个 Tabler 名在 @tabler/icons 节点数据中存在，
  *   生成 src/lib/tabler-icons.generated.ts：
- *     - ICON_COMPONENTS / ICON_COMPONENTS_FILLED：给 AppIcon.vue 用的 Tabler Vue 组件（按需静态导入、可 tree-shake）
- *     - ICON_NODES / ICON_NODES_FILLED：给 prose-icons.ts 用的内联 SVG 内部节点串
- *     - ICON_NODES_DATA / ICON_NODES_DATA_FILLED：原始 IconNode 数组，给 morphicons 形变动画消费
+ *     - ICON_NAMES：已收录的 Tabler kebab 名清单（图标选择器用）
+ *     - ICON_NODES / ICON_NODES_FILLED：内联 SVG 内部节点串（AppIcon / StIcon /
+ *       prose-icons 用，见 src/lib/icon-svg.ts）
+ *     - ICON_MORPH_NODES：原始 IconNode 数组，给 morphicons 形变动画消费
+ *
+ * 说明：早期版本还会生成 ICON_COMPONENTS（@tabler/icons-vue 的 Vue 组件），
+ * 但组件里重复携带了一遍路径数据，打进前端是几百 KB。现在统一走节点串渲染，
+ * 运行时不再需要 @tabler/icons-vue。
  *
  * 用法：node bin/gen-tabler-icons.mjs
  */
@@ -23,11 +28,6 @@ const outlineNodes = JSON.parse(
 const filledNodes = JSON.parse(
   readFileSync(resolve(root, 'node_modules/@tabler/icons/tabler-nodes-filled.json'), 'utf8'),
 )
-
-// kebab-case → PascalCase Tabler 组件名（IconXxx）
-function toComponent(kebab) {
-  return 'Icon' + kebab.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('')
-}
 
 // 节点数组 [["path",{d:"..."}], ...] → 内部 SVG 串
 function nodesToInner(nodes) {
@@ -50,8 +50,6 @@ const kebabs = [
 ].sort()
 
 const missing = []
-const outlineImports = []
-const filledImports = []
 const nodesOut = {}
 const nodesFilledOut = {}
 
@@ -60,10 +58,8 @@ for (const kebab of kebabs) {
     missing.push(kebab)
     continue
   }
-  outlineImports.push(toComponent(kebab))
   nodesOut[kebab] = nodesToInner(outlineNodes[kebab])
   if (filledNodes[kebab]) {
-    filledImports.push(toComponent(kebab) + 'Filled')
     nodesFilledOut[kebab] = nodesToInner(filledNodes[kebab])
   }
 }
@@ -90,44 +86,28 @@ if (morphMissing.length) {
   process.exit(1)
 }
 
-const compEntries = kebabs.map((k) => `  '${k}': ${toComponent(k)},`).join('\n')
-const filledCompEntries = kebabs
-  .filter((k) => filledNodes[k])
-  .map((k) => `  '${k}': ${toComponent(k)}Filled,`)
-  .join('\n')
 const nodeEntries = Object.entries(nodesOut)
   .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
   .join('\n')
 const nodeFilledEntries = Object.entries(nodesFilledOut)
   .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
   .join('\n')
-
 const morphEntries = Object.entries(morphOut)
   .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
   .join('\n')
 
 const out = `// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
 // 数据源：src/lib/tabler-icon-map.json + @tabler/icons 节点数据。
-import type { Component } from 'vue'
-import {
-${outlineImports.map((n) => '  ' + n + ',').join('\n')}
-${filledImports.map((n) => '  ' + n + ',').join('\n')}
-} from '@tabler/icons-vue'
 
 /** 原始 IconNode 数据（[tag, attrs] 列表），与 morphicons 的 IconNode 结构一致 */
 export type IconNodeData = ReadonlyArray<readonly [string, Record<string, string | number>]>
 
-/** Tabler kebab 名 → outline Vue 组件（AppIcon 使用） */
-export const ICON_COMPONENTS: Record<string, Component> = {
-${compEntries}
-}
+/** 已收录的 Tabler kebab 名清单（顺序与节点数据无关） */
+export const ICON_NAMES: readonly string[] = [
+${kebabs.map((k) => `  '${k}',`).join('\n')}
+]
 
-/** Tabler kebab 名 → filled Vue 组件（存在 filled 变体者） */
-export const ICON_COMPONENTS_FILLED: Record<string, Component> = {
-${filledCompEntries}
-}
-
-/** Tabler kebab 名 → outline SVG 内部节点串（prose-icons 内联使用） */
+/** Tabler kebab 名 → outline SVG 内部节点串 */
 export const ICON_NODES: Record<string, string> = {
 ${nodeEntries}
 }
@@ -146,5 +126,5 @@ ${morphEntries}
 
 writeFileSync(resolve(root, 'src/lib/tabler-icons.generated.ts'), out)
 console.log(
-  `已生成 tabler-icons.generated.ts：${kebabs.length} 个图标（${filledImports.length} 个含 filled 变体，${morphKebabs.length} 个含 morph 数据）。`,
+  `已生成 tabler-icons.generated.ts：${kebabs.length} 个图标（${Object.keys(nodesFilledOut).length} 个含 filled 变体，${morphKebabs.length} 个含 morph 数据）。`,
 )

@@ -32,7 +32,6 @@
   "dependencies": {
     "@fancyapps/ui": "^5.0.26",
     "@tabler/icons": "^3.46.0",
-    "@tabler/icons-vue": "^3.46.0",
     "@unhead/vue": "^3.3.2",
     "altcha": "^3.0.9",
     "axios": "^1.19.0",

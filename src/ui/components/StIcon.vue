@@ -3,11 +3,11 @@
  * StIcon — 统一图标组件（Tabler SVG）
  *
  * 取代原 src/components/AppIcon.vue。接受语义名 / 旧 bx 类名 / fa 类名 /
- * ti 类名 / `<i>` HTML，经解析器归一化后渲染对应 Tabler 组件。
+ * ti 类名 / `<i>` HTML，经解析器归一化后用生成的节点串直接画 SVG。
  */
 import { computed } from 'vue'
 import { resolveIconName } from '@/lib/icon-resolver'
-import { ICON_COMPONENTS, ICON_COMPONENTS_FILLED } from '@/lib/tabler-icons.generated'
+import { iconSvg } from '@/lib/icon-svg'
 
 defineOptions({ name: 'StIcon' })
 
@@ -31,16 +31,18 @@ const props = withDefaults(
 
 const resolved = computed(() => resolveIconName(props.name))
 
-const component = computed(() => {
-  const { name } = resolved.value
-  const filled = props.filled || resolved.value.filled
-  if (filled && ICON_COMPONENTS_FILLED[name]) return ICON_COMPONENTS_FILLED[name]
-  return ICON_COMPONENTS[name] || ICON_COMPONENTS['circle']
-})
+const svg = computed(() =>
+  iconSvg(resolved.value.name, {
+    filled: props.filled || resolved.value.filled,
+    size: props.size,
+    stroke: props.stroke,
+    class: 'st-icon',
+  }),
+)
 </script>
 
 <template>
-  <component :is="component" class="st-icon" :size="size" :stroke="stroke" aria-hidden="true" />
+  <component :is="svg" />
 </template>
 
 <style scoped>
