@@ -61,8 +61,30 @@
   animation-delay: calc(0.04s + var(--st-menu-index, 0) * 0.045s);
 }
 
+/* 顶部搜索按钮：整条图标栏里最早出现的一个 */
+.left-sidebar__search {
+  animation: menu-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* 底部操作按钮（登录 / 深浅色）：接着菜单项往下排，
+   起点由 LeftSidebar 按当前菜单数量算成 --st-actions-delay 传进来 */
+.sidebar-actions > *:not(.sidebar-actions__skeleton) {
+  animation: menu-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--st-actions-delay, 0.22s);
+}
+
+.sidebar-actions > *:nth-child(2) {
+  animation-delay: calc(var(--st-actions-delay, 0.22s) + 0.045s);
+}
+
+.sidebar-actions > *:nth-child(3) {
+  animation-delay: calc(var(--st-actions-delay, 0.22s) + 0.09s);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .left-sidebar__menu ul li {
+  .left-sidebar__menu ul li,
+  .left-sidebar__search,
+  .sidebar-actions > * {
     animation: none;
   }
 }

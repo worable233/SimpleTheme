@@ -183,6 +183,9 @@ const menuItems = computed<MenuItem[]>(() => {
   return []
 })
 
+/** 底部操作按钮的入场延迟起点：接在菜单项之后（首项 40ms，其后每项 +45ms） */
+const actionsEnterDelay = computed(() => `${(0.04 + menuItems.value.length * 0.045).toFixed(3)}s`)
+
 const safeFooterMenu = computed<MenuItem[]>(() =>
   (footerMenu.value || []).filter((item) => isSafeNavigationUrl(item.url)),
 )
@@ -249,6 +252,7 @@ const subMenuPositions = reactive<Record<number, { x: number; y: number }>>({})
       <SidebarActions
         :current-theme="currentTheme"
         :theme-preference="themePreference"
+        :style="{ '--st-actions-delay': actionsEnterDelay }"
         @toggle-theme="toggleTheme"
       />
     </aside>

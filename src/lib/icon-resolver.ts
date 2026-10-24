@@ -62,6 +62,8 @@ const TITLE_ICON_MAP: Record<string, string> = {
   动态: 'chat',
   项目: 'grid',
   工具: 'settings',
+  更多: 'dots',
+  其他: 'dots',
   学习: 'graduation',
   笔记: 'book',
   日记: 'notepad',
