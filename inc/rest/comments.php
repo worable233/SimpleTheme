@@ -285,7 +285,14 @@ function simple_theme_get_comment_avatar( string $email, int $user_id = 0 ) {
 		return $qq_url;
 	}
 	$hash = md5( strtolower( trim( $email ) ) );
-	return rest_url( "simple-theme/v1/avatar-proxy?hash={$hash}&s=64" );
+	// 朴素固定链接下 rest_url 自带 ?rest_route=，查询参数必须用 add_query_arg 合并
+	return add_query_arg(
+		array(
+			'hash' => $hash,
+			's'    => 64,
+		),
+		rest_url( 'simple-theme/v1/avatar-proxy' )
+	);
 }
 
 function simple_theme_get_qq_avatar_url( string $email_or_qq ): string {

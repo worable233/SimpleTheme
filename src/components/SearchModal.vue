@@ -79,7 +79,7 @@ function doSearch(query: string) {
   errorMessage.value = ''
   activeIndex.value = -1
 
-  const url = `${buildRestUrl('wp/v2/posts')}?search=${encodeURIComponent(query)}&per_page=10&_embed=1`
+  const url = buildRestUrl('wp/v2/posts', { search: query, per_page: 10, _embed: 1 })
 
   fetch(url, { signal: abortController.signal })
     .then((res) => {

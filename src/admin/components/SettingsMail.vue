@@ -42,6 +42,13 @@ function routeUrl(
 ) {
   return config?.routes?.[key] || fallback
 }
+/** 给 REST 地址追加查询参数（朴素固定链接下地址已带 ?rest_route=，不能再拼 "?"） */
+function withQuery(url: string, params: Record<string, string | number>): string {
+  const parsed = new URL(url, window.location.origin)
+  Object.entries(params).forEach(([key, value]) => parsed.searchParams.set(key, String(value)))
+  return parsed.toString()
+}
+
 function restHeaders(json = false): Record<string, string> {
   const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
   if (json) headers['Content-Type'] = 'application/json'
@@ -92,7 +99,9 @@ async function loadPreview(id: string) {
   previewLoading.value = true
   try {
     const res = await fetch(
-      `${routeUrl('email_preview', '/wp-json/simple-theme/v1/email-template-preview')}?template=${encodeURIComponent(id)}`,
+      withQuery(routeUrl('email_preview', '/wp-json/simple-theme/v1/email-template-preview'), {
+        template: id,
+      }),
       { credentials: 'same-origin', headers: restHeaders() },
     )
     if (res.ok) {

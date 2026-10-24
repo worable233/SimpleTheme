@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getRouterBase } from '@/lib/theme-config'
-import { getPreviewPayload } from '@/lib/preview'
 import { preloadSpecialPage } from '@/lib/special-page-loader'
 import { setPageTransition, getPageTransitionDirection } from '@/composables/usePageTransition'
 import HomeView from '@/views/HomeView.vue'
+import RootView from '@/views/RootView.vue'
 import ContentView from '@/views/ContentView.vue'
 import GoRedirect from '@/views/GoRedirect.vue'
 import ShuoshuoView from '@/views/ShuoshuoView.vue'
@@ -11,13 +11,12 @@ import AboutView from '@/views/AboutView.vue'
 import ArchivesView from '@/views/ArchivesView.vue'
 import LinksView from '@/views/LinksView.vue'
 
-// 预览请求（?p=...&preview=true）下根路径渲染的是文章而不是首页
-const previewActive = Boolean(getPreviewPayload())
-
 const router = createRouter({
   history: createWebHistory(getRouterBase()),
   routes: [
-    { path: '/', name: 'home', component: previewActive ? ContentView : HomeView },
+    // RootView 按查询串分发：预览（?preview=true）与朴素固定链接（?p=1）
+    // 渲染文章页，其余情况仍是首页
+    { path: '/', name: 'home', component: RootView },
     { path: '/categories/:slug', name: 'category', component: HomeView },
     { path: '/go', name: 'go', component: GoRedirect },
     { path: '/shuoshuo', name: 'shuoshuo', component: ShuoshuoView },

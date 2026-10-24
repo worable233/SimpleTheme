@@ -323,6 +323,18 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		return new WP_REST_Response( array( 'message' => 'Path is too long' ), 400 );
 	}
 
+	// 朴素固定链接（?p=1 / ?page_id=2 / ?cat=3 / ?m=20261015）：
+	// 未开启「固定链接」的站点里文章与归档链接都是查询串形式，
+	// 若只按路径解析会被当成首页，表现为「文章点不进去」。
+	$path_without_hash = preg_replace( '/#.*$/', '', $path );
+	$path_query_parts  = explode( '?', $path_without_hash, 2 );
+	if ( '' === trim( $path_query_parts[0], '/' ) && ! empty( $path_query_parts[1] ) ) {
+		$query_response = simple_theme_resolve_query_string( $path_query_parts[1] );
+		if ( $query_response ) {
+			return $query_response;
+		}
+	}
+
 	// 先剥离 query string（如 /?s=test）：查询参数不参与路径解析，
 	// 否则 "/?s=xxx" 会被后续兼容逻辑误判为分类/文章
 	$path = preg_replace( '/[?#].*$/', '', $path );
@@ -389,7 +401,8 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 			'id'        => $post->ID,
 			'name'      => $post->post_name,
 			'permalink' => get_permalink( $post ),
-			'restUrl'   => rest_url( 'wp/v2/' . $rest_base . '/' . $post->ID . '?_embed=1' ),
+			// add_query_arg：朴素固定链接下 rest_url 自带 ?rest_route=，不能再拼 "?_embed=1"
+			'restUrl'   => add_query_arg( '_embed', '1', rest_url( 'wp/v2/' . $rest_base . '/' . $post->ID ) ),
 			'path'      => $internal_path,
 		), 200 );
 	}
@@ -443,6 +456,102 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 		'path'      => $internal_path,
 		'message'   => '页面未找到',
 	), 200 );
+}
+
+/**
+ * 解析朴素固定链接里的查询参数（?p=1 这类地址）。
+ *
+ * @param string $query_string 形如 p=1&preview=true 的查询串。
+ * @return WP_REST_Response|null
+ */
+function simple_theme_resolve_query_string( $query_string ) {
+	$args = array();
+	wp_parse_str( $query_string, $args );
+	if ( empty( $args ) ) {
+		return null;
+	}
+
+	$rest_base_map = array(
+		'post'     => 'posts',
+		'page'     => 'pages',
+		'shuoshuo' => 'shuoshuo',
+	);
+
+	// 单篇 / 独立页面 / 附件 / 预览
+	foreach ( array( 'p', 'page_id', 'attachment_id', 'preview_id' ) as $key ) {
+		if ( empty( $args[ $key ] ) ) {
+			continue;
+		}
+		$post_id = (int) $args[ $key ];
+		$post    = get_post( $post_id );
+		if ( ! $post ) {
+			continue;
+		}
+		// 草稿/待审等非公开状态只对有权查看的用户生效（预览）
+		if ( 'publish' !== $post->post_status && ! current_user_can( 'read_post', $post_id ) ) {
+			continue;
+		}
+		$rest_base = isset( $rest_base_map[ $post->post_type ] )
+			? $rest_base_map[ $post->post_type ]
+			: $post->post_type . 's';
+		return new WP_REST_Response( array(
+			'type'      => $post->post_type,
+			'id'        => $post->ID,
+			'name'      => $post->post_name,
+			'permalink' => get_permalink( $post ),
+			// add_query_arg：朴素固定链接下 rest_url 自带 ?rest_route=，不能再拼 "?_embed=1"
+			'restUrl'   => add_query_arg( '_embed', '1', rest_url( 'wp/v2/' . $rest_base . '/' . $post->ID ) ),
+			'path'      => '/',
+		), 200 );
+	}
+
+	// 分类 / 标签归档
+	$term = null;
+	if ( ! empty( $args['cat'] ) ) {
+		$term = get_term( (int) $args['cat'], 'category' );
+	} elseif ( ! empty( $args['category_name'] ) ) {
+		$term = get_term_by( 'slug', sanitize_title( $args['category_name'] ), 'category' );
+	} elseif ( ! empty( $args['tag'] ) ) {
+		$term = get_term_by( 'slug', sanitize_title( $args['tag'] ), 'post_tag' );
+	} elseif ( ! empty( $args['tag_id'] ) ) {
+		$term = get_term( (int) $args['tag_id'], 'post_tag' );
+	}
+	if ( $term instanceof WP_Term ) {
+		return new WP_REST_Response( array(
+			'type'      => 'term',
+			'id'        => $term->term_id,
+			'name'      => $term->name,
+			'taxonomy'  => $term->taxonomy,
+			'permalink' => get_term_link( $term ),
+			'path'      => '/',
+		), 200 );
+	}
+
+	// 日期归档：?m=20261015 / ?m=202610 / ?year=2026&monthnum=10
+	$year  = ! empty( $args['year'] ) ? (int) $args['year'] : 0;
+	$month = ! empty( $args['monthnum'] ) ? (int) $args['monthnum'] : 0;
+	if ( ! empty( $args['m'] ) ) {
+		$digits = preg_replace( '/D/', '', (string) $args['m'] );
+		if ( 8 === strlen( $digits ) || 6 === strlen( $digits ) ) {
+			$year  = (int) substr( $digits, 0, 4 );
+			$month = (int) substr( $digits, 4, 2 );
+		} elseif ( 4 === strlen( $digits ) ) {
+			$year = (int) $digits;
+		}
+	}
+	if ( $year >= 1970 && $year <= 2200 && $month <= 12 ) {
+		return new WP_REST_Response( array(
+			'type'      => 'date',
+			'id'        => 0,
+			'name'      => $month ? sprintf( '%d 年 %d 月', $year, $month ) : sprintf( '%d 年', $year ),
+			'year'      => $year,
+			'month'     => $month,
+			'permalink' => $month ? get_month_link( $year, $month ) : get_year_link( $year ),
+			'path'      => '/',
+		), 200 );
+	}
+
+	return null;
 }
 
 function simple_theme_normalize_requested_path( $path ) {

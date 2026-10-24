@@ -9,6 +9,7 @@ import {
   toInternalPath,
   toResolvablePath,
 } from '@/lib/theme-config'
+import { buildRestUrl } from '@/lib/api-client'
 import {
   fetchContentByRestUrl,
   fetchPostCollectionByTaxonomy,
@@ -263,9 +264,9 @@ const loadCurrentContent = async () => {
   try {
     const resolved = await withCache(
       resolveThemePath,
-      `resolve:${normalizedPath.value}`,
+      `resolve:${normalizedPath.value}${route.search}`,
       30_000,
-    )(route.path)
+    )(toResolvablePath(route.fullPath))
     contentType.value = resolved.type
 
     if (
@@ -312,7 +313,9 @@ const loadCurrentContent = async () => {
     if (contentType.value === '404' && route.query.postId) {
       const id = Number(route.query.postId)
       if (id > 0) {
-        const directPost = await fetchContentByRestUrl(`/wp-json/wp/v2/posts/${id}?_embed=1`)
+        const directPost = await fetchContentByRestUrl(
+          buildRestUrl(`wp/v2/posts/${id}`, { _embed: 1 }),
+        )
         if (directPost) {
           postData.value = directPost
           contentType.value = 'post'
@@ -365,7 +368,8 @@ const handleContentClick = (event: MouseEvent) => {
 }
 
 watch(
-  () => toResolvablePath(route.path),
+  // 用 fullPath：朴素固定链接（?p=1 / ?cat=1）只变查询串，路径始终是 "/"
+  () => toResolvablePath(route.fullPath),
   () => {
     void loadCurrentContent()
   },
