@@ -47,27 +47,46 @@ function simple_theme_get_safe_navigation_url( $url ) {
 }
 
 function simple_theme_get_navigation( WP_REST_Request $request ) {
-	$location = $request->get_param( 'location' );
+	$location = (string) $request->get_param( 'location' );
+
+	// 一次取回全部菜单位置：首屏只需要一个请求（原先 primary / footer 各打一次）
+	if ( '' === $location || 'all' === $location ) {
+		return new WP_REST_Response(
+			array(
+				'menus' => array(
+					'primary' => simple_theme_get_menu_items( 'primary' ),
+					'footer'  => simple_theme_get_menu_items( 'footer' ),
+				),
+			),
+			200
+		);
+	}
+
+	return new WP_REST_Response( array( 'items' => simple_theme_get_menu_items( $location ) ), 200 );
+}
+
+/**
+ * 取某个菜单位置的条目；位置不存在或没有菜单时返回空数组。
+ *
+ * @param string $location primary / footer。
+ * @return array
+ */
+function simple_theme_get_menu_items( $location ) {
 	if ( ! in_array( $location, array( 'primary', 'footer' ), true ) ) {
-		return new WP_REST_Response( array( 'items' => array() ), 200 );
+		return array();
 	}
 
 	$locations = get_nav_menu_locations();
-	if ( ! isset( $locations[ $location ] ) ) {
-		return new WP_REST_Response( array( 'items' => array() ), 200 );
+	if ( empty( $locations[ $location ] ) ) {
+		return array();
 	}
 
-	$menu_id = $locations[ $location ];
-	if ( ! $menu_id ) {
-		return new WP_REST_Response( array( 'items' => array() ), 200 );
-	}
-
-	$menu_items = wp_get_nav_menu_items( $menu_id, array( 'post_status' => 'publish' ) );
+	$menu_items = wp_get_nav_menu_items( $locations[ $location ], array( 'post_status' => 'publish' ) );
 	if ( ! $menu_items ) {
-		return new WP_REST_Response( array( 'items' => array() ), 200 );
+		return array();
 	}
 
-	return new WP_REST_Response( array( 'items' => simple_theme_format_menu_items( $menu_items ) ), 200 );
+	return simple_theme_format_menu_items( $menu_items );
 }
 
 function simple_theme_format_menu_items( array $items ) {

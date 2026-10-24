@@ -70,7 +70,8 @@ function startLazyObserver() {
         observer = null
       }
     },
-    { rootMargin: '300px 0px' },
+    // 不在首屏就加载：评论要滚到可视区域才发请求（首屏少一个 REST）
+    { rootMargin: '0px' },
   )
   observer.observe(el)
 }
@@ -150,27 +151,29 @@ async function loadComments(page = 1) {
     allLoaded.value = currentPage.value >= totalPages.value
     if (page === 1) {
       comments.value = result.items
-      // Also fetch user's pending comments and merge
-      try {
-        const pending = await fetchUserPendingComments(props.postId)
-        if (pending.length > 0) {
-          const existingIds = new Set(comments.value.map((c) => c.id))
-          for (const item of pending) {
-            if (!existingIds.has(item.id)) {
-              if (item.parent > 0) {
-                const parent = findComment(comments.value, item.parent)
-                if (parent) {
-                  parent.children.push(item)
+      // 待审核评论只有登录用户才有，游客不必为此多打一次请求
+      if (auth.loggedIn) {
+        try {
+          const pending = await fetchUserPendingComments(props.postId)
+          if (pending.length > 0) {
+            const existingIds = new Set(comments.value.map((c) => c.id))
+            for (const item of pending) {
+              if (!existingIds.has(item.id)) {
+                if (item.parent > 0) {
+                  const parent = findComment(comments.value, item.parent)
+                  if (parent) {
+                    parent.children.push(item)
+                  } else {
+                    comments.value.push(item)
+                  }
                 } else {
                   comments.value.push(item)
                 }
-              } else {
-                comments.value.push(item)
               }
             }
           }
-        }
-      } catch { /* ignore */ }
+        } catch { /* ignore */ }
+      }
     } else {
       // Merge new items, avoiding duplicates; 孤儿页的回复尝试挂回已加载的父级
       const existingIds = new Set<number>()

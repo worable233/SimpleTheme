@@ -33,6 +33,14 @@ const state = reactive<AuthState>({
 
 let initialized = false
 
+/**
+ * 是否带 WordPress 登录 cookie。
+ * 游客没有 cookie 时 auth/me 必然 401，这个请求纯属浪费（而且会在控制台留红字）。
+ */
+function hasLoginCookie(): boolean {
+  return /(?:^|;\s*)wordpress_(?:logged_in|sec)_/.test(document.cookie)
+}
+
 function clearAuthState() {
   state.loggedIn = false
   state.user = null
@@ -47,6 +55,13 @@ export function useAuth() {
   async function init() {
     if (initialized) return
     initialized = true
+
+    if (!hasLoginCookie()) {
+      // 游客：不请求 auth/me，直接按未登录处理
+      state.loading = false
+      return
+    }
+
     state.loading = true
     try {
       const result = await apiFetchMe()

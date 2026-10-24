@@ -41,6 +41,11 @@ function lruSet(key: string, entry: CacheEntry<unknown>): void {
   }
 }
 
+/** 直接写入缓存（预取 / 服务端内联数据） */
+export function primeCache<T>(key: string, data: T, ttl = DEFAULT_TTL): void {
+  lruSet(key, { data, expiry: Date.now() + ttl })
+}
+
 export function withCache<T, A extends unknown[]>(
   fetcher: (...args: A) => Promise<T>,
   key: string,

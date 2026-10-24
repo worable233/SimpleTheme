@@ -3,8 +3,9 @@ import { computed, onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSiteShell } from '@/composables/useSiteShell'
-import { fetchCollection, fetchCategories, getErrorMessage, resolveThemePath, fetchContentByRestUrl } from '@/lib/wordpress'
+import { fetchCollection, fetchCategories, getErrorMessage } from '@/lib/wordpress'
 import { withCache } from '@/lib/api-cache'
+import { prefetchContent } from '@/lib/content-prefetch'
 import { toInternalPath } from '@/lib/theme-config'
 import { rememberPreviews } from '@/lib/content-preview'
 import { useSkeletonSize } from '@/composables/useSkeletonSize'
@@ -287,14 +288,8 @@ function prefetchPost(post: WordPressPost) {
   if (t) clearTimeout(t)
   prefetchTimers.set(
     post.id,
-    setTimeout(async () => {
-      try {
-        const path = toInternalPath(post.link)
-        const resolved = await withCache(resolveThemePath, `resolve:${path}`, 30_000)(path)
-        if (resolved.restUrl) {
-          await withCache(fetchContentByRestUrl, `post:${resolved.restUrl}`, 600_000)(resolved.restUrl)
-        }
-      } catch { /* 预取失败静默忽略 */ }
+    setTimeout(() => {
+      prefetchContent(toInternalPath(post.link))
     }, 200),
   )
 }

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { fetchNavigation, fetchSiteInfo, getErrorMessage } from '@/lib/wordpress'
+import { fetchMenus, fetchSiteInfo, getErrorMessage } from '@/lib/wordpress'
 import { getCached, setCache, computeHash, clearAllCache } from '@/lib/persistent-cache'
 import { getThemeConfig } from '@/lib/theme-config'
 
@@ -199,15 +199,15 @@ export function useSiteShell() {
 
     // 2. Background refresh — always fetch latest, silently update if changed
     try {
-      const [nextSiteInfo, nextPrimaryMenu, nextFooterMenu] = await Promise.all([
+      // 菜单一次拿全（primary + footer），首屏少一个请求
+      const [nextSiteInfo, nextMenus] = await Promise.all([
         fetchSiteInfo(),
-        cached ? fetchNavigation('primary') : fetchNavigation('primary').catch(() => []),
-        cached ? fetchNavigation('footer') : fetchNavigation('footer').catch(() => []),
+        fetchMenus().catch(() => null),
       ])
 
       const merged: CachedShell = {
-        primaryMenu: nextPrimaryMenu,
-        footerMenu: nextFooterMenu,
+        primaryMenu: nextMenus ? nextMenus.primary : primaryMenu.value,
+        footerMenu: nextMenus ? nextMenus.footer : footerMenu.value,
       }
 
       siteInfo.value = mergeSiteInfo(nextSiteInfo)

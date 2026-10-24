@@ -8,7 +8,7 @@
 | 端点 | 方法 | 用途 |
 |------|------|------|
 | `/site-info` | GET | 站点信息（主题配置 + 统计） |
-| `/navigation/{location}` | GET | 导航菜单 |
+| `/navigation/{location}` | GET | 导航菜单；`location=all` 一次返回 `primary` + `footer`（`{menus:{primary,footer}}`） |
 | `/resolve-url` | POST | 路径 → 内容类型解析（`path`） |
 | `/collection` | GET | 文章/说说列表（`type` `page` `limit`） |
 | `/home-posts` | GET | 首页分页查询（`taxonomy` 过滤） |
@@ -61,6 +61,16 @@ curl -X POST https://example.com/wp-json/simple-theme/v1/resolve-url \
 
 # 文章列表（第 2 页，每页 10 篇）
 curl 'https://example.com/wp-json/simple-theme/v1/collection?type=post&page=2&limit=10'
+
+# 一次拿全部菜单（首屏少一个请求）
+curl 'https://example.com/wp-json/simple-theme/v1/navigation/all'
 ```
+
+### resolve-url 的内联正文
+
+解析到单篇（`post` / `page` / `shuoshuo`）时，响应里会多一个 `payload` 字段：
+就是该文章 `GET /wp/v2/{base}/{id}?_embed=1` 的完整数据（含 `_embedded`，与原生
+REST 字段完全一致）。前端因此可以省掉一次额外请求；拿不到（如无权限）时为 `null`，
+前端会回退到自己请求 `restUrl`。
 
 详细字段以 `inc/rest/`、`inc/core/auth-handler.php`、`inc/core/smtp-handler.php` 源码为准。

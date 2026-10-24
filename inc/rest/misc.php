@@ -314,6 +314,31 @@ function simple_theme_find_post_by_path( $path, $post_types ) {
 	return $query->posts ? $query->posts[0] : null;
 }
 
+/**
+ * 按 wp/v2 的响应格式准备好单篇内容（含 _embed），供 resolve-url 内联返回。
+ *
+ * @param WP_Post $post 目标文章。
+ * @return array|null
+ */
+function simple_theme_resolve_post_payload( $post ) {
+	$post_type_object = get_post_type_object( $post->post_type );
+	$rest_base        = ( $post_type_object && ! empty( $post_type_object->rest_base ) )
+		? $post_type_object->rest_base
+		: $post->post_type . 's';
+
+	$inner_request = new WP_REST_Request( 'GET', '/wp/v2/' . $rest_base . '/' . $post->ID );
+	$inner_request->set_param( '_embed', '1' );
+	$inner_response = rest_do_request( $inner_request );
+
+	if ( $inner_response->is_error() ) {
+		return null;
+	}
+
+	// response_to_data($response, true)：把 _embedded（特色图、分类、标签）一起展开，
+	// 与前端直接请求 /wp/v2/...?_embed=1 拿到的结构完全一致。
+	return rest_get_server()->response_to_data( $inner_response, true );
+}
+
 function simple_theme_resolve_path( WP_REST_Request $request ) {
 	$path = (string) $request->get_param( 'path' );
 	if ( ! $path ) {
@@ -403,6 +428,8 @@ function simple_theme_resolve_path( WP_REST_Request $request ) {
 			'permalink' => get_permalink( $post ),
 			// add_query_arg：朴素固定链接下 rest_url 自带 ?rest_route=，不能再拼 "?_embed=1"
 			'restUrl'   => add_query_arg( '_embed', '1', rest_url( 'wp/v2/' . $rest_base . '/' . $post->ID ) ),
+			// 文章内容随解析结果一起返回，前端少打一个 REST 往返
+			'payload'   => simple_theme_resolve_post_payload( $post ),
 			'path'      => $internal_path,
 		), 200 );
 	}

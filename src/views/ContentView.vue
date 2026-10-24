@@ -20,7 +20,8 @@ import {
 } from '@/lib/wordpress'
 import { resolveArticleLicense } from '@/lib/license'
 import { getPreviewPayload } from '@/lib/preview'
-import { withCache } from '@/lib/api-cache'
+import { primeCache, withCache } from '@/lib/api-cache'
+import { resolveCacheKey } from '@/lib/content-prefetch'
 import { getContentPreview, rememberPreviews } from '@/lib/content-preview'
 import type { ResolveResponse, WordPressPost } from '@/types/wordpress'
 import CommentsPanel from '@/components/CommentsPanel.vue'
@@ -264,7 +265,7 @@ const loadCurrentContent = async () => {
   try {
     const resolved = await withCache(
       resolveThemePath,
-      `resolve:${normalizedPath.value}${route.search}`,
+      resolveCacheKey(route.fullPath),
       30_000,
     )(toResolvablePath(route.fullPath))
     contentType.value = resolved.type
@@ -273,11 +274,16 @@ const loadCurrentContent = async () => {
       ('post' === resolved.type || 'page' === resolved.type || 'shuoshuo' === resolved.type) &&
       resolved.restUrl
     ) {
-      postData.value = await withCache(
-        fetchContentByRestUrl,
-        `post:${resolved.restUrl}`,
-        600_000,
-      )(resolved.restUrl)
+      const contentKey = `post:${resolved.restUrl}`
+      if (resolved.payload) {
+        // resolve-url 已经把正文一起返回，省掉一次 REST 往返
+        primeCache(contentKey, resolved.payload, 600_000)
+        postData.value = resolved.payload
+      } else {
+        postData.value = await withCache(fetchContentByRestUrl, contentKey, 600_000)(
+          resolved.restUrl,
+        )
+      }
       if (!postData.value) {
         contentType.value = '404'
         return

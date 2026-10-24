@@ -15,6 +15,7 @@ import {
 } from './mock-api'
 import type {
   MenuCollectionResponse,
+  MenuItem,
   ResolveResponse,
   SiteInfo,
   WordPressCategory,
@@ -82,6 +83,30 @@ export async function fetchNavigation(location: string) {
   )
 
   return data.items
+}
+
+/**
+ * 一次取回 primary + footer 两个菜单（首屏只需要一个请求）。
+ * 后端不支持时会抛出，调用方保留已有数据即可。
+ */
+export async function fetchMenus(): Promise<{ primary: MenuItem[]; footer: MenuItem[] }> {
+  if (shouldUseMock()) {
+    const [primary, footer] = await Promise.all([
+      mockFetchNavigation('primary'),
+      mockFetchNavigation('footer'),
+    ])
+    return { primary, footer }
+  }
+
+  const baseUrl = getThemeConfig().routes.menusBase.replace(/\/+$/, '')
+  const { data } = await apiClient.get<{ menus?: { primary?: MenuItem[]; footer?: MenuItem[] } }>(
+    `${baseUrl}/all`,
+  )
+
+  return {
+    primary: data.menus?.primary ?? [],
+    footer: data.menus?.footer ?? [],
+  }
 }
 
 export async function fetchCategories(): Promise<WordPressCategory[]> {

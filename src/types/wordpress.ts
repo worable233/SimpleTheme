@@ -321,6 +321,8 @@ export interface ResolveResponse {
   month?: number
   permalink?: string
   restUrl?: string
+  /** 单篇解析时随响应内联返回的 wp/v2 数据，省掉一次额外请求 */
+  payload?: WordPressPost | null
   message?: string
 }
 
