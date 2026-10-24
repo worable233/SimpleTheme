@@ -22,6 +22,11 @@ let fullNodes: Record<string, string> | null = null
 let fullNodesFilled: Record<string, string> | null = null
 let loadPromise: Promise<void> | null = null
 
+/** 全量图标数据是否已经就位（用于区分「还没加载」和「确实没这个图标」） */
+export function isIconDataLoaded(): boolean {
+  return !!fullNodes
+}
+
 /** 触发（或复用）全量图标数据的加载；可重复调用 */
 export function ensureIconDataLoaded(): Promise<void> {
   if (fullNodes) return Promise.resolve()

@@ -824,7 +824,29 @@ export function useContentEnhancer(
 ) {
   const { clearToc } = useToc()
   let observer: MutationObserver | null = null
+  let observedNode: Element | null = null
   let enhancing = false
+
+  /** 有没有「还没处理过」的痕迹：未包装的代码块、缺锚点的标题、图标字体 <i> */
+  function needsEnhance(container: Element): boolean {
+    return (
+      !!container.querySelector('pre:not(.code-block-wrapper pre)') ||
+      !!container.querySelector('h2[id]:not(:has(.heading-anchor-btn))') ||
+      // 区块（如 showcard）可能晚于首次增补才渲染出来，里面有 <i class="ti ...">
+      !!container.querySelector('i.ti, i.bx, i.bxs, i.bxl, i.fa, i.fas, i.far, i.fab, i.fal')
+    )
+  }
+
+  /** 只观察当前正文容器；Vue 换掉整个 .prose-content 节点后要重新挂 */
+  function watchContainer(container: Element): void {
+    if (observedNode === container) return
+    observer?.disconnect()
+    observedNode = container
+    observer = new MutationObserver(() => {
+      if (needsEnhance(container)) enhance()
+    })
+    observer.observe(container, { childList: true, subtree: true })
+  }
 
   function enhance() {
     if (enhancing) return
@@ -832,12 +854,16 @@ export function useContentEnhancer(
     try {
       const container = document.querySelector(selector)
       if (!container) return
+      watchContainer(container)
       // 正文图标字体 <i> → 内联 Tabler SVG（不再加载图标字体）
       if (!inlineProseIcons(container)) {
         // 正文里有核心集合之外的图标：等全量数据到位后再补一次（幂等）
         void ensureIconDataLoaded().then(() => {
           const again = document.querySelector(selector)
-          if (again) inlineProseIcons(again)
+          if (again) {
+            watchContainer(again)
+            inlineProseIcons(again)
+          }
         })
       }
       addHeadingAnchors(container)
@@ -878,18 +904,10 @@ export function useContentEnhancer(
   onMounted(() => {
     if (!content || content.value) nextTick(() => enhance())
 
+    // 首次挂载时正文可能还没渲染（异步取数），此时先不挂观察者，
+    // 交给 enhance() 在拿到真实容器后再 watchContainer()
     const container = document.querySelector(selector)
-    if (container) {
-      observer = new MutationObserver(() => {
-        if (
-          container.querySelector('pre:not(.code-block-wrapper pre)') ||
-          container.querySelector('h2[id]:not(:has(.heading-anchor-btn))')
-        ) {
-          enhance()
-        }
-      })
-      observer.observe(container, { childList: true, subtree: true })
-    }
+    if (container) watchContainer(container)
   })
 
   onUnmounted(() => {

@@ -6,8 +6,8 @@
  * 因此在正文渲染后把这些 `<i>` 就地替换为内联 Tabler SVG（复用解析器与生成的
  * 节点数据）。SEO/爬虫路径走纯文本，无需处理。
  */
-import { resolveIconName } from './icon-resolver'
-import { iconInner } from './icon-svg'
+import { DEFAULT_ICON_NAME, resolveIconName } from './icon-resolver'
+import { iconInner, isIconDataLoaded } from './icon-svg'
 
 /** 判断一个 <i> 的 class 是否是图标字体标记（bx / ti / fa） */
 const ICON_CLASS_RE = /(?:^|\s)(bx|ti|fa|fas|far|fab|fal)(?:\s|$)|(?:^|\s)(?:bx|bxs|bxl|ti|fa)-/
@@ -74,8 +74,13 @@ export function inlineProseIcons(container: Element): boolean {
   for (const el of items) {
     const cls = el.getAttribute('class') || ''
     if (!ICON_CLASS_RE.test(cls)) continue
+    const style = el.getAttribute('style')
     const { name, filled } = resolveIconName(cls)
-    const svg = buildSvg(name, filled, el.getAttribute('style'))
+    // 全量数据已到位还查不到，说明这个图标名根本不存在：退回兜底图标，
+    // 否则 <i> 会永久留在 DOM 里（图标字体已不加载，等于一个隐形空标签）
+    const svg =
+      buildSvg(name, filled, style) ||
+      (isIconDataLoaded() ? buildSvg(DEFAULT_ICON_NAME, false, style) : null)
     if (!svg) {
       complete = false
       continue
