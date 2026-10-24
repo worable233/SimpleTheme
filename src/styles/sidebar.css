@@ -42,6 +42,31 @@
   gap: 30px;
 }
 
+/* 顶部菜单项入场：与右侧小组件（.aside-card 的 card-enter）同款上移 + 轻微放大回弹。
+   用 backwards 而不是 both —— 动画结束后不再保留 transform，
+   避免给 li 造出多余的包含块/层叠上下文。 */
+@keyframes menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.left-sidebar__menu ul li {
+  animation: menu-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(0.04s + var(--st-menu-index, 0) * 0.045s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .left-sidebar__menu ul li {
+    animation: none;
+  }
+}
+
 /* Top-level items: 50px icon buttons (links and toggle buttons) */
 .left-sidebar__menu ul li a,
 .left-sidebar__menu ul li button.menu-toggle {

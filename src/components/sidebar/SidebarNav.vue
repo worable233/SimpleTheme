@@ -55,9 +55,10 @@ const safeMenuItems = computed(() =>
   <nav class="left-sidebar__menu">
     <ul>
       <li
-        v-for="item in safeMenuItems"
+        v-for="(item, index) in safeMenuItems"
         :key="item.id"
         :data-menu-id="item.id"
+        :style="{ '--st-menu-index': index }"
         :class="{
           'current-menu-item': !hasChildren(item) && isCurrent(item.path),
           'menu-item-has-children': hasChildren(item),
