@@ -117,19 +117,18 @@
   padding-top: 20px;
 }
 
+/* 标签放在版权信息之后收尾 */
 .single-post__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 15px;
+  margin: 16px 0 0;
 }
 
 /* 文章版权信息：引用本文版式，无卡片边框/底色，只用一条分隔线收尾 */
+/* 版权信息现在排在页脚最前，分隔线由 .single-post__footer 提供，这里不再重复画 */
 .single-post__license {
   position: relative;
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
   overflow: hidden;
   font-size: 13px;
   line-height: 1.7;

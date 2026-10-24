@@ -667,16 +667,6 @@ watch(
         <div class="single-post__body">
           <BlockContent class="prose-content" :html="postData.content?.rendered" />
           <footer class="single-post__footer">
-            <div v-if="postTags.length > 0" class="single-post__tags">
-              <router-link
-                v-for="tag in postTags"
-                :key="tag.name"
-                :to="toInternalPath(tag.link)"
-                class="single-post__tag-link"
-              >
-                <StTag>#{{ tag.name }}</StTag>
-              </router-link>
-            </div>
             <div v-if="articleLicense" class="single-post__license">
               <div class="single-post__license-head">
                 <a class="single-post__license-title" :href="postData.link" v-html="postData.title.rendered"></a>
@@ -716,6 +706,16 @@ watch(
                 </div>
               </dl>
               <p class="single-post__license-name">{{ articleLicense.fullName }}</p>
+            </div>
+            <div v-if="postTags.length > 0" class="single-post__tags">
+              <router-link
+                v-for="tag in postTags"
+                :key="tag.name"
+                :to="toInternalPath(tag.link)"
+                class="single-post__tag-link"
+              >
+                <StTag>#{{ tag.name }}</StTag>
+              </router-link>
             </div>
           </footer>
         </div>

@@ -98,11 +98,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 									?>
 								</span>
 							<?php endif; ?>
-							<?php if ( has_tag() ) : ?>
-								<span class="cf-single__tags">
-									<?php the_tags( '', ', ', '' ); ?>
-								</span>
-							<?php endif; ?>
 						</div>
 					<?php endif; ?>
 					<div class="cf-single__body">
@@ -153,6 +148,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</dl>
 							<p class="cf-single__license-name"><?php echo esc_html( $st_license['full_name'] ); ?></p>
 						</div>
+					<?php endif; ?>
+					<?php if ( has_tag() ) : ?>
+						<span class="cf-single__tags">
+							<?php the_tags( '', ', ', '' ); ?>
+						</span>
 					<?php endif; ?>
 				</article>
 			<?php endwhile; ?>

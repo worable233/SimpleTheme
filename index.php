@@ -57,6 +57,7 @@
 		#st-static .cf-single__license-meta dt{color:#888;font-size:.75rem}
 		#st-static .cf-single__license-meta a{color:#333;text-decoration:none}
 		#st-static .cf-single__license-name{margin:14px 0 0;color:#888;font-size:.75rem}
+		#st-static .cf-single__tags{display:block;margin-top:16px;font-size:.8125rem;color:#888}
 		#st-static .cf-single__license::after{content:'\00a9';position:absolute;top:16px;right:8px;font-size:96px;font-weight:700;line-height:1;color:#333;opacity:.05;pointer-events:none}
 			#st-static .cf-single__body img{max-width:100%;height:auto}
 			#st-static .cf-single__body pre{background:#f5f5f5;padding:1em;overflow-x:auto;border-radius:4px;font-size:.875em}
