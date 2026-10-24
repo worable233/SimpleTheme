@@ -3,7 +3,7 @@ import { useToc } from '@/composables/useToc'
 import { getThemeConfig, isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
 import { ICON_MORPH_PATHS } from '@/lib/tabler-icons-core.generated'
-import { attachMorphPath } from '@/lib/icon-morph'
+import { attachMorph } from '@/lib/icon-morph'
 import { ensureIconDataLoaded, iconInner } from '@/lib/icon-svg'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
@@ -92,9 +92,7 @@ function createMorphIcon(name: AudioMorphName) {
   svg.setAttribute('stroke-linecap', 'round')
   svg.setAttribute('stroke-linejoin', 'round')
   svg.setAttribute('aria-hidden', 'true')
-  const path = document.createElementNS(SVG_NS, 'path')
-  svg.appendChild(path)
-  const controller = attachMorphPath(path, { spring: 'snappy', reducedMotion: 'user' })
+  const controller = attachMorph(svg, { spring: 'snappy', reducedMotion: 'user' })
   controller.set(ICON_MORPH_PATHS[name] || '')
   return {
     svg,

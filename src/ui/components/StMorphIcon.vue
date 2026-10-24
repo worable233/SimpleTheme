@@ -17,7 +17,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import StIcon from './StIcon.vue'
 import { resolveIconName } from '@/lib/icon-resolver'
 import { ICON_MORPH_PATHS } from '@/lib/tabler-icons-core.generated'
-import { attachMorphPath, type MorphController } from '@/lib/icon-morph'
+import { attachMorph, type MorphController } from '@/lib/icon-morph'
 
 defineOptions({ name: 'StMorphIcon' })
 
@@ -49,11 +49,11 @@ const resolved = computed(() => resolveIconName(props.name))
 /** 有 morph 数据走形变，否则降级为静态 StIcon */
 const morphD = computed(() => ICON_MORPH_PATHS[resolved.value.name] || '')
 
-const pathEl = ref<SVGPathElement | null>(null)
+const svgEl = ref<SVGSVGElement | null>(null)
 let controller: MorphController | null = null
 
 watch(
-  [morphD, pathEl],
+  [morphD, svgEl],
   ([d, el]) => {
     if (!el) {
       controller?.destroy()
@@ -65,7 +65,7 @@ watch(
       controller.morphTo(d)
       return
     }
-    controller = attachMorphPath(el, {
+    controller = attachMorph(el, {
       spring: props.spring,
       reducedMotion: props.reducedMotion,
     })
@@ -83,6 +83,7 @@ onBeforeUnmount(() => {
 <template>
   <svg
     v-if="morphD"
+    ref="svgEl"
     class="st-morph-icon"
     viewBox="0 0 24 24"
     :width="size"
@@ -96,9 +97,7 @@ onBeforeUnmount(() => {
     :aria-label="label"
     :aria-hidden="label ? undefined : 'true'"
     focusable="false"
-  >
-    <path ref="pathEl" />
-  </svg>
+  />
   <StIcon v-else class="st-morph-icon" :name="name" :size="size" :stroke="stroke" />
 </template>
 

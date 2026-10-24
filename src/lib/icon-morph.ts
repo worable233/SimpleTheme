@@ -414,14 +414,31 @@ interface Pair {
   from: Pt[]
   to: Pt[]
   closed: boolean
-  /** 目标图上没有对应部位：动画结束后这条要丢掉（否则会留一个点） */
+  /** 目标图上没有对应部位：收缩成点并淡出，动画结束剔除 */
   dead?: boolean
+  /** 起点图上没有对应部位（目标图多出来）：从点长出来并淡入 */
+  born?: boolean
+  /** 起点/终点这一条的大小（viewBox 单位），用于「缩到快没了才淡出」 */
+  fromExtent?: number
+  toExtent?: number
 }
 
-/** 贪心配对两个形状的子路径，多出来的用退化点补 */
+/** 贪心配对两个形状的子路径，多出来的用退化点补。
+ *  面积最大的一条（主体）无条件配对，否则「太阳圆圈 → 显示器屏幕」会因为尺寸差
+ *  超阈值而被判成「各自消失/出现」，整幅图就退化成淡入淡出了。 */
 function pairLoops(a: PreparedShape, b: PreparedShape): Pair[] {
   const usedB = new Set<number>()
   const pairs: Pair[] = []
+
+  let dominant = -1
+  let dominantExtent = -1
+  for (let i = 0; i < a.loops.length; i++) {
+    const e = extent(a.loops[i]!)
+    if (e > dominantExtent) {
+      dominantExtent = e
+      dominant = i
+    }
+  }
 
   for (let i = 0; i < a.loops.length; i++) {
     const loopA = a.loops[i]!
@@ -440,13 +457,18 @@ function pairLoops(a: PreparedShape, b: PreparedShape): Pair[] {
         best = j
       }
     }
-    if (best >= 0 && bestCost <= COLLAPSE_COST) {
+    // 主体无条件配对，否则「太阳圆圈 → 显示器屏幕」这种尺寸差超阈值的
+    // 会被判成各自消失/出现，整幅图标就退化成淡入淡出（中间还会有一帧全空）
+    const accept = best >= 0 && (bestCost <= COLLAPSE_COST || i === dominant)
+    if (accept) {
       usedB.add(best)
       const target = b.loops[best]!
       pairs.push({
         from: loopA,
         to: alignStart(loopA, target),
         closed: a.closed[i] || b.closed[best] || false,
+        fromExtent: ea,
+        toExtent: extent(target),
       })
     } else {
       pairs.push({
@@ -454,6 +476,8 @@ function pairLoops(a: PreparedShape, b: PreparedShape): Pair[] {
         to: collapseTo(loopA),
         closed: a.closed[i] || false,
         dead: true,
+        fromExtent: ea,
+        toExtent: 0,
       })
     }
   }
@@ -462,7 +486,14 @@ function pairLoops(a: PreparedShape, b: PreparedShape): Pair[] {
   for (let j = 0; j < b.loops.length; j++) {
     if (usedB.has(j)) continue
     const loopB = b.loops[j]!
-    pairs.push({ from: collapseTo(loopB), to: loopB, closed: b.closed[j] || false })
+    pairs.push({
+      from: collapseTo(loopB),
+      to: loopB,
+      closed: b.closed[j] || false,
+      born: true,
+      fromExtent: 0,
+      toExtent: extent(loopB),
+    })
   }
   return pairs
 }
@@ -473,19 +504,52 @@ function collapseTo(pts: Pt[]): Pt[] {
   return pts.map(() => [c[0], c[1]] as Pt)
 }
 
+/** 单条子路径 → d 字符串（一个小数都没省，形状靠重采样保证） */
+function loopToPath(pts: Pt[], closed: boolean): string {
+  if (!pts.length) return ''
+  const first = pts[0]!
+  let d = `M${first[0].toFixed(2)} ${first[1].toFixed(2)}`
+  for (let k = 1; k < pts.length; k++) {
+    const pt = pts[k]!
+    d += `L${pt[0].toFixed(2)} ${pt[1].toFixed(2)}`
+  }
+  if (closed) d += 'Z'
+  return d
+}
+
 function pointsToPath(loops: Pt[][], closed: boolean[]): string {
   let d = ''
-  for (let i = 0; i < loops.length; i++) {
-    const pts = loops[i]!
-    const first = pts[0]!
-    d += `M${first[0].toFixed(2)} ${first[1].toFixed(2)}`
-    for (let k = 1; k < pts.length; k++) {
-      const pt = pts[k]!
-      d += `L${pt[0].toFixed(2)} ${pt[1].toFixed(2)}`
-    }
-    if (closed[i]) d += 'Z'
-  }
+  for (let i = 0; i < loops.length; i++) d += loopToPath(loops[i]!, closed[i] || false)
   return d
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
+  return t * t * (3 - 2 * t)
+}
+
+/** 一组配对在进度 p 时的折线 */
+function interpolateLoop(pair: Pair, p: number): Pt[] {
+  const pts: Pt[] = []
+  for (let i = 0; i < pair.from.length; i++) {
+    const a = pair.from[i]
+    const b = pair.to[i]
+    if (!a || !b) continue
+    pts.push([a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p])
+  }
+  return pts
+}
+
+/** 这一条的不透明度：按「当前大小 / 参考大小」决定，而不是按进度。
+ *  这样只有真的缩成一个点（或刚从点长出来）的部位才淡出/淡入，
+ *  主体即使在换形也是实心的，不会整幅图标同时变淡。 */
+function loopOpacity(pair: Pair, pts: Pt[]): number {
+  if (!pair.dead && !pair.born) return 1
+  const cur = extent(pts)
+  const ref = pair.dead ? pair.fromExtent || 0 : pair.toExtent || 0
+  if (ref <= 0.001) return pair.dead ? 0 : 1
+  // 缩到参考大小的 18% 以下完全透明，50% 以上全不透明
+  return smoothstep(0.18, 0.5, cur / ref)
 }
 
 // ============================================================
@@ -500,11 +564,19 @@ function prefersReducedMotion(): boolean {
   )
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
 /**
- * 绑定一个 <path>，之后用 set()/morphTo() 切换图标。
+ * 绑定一个 <svg>，之后用 set()/morphTo() 切换图标。
+ *
+ * 为什么是「一个 svg + 多条 <path>」而不是「一条 path 拼所有子路径」：
+ * 形变时多出来的部位要收缩成点 / 从点长出来，如果全塞在一条 path 里，
+ * 那些点既没法单独淡出，也会在动画落定时突兀消失。分条渲染后每条能各自
+ * 控制不透明度，收尾干净。
+ *
  * 同一时刻只有一个动画在跑；动画中途切目标会从当前帧继续，不会跳。
  */
-export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = {}): MorphController {
+export function attachMorph(svgEl: SVGSVGElement, options: MorphOptions = {}): MorphController {
   const spring = SPRINGS[options.spring ?? 'snappy']
   const respectMotion = options.reducedMotion ?? 'user'
 
@@ -512,29 +584,62 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
   let currentLoops: Pt[][] = []
   let currentClosed: boolean[] = []
   let pairs: Pair[] = []
+  const pool: SVGPathElement[] = []
   let progress = 1
   let velocity = 0
   let raf = 0
   let lastTime = 0
   let destroyed = false
 
+  function ensurePool(n: number): void {
+    while (pool.length < n) {
+      const el = document.createElementNS(SVG_NS, 'path') as SVGPathElement
+      svgEl.appendChild(el)
+      pool.push(el)
+    }
+  }
+
+  function trimPool(n: number): void {
+    while (pool.length > n) pool.pop()?.remove()
+  }
+
   function render(p: number): void {
     const loops: Pt[][] = []
     const closed: boolean[] = []
+    const alphas: number[] = []
     for (const pair of pairs) {
-      const pts: Pt[] = []
-      for (let i = 0; i < pair.from.length; i++) {
-        const a = pair.from[i]
-        const b = pair.to[i]
-        if (!a || !b) continue
-        pts.push([a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p])
-      }
+      // 要消失的部位提前缩，配合「缩到很小才淡出」才看不出突兀
+      const t = pair.dead ? smoothstep(0, 0.85, p) : p
+      const pts = interpolateLoop(pair, t)
       loops.push(pts)
       closed.push(pair.closed)
+      alphas.push(loopOpacity(pair, pts))
+    }
+    ensurePool(loops.length)
+    for (let i = 0; i < pool.length; i++) {
+      const el = pool[i]!
+      const d = loops[i] ? loopToPath(loops[i]!, closed[i] || false) : ''
+      if (el.getAttribute('d') !== d) el.setAttribute('d', d)
+      const alpha = alphas[i]
+      if (alpha === undefined || alpha <= 0.01) {
+        el.setAttribute('opacity', '0')
+      } else if (alpha < 0.99) {
+        el.setAttribute('opacity', alpha.toFixed(3))
+      } else {
+        el.removeAttribute('opacity')
+      }
     }
     currentLoops = loops
     currentClosed = closed
-    pathEl.setAttribute('d', pointsToPath(loops, closed))
+  }
+
+  /** 动画落定：丢掉已缩没/已长成的临时部位，回收多余 path */
+  function finish(): void {
+    const settled = pairs.filter((pair) => !pair.dead)
+    for (const pair of settled) delete pair.born
+    pairs = settled
+    render(1)
+    trimPool(pairs.length)
   }
 
   function tick(time: number): void {
@@ -548,11 +653,9 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
     if (Math.abs(1 - progress) < 0.0005 && Math.abs(velocity) < 0.01) {
       progress = 1
       velocity = 0
-      // 落地的形状里去掉「已缩没」的旧部位，避免残留一个点
-      if (pairs.some((pair) => pair.dead)) pairs = pairs.filter((pair) => !pair.dead)
-      render(1)
       raf = 0
       lastTime = 0
+      finish()
       return
     }
     render(progress)
@@ -568,9 +671,11 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
   return {
     set(next: string) {
       const shape = prepare(next)
-      pairs = shape.loops.length
-        ? shape.loops.map((pts, i) => ({ from: pts, to: pts, closed: shape.closed[i] || false }))
-        : []
+      pairs = shape.loops.map((pts, i) => ({
+        from: pts,
+        to: pts,
+        closed: shape.closed[i] || false,
+      }))
       progress = 1
       velocity = 0
       if (raf) {
@@ -578,6 +683,7 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
         raf = 0
       }
       render(1)
+      trimPool(pairs.length)
     },
     morphTo(next: string) {
       const shape = prepare(next)
@@ -586,15 +692,14 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
         this.set(next)
         return
       }
-      const animating = progress < 1
       progress = 0
-      velocity = animating ? 0 : 0
+      velocity = 0
       // 起点 = 当前屏幕上正在显示的帧（中途切换不跳变）
       const fromShape: PreparedShape = { loops: currentLoops, closed: currentClosed }
       pairs = pairLoops(fromShape, shape)
       if (respectMotion === 'always' || (respectMotion === 'user' && prefersReducedMotion())) {
         progress = 1
-        render(1)
+        finish()
         return
       }
       start()
@@ -607,7 +712,7 @@ export function attachMorphPath(pathEl: SVGPathElement, options: MorphOptions = 
   }
 }
 
-/** 供没有 <path> 的场景使用：把 d 字符串规范成折线路径（不改变形状，只统一点数） */
+/** 供没有 <svg> 的场景使用：把 d 字符串规范成折线路径（不改形状，只统一点数） */
 export function normalizePathForMorph(d: string): string {
   const shape = prepare(d)
   return pointsToPath(shape.loops, shape.closed)
