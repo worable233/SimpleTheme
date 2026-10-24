@@ -23,6 +23,8 @@ export const connectionIssue = shallowRef<ConnectionIssue | null>(null)
 let circuitUntil = 0
 /** 连续失败计数（server 类错误需要连续两次才熔断） */
 let consecutiveFailures = 0
+/** 冷却结束的定时器：到点自动放行 */
+let cooldownTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 各类型问题的熔断时长 */
 const ISSUE_COOLDOWN: Record<ConnectionIssue, number> = {
@@ -105,6 +107,10 @@ export function reportRequestSuccess() {
   consecutiveFailures = 0
   circuitUntil = 0
   connectionIssue.value = null
+  if (cooldownTimer !== null) {
+    clearTimeout(cooldownTimer)
+    cooldownTimer = null
+  }
 }
 
 /** 请求失败：按类型决定是否熔断 */
@@ -121,6 +127,15 @@ export function reportRequestFailure(error: unknown) {
 
   circuitUntil = Date.now() + ISSUE_COOLDOWN[issue]
   connectionIssue.value = issue
+
+  // 冷却结束自动放行：网络已经恢复的话不该继续挂着「网络不可用」的横条，
+  // 也不该让熔断一直挡住用户的下一次点击。
+  if (cooldownTimer !== null) clearTimeout(cooldownTimer)
+  cooldownTimer = setTimeout(() => {
+    cooldownTimer = null
+    circuitUntil = 0
+    connectionIssue.value = null
+  }, ISSUE_COOLDOWN[issue] + 200)
 }
 
 /** 当前是否处于熔断期（使用 !== 以便覆盖 Date.now() 恰好相等的边界） */
@@ -155,11 +170,11 @@ export const CONNECTION_COPY: Record<ConnectionIssue, { message: string; action:
     action: '刷新验证',
   },
   offline: {
-    message: '当前网络不可用，已切换到本地存档内容。网络恢复后点「重试」即可。',
+    message: '当前网络不可用，正在使用本地缓存的内容。网络恢复后点「重试」即可。',
     action: '重试',
   },
   server: {
-    message: '服务器暂时无响应，已切换到本地存档内容。稍后点「重试」即可。',
+    message: '服务器暂时无响应，正在使用本地缓存的内容。稍后点「重试」即可。',
     action: '重试',
   },
 }

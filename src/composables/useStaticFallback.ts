@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { readStaticSnapshot } from '@/lib/static-snapshot'
 
 /**
  * useStaticFallback — 运行时数据不可用时的静态内容兜底。
@@ -17,9 +18,11 @@ export function useStaticFallback() {
 
   const staticFallbackHtml = computed(() => {
     if (typeof window === 'undefined') return ''
-    const html = window.__ST_STATIC_HTML__
-    const path = window.__ST_STATIC_PATH__
-    if (!html || path == null) return ''
+    const path = window.__ST_STATIC_PATH__ ?? window.location.pathname
+    // 优先用本次文档直出的存档；文档里没有（例如从缓存拿到的外壳没有 #st-static）
+    // 时回落到上次访问该路径时存下的快照，避免「离线+首页只有报错」。
+    const html = window.__ST_STATIC_HTML__ || readStaticSnapshot(path)
+    if (!html) return ''
     // 读取 route.fullPath 让该 computed 在前端路由跳转后重新求值
     // （location.pathname 随 vue-router 同步更新）
     const stillOnBootUrl = route.fullPath !== undefined && window.location.pathname === path

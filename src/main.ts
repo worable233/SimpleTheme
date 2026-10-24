@@ -3,6 +3,7 @@ import { createHead } from '@unhead/vue/client'
 import App from './App.vue'
 import router from './router'
 import { getThemeConfig } from '@/lib/theme-config'
+import { rememberStaticSnapshot } from '@/lib/static-snapshot'
 import '@/styles/tailwind.css'
 import './styles/app.css'
 import './styles/transitions.css'
@@ -34,6 +35,8 @@ const staticEl = document.getElementById('st-static')
 if (staticEl && staticEl.innerHTML.trim()) {
   window.__ST_STATIC_HTML__ = staticEl.innerHTML
   window.__ST_STATIC_PATH__ = window.location.pathname
+  // 再存一份到本地：下次这份文档里没有存档时（各种缓存场景）仍能兜底
+  rememberStaticSnapshot(window.location.pathname, staticEl.innerHTML)
 }
 
 // ALTCHA is a native web component, not a Vue component
