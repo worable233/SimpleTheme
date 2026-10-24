@@ -208,21 +208,32 @@ import { StButton, StCard } from '@/ui'
 <StMorphIcon :name="isDark ? 'sun' : 'moon'" :size="24" />
 ```
 
-底层是 **morphicons**（形变动画引擎，非图标库）；图标数据仍来自 `@tabler/icons`。
-只有 `src/lib/tabler-icon-map.json` 的 `_morphIcons` 白名单里的图标才有形变数据
-（由 `bin/gen-tabler-icons.mjs` 生成 `ICON_MORPH_NODES`，避免全量多出 ~13KB gzip）；
-白名单外的图标自动降级为静态 `StIcon`，所以可以安全替换而不必担心。
+底层是主题自带的**轻量形变引擎** `src/lib/icon-morph.ts`（零依赖，几百行）：
+把两条 `d` 展平成折线、等长重采样、再按「质心距离 + 面积差」贪心配对子路径
+（配不上的部位收缩成点 / 从质心长出来），最后用弹簧逐帧插值。早期用的
+`morphicons`（gzip ~40KB）只为了几个按钮的动画，已移除。
+
+图标数据来自 `@tabler/icons` 的节点数据，由 `bin/gen-tabler-icons.mjs` 生成：
+
+| 生成物 | 内容 | 加载方式 |
+| --- | --- | --- |
+| `tabler-icons-core.generated.ts` | `ICON_NAMES`、`_coreIcons` 白名单的节点串、`ICON_MORPH_PATHS` | 同步（随主包，很小） |
+| `tabler-icons.generated.ts` | 全量 242 个图标的节点串 | `import()` 按需（用户自定义菜单图标等冷门图标才会触发） |
+
+`_coreIcons` / `_morphIcons` 都在 `src/lib/tabler-icon-map.json` 里显式声明；
+核心集合外的图标首次渲染时先用圆圈占位并触发全量数据加载，数据到位后自动补上。
+morph 白名单外的图标自动降级为静态 `StIcon`，所以可以安全替换而不必担心。
 
 - `spring`：`smooth` / `snappy`(默认) / `bouncy`。
-- `reducedMotion`：默认 `"user"`，尊重系统 `prefers-reduced-motion`
-  （morphicons 出厂默认 `"never"`，与本主题动效规范不符，已在组件内改掉）。
+- `reducedMotion`：默认 `"user"`，尊重系统 `prefers-reduced-motion`。
 - 只在图标**真的会切换**的地方用它；静态图标用 `StIcon` 即可，否则纯亏体积。
 
 已铺开的切换点（其余静态图标保持 `StIcon`）：
 
 | 位置 | 形变 | spring |
 | --- | --- | --- |
-| `SidebarActions` / `admin/UserDropdown` | `sun↔moon` | `snappy` |
+| `SidebarActions` 主题三态 | `device-desktop↔sun↔moon` | `snappy` |
+| `admin/UserDropdown` | `sun↔moon` | `snappy` |
 | `SidebarMobileHeader` | `menu↔close` | `snappy` |
 | `StInput` / `AuthModal`（×3）密码可见性 | `eye↔eye-off` | `snappy` |
 | `StCheckbox` 半选态 | `minus↔check` | `snappy` |
@@ -234,10 +245,10 @@ import { StButton, StCard } from '@/ui'
 > CSS `rotate()` 实现，现改为绑定展开态的形变，对应的 `rotate` 规则已从各组件与
 > `src/styles/sidebar.css` 移除。
 >
-> 音频播放器不用 `StMorphIcon` 组件，而用 morphicons 的 `<morph-icon>` **自定义元素**
-> （`morphicons/element`）：内容增强器是命令式 DOM，元素在 `disconnectedCallback`
-> 里自行销毁控制器、随正文一起被回收，不会像挂 Vue 应用那样泄漏。播放/暂停沿用实心
-> （CSS `fill: currentColor; stroke: none` 填充 Tabler path），其余图标保持线性描边。
+> 音频播放器不用 `StMorphIcon` 组件，而是直接用引擎的 `attachMorphPath(path)` 绑一个
+> `<path>`：内容增强器是命令式 DOM，不需要挂 Vue 应用，随正文一起被回收。
+> 播放/暂停沿用实心（CSS `fill: currentColor; stroke: none` 填充 Tabler path），
+> 其余图标保持线性描边。
 > 版式参考主流音乐条：顶部整宽细进度条 + 左时间 + 中走带（快退 10s / 播放暂停 /
 > 快进 10s）+ 右工具（循环、静音、下载）；`rewind-backward-10`/`rewind-forward-10`
 > 为静态图标，已登记进 `tabler-icon-map.json`。

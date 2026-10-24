@@ -10,7 +10,7 @@
  */
 
 import ICON_MAP from './tabler-icon-map.json'
-import { ICON_NAMES } from './tabler-icons.generated'
+import { ICON_NAMES } from './tabler-icons-core.generated'
 
 export interface IconLibraryItem {
   /** 存储值：Tabler kebab 名（StIcon 可直接渲染） */

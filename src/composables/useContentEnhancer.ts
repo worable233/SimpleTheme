@@ -2,8 +2,9 @@ import { watch, nextTick, onMounted, onUnmounted, type Ref } from 'vue'
 import { useToc } from '@/composables/useToc'
 import { getThemeConfig, isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import { inlineProseIcons } from '@/lib/prose-icons'
-import { defineMorphIcon, type MorphIconElement } from 'morphicons/element'
-import { ICON_MORPH_NODES, ICON_NODES } from '@/lib/tabler-icons.generated'
+import { ICON_MORPH_PATHS } from '@/lib/tabler-icons-core.generated'
+import { attachMorphPath } from '@/lib/icon-morph'
+import { ensureIconDataLoaded, iconInner } from '@/lib/icon-svg'
 // Prism is loaded as a regular <script> by WordPress (not an ES module import).
 // It's available globally via window.Prism.
 declare const Prism: { highlightElement: (el: HTMLElement) => void } | undefined
@@ -67,12 +68,8 @@ function interceptSearchForms(container: Element) {
   }
 }
 
-// 正文音频播放器：播放/暂停、音量/静音、循环开关用 morphicons 的
-// <morph-icon> 自定义元素做形变；快退/快进/下载用静态 Tabler SVG。
-// 用自定义元素而非挂 Vue 应用——内容增强器是命令式 DOM，元素在
-// disconnectedCallback 里自行销毁控制器，随正文一起被回收，不会泄漏。
-defineMorphIcon()
-
+// 正文音频播放器：播放/暂停、音量/静音、循环开关用主题自带的形变引擎；
+// 快退/快进/下载用静态 Tabler SVG。
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 type AudioMorphName =
@@ -83,17 +80,32 @@ type AudioMorphName =
   | 'repeat'
   | 'repeat-off'
 
-/** 建一个 `<morph-icon>`；实际尺寸由 CSS 覆盖（此处 16 仅兜底） */
-function createMorphIcon(name: AudioMorphName): MorphIconElement {
-  const el = document.createElement('morph-icon')
-  el.setAttribute('size', '16')
-  el.setAttribute('reduced-motion', 'user')
-  el.setAttribute('spring', 'snappy')
-  el.icon = ICON_MORPH_NODES[name]
-  return el
+/** 形变图标（播放/暂停、音量/静音、循环），与 StMorphIcon 共用同一引擎 */
+function createMorphIcon(name: AudioMorphName) {
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('width', '16')
+  svg.setAttribute('height', '16')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '2')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS(SVG_NS, 'path')
+  svg.appendChild(path)
+  const controller = attachMorphPath(path, { spring: 'snappy', reducedMotion: 'user' })
+  controller.set(ICON_MORPH_PATHS[name] || '')
+  return {
+    svg,
+    set(next: AudioMorphName) {
+      const d = ICON_MORPH_PATHS[next]
+      if (d) controller.morphTo(d)
+    },
+  }
 }
 
-/** 用 ICON_NODES 里的内部节点串建一个静态 Tabler SVG（inner 来自生成的可信常量） */
+/** 用生成的内部节点串建一个静态 Tabler SVG（inner 来自可信常量） */
 function createStaticIcon(name: string): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
@@ -103,7 +115,15 @@ function createStaticIcon(name: string): SVGSVGElement {
   svg.setAttribute('stroke-linecap', 'round')
   svg.setAttribute('stroke-linejoin', 'round')
   svg.setAttribute('aria-hidden', 'true')
-  svg.innerHTML = ICON_NODES[name] || ''
+  const data = iconInner(name)
+  if (data) svg.innerHTML = data.inner
+  else {
+    // 冷门图标：等全量数据到位再补（图标已插入时 isConnected 为 true）
+    void ensureIconDataLoaded().then(() => {
+      const late = iconInner(name)
+      if (late && svg.isConnected) svg.innerHTML = late.inner
+    })
+  }
   return svg
 }
 
@@ -174,7 +194,7 @@ function enhanceAudioPlayers(container: Element) {
     playBtn.className = 'st-audio__btn'
     playBtn.setAttribute('aria-label', '播放')
     const playIcon = createMorphIcon('player-play')
-    playBtn.appendChild(playIcon)
+    playBtn.appendChild(playIcon.svg)
     const fwdBtn = document.createElement('button')
     fwdBtn.type = 'button'
     fwdBtn.className = 'st-audio__icon-btn'
@@ -191,13 +211,13 @@ function enhanceAudioPlayers(container: Element) {
     loopBtn.setAttribute('aria-label', '单曲循环')
     loopBtn.setAttribute('aria-pressed', 'false')
     const loopIcon = createMorphIcon('repeat-off')
-    loopBtn.appendChild(loopIcon)
+    loopBtn.appendChild(loopIcon.svg)
     const muteBtn = document.createElement('button')
     muteBtn.type = 'button'
     muteBtn.className = 'st-audio__icon-btn'
     muteBtn.setAttribute('aria-label', '静音')
     const muteIcon = createMorphIcon('volume')
-    muteBtn.appendChild(muteIcon)
+    muteBtn.appendChild(muteIcon.svg)
     const dlBtn = document.createElement('button')
     dlBtn.type = 'button'
     dlBtn.className = 'st-audio__icon-btn st-audio__dl'
@@ -219,17 +239,17 @@ function enhanceAudioPlayers(container: Element) {
       renderAt(audio.currentTime)
     }
     const syncPlayState = () => {
-      playIcon.icon = ICON_MORPH_NODES[audio.paused ? 'player-play' : 'player-pause']
+      playIcon.set(audio.paused ? 'player-play' : 'player-pause')
       playBtn.setAttribute('aria-label', audio.paused ? '播放' : '暂停')
     }
     const syncLoop = () => {
-      loopIcon.icon = ICON_MORPH_NODES[audio.loop ? 'repeat' : 'repeat-off']
+      loopIcon.set(audio.loop ? 'repeat' : 'repeat-off')
       loopBtn.setAttribute('aria-pressed', String(audio.loop))
       loopBtn.classList.toggle('is-active', audio.loop)
     }
     const syncVolume = () => {
       const off = audio.muted || audio.volume === 0
-      muteIcon.icon = ICON_MORPH_NODES[off ? 'volume-off' : 'volume']
+      muteIcon.set(off ? 'volume-off' : 'volume')
       muteBtn.setAttribute('aria-label', off ? '取消静音' : '静音')
     }
     const seekTo = (clientX: number) => {
@@ -800,7 +820,9 @@ function initFancyboxImages(container: Element) {
 
 export function useContentEnhancer(
   content?: Ref<string | null | undefined>,
-  selector = '.prose-content',
+  // 必须限定在 #app 内：服务端直出的静态存档里也有 .prose-content（藏在 #st-static），
+  // 且在 DOM 中排在前面，裸选择器会命中那份隐藏副本，正文增强全部落空。
+  selector = '#app .prose-content',
 ) {
   const { clearToc } = useToc()
   let observer: MutationObserver | null = null
@@ -813,7 +835,13 @@ export function useContentEnhancer(
       const container = document.querySelector(selector)
       if (!container) return
       // 正文图标字体 <i> → 内联 Tabler SVG（不再加载图标字体）
-      inlineProseIcons(container)
+      if (!inlineProseIcons(container)) {
+        // 正文里有核心集合之外的图标：等全量数据到位后再补一次（幂等）
+        void ensureIconDataLoaded().then(() => {
+          const again = document.querySelector(selector)
+          if (again) inlineProseIcons(again)
+        })
+      }
       addHeadingAnchors(container)
       wrapCodeParagraphs(container)
       processCodeBlocks(container)

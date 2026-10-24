@@ -1,17 +1,58 @@
 /**
  * icon-svg — 用生成好的节点字符串渲染 Tabler SVG
  *
- * 前端只需要「画出来」，不需要 @tabler/icons-vue 的 271 个 Vue 组件（打进来
- * 是几百 KB）。`ICON_NODES` 里的内部节点串本来就已经在包里（正文图标
- * prose-icons 在用），这里直接拿它拼 `<svg>`，属性与 Tabler 组件保持一致，
- * 视觉上完全等价。
+ * 图标数据分两层：
+ *   - 核心图标（ICON_NODES_CORE，同步、随主包）——首屏和正文常用，绝不闪；
+ *   - 全量图标（tabler-icons.generated，`import()` 按需加载）——用户自定义
+ *     菜单图标等冷门图标，用到时才请求一次，之后常驻内存。
+ * 全量数据到位后 dataVersion 自增，依赖它的组件（AppIcon/StIcon）会自动重算，
+ * 于是「先空一帧、再显示」而不是显示错图标。
  *
- * 图标选择器（StIconPicker）预览也走这里，只是从 ICON_NAMES 里取清单。
+ * 渲染不用 @tabler/icons-vue（组件里重复带了一份路径数据，几百 KB）。
  */
-import { h, type VNode } from 'vue'
-import { ICON_NODES, ICON_NODES_FILLED } from './tabler-icons.generated'
+import { h, ref, type VNode } from 'vue'
+import { ICON_NODES_CORE, ICON_NODES_FILLED_CORE } from './tabler-icons-core.generated'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
+
+/** 全量数据版本号；加载完成后自增，触发依赖方重渲染 */
+const dataVersion = ref(0)
+
+let fullNodes: Record<string, string> | null = null
+let fullNodesFilled: Record<string, string> | null = null
+let loadPromise: Promise<void> | null = null
+
+/** 触发（或复用）全量图标数据的加载；可重复调用 */
+export function ensureIconDataLoaded(): Promise<void> {
+  if (fullNodes) return Promise.resolve()
+  if (loadPromise) return loadPromise
+  loadPromise = import('./tabler-icons.generated')
+    .then((mod) => {
+      fullNodes = mod.ICON_NODES
+      fullNodesFilled = mod.ICON_NODES_FILLED
+      dataVersion.value++
+    })
+    .catch(() => {
+      // 网络失败（离线）时别把 promise 缓存成永久失败，下次还能重试
+      loadPromise = null
+    })
+  return loadPromise
+}
+
+/**
+ * 取图标的内部节点串：先查核心，再查已加载的全量数据。
+ * 返回 null 表示「还没加载到」——调用方可以据此触发加载或先占位。
+ */
+export function iconInner(
+  name: string,
+  filled = false,
+): { inner: string; filled: boolean } | null {
+  const filledInner = ICON_NODES_FILLED_CORE[name] || fullNodesFilled?.[name]
+  const outlineInner = ICON_NODES_CORE[name] || fullNodes?.[name]
+  if (filled && filledInner) return { inner: filledInner, filled: true }
+  if (outlineInner) return { inner: outlineInner, filled: false }
+  return null
+}
 
 export interface IconSvgOptions {
   /** 使用实心变体（若该图标有 filled 版） */
@@ -24,20 +65,17 @@ export interface IconSvgOptions {
   class?: string
 }
 
-/** 取图标的内部节点串；找不到时回退到默认圆圈 */
-export function iconInner(name: string, filled = false): { inner: string; filled: boolean } {
-  const useFilled = filled && !!ICON_NODES_FILLED[name]
-  const inner = (useFilled ? ICON_NODES_FILLED[name] : ICON_NODES[name]) || ICON_NODES['circle'] || ''
-  return { inner, filled: useFilled }
-}
-
-/**
- * 生成 svg 元素的 vnode。
- * `innerHTML` 写入的是本项目生成的可信常量（同 prose-icons 的处理方式），
- * 不经过 HTML 解析用户输入。
- */
+/** 生成 svg 元素的 vnode（数据缺失时用圆圈占位并自动加载全量数据） */
 export function iconSvg(name: string, options: IconSvgOptions = {}): VNode {
-  const { inner, filled } = iconInner(name, options.filled)
+  // 读一次版本号：全量数据加载完成后这个 computed 会重算，图标就补上了
+  void dataVersion.value
+
+  let data = iconInner(name, options.filled)
+  if (!data) {
+    void ensureIconDataLoaded()
+    data = iconInner('circle', options.filled) || { inner: '', filled: false }
+  }
+
   const size = options.size ?? 20
   const attrs: Record<string, unknown> = {
     xmlns: SVG_NS,
@@ -45,11 +83,14 @@ export function iconSvg(name: string, options: IconSvgOptions = {}): VNode {
     width: size,
     height: size,
     class: options.class ? ['ti', options.class] : 'ti',
+    // 便于排查「哪个图标没进核心集合」，也方便自定义样式精确命中
+    'data-icon': name,
     'aria-hidden': 'true',
     focusable: 'false',
-    innerHTML: inner,
+    // inner 是生成的可信常量（同 prose-icons），不经过 HTML 解析用户输入
+    innerHTML: data.inner,
   }
-  if (filled) {
+  if (data.filled) {
     attrs.fill = 'currentColor'
     attrs.stroke = 'none'
   } else {

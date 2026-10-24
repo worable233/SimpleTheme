@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { StButton, useToast } from '@/ui'
+import { StButton } from '@/ui'
 import { useSiteShell } from '@/composables/useSiteShell'
 import { isExternalUrl, isSafeNavigationUrl } from '@/lib/theme-config'
 import {
@@ -10,7 +10,6 @@ import {
   readThemePreference,
   resolveTheme,
   setThemePreference,
-  themePreferenceLabel,
   watchSystemTheme,
   type ResolvedTheme,
   type ThemePreference,
@@ -50,7 +49,6 @@ const showRightSubPage = ref(false)
 // 默认跟随系统；点一次在 自动 → 浅色 → 深色 之间循环
 const themePreference = ref<ThemePreference>('auto')
 const currentTheme = ref<ResolvedTheme>('light')
-const toast = useToast()
 let stopWatchingSystem: (() => void) | null = null
 
 // ========== Theme ==========
@@ -79,7 +77,6 @@ function toggleTheme() {
   setThemePreference(next)
   currentTheme.value = resolveTheme(next)
   applyTheme(currentTheme.value)
-  toast.info(`主题：${themePreferenceLabel(next, currentTheme.value)}`)
 }
 
 // ========== Drawer state ==========

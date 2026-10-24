@@ -1,16 +1,19 @@
 /**
  * 生成 Tabler 图标资源：
  *   读取 src/lib/tabler-icon-map.json（语义名 → Tabler kebab 名），
- *   校验每个 Tabler 名在 @tabler/icons 节点数据中存在，
- *   生成 src/lib/tabler-icons.generated.ts：
- *     - ICON_NAMES：已收录的 Tabler kebab 名清单（图标选择器用）
- *     - ICON_NODES / ICON_NODES_FILLED：内联 SVG 内部节点串（AppIcon / StIcon /
- *       prose-icons 用，见 src/lib/icon-svg.ts）
- *     - ICON_MORPH_NODES：原始 IconNode 数组，给 morphicons 形变动画消费
+ *   校验每个 Tabler 名在 @tabler/icons 节点数据中存在，生成两个文件：
  *
- * 说明：早期版本还会生成 ICON_COMPONENTS（@tabler/icons-vue 的 Vue 组件），
- * 但组件里重复携带了一遍路径数据，打进前端是几百 KB。现在统一走节点串渲染，
- * 运行时不再需要 @tabler/icons-vue。
+ *   src/lib/tabler-icons-core.generated.ts（随主包同步加载，很小）
+ *     - ICON_NAMES：已收录的 Tabler kebab 名清单（图标选择器用）
+ *     - ICON_NODES_CORE / ICON_NODES_FILLED_CORE：`_coreIcons` 白名单的节点串
+ *       （首屏/正文常用图标，同步渲染，不会闪）
+ *     - ICON_MORPH_PATHS：`_morphIcons` 白名单的 d 串（形变动画用）
+ *
+ *   src/lib/tabler-icons.generated.ts（按需 import()，不占首屏）
+ *     - ICON_NODES / ICON_NODES_FILLED：全量节点串，配合 icon-svg 的懒加载
+ *
+ * 说明：早期版本会用 @tabler/icons-vue 生成 Vue 组件，组件里重复带了一遍
+ * 路径数据（几百 KB），现已全部改为节点串渲染，运行时不再依赖它。
  *
  * 用法：node bin/gen-tabler-icons.mjs
  */
@@ -41,6 +44,11 @@ function nodesToInner(nodes) {
     .join('')
 }
 
+// 节点数组 → 合并后的 d 串（形变动画只认路径数据）
+function nodesToPathData(nodes) {
+  return nodes.map(([, attrs]) => attrs.d).join(' ')
+}
+
 const kebabs = [
   ...new Set(
     Object.entries(map)
@@ -69,8 +77,15 @@ if (missing.length) {
   process.exit(1)
 }
 
-// morphicons 形变数据：只对白名单里的成对图标生成原始 IconNode。
-// 全量生成会多出 ~13KB gzip，而这些图标绝大多数不会运行时两两切换。
+// 首屏核心图标白名单：少了会先空一帧再出现，多了就白占体积。
+// 由 map 的 `_coreIcons` 显式声明（生成脚本只做校验）。
+const coreKebabs = (Array.isArray(map._coreIcons) ? map._coreIcons : []).filter((k) => {
+  if (nodesOut[k]) return true
+  console.warn(`提示：_coreIcons 中的 ${k} 不在已收录图标里，已跳过`)
+  return false
+})
+
+// 形变动画数据：只对 `_morphIcons` 白名单生成，避免多带几十 KB
 const morphKebabs = Array.isArray(map._morphIcons) ? map._morphIcons : []
 const morphOut = {}
 const morphMissing = []
@@ -79,52 +94,68 @@ for (const kebab of morphKebabs) {
     morphMissing.push(kebab)
     continue
   }
-  morphOut[kebab] = outlineNodes[kebab]
+  morphOut[kebab] = nodesToPathData(outlineNodes[kebab])
 }
 if (morphMissing.length) {
   console.error('_morphIcons 中缺失的 Tabler 图标：\n  ' + morphMissing.join('\n  '))
   process.exit(1)
 }
 
-const nodeEntries = Object.entries(nodesOut)
-  .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
-  .join('\n')
-const nodeFilledEntries = Object.entries(nodesFilledOut)
-  .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
-  .join('\n')
-const morphEntries = Object.entries(morphOut)
-  .map(([k, v]) => `  '${k}': ${JSON.stringify(v)},`)
-  .join('\n')
+const entry = (k, v) => `  '${k}': ${JSON.stringify(v)},`
 
-const out = `// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
+const coreOut = `// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
 // 数据源：src/lib/tabler-icon-map.json + @tabler/icons 节点数据。
+// 这里是「随主包同步加载」的小份数据（核心图标 + 形变动画），
+// 全量图标在 tabler-icons.generated.ts 里按需 import。
 
-/** 原始 IconNode 数据（[tag, attrs] 列表），与 morphicons 的 IconNode 结构一致 */
-export type IconNodeData = ReadonlyArray<readonly [string, Record<string, string | number>]>
-
-/** 已收录的 Tabler kebab 名清单（顺序与节点数据无关） */
+/** 已收录的 Tabler kebab 名清单 */
 export const ICON_NAMES: readonly string[] = [
 ${kebabs.map((k) => `  '${k}',`).join('\n')}
 ]
 
+/** 核心图标（首屏/正文会用到，同步渲染）：Tabler kebab 名 → outline SVG 内部节点串 */
+export const ICON_NODES_CORE: Record<string, string> = {
+${coreKebabs.map((k) => entry(k, nodesOut[k])).join('\n')}
+}
+
+/** 核心图标（实心变体），仅包含存在 filled 版者 */
+export const ICON_NODES_FILLED_CORE: Record<string, string> = {
+${coreKebabs
+  .filter((k) => nodesFilledOut[k])
+  .map((k) => entry(k, nodesFilledOut[k]))
+  .join('\n')}
+}
+
+/** 可形变图标：Tabler kebab 名 → 合并后的 d 串（见 src/lib/icon-morph.ts） */
+export const ICON_MORPH_PATHS: Record<string, string> = {
+${Object.entries(morphOut)
+  .map(([k, v]) => entry(k, v))
+  .join('\n')}
+}
+`
+
+const fullOut = `// 本文件由 bin/gen-tabler-icons.mjs 自动生成，请勿手动编辑。
+// 数据源：src/lib/tabler-icon-map.json + @tabler/icons 节点数据。
+// 全量图标数据：由 src/lib/icon-svg.ts 在遇到非核心图标时按需 import()，
+// 不要在启动路径上静态引入它。
+
 /** Tabler kebab 名 → outline SVG 内部节点串 */
 export const ICON_NODES: Record<string, string> = {
-${nodeEntries}
+${Object.entries(nodesOut)
+  .map(([k, v]) => entry(k, v))
+  .join('\n')}
 }
 
 /** Tabler kebab 名 → filled SVG 内部节点串 */
 export const ICON_NODES_FILLED: Record<string, string> = {
-${nodeFilledEntries}
-}
-
-/** Tabler kebab 名 → 原始 IconNode（morphicons 形变动画消费）。
- *  仅包含 tabler-icon-map.json 的 _morphIcons 白名单，控制体积。 */
-export const ICON_MORPH_NODES: Record<string, IconNodeData> = {
-${morphEntries}
+${Object.entries(nodesFilledOut)
+  .map(([k, v]) => entry(k, v))
+  .join('\n')}
 }
 `
 
-writeFileSync(resolve(root, 'src/lib/tabler-icons.generated.ts'), out)
+writeFileSync(resolve(root, 'src/lib/tabler-icons-core.generated.ts'), coreOut)
+writeFileSync(resolve(root, 'src/lib/tabler-icons.generated.ts'), fullOut)
 console.log(
-  `已生成 tabler-icons.generated.ts：${kebabs.length} 个图标（${Object.keys(nodesFilledOut).length} 个含 filled 变体，${morphKebabs.length} 个含 morph 数据）。`,
+  `已生成图标数据：全量 ${kebabs.length} 个；核心 ${coreKebabs.length} 个（同步）；morph ${morphKebabs.length} 个。`,
 )
