@@ -121,13 +121,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php $st_license = simple_theme_get_article_license(); ?>
 					<?php if ( $st_license ) : ?>
 						<p class="cf-single__license">
-							<?php if ( '' !== $st_license['url'] ) : ?>
-								<?php esc_html_e( '本文采用', 'simple-theme' ); ?>
-								<a href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
-								<?php esc_html_e( '许可协议发布，转载请注明出处。', 'simple-theme' ); ?>
-							<?php else : ?>
-								<?php echo esc_html( $st_license['statement'] ); ?>
-							<?php endif; ?>
+							<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /></svg>
+							<span>
+								<?php if ( '' !== $st_license['url'] ) : ?>
+									<?php esc_html_e( '本文采用', 'simple-theme' ); ?>
+									<a class="cf-single__license-badge" href="<?php echo esc_url( $st_license['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $st_license['label'] ); ?></a>
+									<?php esc_html_e( '许可协议发布，转载请注明出处。', 'simple-theme' ); ?>
+								<?php else : ?>
+									<?php echo esc_html( $st_license['statement'] ); ?>
+								<?php endif; ?>
+							</span>
 						</p>
 					<?php endif; ?>
 				</article>

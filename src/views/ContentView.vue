@@ -669,14 +669,23 @@ watch(
               </router-link>
             </div>
             <p v-if="articleLicense" class="single-post__license">
-              <span v-if="articleLicense.url">
-                本文采用
-                <a :href="articleLicense.url" target="_blank" rel="noopener noreferrer">{{
-                  articleLicense.label
-                }}</a>
-                许可协议发布，转载请注明出处。
+              <AppIcon class="single-post__license-icon" name="shield" :size="15" />
+              <span class="single-post__license-text">
+                <template v-if="articleLicense.url">
+                  本文采用
+                  <a
+                    class="single-post__license-badge"
+                    :href="articleLicense.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ articleLicense.label }}
+                    <AppIcon name="link-external" :size="11" />
+                  </a>
+                  许可协议发布，转载请注明出处。
+                </template>
+                <template v-else>{{ articleLicense.statement }}</template>
               </span>
-              <span v-else>{{ articleLicense.statement }}</span>
             </p>
           </footer>
         </div>
