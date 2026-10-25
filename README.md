@@ -20,6 +20,10 @@
   <a href="#参与开发">参与开发</a>
 </p>
 
+<p align="center">
+  <img src="./docs/assets/banner.png" alt="Simple Theme — Vue 3 SPA × WordPress REST API" width="100%">
+</p>
+
 ---
 
 > [!TIP]
