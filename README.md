@@ -31,18 +31,6 @@
 
 主题面向个人博客：文章、页面、分类、标签、日期归档走同一套路由，评论、说说、归档、友链都是内置页面。
 
-## 从这里开始
-
-| 你要做什么 | 从这里开始 |
-| --- | --- |
-| 给博客装上主题 | 从 [Releases](https://github.com/worable233/SimpleTheme/releases) 下载 `Simple-Theme-vX.Y.Z.zip`，后台 **外观 → 主题 → 添加新主题 → 上传主题**，启用后在 **设置 → 固定链接** 保存一次。 |
-| 调首页、配色、评论、邮件 | 后台 **设置 → Simple Theme**，Vue 3 设置面板，改完即生效；主题色基于 Material Design 3 动态配色。 |
-| 设置不生效、页面报错 | 看 [配置与故障排查](./docs/config-and-troubleshooting.md)。 |
-| 用脚本取数据 | 看 [REST API](./docs/rest-api.md)，命名空间 `simple-theme/v1`。 |
-| 改代码、发新版 | 阅读[参与开发](#参与开发)；推送 `v*` 标签由 GitHub Actions 构建并发布 Release。 |
-
-> [!WARNING]
-> 服务端直出的 HTML 会作为首屏与离线兜底留在页面中（`#st-static`），资源文件名带内容哈希。升级主题后请清一次页面缓存 / CDN 缓存。
 
 ## 主要功能
 
@@ -74,16 +62,8 @@
 | 侧边栏 | 小工具可排序、按需启用（个人资料、一言、站点信息、自定义内容）。 |
 | 后台 | 设置面板是独立 Vue 3 应用，登录页样式与前台一致。 |
 
-### 性能与工程
 
-| 能力 | 说明 |
-| --- | --- |
-| 首屏体积 | 只加载核心图标，其余按需拉取；验证码求解放在 Worker。 |
-| 请求数 | 游客跳过鉴权请求，导航与站点信息合并，文章页少一个往返。 |
-| 缓存 | 接口 LRU 缓存 + Service Worker 预缓存页面、接口与图片。 |
-| 图标动效 | 自研形变引擎，主题切换图标平滑过渡。 |
-
-## 安装
+## 安装&升级
 
 从 [Releases](https://github.com/worable233/SimpleTheme/releases) 下载最新的 `Simple-Theme-vX.Y.Z.zip`，后台 **外观 → 主题 → 添加新主题 → 上传主题**，安装并启用。
 
@@ -93,6 +73,9 @@
 - PHP 7.3 或更高版本（含 8.x）
 
 启用后到 **设置 → 固定链接** 保存一次，重新生成链接规则。要用评论验证码、SMTP 邮件，先在 **设置 → Simple Theme** 打开对应开关。
+
+> [!WARNING]
+> 服务端直出的 HTML 会作为首屏与离线兜底留在页面中（`#st-static`），资源文件名带内容哈希。升级主题后请清一次页面缓存 / CDN 缓存。
 
 ## 参与开发
 
@@ -110,26 +93,6 @@ npm run package    # 构建并生成主题 ZIP
 `npm run dev` 需要能访问 WordPress 的 REST API：在 `.env` 设置 `VITE_WP_SITE_URL`；没有后端时设 `VITE_USE_MOCK=true` 用内置假数据。`npm run dev:docker` 会用 `.env.docker` 连到 Docker 里的 WordPress。
 
 本地用 [WordPress Studio](https://developer.wordpress.com/studio/) 并把本仓库软链为主题时，站点读的是 `dist/`，改完跑 `npm run build-only`。
-
-## 项目结构
-
-```text
-src/        Vue 3 前台与后台设置面板：views、components、composables、ui 组件库、lib、styles、blocks
-inc/        PHP 集成：REST、SEO、评论、SMTP 与邮件队列、本地头像、小工具、主题选项
-templates/  服务端直出的标记（首屏内容与静态存档）
-assets/     不经过构建的静态资源（登录页样式等）
-bin/        构建辅助脚本：图标生成、资源拷贝、打包
-docs/       配置说明与 REST API 文档
-dist/       构建产物，由 WordPress 按 Vite manifest 加载
-```
-
-前端先请求 `resolve-url` 拿到内容类型再渲染；`/shuoshuo`、`/about`、`/archives`、`/links` 是保留路径，其余交给 WordPress 的固定链接规则。
-
-## 与 WordPress 的关系
-
-主题只读数据，不改核心：评论走原生 `wp/v2/comments`，其余在 `simple-theme/v1`；PHP 保持 7.3 兼容，不依赖插件。额外的数据表只有邮件队列。
-
-推送 `v*` 标签会触发 [build.yml](./.github/workflows/build.yml) 构建并发布带 ZIP 的 Release；本地也可以 `npm run package` 打包。
 
 ## 致谢
 
